@@ -1,35 +1,138 @@
-flowchart TD
+## Flowchart of the modules
 
-subgraph CosmoTransitions["📂 cosmoTransitions/"]
-    HF["📦 helper_functions.py\n(Funções numéricas auxiliares:\ninterpolação, integração, raízes)"]
-    FT["📦 finiteT.py\n(Correções de temperatura finita\npara o potencial)"]
-    GP["📦 generic_potential.py\n(Classe base para definir\num modelo de potencial)"]
-    MF["📦 multiFieldPlotting.py\n(Ferramentas de plotagem\npara potenciais e perfis)"]
-    TF["📦 transitionFinder.py\n(Localiza temperaturas críticas\ne parâmetros da transição)"]
-    T1D["📦 tunneling1D.py\n(Solução do bounce em 1 campo)"]
-end
+```mermaid
+graph TD
+    %% ========== MÓDULOS PRINCIPAIS ==========
+    subgraph "MÓDULOS PRINCIPAIS"
+        A["📦__init__.py"<br/>Inicialização do pacote] --> B[📦helper_functions.py<br/>Funções numéricas auxiliares]
+        A --> C[📦finiteT.py<br/>Correções de temperatura finita para o potencial]
+        A --> D[📦generic_potential.py<br/>Classe para definir um modelo de potencial]
+        A --> E[📦multi_field_plotting.py<br/>Plotting para múltiplos campos]
+        A --> F[📦transitionFinder.py<br/>Localiza Temperaturas críticas e parâmetros da transição]
+        A --> G[📦Tunneling1D.py<br/>Solução de bounce em 1 campo]
+        
+        B --> C
+        B --> F
+        B --> G
+        C --> F
+        D --> F
+        D --> G
+        F --> E
+        G --> F
+    end
 
-subgraph Examples["📂 examples/"]
-    FTUN["📦 fullTunneling.py\n(Exemplo completo de cálculo\ndo bounce e transição)"]
-    TM1["📦 testeModel1.py\n(Modelo exemplo simples)"]
-end
+    subgraph "Pasta de Exemplos"
+        H[📦__init__.py<br/>Inicialização] --> I[fulltunneling.py<br/>Exemplo completo tunneling]
+        H --> J[📦testemodel1.py<br/>Teste do modelo 1]
+        
+        I -.-> F
+        I -.-> G
+        J -.-> D
+        J -.-> F
+    end
 
-subgraph User["Usuário"]
-    U["Define modelo específico\n(herdando generic_potential)"]
-end
+    %% ========== ESTILOS ==========
+    style A fill:#ffebee
+    style B fill:#e3f2fd
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style E fill:#f3e5f5
+    style F fill:#e0f2f1
+    style G fill:#fff8e1
+    style H fill:#f1f8e9
+    style I fill:#e8eaf6
+    style J fill:#ffebee
+    
+    linkStyle 0 stroke:#b71c1c,stroke-width:2px
+    linkStyle 1 stroke:#0d47a1,stroke-width:2px
+    linkStyle 2 stroke:#1b5e20,stroke-width:2px
+    linkStyle 3 stroke:#e65100,stroke-width:2px
+    linkStyle 4 stroke:#4a148c,stroke-width:2px
+    linkStyle 5 stroke:#006064,stroke-width:2px
+    linkStyle 6 stroke:#ff6f00,stroke-width:2px
+    linkStyle 7 stroke:#33691e,stroke-width:2px
+    linkStyle 8 stroke:#1a237e,stroke-width:2px
+    linkStyle 9 stroke:#b71c1c,stroke-width:2px
+    linkStyle 10 stroke:#795548,stroke-width:2px
+```
 
-%% Relações
-U --> GP
-GP --> FT
-GP --> HF
-TF --> GP        
-TF --> HF
-TF --> T1D
-T1D --> HF
-T1D --> GP
-MF --> GP
-MF --> T1D
-FTUN --> TF
-FTUN --> T1D
-FTUN --> MF
-TM1 --> GP
+## Cronograma do Projeto
+
+```mermaid
+gantt
+    title Cronograma de Desenvolvimento - CosmoTransitions
+    dateFormat  YYYY-MM-DD
+    axisFormat  %d/%m
+    
+    section Fase 0: Planejamento
+    Fluxograma e Cronograma          :done, 2025-08-27, 7d
+    Definição de Metodologias        :active, 2025-09-05, 3d
+    
+    section Fase 1: Modificação de Funções de Integração Numérica
+    Modificação helper_function.py            :2025-09-08, 10d
+    Modificação finiteT.py           :2025-09-19, 10d
+    
+    section Fase 1.5: Testes das Modificações
+    Testes Integração Numérica       :2025-09-30, 5d
+    Correções e Ajustes              :2025-09-30, 5d
+    
+    section Fase 2: Modificação das Funções de Soluções Bounce
+    Modificação Tunneling1D.py       :2025-10-01, 12d
+    Modificação transitionsFinder.py :2025-10-12, 12d
+    
+    section Fase 2.5: Testes das Modificações
+    Testes Soluções Bounce           :2025-10-24, 5d
+    Validação Numérica               :2025-10-24, 5d
+    
+    section Fase 3: Modificação dos Potenciais e Saídas das funções
+    Modificação generic_potential.py           :2025-11-03, 12d
+    Melhorias multi_field_plotting.py  :2025-11-15, 12d
+    
+    section Fase 3.5: Testes Finais
+    Testes Completos                 :2025-11-27, 5d
+    Documentação                     :2025-11-27, 5d
+    
+    section Fase 4: Extras (Opcional)
+    Plots Adicionais                 :2025-12-01, 10d
+    Otimizações Finais               :2025-12-10, 10d
+```
+
+- [x] **Fase 0**: Planejamento e Primeira reunião 
+  - Criar fluxograma de dependências  
+  - Criar cronograma de refatoração  
+
+- [ ] **Fase 1**: Núcleo numérico  
+  - Refatorar `helper_functions.py` (usar SciPy para integrais e raízes)  
+  - Vetorizar `finiteT.py` (substituir loops por NumPy)  
+
+- [ ] **Fase 1.5**: Testes de Modificações  
+  - Validar funções isoladas com exemplos analíticos simples  
+  - Comparar saídas numéricas com versão original  
+
+- [ ] **Fase 2**: Solução do bounce e parâmetros de transição  
+  - Refatorar `tunneling1D.py` (usar `scipy.solve_ivp` no solver ODE)  
+  - Melhorar `transitionFinder.py` (algoritmos de busca mais eficientes)  
+
+- [ ] **Fase 2.5**: Testes intermediários  
+  - Reproduzir resultados dos exemplos (`fullTunneling.py`)  
+  - Comparar ações críticas com versão antiga  
+
+- [ ] **Fase 3**: Potencial e saídas  
+  - Modernizar `generic_potential.py` (usar `abc.ABC` para interface clara)  
+  - Atualizar `multiFieldPlotting.py` com matplotlib atual  
+
+- [ ] **Fase 3.5**: Testes finais  
+  - Rodar todos os exemplos e validar consistência  
+  - Criar notebooks substituindo scripts  
+
+- [ ] **Fase 4** *(opcional)*: Extensões
+  - Novos tipos de plots (ex.: espectro GW direto, densidade de GW no espaço para diferentes T e outros)  
+  - Interface `PhaseTransitionSolver` unificada
+
+**Problemas ainda em aberto:** Decidir como será testado as modificações, i.e, como iremos comparar o antigo código com o novo que estamos fazendo e termos um teste de consistência. Ideia inicial é:
+  - Teste 1: Dentro da própria módulo modificado fazer um teste simples que chamem a função e deem um resultado comparativo de antes e depois do seu output
+  - Teste 2: Testar o exemplo de modelo simples, do próprio cosmotransitions
+  - Teste 3: Comparar gráficos da forma do potencial antes e depois da modificação e observar as alterações. Possivelmente testar modelos conhecidos como o do próprio artigo do Glauber.
+
+
+
