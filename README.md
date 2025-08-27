@@ -1,7 +1,17 @@
 # GW_FOPT_Simulation
 Project to simulate the thermodynamic parameters of the phase transition and calculate the spectrum of gravitational waves given an effective potential
 
-A ideia do projeto é atualizar e modificar o CosmoTransitions que, por mais que seja um código amplamente utilizado na literatura, está desatulizado por ter sido feito a bastante tempo. Desse modo, o projeto visa realizar melhorias no código deixando-o mais otimizado e intuitivo com os pacotes existentes atuais para python. O cronograma e fluxograma do projeto se encontram abaixo a ideia central é dividir essa tarefa em 3 partes, cada uma com duração de 1 mês, realizando testes de consistência ao longo do caminho, quando finalizar as modificações. A primeira fase visa atualizar os códigos de integração numérica, a segunda fase os códigos que encontrar a solução de bounce por fim, a terceira, visa modificar as função que cria o potencial genérico e os plots feitos dado os parâmetros. Dependendo do andamento do projeto será feito uma quarta fase visando acrescentar novos plots e gráficos ao código. Há ainda alguns problemas em aberto em relação a como fazer os testes, eles se encontram no final da página.
+A ideia do projeto é atualizar e modificar o **CosmoTransitions** que, por mais que seja um código amplamente utilizado na literatura para transições de fase cosmológicas, está desatulizado por ter sido desenvolvido há bastante tempo. 
+
+Desse modo, o projeto visa realizar melhorias significativas no código, tornando-o mais otimizado, moderno e intuitivo, alinhado-o com os pacotes existentes atuais para python. 
+
+📅 Cronograma e Abordagem: O cronograma e fluxograma do projeto se encontram abaixo. A ideia central é dividir essa tarefa em 3 partes principais, cada uma com duração de 1 mês, realizando testes de consistência ao longo de todo o desenvolvimento, ao finalizar as modificações. Cada fase seguirá o ciclo: Modificação → Testes → Correção → Validação
+
+A primeira fase visa atualizar os códigos de integração numérica. A segunda fase os códigos que encontram a solução de bounce. Por fim, a terceira e última fase visa modificar as funções que criam o potencial genérico e os plots feitos dado os parâmetros iniciais.
+
+Dependendo do andamento do projeto será feito uma quarta fase visando acrescentar novos plots e gráficos ao código.
+
+Há ainda alguns problemas em aberto em relação a como fazer os testes, eles se encontram no final da página.
 
 
 ## Flowchart of the modules
@@ -139,3 +149,38 @@ gantt
   - Teste 1: Dentro da própria módulo modificado fazer um teste simples que chamem a função e deem um resultado comparativo de antes e depois do seu output
   - Teste 2: Testar o exemplo de modelo simples, do próprio cosmotransitions
   - Teste 3: Comparar gráficos da forma do potencial antes e depois da modificação e observar as alterações. Possivelmente testar modelos conhecidos como o do próprio artigo do Glauber.
+
+```mermaid
+graph TD
+    Start[Início do Projeto] --> Phase1[Fase 1: Integração Numérica]
+    Start --> Phase2[Fase 2: Solução Bounce]
+    Start --> Phase3[Fase 3: Potencial e Visualização]
+    
+    Phase1 --> Test1[Testes de Consistência]
+    Phase2 --> Test2[Testes de Consistência]
+    Phase3 --> Test3[Testes de Consistência]
+    
+    Test1 --> Adjust1[Ajustes e Correções]
+    Test2 --> Adjust2[Ajustes e Correções]
+    Test3 --> Adjust3[Ajustes e Correções]
+    
+    Adjust1 --> FinalValidation[Validação Final]
+    Adjust2 --> FinalValidation
+    Adjust3 --> FinalValidation
+    
+    FinalValidation --> Decision{Andamento Satisfatório?}
+    
+    Decision -- Sim --> Phase4[Fase 4: Novos Plots e Gráficos]
+    Decision -- Não --> Review[Revisão e Otimizações]
+    
+    Phase4 --> ProjectEnd[Projeto Concluído]
+    Review --> ProjectEnd
+
+    style Start fill:#e1f5fe
+    style Phase1 fill:#e8f5e8
+    style Phase2 fill:#fff3e0
+    style Phase3 fill:#f3e5f5
+    style Phase4 fill:#ffebee
+    style ProjectEnd fill:#c8e6c9
+```
+
