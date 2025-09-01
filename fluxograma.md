@@ -1,59 +1,49 @@
+
 ## Flowchart of the modules
 
 ```mermaid
 graph TD
     %% ========== MÓDULOS PRINCIPAIS ==========
     subgraph "MÓDULOS PRINCIPAIS"
-        A["📦__init__.py"<br/>Inicialização do pacote] --> B[📦helper_functions.py<br/>Funções numéricas auxiliares]
-        A --> C[📦finiteT.py<br/>Correções de temperatura finita para o potencial]
-        A --> D[📦generic_potential.py<br/>Classe para definir um modelo de potencial]
-        A --> E[📦multi_field_plotting.py<br/>Plotting para múltiplos campos]
-        A --> F[📦transitionFinder.py<br/>Localiza Temperaturas críticas e parâmetros da transição]
-        A --> G[📦Tunneling1D.py<br/>Solução de bounce em 1 campo]
+        T1D[Tunneling1D<br/>Solução de bounce em 1 campo]
+        PD[pathDeformation<br/>Solução de bounce em múltiplos campos]
+        TF[transitionFinder<br/>Localização de transições Tn e estrutura de Fase]
+        GP[generic_potential<br/>Definição de modelos e plot do potencial]
         
-        B --> C
-        B --> F
-        B --> G
-        C --> F
-        D --> F
-        D --> G
-        F --> E
-        G --> F
+        T1D --> PD
+        T1D --> TF
+        T1D --> GP
+        PD --> TF
+        PD --> GP
+        TF --> GP
     end
 
-    subgraph "Pasta de Exemplos"
-        H[📦__init__.py<br/>Inicialização] --> I[fulltunneling.py<br/>Exemplo completo tunneling]
-        H --> J[📦testemodel1.py<br/>Teste do modelo 1]
-        
-        I -.-> F
-        I -.-> G
-        J -.-> D
-        J -.-> F
+    %% ========== MÓDULOS AUXILIARES ==========
+    subgraph "MÓDULOS AUXILIARES"
+        HF[helper_functions<br/>Funções auxiliares]
+        FT[finiteT<br/>Correções de temperatura finita]
+        MFP[multi_field_plotting<br/>Visualização para 3 ou mais campos]
     end
 
-    %% ========== ESTILOS ==========
-    style A fill:#ffebee
-    style B fill:#e3f2fd
-    style C fill:#e8f5e8
-    style D fill:#fff3e0
-    style E fill:#f3e5f5
-    style F fill:#e0f2f1
-    style G fill:#fff8e1
-    style H fill:#f1f8e9
-    style I fill:#e8eaf6
-    style J fill:#ffebee
+    %% ========== DEPENDÊNCIAS ==========
+    AUX --> PRINCIPAL
     
-    linkStyle 0 stroke:#b71c1c,stroke-width:2px
-    linkStyle 1 stroke:#0d47a1,stroke-width:2px
+    %% ========== ESTILOS ==========
+    style T1D fill:#357a38,color:white
+    style PD fill:#d32f2f,color:white
+    style TF fill:#357a38,color:white
+    style GP fill:#357a38,color:white
+    style HF fill:#1565c0,color:white
+    style FT fill:#1565c0,color:white
+    style MFP fill:#d32f2f,color:white
+    
+    linkStyle 0 stroke:#1b5e20,stroke-width:2px
+    linkStyle 1 stroke:#1b5e20,stroke-width:2px
     linkStyle 2 stroke:#1b5e20,stroke-width:2px
-    linkStyle 3 stroke:#e65100,stroke-width:2px
-    linkStyle 4 stroke:#4a148c,stroke-width:2px
-    linkStyle 5 stroke:#006064,stroke-width:2px
-    linkStyle 6 stroke:#ff6f00,stroke-width:2px
-    linkStyle 7 stroke:#33691e,stroke-width:2px
-    linkStyle 8 stroke:#1a237e,stroke-width:2px
-    linkStyle 9 stroke:#b71c1c,stroke-width:2px
-    linkStyle 10 stroke:#795548,stroke-width:2px
+    linkStyle 3 stroke:#1b5e20,stroke-width:2px
+    linkStyle 4 stroke:#1b5e20,stroke-width:2px
+    linkStyle 5 stroke:#1b5e20,stroke-width:2px
+    linkStyle 6 stroke:#0d47a1,stroke-width:3px
 ```
 
 ## Cronograma do Projeto
@@ -66,7 +56,7 @@ gantt
     
     section Fase 0: Planejamento
     Fluxograma e Cronograma          :done, 2025-08-27, 7d
-    Definição de Metodologias        :active, 2025-09-05, 3d
+    Definição de Metodologias        :active, 2025-09-05, 10d
     
     section Fase 1: Modificação de Funções de Integração Numérica
     Modificação helper_function.py            :2025-09-08, 10d
@@ -85,15 +75,15 @@ gantt
     Validação Numérica               :2025-10-24, 5d
     
     section Fase 3: Modificação dos Potenciais e Saídas das funções
-    Modificação generic_potential.py           :2025-11-03, 12d
-    Melhorias multi_field_plotting.py  :2025-11-15, 12d
+    Modificação generic_potential.py           :2025-11-03, 18d
     
     section Fase 3.5: Testes Finais
-    Testes Completos                 :2025-11-27, 5d
-    Documentação                     :2025-11-27, 5d
+    Testes Completos                 :2025-11-27, 6d
+    Documentação                     :2025-11-27, 6d
     
     section Fase 4: Extras (Opcional)
     Plots Adicionais                 :2025-12-01, 10d
+    Solução para múltiplos campos    :2025-12-10, 10d
     Otimizações Finais               :2025-12-10, 10d
 ```
 
@@ -101,9 +91,9 @@ gantt
   - Criar fluxograma de dependências  
   - Criar cronograma de refatoração  
 
-- [ ] **Fase 1**: Núcleo numérico  
+- [ ] **Fase 1**: Núcleo numérico (Funções auxiliáres) 
   - Refatorar `helper_functions.py` (usar SciPy para integrais e raízes)  
-  - Vetorizar `finiteT.py` (substituir loops por NumPy)  
+  - Vetorizar `finiteT.py` (substituir loops por NumPy e atualizar correções)  
 
 - [ ] **Fase 1.5**: Testes de Modificações  
   - Validar funções isoladas com exemplos analíticos simples  
@@ -119,7 +109,7 @@ gantt
 
 - [ ] **Fase 3**: Potencial e saídas  
   - Modernizar `generic_potential.py` (usar `abc.ABC` para interface clara)  
-  - Atualizar `multiFieldPlotting.py` com matplotlib atual  
+  - Atualizar gráficos plotados, acrescentar densidade de energia e outros úteis para o artigo/tese 
 
 - [ ] **Fase 3.5**: Testes finais  
   - Rodar todos os exemplos e validar consistência  
@@ -127,12 +117,45 @@ gantt
 
 - [ ] **Fase 4** *(opcional)*: Extensões
   - Novos tipos de plots (ex.: espectro GW direto, densidade de GW no espaço para diferentes T e outros)  
-  - Interface `PhaseTransitionSolver` unificada
+  - Modernizar os códigos que fazem plots para múltiplos campos `mult_field_plotting.py` e `path_deformation.py`
 
 **Problemas ainda em aberto:** Decidir como será testado as modificações, i.e, como iremos comparar o antigo código com o novo que estamos fazendo e termos um teste de consistência. Ideia inicial é:
   - Teste 1: Dentro da própria módulo modificado fazer um teste simples que chamem a função e deem um resultado comparativo de antes e depois do seu output
   - Teste 2: Testar o exemplo de modelo simples, do próprio cosmotransitions
   - Teste 3: Comparar gráficos da forma do potencial antes e depois da modificação e observar as alterações. Possivelmente testar modelos conhecidos como o do próprio artigo do Glauber.
 
+```mermaid
+graph TD
+    Start[Início do Projeto] --> Phase1[Fase 1: Integração Numérica]
+    Start --> Phase2[Fase 2: Solução Bounce]
+    Start --> Phase3[Fase 3: Potencial e Visualização]
+    
+    Phase1 --> Test1[Testes de Consistência]
+    Phase2 --> Test2[Testes de Consistência]
+    Phase3 --> Test3[Testes de Consistência]
+    
+    Test1 --> Adjust1[Ajustes e Correções]
+    Test2 --> Adjust2[Ajustes e Correções]
+    Test3 --> Adjust3[Ajustes e Correções]
+    
+    Adjust1 --> FinalValidation[Validação Final]
+    Adjust2 --> FinalValidation
+    Adjust3 --> FinalValidation
+    
+    FinalValidation --> Decision{Andamento Satisfatório?}
+    
+    Decision -- Sim --> Phase4[Fase 4: Novos Plots e Gráficos]
+    Decision -- Não --> Review[Revisão e Otimizações]
+    
+    Phase4 --> ProjectEnd[Projeto Concluído]
+    Review --> ProjectEnd
+
+    style Start fill:#e1f5fe
+    style Phase1 fill:#e8f5e8
+    style Phase2 fill:#fff3e0
+    style Phase3 fill:#f3e5f5
+    style Phase4 fill:#ffebee
+    style ProjectEnd fill:#c8e6c9
+```
 
 
