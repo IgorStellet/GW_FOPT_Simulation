@@ -9,8 +9,6 @@ from typing import Callable, Any, Dict
 # -------------------------------------------------------------
 # Miscellaneous functions - Functions to help others in general
 
-
-
 def set_default_args(func: Callable, inplace: bool = True, **kwargs) -> Callable:
     """
      Update the default values of parameters of `func`.
