@@ -3,8 +3,8 @@
 import numpy as np
 import inspect
 import functools
-from typing import Callable, Any, Dict
-
+from typing import Callable, Any, Dict, Tuple
+from collections import namedtuple
 
 # -------------------------------------------------------------
 # Miscellaneous functions - Functions to help others in general
@@ -227,4 +227,142 @@ def clamp_val(x, a, b):
 
 
 # -------------------------------------------------------------
-# Numerical integration - Functions to evaluate the integrals
+# Numerical integration - Functions to evaluate the integrals and solve EDO problems
+
+def _rkck(y: np.ndarray, dydt: np.ndarray, t: float,f: Callable, dt: float, args: tuple = ()) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Perform one Cash-Karp 5th-order Runge-Kutta step.
+
+    Parameters
+    ----------
+    y : array_like
+        Current state at time `t`.
+    dydt : array_like
+        Derivative `dy/dt` at (y, t), usually `f(y, t)`.
+    t : float
+        Current integration variable.
+    f : callable
+        Derivative function with signature f(y, t, *args).
+    dt : float
+        Step size.
+    args : tuple, optional
+        Extra arguments for f.
+
+    Returns
+    -------
+    dyout : array_like
+        Increment in `y` after one RKCK(5) step.
+    yerr : array_like
+        Estimated local truncation error (difference between 5th and 4th order).
+    """
+
+    # Coefficients (Cash–Karp)
+    a2, a3, a4, a5, a6 = 0.2, 0.3, 0.6, 1.0, 0.875
+    b21 = 0.2
+    b31, b32 = 3/40, 9/40
+    b41, b42, b43 = 0.3, -0.9, 1.2
+    b51, b52, b53, b54 = -11/54, 2.5, -70/27, 35/27
+    b61, b62, b63, b64, b65 = 1631/55296, 175/512, 575/13824, 44275/110592, 253/4096
+
+    c1, c3, c4, c6 = 37/378, 250/621, 125/594, 512/1771
+
+    # Error coefficients (difference between 5th and 4th order)
+    dc1 = c1 - 2825/27648
+    dc3 = c3 - 18575/48384
+    dc4 = c4 - 13525/55296
+    dc5 = -277/14336
+    dc6 = c6 - 0.25
+
+    # Runge-Kutta stages
+    k2 = f(y + dt*b21*dydt, t + a2*dt, *args)
+    k3 = f(y + dt*(b31*dydt + b32*k2), t + a3*dt, *args)
+    k4 = f(y + dt*(b41*dydt + b42*k2 + b43*k3), t + a4*dt, *args)
+    k5 = f(y + dt*(b51*dydt + b52*k2 + b53*k3 + b54*k4), t + a5*dt, *args)
+    k6 = f(y + dt*(b61*dydt + b62*k2 + b63*k3 + b64*k4 + b65*k5), t + a6*dt, *args)
+
+    # 5th order solution
+    dyout = dt * (c1*dydt + c3*k3 + c4*k4 + c6*k6)
+
+    # Error estimate (difference 5th - 4th order)
+    yerr = dt * (dc1*dydt + dc3*k3 + dc4*k4 + dc5*k5 + dc6*k6)
+
+    return dyout, yerr
+
+
+class IntegrationError(Exception):
+    """Custom error for numerical integration failures (used in rkqs)."""
+    pass
+
+_rkqs_rval = namedtuple("rkqs_rval", ["Delta_y", "Delta_t", "dtnxt"])
+
+def rkqs(y: np.ndarray, dydt: np.ndarray, t: float, f: callable, dt_try: float, epsfrac: float, epsabs: float, args: tuple = ()) -> _rkqs_rval:
+    """
+    Perform one adaptive 5th-order Runge-Kutta-Cash-Karp step with error control.
+
+    Parameters
+    ----------
+    y : array_like
+        Current state at time `t`.
+    dydt : array_like
+        Derivative `dy/dt` at (y, t), usually `f(y, t)`.
+    t : float
+        Current integration variable.
+    f : callable
+        Derivative function, must have signature f(y, t, *args).
+    dt_try : float
+        Initial guess for the step size.
+    epsfrac : float
+        Relative error tolerance.
+    epsabs : float
+        Absolute error tolerance.
+    args : tuple, optional
+        Extra arguments to pass to f.
+
+    Returns
+    -------
+    _rkqs_rval
+        Named tuple with:
+        - Delta_y : array_like, increment in y
+        - Delta_t : float, actual step size taken
+        - dtnxt   : float, suggested next step size
+
+    Raises
+    ------
+    IntegrationError
+        If step size underflows (too small to represent).
+    """
+    dt = dt_try
+    eps = np.finfo(float).eps  # machine epsilon
+
+    while True:
+        # Single RKCK step
+        dy, yerr = _rkck(y, dydt, t, f, dt, args)
+
+        # Compute normalized error (max over components)
+        denom = np.maximum(np.abs(y), eps) * epsfrac
+        err_ratio = np.abs(yerr) / np.maximum(epsabs, denom)
+        errmax = np.max(err_ratio)
+
+        if errmax < 1.0:
+            # Step succeeded
+            break
+
+        # Reduce step size and retry
+        dttemp = 0.9 * dt * errmax**-0.25
+        dt = max(dttemp, 0.1 * dt) if dt > 0 else min(dttemp, 0.1 * dt)
+
+        if t + dt == t:
+            raise IntegrationError(
+                f"Step size underflow at t={t:.6e}, dt={dt:.6e}"
+            )
+
+    # Estimate next step
+    if errmax > 1.89e-4:
+        dtnext = 0.9 * dt * errmax**-0.2
+    else:
+        dtnext = 5.0 * dt
+
+    return _rkqs_rval(dy, dt, dtnext)
+
+# -------------------------------------------------------------
+# Numerical derivatives - Functions to evaluate the derivatives

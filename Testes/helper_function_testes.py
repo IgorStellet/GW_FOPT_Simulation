@@ -1,4 +1,8 @@
-from CosmoTranstions_2 import set_default_args, monotonic_indices, clamp_val
+from CosmoTranstions_2 import set_default_args, monotonic_indices, clamp_val, rkqs, _rkck
+import numpy as np
+import matplotlib.pyplot as plt
+
+#---------------- Primeira sequência de testes e modificações ------------------------
 
 """
 Objetivo da função set_default_args é modificar os valores padrão de parâmetros de uma função
@@ -71,4 +75,89 @@ y = clamp_val(x, a=1,b=20)
 print(y)
 
 
-#---------------- Primeira sequência de testes e modificações ------------------------
+#---------------- Segunda sequência de testes e modificações ------------------------
+
+"""
+Objetivo da função rkqs é utilizar o método de runge-kutta de 5 ordem com erro adaptativo para calcular as soluções de EDO
+quer exigem integração das funções, abaixo seguem dois exemplos simples
+"""
+
+# Testes de Numerical integrals
+
+def f(y, t):
+    return y  # dy/dt = y → solução exata y = exp(t)
+
+y0 = np.array([1.0])
+t0 = 0.0
+dydt0 = f(y0, t0)
+
+result = rkqs(y0, dydt0, t0, f, dt_try=0.1, epsfrac=1e-6, epsabs=1e-9)
+print(result)
+
+# Deve dar Delta_y ~ 0.105 (pois exp(0.1)-1 ≈ 0.105).
+#-------------------------------------------------
+
+# Teste com oscilador harmônico
+
+def harmonic_oscillator(y, t, omega):
+    """
+    Derivative for the simple harmonic oscillator.
+    y[0] = position x
+    y[1] = velocity v
+    """
+    x, v = y
+    dxdt = v
+    dvdt = -omega**2 * x
+    return np.array([dxdt, dvdt])
+
+def integrate_oscillator(y0, t0, t_end, dt_try, omega, epsfrac=1e-6, epsabs=1e-9):
+    """
+    Integrates the harmonic oscillator using rkqs.
+    """
+    y = np.array(y0, dtype=float)
+    t = t0
+    dt = dt_try
+
+    positions = [y[0]]
+    velocities = [y[1]]
+    times = [t]
+
+    while t < t_end:
+        dydt = harmonic_oscillator(y, t, omega)
+        dy, dt_used, dt_next = rkqs(
+            y, dydt, t, harmonic_oscillator,
+            dt, epsfrac, epsabs, args=(omega,)
+        )
+        # Update solution
+        y = y + dy
+        t = t + dt_used
+
+        positions.append(y[0])
+        velocities.append(y[1])
+        times.append(t)
+
+        dt = dt_next  # use adaptive step
+
+    return np.array(times), np.array(positions), np.array(velocities)
+
+# Parameters
+omega = 1.0       # natural frequency
+y0 = [1.0, 0.0]   # initial position=1, velocity=0
+t0, t_end = 0.0, 20.0
+dt_try = 0.1
+
+# Run integration
+times, positions, velocities = integrate_oscillator(y0, t0, t_end, dt_try, omega)
+
+# Plot results
+plt.figure(figsize=(10,5))
+plt.plot(times, positions, label="Position x(t)")
+plt.plot(times, velocities, label="Velocity v(t)")
+plt.xlabel("Time t")
+plt.ylabel("State")
+plt.legend()
+plt.grid(True)
+plt.title("Harmonic Oscillator (Runge-Kutta with adaptive step size)")
+plt.show()
+
+#---------------- Terceira sequência de testes e modificações ------------------------

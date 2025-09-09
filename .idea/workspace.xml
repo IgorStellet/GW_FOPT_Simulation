@@ -4,8 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="78e96966-4ec5-4cb0-aaf0-6f9bfa942e8f" name="Changes" comment="Merge with mark_1 and modifications in helper_functions.py">
+    <list default="true" id="78e96966-4ec5-4cb0-aaf0-6f9bfa942e8f" name="Changes" comment="Adding files again">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CosmoTranstions_2/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/CosmoTranstions_2/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CosmoTranstions_2/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/CosmoTranstions_2/helper_functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Testes/helper_function_testes.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testes/helper_function_testes.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -181,9 +184,9 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.helper_function_testes" />
         <item itemvalue="Python tests.Doctests in helper_functions" />
         <item itemvalue="Python.teste" />
-        <item itemvalue="Python.helper_function_testes" />
         <item itemvalue="Python.__init__ (1)" />
         <item itemvalue="Python.__init__" />
       </list>
@@ -221,7 +224,15 @@
       <option name="project" value="LOCAL" />
       <updated>1757366645409</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Adding files again">
+      <option name="closed" value="true" />
+      <created>1757376492387</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1757376492387</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -251,6 +262,7 @@
     <MESSAGE value="Modiffing the Miscellaneous functions in helper_functions" />
     <MESSAGE value="Commit other files" />
     <MESSAGE value="Merge with mark_1 and modifications in helper_functions.py" />
-    <option name="LAST_COMMIT_MESSAGE" value="" />
+    <MESSAGE value="Adding files again" />
+    <option name="LAST_COMMIT_MESSAGE" value="Adding files again" />
   </component>
 </project>
