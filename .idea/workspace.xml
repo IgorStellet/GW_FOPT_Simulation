@@ -5,29 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="78e96966-4ec5-4cb0-aaf0-6f9bfa942e8f" name="Changes" comment="Merge with mark_1 and modifications in helper_functions.py">
-      <change afterPath="$PROJECT_DIR$/CosmoTranstions_2/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Testes/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Testes/helper_function_testes.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CosmoTranstions_2/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/CosmoTranstions_2/helper_functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CosmoTranstions_2/teste.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cosmoTransitions/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cosmoTransitions/finiteT.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cosmoTransitions/finiteT_b.dat.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cosmoTransitions/finiteT_f.dat.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cosmoTransitions/generic_potential.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cosmoTransitions/helper_functions.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cosmoTransitions/multi_field_plotting.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cosmoTransitions/pathDeformation.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cosmoTransitions/transitionFinder.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cosmoTransitions/tunneling1D.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/fullTunneling.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/model1_contours.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/model1_phases.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/model1_profile.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/testModel1.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/testModel1_output.rst" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,25 +47,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python tests.Doctests in helper_functions.executor": "Run",
-    "Python.__init__ (1).executor": "Run",
-    "Python.__init__.executor": "Run",
-    "Python.fullTunneling.executor": "Run",
-    "Python.helper_function_testes.executor": "Run",
-    "Python.testModel1.executor": "Run",
-    "Python.teste.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "C:/Users/Igor Stellet/PycharmProjects/GW_FOPT_Simulation"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python tests.Doctests in helper_functions.executor&quot;: &quot;Run&quot;,
+    &quot;Python.__init__ (1).executor&quot;: &quot;Run&quot;,
+    &quot;Python.__init__.executor&quot;: &quot;Run&quot;,
+    &quot;Python.fullTunneling.executor&quot;: &quot;Run&quot;,
+    &quot;Python.helper_function_testes.executor&quot;: &quot;Run&quot;,
+    &quot;Python.testModel1.executor&quot;: &quot;Run&quot;,
+    &quot;Python.teste.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;mark__1&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Igor Stellet/PycharmProjects/GW_FOPT_Simulation&quot;
   },
-  "keyToStringList": {
-    "ChangesTree.GroupingKeys": [
-      "directory"
+  &quot;keyToStringList&quot;: {
+    &quot;ChangesTree.GroupingKeys&quot;: [
+      &quot;directory&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\Igor Stellet\PycharmProjects\GW_FOPT_Simulation\CosmoTranstions_2" />
@@ -130,28 +108,6 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/CosmoTranstions_2/__init__.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
-      <module name="GW_FOPT_Simulation" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -204,52 +160,6 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration default="true" type="Tox" factoryName="Tox">
-      <module name="GW_FOPT_Simulation" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <method v="2" />
-    </configuration>
-    <configuration default="true" type="docs" factoryName="Docutils task">
-      <module name="GW_FOPT_Simulation" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="docutils_input_file" value="" />
-      <option name="docutils_output_file" value="" />
-      <option name="docutils_params" value="" />
-      <option name="docutils_task" value="" />
-      <option name="docutils_open_in_browser" value="false" />
-      <method v="2" />
-    </configuration>
-    <configuration default="true" type="docs" factoryName="Sphinx task">
-      <module name="GW_FOPT_Simulation" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="docutils_input_file" value="" />
-      <option name="docutils_output_file" value="" />
-      <option name="docutils_params" value="" />
-      <option name="docutils_task" value="" />
-      <option name="docutils_open_in_browser" value="false" />
-      <method v="2" />
-    </configuration>
     <configuration name="Doctests in helper_functions" type="tests" factoryName="Doctests" temporary="true" nameIsGenerated="true">
       <module name="GW_FOPT_Simulation" />
       <option name="ENV_FILES" value="" />
@@ -271,11 +181,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.helper_function_testes" />
+        <item itemvalue="Python tests.Doctests in helper_functions" />
         <item itemvalue="Python.teste" />
+        <item itemvalue="Python.helper_function_testes" />
         <item itemvalue="Python.__init__ (1)" />
         <item itemvalue="Python.__init__" />
-        <item itemvalue="Python tests.Doctests in helper_functions" />
       </list>
     </recent_temporary>
   </component>
@@ -341,6 +251,6 @@
     <MESSAGE value="Modiffing the Miscellaneous functions in helper_functions" />
     <MESSAGE value="Commit other files" />
     <MESSAGE value="Merge with mark_1 and modifications in helper_functions.py" />
-    <option name="LAST_COMMIT_MESSAGE" value="Merge with mark_1 and modifications in helper_functions.py" />
+    <option name="LAST_COMMIT_MESSAGE" value="" />
   </component>
 </project>
