@@ -3,11 +3,12 @@
 import numpy as np
 import inspect
 import functools
-from typing import Callable, Any, Dict, Tuple
+from typing import Callable, Any, Dict, Tuple, Iterable
 from collections import namedtuple
 
-# -------------------------------------------------------------
+###############################################################
 # Miscellaneous functions - Functions to help others in general
+###############################################################
 
 def set_default_args(func: Callable, inplace: bool = True, **kwargs) -> Callable:
     """
@@ -226,8 +227,9 @@ def clamp_val(x, a, b):
     return np.clip(x, lower, upper)
 
 
-# -------------------------------------------------------------
+####################################################################################
 # Numerical integration - Functions to evaluate the integrals and solve EDO problems
+####################################################################################
 
 def _rkck(y: np.ndarray, dydt: np.ndarray, t: float,f: Callable, dt: float, args: tuple = ()) -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -364,5 +366,319 @@ def rkqs(y: np.ndarray, dydt: np.ndarray, t: float, f: callable, dt_try: float, 
 
     return _rkqs_rval(dy, dt, dtnext)
 
-# -------------------------------------------------------------
+###############################################################
 # Numerical derivatives - Functions to evaluate the derivatives
+###############################################################
+
+# -----------------------------
+# Finite-difference weight core
+# -----------------------------
+def fd_weights_1d(x_nodes: np.ndarray, x0: float, der: int) -> np.ndarray:
+    """
+    Compute 1D finite-difference weights for the `der`-th derivative at `x0`,
+    given arbitrary (distinct) stencil nodes `x_nodes`, using Fornberg's algorithm.
+
+    Parameters
+    ----------
+    x_nodes : (m, ) array_like
+        Stencil nodes (distinct x-values), not necessarily uniform or ordered.
+    x0 : float
+        Expansion point where the derivative is approximated.
+    der : int
+        Derivative order (1 for first derivative, 2 for second derivative).
+
+    Returns
+    -------
+    w : (m,) ndarray
+        Weights such that f^(der)(x0) ≈ sum_j w[j] * f(x_nodes[j]).
+
+    Notes
+    -----
+    - This is the standard Fornberg algorithm (see B. Fornberg, 1988, 1998).
+    - Exact for all polynomials up to degree m-1; accuracy on smooth functions
+      is typically O(h^{m-der}) on near-uniform meshes.
+    """
+    x = np.asarray(x_nodes, dtype=float)
+    m = x.size
+    if der < 0:
+        raise ValueError("`der` must be nonnegative (1 or 2).")
+    if m < der + 1:
+        raise ValueError("Need at least der+1 stencil nodes.")
+    # c[j,k] -> coefficient for node j, derivative order k (k=0..der)
+    c = np.zeros((m, der + 1), dtype=float)
+    c[0, 0] = 1.0
+    c1 = 1.0
+    c4 = x[0] - x0
+    for i in range(1, m):
+        mn = min(i, der)
+        c2 = 1.0
+        c5 = c4
+        c4 = x[i] - x0
+        for j in range(i):
+            c3 = x[i] - x[j]
+            if c3 == 0.0:
+                raise ZeroDivisionError("Stencil nodes must be distinct.")
+            c2 *= c3
+            # update the new row i
+            for k in range(mn, 0, -1):
+                c[i, k] = (c1 * (k * c[i-1, k-1] - c5 * c[i-1, k])) / c2
+            c[i, 0] = (-c1 * c5 * c[i-1, 0]) / c2
+            # update previous rows j
+            for k in range(mn, 0, -1):
+                c[j, k] = (c4 * c[j, k] - k * c[j, k-1]) / c3
+            c[j, 0] = (c4 * c[j, 0]) / c3
+        c1 = c2
+    return c[:, der]
+
+# -----------------------------
+# Helper: pick a length-m stencil around index k
+# -----------------------------
+def _stencil_indices(n: int, k: int, m: int) -> np.ndarray:
+    """
+    Choose a length-m stencil around index k within [0, n-1], preferably centered.
+    Falls back to left-/right-sided windows near boundaries.
+
+    Returns
+    -------
+    idx : (m,) ndarray of ints
+    """
+    half = m // 2
+    start = k - half
+    # For even m, this centers slightly to the left; acceptable and symmetric enough.
+    if start < 0:
+        start = 0
+    if start + m > n:
+        start = n - m
+    return np.arange(start, start + m)
+
+
+# -------------------------------------------------------------
+# First derivative: 5-point (order ~4 inside), non-uniform x
+# -------------------------------------------------------------
+def deriv14(y: np.ndarray, x: np.ndarray) -> np.ndarray:
+    """
+    First derivative along the last axis using a 5-point finite-difference stencil.
+    Fourth-order accurate in the interior on non-uniform grids; one-sided high-order
+    stencils near boundaries.
+
+    Parameters
+    ----------
+    y : array_like
+        Values sampled at x; derivative is taken along the last axis (..., n).
+    x : (n,) array_like
+        Sample locations (strictly monotonic). At least 5 points.
+
+    Returns
+    -------
+    dy : ndarray
+        Same shape as y; dy/dx along the last axis.
+
+    Notes
+    -----
+    - Uses Fornberg weights for each local 5-point stencil.
+    - Interior points (k=2...n-3) use centered [k-2...k+2].
+    - Boundaries (k=0,1 and k=n-2,n-1) use one-sided windows.
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    if x.ndim != 1:
+        raise ValueError("x must be 1D.")
+    n = x.size
+    if n < 5:
+        raise ValueError("deriv14 requires at least 5 samples.")
+    dx = np.diff(x)
+    if not (np.all(dx > 0) or np.all(dx < 0)):
+        raise ValueError("x must be strictly monotonic (increasing or decreasing).")
+
+    dy = np.empty_like(y, dtype=float)
+
+    # Boundaries: one-sided 5-point stencils
+    left = np.arange(5)
+    right = np.arange(n-5, n)
+    # k = 0, 1
+    for k in (0, 1):
+        w = fd_weights_1d(x[left], x[k], der=1)
+        dy[..., k] = np.tensordot(y[..., left], w, axes=([-1], [0]))
+    # k = n-2, n-1
+    for k in (n-2, n-1):
+        w = fd_weights_1d(x[right], x[k], der=1)
+        dy[..., k] = np.tensordot(y[..., right], w, axes=([-1], [0]))
+
+    # Interior: centered 5-point stencils
+    for k in range(2, n-2):
+        idx = np.arange(k-2, k+3)
+        w = fd_weights_1d(x[idx], x[k], der=1)
+        dy[..., k] = np.tensordot(y[..., idx], w, axes=([-1], [0]))
+
+    return dy
+
+
+# -------------------------------------------------------------
+# First derivative: 5-point (order ~4), uniform spacing fast-path
+# -------------------------------------------------------------
+def deriv14_const_dx(y: np.ndarray, dx: float = 1.0) -> np.ndarray:
+    """
+    First derivative along the last axis with a uniform grid using 5-point
+    fourth-order formulas (fast path).
+
+    Parameters
+    ----------
+    y : array_like
+        Values sampled on a uniform grid along the last axis (..., n).
+    dx : float, optional
+        Uniform spacing.
+
+    Returns
+    -------
+    dy : ndarray
+        Same shape as y; ∂y/∂x along the last axis.
+
+    Notes
+    -----
+    - Interior (k=2..n-3): central 5-point stencil
+      f'(x_k) ≈ (-f_{k-2} + 8 f_{k-1} - 8 f_{k+1} + f_{k+2}) / (12 h)
+    - Boundaries: one-sided 5-point stencils (standard coefficients).
+    """
+    y = np.asarray(y, dtype=float)
+    if y.shape[-1] < 5:
+        raise ValueError("deriv14_const_dx requires at least 5 samples along the last axis.")
+    h = float(dx)
+    dy = np.empty_like(y, dtype=float)
+
+    # Interior (vectorized along the last axis)
+    dy[..., 2:-2] = -(
+        - y[..., :-4] + 8.0 * y[..., 1:-3]
+        - 8.0 * y[..., 3:-1] + y[..., 4:]
+    ) / (12.0 * h)
+
+    # Left boundary (k=0,1)
+    dy[..., 0] = (
+        -25.0 * y[..., 0] + 48.0 * y[..., 1] - 36.0 * y[..., 2]
+        + 16.0 * y[..., 3] - 3.0 * y[..., 4]
+    ) / (12.0 * h)
+    dy[..., 1] = (
+        -3.0 * y[..., 0] - 10.0 * y[..., 1] + 18.0 * y[..., 2]
+        - 6.0 * y[..., 3] + 1.0 * y[..., 4]
+    ) / (12.0 * h)
+
+    # Right boundary (k=n-2, n-1)
+    dy[..., -2] = (
+         3.0 * y[..., -1] + 10.0 * y[..., -2] - 18.0 * y[..., -3]
+        + 6.0 * y[..., -4] - 1.0 * y[..., -5]
+    ) / (12.0 * h)
+    dy[..., -1] = (
+         25.0 * y[..., -1] - 48.0 * y[..., -2] + 36.0 * y[..., -3]
+        - 16.0 * y[..., -4] + 3.0 * y[..., -5]
+    ) / (12.0 * h)
+
+    return dy
+
+# -------------------------------------------------------------
+# Second derivative: 5-point (order ~3/4), non-uniform x
+# -------------------------------------------------------------
+def deriv23(y: np.ndarray, x: np.ndarray) -> np.ndarray:
+    """
+    Second derivative along the last axis using a 5-point finite-difference stencil.
+    Third- to fourth-order accurate depending on local spacing; exact for polynomials
+    up to degree 4 on uniform meshes (interior).
+
+    Parameters
+    ----------
+    y : array_like
+        Values sampled at x; second derivative along the last axis (..., n).
+    x : (n,) array_like
+        Sample locations (strictly monotonic). At least 5 points.
+
+    Returns
+    -------
+    d2y : ndarray
+        Same shape as y; ∂²y/∂x² along the last axis.
+
+    Notes
+    -----
+    - Uses Fornberg weights with `der=2`.
+    - Interior (k=2..n-3): centered [k-2..k+2]; boundaries: one-sided.
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    if x.ndim != 1:
+        raise ValueError("x must be 1D.")
+    n = x.size
+    if n < 5:
+        raise ValueError("deriv23 requires at least 5 samples.")
+    dx = np.diff(x)
+    if not (np.all(dx > 0) or np.all(dx < 0)):
+        raise ValueError("x must be strictly monotonic (increasing or decreasing).")
+
+    d2y = np.empty_like(y, dtype=float)
+
+    # Boundaries
+    left = np.arange(5)
+    right = np.arange(n-5, n)
+    for k in (0, 1):
+        w = fd_weights_1d(x[left], x[k], der=2)
+        d2y[..., k] = np.tensordot(y[..., left], w, axes=([-1], [0]))
+    for k in (n-2, n-1):
+        w = fd_weights_1d(x[right], x[k], der=2)
+        d2y[..., k] = np.tensordot(y[..., right], w, axes=([-1], [0]))
+
+    # Interior
+    for k in range(2, n-2):
+        idx = np.arange(k-2, k+3)
+        w = fd_weights_1d(x[idx], x[k], der=2)
+        d2y[..., k] = np.tensordot(y[..., idx], w, axes=([-1], [0]))
+
+    return d2y
+
+# -------------------------------------------------------------
+# General first derivative with (n+1)-point stencil on non-uniform x
+# -------------------------------------------------------------
+def deriv1n(y: np.ndarray, x: np.ndarray, n: int) -> np.ndarray:
+    """
+    First derivative along the last axis using an (n+1)-point stencil
+    on a non-uniform grid (Fornberg weights). Interior uses (approximately)
+    centered windows; near boundaries uses one-sided windows.
+
+    Parameters
+    ----------
+    y : array_like
+        Values sampled at x; derivative along the last axis (..., N).
+    x : (N,) array_like
+        Strictly monotonic sample locations.
+    n : int
+        Desired accuracy order in Δx; equivalently, stencil size m = n+1 (m >= 5 recommended).
+        For derivative order 1, polynomial exactness is up to degree m-1 and the local
+        truncation error is typically O(h^{m-1-1}) = O(h^{n-1}) on near-uniform grids.
+
+    Returns
+    -------
+    dy : ndarray
+        Same shape as y; ∂y/∂x along the last axis.
+
+    Notes
+    -----
+    - For n=4, this reduces to the 5-point case (like deriv14).
+    - Large n implies large stencils; Fornberg may become ill-conditioned on widely spaced nodes.
+      Values in the range 4 ≤ n ≤ 8 are usually safe and effective.
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    if x.ndim != 1:
+        raise ValueError("x must be 1D.")
+    N = x.size
+    if n < 2:
+        raise ValueError("n must be at least 2 (stencil of size n+1 >= 3).")
+    m = n + 1
+    if N < m:
+        raise ValueError("Not enough points: need at least n+1 samples in x.")
+    dx = np.diff(x)
+    if not (np.all(dx > 0) or np.all(dx < 0)):
+        raise ValueError("x must be strictly monotonic (increasing or decreasing).")
+
+    dy = np.empty_like(y, dtype=float)
+    for k in range(N):
+        idx = _stencil_indices(N, k, m)
+        w = fd_weights_1d(x[idx], x[k], der=1)
+        dy[..., k] = np.tensordot(y[..., idx], w, axes=([-1], [0]))
+
+    return dy

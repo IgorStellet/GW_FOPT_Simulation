@@ -257,16 +257,16 @@ def deriv14(y,x):
     does not need to be uniform.
     """
     n = len(x)
-    j = np.arange(5)
-    j[j > 4//2] -= 5
-    i = np.arange(n) - j[:,np.newaxis]
+    j = np.arange(5) # j = [0,1,2,3,4]
+    j[j > 4//2] -= 5 # 4//2 = 2 -> j = [0,1,2,-2,-1]
+    i = np.arange(n) - j[:,np.newaxis] # i vira uma matriz 5xn com linhas que vão de 0 até n-1
     i[i < 0] += 5
     i[i >= n] -= 5
 
     d1 = x[i[1]]-x[i[0]]
     d2 = x[i[2]]-x[i[0]]
     d3 = x[i[3]]-x[i[0]]
-    d4 = x[i[4]]-x[i[0]]
+    d4 = x[i[4]]-x[i[0]] # distância em relação a um ponto central (4 vizinhos)
 
     w4 = (d1*d2*d3) / (
         -d4 * (-d1*d2*d3 + d4 * (d1*d2+d2*d3+d3*d1 + d4 * (+d4-d1-d2-d3))))
@@ -276,7 +276,7 @@ def deriv14(y,x):
         -d2 * (-d1*d4*d3 + d2 * (d1*d4+d4*d3+d3*d1 + d2 * (-d4-d1+d2-d3))))
     w1 = (d4*d2*d3) / (
         -d1 * (-d4*d2*d3 + d1 * (d4*d2+d2*d3+d3*d4 + d1 * (-d4+d1-d2-d3))))
-    w0 = -(w1+w2+w3+w4)
+    w0 = -(w1+w2+w3+w4)  # pesos para diferenaças finitas de primeira ordem
 
     dy = (w0*y[...,i[0]] + w1*y[...,i[1]] +
           w2*y[...,i[2]] + w3*y[...,i[3]] + w4*y[...,i[4]])
