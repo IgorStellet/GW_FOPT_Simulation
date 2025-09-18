@@ -4,35 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="78e96966-4ec5-4cb0-aaf0-6f9bfa942e8f" name="Changes" comment="Organizing all files, placing figures and finalizing all interpolation functions modifications">
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_1.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_10.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_11.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_12.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_13.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_14.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_15.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_2.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_3.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_4.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_5.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_6.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_7.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_8.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_9.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/integration_1.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/integration_2.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/integration_3.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/interpolation_1.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/interpolation_2.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/interpolation_3.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/interpolation_4.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/interpolation_5.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/figures/interpolation_6.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CosmoTranstions_2/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/CosmoTranstions_2.0/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CosmoTranstions_2/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/CosmoTranstions_2.0/helper_functions.py" afterDir="false" />
-    </list>
+    <list default="true" id="78e96966-4ec5-4cb0-aaf0-6f9bfa942e8f" name="Changes" comment="merger main with mark_1 | new helper_functions.py" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -88,7 +60,7 @@
     "Python.testModel1.executor": "Run",
     "Python.teste.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "mark__1",
+    "git-widget-placeholder": "main",
     "last_opened_file_path": "C:/Users/Igor Stellet/PycharmProjects/GW_FOPT_Simulation"
   },
   "keyToStringList": {
@@ -327,7 +299,15 @@
       <option name="project" value="LOCAL" />
       <updated>1758230520057</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="merger main with mark_1 | new helper_functions.py">
+      <option name="closed" value="true" />
+      <created>1758231272278</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1758231272278</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -364,6 +344,7 @@
     <MESSAGE value="Modifying and improving the derivative functions (part 2)" />
     <MESSAGE value="Organizing all files modified so far" />
     <MESSAGE value="Organizing all files, placing figures and finalizing all interpolation functions modifications" />
-    <option name="LAST_COMMIT_MESSAGE" value="Organizing all files, placing figures and finalizing all interpolation functions modifications" />
+    <MESSAGE value="merger main with mark_1 | new helper_functions.py" />
+    <option name="LAST_COMMIT_MESSAGE" value="merger main with mark_1 | new helper_functions.py" />
   </component>
 </project>
