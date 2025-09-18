@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="78e96966-4ec5-4cb0-aaf0-6f9bfa942e8f" name="Changes" comment="Modifying and improving the derivative functions (part 1)">
+    <list default="true" id="78e96966-4ec5-4cb0-aaf0-6f9bfa942e8f" name="Changes" comment="Tests done and checking all functions of numerical derivatives (part 1)">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CosmoTranstions_2/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/CosmoTranstions_2/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CosmoTranstions_2/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/CosmoTranstions_2/helper_functions.py" afterDir="false" />
@@ -257,7 +257,15 @@
       <option name="project" value="LOCAL" />
       <updated>1758146226850</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Tests done and checking all functions of numerical derivatives (part 1)">
+      <option name="closed" value="true" />
+      <created>1758207323535</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1758207323535</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -290,6 +298,7 @@
     <MESSAGE value="Adding files again" />
     <MESSAGE value="Modifying and improving the numerical integrations functions" />
     <MESSAGE value="Modifying and improving the derivative functions (part 1)" />
-    <option name="LAST_COMMIT_MESSAGE" value="Modifying and improving the derivative functions (part 1)" />
+    <MESSAGE value="Tests done and checking all functions of numerical derivatives (part 1)" />
+    <option name="LAST_COMMIT_MESSAGE" value="Tests done and checking all functions of numerical derivatives (part 1)" />
   </component>
 </project>

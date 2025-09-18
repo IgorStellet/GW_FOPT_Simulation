@@ -3,7 +3,7 @@
 import numpy as np
 import inspect
 import functools
-from typing import Callable, Any, Dict, Tuple, Iterable
+from typing import Callable, Any, Dict, Tuple, Iterable, Union, Optional
 from collections import namedtuple
 
 ###############################################################
@@ -743,3 +743,241 @@ def deriv1n(y: np.ndarray, x: np.ndarray, n: int) -> np.ndarray:
         dy[..., k] = np.tensordot(y[..., idx], w, axes=([-1], [0]))
 
     return dy
+
+# ----------------------
+# Class GradientFunction
+# ----------------------
+
+ArrayLike = Union[np.ndarray, float]
+
+class gradientFunction:
+    """
+    Create a callable that returns the gradient of a scalar function f: R^N -> R
+    using finite differences of order 2 or 4, with per-dimension steps `eps`.
+
+    Parameters
+    ----------
+    f : callable
+        Scalar function. It must accept an array of points with shape (..., Ndim)
+        and return an array of shape (...) (scalar per point).
+    eps : float or array_like
+        Finite-difference step. If scalar, it is broadcast to all Ndim.
+        If array-like, length must be Ndim.
+    Ndim : int
+        Number of dimensions of the input points.
+    order : {2, 4}, optional
+        Finite-difference accuracy order (default 4).
+
+    Notes
+    -----
+    - Evaluates f in a batched way at `order * Ndim` displaced points per call.
+    - The gradient is computed along the last axis of the input x.
+
+    Example
+    -------
+    >>> def f(X):  # X shape (..., 2) -> scalar
+    ...     x, y = np.moveaxis(X, -1, 0)
+    ...     return (x*x + x*y + 3*y*y*y)
+    >>> df = gradientFunction(f, eps=1e-3, Ndim=2, order=4)
+    >>> df([[0,0],[0,1],[1,0],[1,1]])
+    array([[ 0.,  0.],
+           [ 1.,  9.],
+           [ 2.,  1.],
+           [ 3., 10.]])
+    """
+
+    def __init__(self, f: Callable, eps: ArrayLike, Ndim: int, order: int = 4):
+        if order not in (2, 4):
+            raise ValueError("order must be 2 or 4")
+        self.f = f
+        self.Ndim = int(Ndim)
+        # normalize eps to shape (Ndim,)
+        eps_arr = np.asarray(eps, dtype=float)
+        if eps_arr.ndim == 0:
+            eps_arr = np.full(self.Ndim, float(eps_arr))
+        if eps_arr.shape != (self.Ndim,):
+            raise ValueError(f"`eps` must be scalar or have shape ({self.Ndim},)")
+        self.eps = eps_arr
+
+        # Offsets and coefficients for the 1st derivative
+        if order == 2:
+            offsets = np.array([-1.0, 1.0])     # positions
+            coeffs  = np.array([-0.5, 0.5])     # central diff / (1*eps)
+        else:  # order == 4
+            offsets = np.array([-2.0, -1.0, 1.0, 2.0])
+            coeffs  = np.array([1.0, -8.0, 8.0, -1.0]) / 12.0
+
+        # Build shift tensor dx with shape (order, Ndim, Ndim)
+        # Only the diagonal across the last two axes is non-zero:
+        # dx[k, i, i] = offsets[k] * eps[i]
+        order_len = offsets.size
+        dx = np.zeros((order_len, self.Ndim, self.Ndim), dtype=float)
+        dx[:, np.arange(self.Ndim), np.arange(self.Ndim)] = offsets[:, None] * self.eps[None, :]
+        self._dx = dx  # shape (order, Ndim, Ndim)
+
+        # Coefficients per (order, dimension): coeffs[k]/eps[i]
+        self._coef = (coeffs[:, None] / self.eps[None, :])  # shape (order, Ndim)
+        self.order = order_len
+
+    def __call__(self, x: ArrayLike, *args, **kwargs) -> np.ndarray:
+        """
+        Compute the gradient at points x.
+
+        Parameters
+        ----------
+        x : array_like, shape (..., Ndim)
+            Points where the gradient is evaluated.
+
+        Returns
+        -------
+        grad : ndarray, shape (..., Ndim)
+            Gradient ∇f evaluated at x.
+        """
+        x = np.asarray(x, dtype=float)
+        if x.shape == (self.Ndim,):
+            x = x[None, ...]  # promote to (1, Ndim)
+        if x.shape[-1] != self.Ndim:
+            raise ValueError(f"Last axis of x must have length Ndim={self.Ndim}")
+
+        # Broadcast x against all displaced points: (..., 1, 1, Ndim) + (order, Ndim, Ndim)
+        x_exp = x[..., None, None, :]  # (..., 1, 1, Ndim)
+        vals = self.f(x_exp + self._dx, *args, **kwargs)  # -> shape (..., order, Ndim)
+        # Combine along the stencil axis (order)
+        grad = np.sum(vals * self._coef, axis=-2)  # sum over 'order' axis -> (..., Ndim)
+        return grad
+
+
+# ----------------------
+# Class hessianFunction
+# ----------------------
+
+
+class hessianFunction:
+    """
+    Create a callable that returns the Hessian matrix (second derivatives) of
+    a scalar function f: R^N -> R using finite differences of order 2 or 4.
+
+    Parameters
+    ----------
+    f : callable
+        Scalar function. It must accept an array of points with shape (..., Ndim)
+        and return an array of shape (...).
+    eps : float or array_like
+        Finite-difference step. If scalar, broadcast to all Ndim. If array-like,
+        length must be Ndim.
+    Ndim : int
+        Number of dimensions of the input points.
+    order : {2, 4}, optional
+        Finite-difference accuracy order (default 4).
+
+    Notes
+    -----
+    - For off-diagonal entries (i != j), uses the tensor product of two 1st-derivative
+      stencils (in directions i and j).
+    - For diagonal entries (i == i), uses 1D 2nd-derivative stencils.
+    - Evaluations are batched to reduce Python overhead.
+    """
+
+    def __init__(self, f: Callable, eps: ArrayLike, Ndim: int, order: int = 4):
+        if order not in (2, 4):
+            raise ValueError("order must be 2 or 4")
+        self.f = f
+        self.Ndim = int(Ndim)
+        eps_arr = np.asarray(eps, dtype=float)
+        if eps_arr.ndim == 0:
+            eps_arr = np.full(self.Ndim, float(eps_arr))
+        if eps_arr.shape != (self.Ndim,):
+            raise ValueError(f"`eps` must be scalar or have shape ({self.Ndim},)")
+        self.eps = eps_arr
+        self.order = order
+
+        # First-derivative stencil (used to build cross-derivatives)
+        if order == 2:
+            off1 = np.array([-1.0,  1.0])
+            c1   = np.array([-0.5,  0.5])         # / eps
+            # Second-derivative 1D stencil (diagonal)
+            off2 = np.array([-1.0, 0.0, 1.0])
+            c2   = np.array([1.0, -2.0, 1.0])     # / eps^2
+        else:
+            off1 = np.array([-2.0, -1.0, 1.0, 2.0])
+            c1   = np.array([1.0, -8.0, 8.0, -1.0]) / 12.0
+            off2 = np.array([-2.0, -1.0, 0.0, 1.0, 2.0])
+            c2   = np.array([-1.0, 16.0, -30.0, 16.0, -1.0]) / 12.0
+
+        m1 = off1.size           # stencil length for 1st-derivative
+        m2 = off2.size           # stencil length for 2nd-derivative
+
+        # Precompute diagonal stencils (i==i): shifts and weights
+        diag_shifts = []
+        diag_weights = []
+        for i in range(self.Ndim):
+            shifts = np.zeros((m2, self.Ndim), dtype=float)
+            shifts[:, i] = off2 * self.eps[i]
+            # weights include division by eps^2
+            w = c2 / (self.eps[i] * self.eps[i])
+            diag_shifts.append(shifts)   # shape (m2, Ndim)
+            diag_weights.append(w)       # shape (m2,)
+
+        # Precompute off-diagonal stencils (i>j): tensor products of 1st-derivative stencils
+        off_shifts = [[None]*self.Ndim for _ in range(self.Ndim)]
+        off_weights = [[None]*self.Ndim for _ in range(self.Ndim)]
+        for i in range(self.Ndim):
+            for j in range(i):
+                # shifts on a (m1, m1, Ndim) grid, then flatten to (m1*m1, Ndim)
+                shifts = np.zeros((m1, m1, self.Ndim), dtype=float)
+                shifts[:, :, i] = off1[:, None] * self.eps[i]
+                shifts[:, :, j] = off1[None, :] * self.eps[j]
+                shifts = shifts.reshape(m1*m1, self.Ndim)
+
+                # weights are outer product of 1st-derivative coeffs in i and j, each divided by eps
+                wi = c1 / self.eps[i]          # (m1,)
+                wj = c1 / self.eps[j]          # (m1,)
+                w  = np.outer(wi, wj).reshape(m1*m1)  # (m1*m1,)
+                off_shifts[i][j]  = shifts
+                off_weights[i][j] = w
+
+        self._diag_shifts  = diag_shifts
+        self._diag_weights = diag_weights
+        self._off_shifts   = off_shifts
+        self._off_weights  = off_weights
+
+    def __call__(self, x: ArrayLike, *args, **kwargs) -> np.ndarray:
+        """
+        Compute the Hessian at points x.
+
+        Parameters
+        ----------
+        x : array_like, shape (..., Ndim)
+            Points where the Hessian is evaluated.
+
+        Returns
+        -------
+        H : ndarray, shape (..., Ndim, Ndim)
+            Hessian matrix at x.
+        """
+        x = np.asarray(x, dtype=float)
+        if x.shape == (self.Ndim,):
+            x = x[None, ...]
+        if x.shape[-1] != self.Ndim:
+            raise ValueError(f"Last axis of x must have length Ndim={self.Ndim}")
+
+        out_shape = x.shape[:-1] + (self.Ndim, self.Ndim)
+        H = np.empty(out_shape, dtype=float)
+
+        # Off-diagonal terms (i > j), then symmetrize
+        for i in range(self.Ndim):
+            for j in range(i):
+                shifts = self._off_shifts[i][j]      # (m1*m1, Ndim)
+                w      = self._off_weights[i][j]     # (m1*m1,)
+                vals   = self.f(x[..., None, :] + shifts, *args, **kwargs)  # (..., P)
+                hij    = np.sum(vals * w, axis=-1)   # (...)
+                H[..., i, j] = H[..., j, i] = hij
+
+        # Diagonal terms
+        for i in range(self.Ndim):
+            shifts = self._diag_shifts[i]            # (m2, Ndim)
+            w      = self._diag_weights[i]           # (m2,)
+            vals   = self.f(x[..., None, :] + shifts, *args, **kwargs)      # (..., m2)
+            H[..., i, i] = np.sum(vals * w, axis=-1)
+
+        return H
