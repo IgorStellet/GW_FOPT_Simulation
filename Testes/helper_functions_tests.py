@@ -1,4 +1,4 @@
-from CosmoTranstions_2 import set_default_args, monotonic_indices, clamp_val, rkqs, _rkck ,deriv14, deriv14_const_dx, deriv23, deriv1n
+from CosmoTranstions_2 import set_default_args, monotonic_indices, clamp_val, rkqs, _rkck ,deriv14, deriv14_const_dx, deriv23,deriv23_const_dx ,deriv1n
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 # Miscellaneous functions
 #########################
 
-
+print("---------- TESTS MISCELLANEOUS FUNCTIONS ---------")
 """
 The purpose of set_default_args is to modify the default parameter values of a function,
 either by changing the original function or by creating a wrapper.
@@ -83,7 +83,7 @@ print(y)
 #######################
 # Numerical integration
 #######################
-
+print("---------- TESTS NUMERICAL INTEGRATION ---------")
 
 """
 The purpose of rkqs is to use the 5th-order Runge–Kutta method with adaptive error control to solve ODEs
@@ -105,30 +105,25 @@ print(result)
 # It should give Delta_y ~ 0.105 (since exp(0.1)-1 ≈ 0.105).
 #-------------------------------------------------
 
+# -------------------------------------------------
+# PHYSICAL EXAMPLE: Harmonic Oscillator with rkqs
+# -------------------------------------------------
 # Test with harmonic oscillator
+print("\n=== Test: Harmonic oscillator with rkqs ===")
 
 def harmonic_oscillator(y, t, omega):
-    """
-    Derivative for the simple harmonic oscillator.
-    y[0] = position x
-    y[1] = velocity v
-    """
-    x, v = y
-    dxdt = v
-    dvdt = -omega**2 * x
-    return np.array([dxdt, dvdt])
+    # y = [x, v], dx/dt = v, dv/dt = -omega^2 x
+    return np.array([y[1], -omega**2 * y[0]], dtype=float)
 
 def integrate_oscillator(y0, t0, t_end, dt_try, omega, epsfrac=1e-6, epsabs=1e-9):
-    """
-    Integrates the harmonic oscillator using rkqs.
-    """
     y = np.array(y0, dtype=float)
-    t = t0
-    dt = dt_try
+    t = float(t0)
+    dt = float(dt_try)
 
-    positions = [y[0]]
-    velocities = [y[1]]
-    times = [t]
+    xs = [y[0]]
+    vs = [y[1]]
+    ts = [t]
+    dts = []
 
     while t < t_end:
         dydt = harmonic_oscillator(y, t, omega)
@@ -136,36 +131,53 @@ def integrate_oscillator(y0, t0, t_end, dt_try, omega, epsfrac=1e-6, epsabs=1e-9
             y, dydt, t, harmonic_oscillator,
             dt, epsfrac, epsabs, args=(omega,)
         )
-        # Update solution
         y = y + dy
         t = t + dt_used
 
-        positions.append(y[0])
-        velocities.append(y[1])
-        times.append(t)
+        xs.append(y[0]); vs.append(y[1]); ts.append(t); dts.append(dt_used)
+        dt = dt_next
 
-        dt = dt_next  # use adaptive step
+    return np.array(ts), np.array(xs), np.array(vs), np.array(dts)
 
-    return np.array(times), np.array(positions), np.array(velocities)
-
-# Parameters
-omega = 1.0       # natural frequency
-y0 = [1.0, 0.0]   # initial position=1, velocity=0
+omega = 1.0
+y0 = [1.0, 0.0]   # x(0)=1, v(0)=0
 t0, t_end = 0.0, 20.0
 dt_try = 0.1
 
-# Run integration
-times, positions, velocities = integrate_oscillator(y0, t0, t_end, dt_try, omega)
+ts, xs, vs, dts = integrate_oscillator(y0, t0, t_end, dt_try, omega)
 
-# Plot results
-plt.figure(figsize=(10,5))
-plt.plot(times, positions, label="Position x(t)")
-plt.plot(times, velocities, label="Velocity v(t)")
-plt.xlabel("Time t")
-plt.ylabel("State")
-plt.legend()
+# Check approximate energy conservation (not symplectic, so small oscillations expected)
+E = 0.5*(vs**2 + (omega**2)*(xs**2))
+print(f"Energy stats (should be nearly constant; small oscillations expected):")
+print(f"  E min={E.min():.6f}, E max={E.max():.6f}, ΔE={E.max()-E.min():.3e}")
+
+plt.figure(figsize=(9,4))
+plt.plot(ts, xs, label="x(t)")
+plt.plot(ts, vs, label="v(t)")
+plt.title("Harmonic oscillator solved with rkqs (adaptive RKCK)")
+plt.xlabel("t")
+plt.ylabel("state")
 plt.grid(True)
-plt.title("Harmonic Oscillator (Runge–Kutta with adaptive step size)")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(9,3))
+plt.plot(ts[1:], dts, marker='o', ms=3, linestyle='-')
+plt.title("Adaptive time steps chosen by rkqs")
+plt.xlabel("t")
+plt.ylabel("dt used")
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(9,3))
+plt.plot(ts, E)
+plt.title("Total energy (expected nearly constant)")
+plt.xlabel("t")
+plt.ylabel("E(t)")
+plt.grid(True)
+plt.tight_layout()
 plt.show()
 
 #---------------- Third round of tests and modifications ------------------------
@@ -191,6 +203,7 @@ plt.show()
 # - Increasing stencil size in deriv1n (m=n+1) typically reduces error for smooth functions.
 # - Error cases should raise ValueError with clear messages.
 
+print("---------- TESTS NUMERICAL DERIVATIVES---------")
 np.set_printoptions(precision=6, suppress=True)
 rng = np.random.default_rng(42)
 
@@ -232,3 +245,130 @@ plt.ylabel("error")
 plt.grid(True)
 plt.tight_layout()
 plt.show()
+
+# -------------------------------------------------
+# 2) UNIFORM GRID – SECOND DERIVATIVE (sin profile)
+# -------------------------------------------------
+print("\n=== Test 2: Uniform grid, second derivative (sin profile) ===")
+d2y_exact = -k**2 * np.sin(k*x)
+
+d2y_num = deriv23_const_dx(y, dx=dx)
+max_err2 = np.max(np.abs(d2y_num - d2y_exact))
+print(f"Max abs error (d2y): {max_err2:.3e}  (expected ~O(h^3) at edges ~ {(dx**3):.1e})")
+
+plt.figure(figsize=(9,4))
+plt.plot(x, d2y_exact, label="exact d2y/dx2", linewidth=2)
+plt.plot(x, d2y_num, '--', label="numerical d2y/dx2 (deriv23_const_dx)")
+plt.title("Second derivative on uniform grid (sin)")
+plt.xlabel("x")
+plt.ylabel("d2y/dx2")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(9,3))
+plt.plot(x, d2y_num - d2y_exact)
+plt.title("Error: numerical - exact (d2y)")
+plt.xlabel("x")
+plt.ylabel("error")
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# -------------------------------------------------
+# 3) NON-UNIFORM GRID – FIRST & SECOND DERIVATIVES (exp profile)
+# -------------------------------------------------
+print("\n=== Test 3: Non-uniform grid, first & second derivatives (exp profile) ===")
+Nn = 161
+# Build a strictly increasing non-uniform grid on [0, 1]
+x_nonuni = np.linspace(0, 1, Nn)
+x_nonuni = x_nonuni**1.7  # make it non-uniform but monotonic increasing
+y_nonuni = np.exp(x_nonuni)
+
+dy_exact_nonuni = np.exp(x_nonuni)            # d/dx exp(x) = exp(x)
+d2y_exact_nonuni = np.exp(x_nonuni)           # d2/dx2 exp(x) = exp(x)
+
+dy_num_nonuni = deriv14(y_nonuni, x_nonuni)
+d2y_num_nonuni = deriv23(y_nonuni, x_nonuni)
+
+err1 = np.max(np.abs(dy_num_nonuni - dy_exact_nonuni))
+err2 = np.max(np.abs(d2y_num_nonuni - d2y_exact_nonuni))
+print(f"Non-uniform grid size: N={Nn}")
+print(f"Max abs error (dy):  {err1:.3e}")
+print(f"Max abs error (d2y): {err2:.3e}")
+
+plt.figure(figsize=(9,4))
+plt.plot(x_nonuni, dy_exact_nonuni, label="exact dy/dx", linewidth=2)
+plt.plot(x_nonuni, dy_num_nonuni, '.', ms=3, label="numerical dy/dx (deriv14)")
+plt.title("First derivative on non-uniform grid (exp)")
+plt.xlabel("x")
+plt.ylabel("dy/dx")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(9,4))
+plt.plot(x_nonuni, d2y_exact_nonuni, label="exact d2y/dx2", linewidth=2)
+plt.plot(x_nonuni, d2y_num_nonuni, '.', ms=3, label="numerical d2y/dx2 (deriv23)")
+plt.title("Second derivative on non-uniform grid (exp)")
+plt.xlabel("x")
+plt.ylabel("d2y/dx2")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+# -------------------------------------------------
+# 4) ACCURACY VS STENCIL SIZE (deriv1n on sin)
+# -------------------------------------------------
+print("\n=== Test 4: Accuracy vs stencil size (deriv1n on sin) ===")
+N2 = 181
+x2 = np.linspace(0, 2*np.pi, N2)
+y2 = np.sin(x2)
+dy2_exact = np.cos(x2)
+
+for n in (4, 6, 8):  # stencil sizes m=n+1 -> 5, 7, 9 points
+    dy2_num = deriv1n(y2, x2, n=n)
+    err = np.max(np.abs(dy2_num - dy2_exact))
+    print(f"n={n} (stencil m={n+1}): max abs error = {err:.3e}")
+print("Expected: error generally decreases as stencil size increases (for smooth functions).")
+
+# -------------------------------------------------
+# 5) BOUNDARY BEHAVIOR CHECK (compare first/last points)
+# -------------------------------------------------
+print("\n=== Test 5: Boundary behavior (first/last points) ===")
+# Use sin on uniform grid; exact derivative known at boundaries:
+dy_num_u = deriv14_const_dx(y, dx=dx)
+print(f"dy at x[0]:  num={dy_num_u[0]: .6e}, exact={dy_exact[0]: .6e}")
+print(f"dy at x[-1]: num={dy_num_u[-1]: .6e}, exact={dy_exact[-1]: .6e}")
+print("Note: boundary stencils are one-sided; error is typically larger at the ends than in the interior.")
+
+
+# -------------------------------------------------
+# 6) EXPECTED ERROR CASES
+# -------------------------------------------------
+print("\n=== Test 6: Expected error cases ===")
+# 6.1: Too few points
+try:
+    deriv14(np.array([1,2,3,4.0]), np.array([0,1,2,3.0]))
+except ValueError as e:
+    print("Too few points (deriv14):", e)
+
+# 6.2: Non-monotonic x
+try:
+    x_bad = np.array([0.0, 1.0, 0.5, 1.5, 2.0])  # not strictly monotonic
+    y_bad = np.sin(x_bad)
+    deriv23(y_bad, x_bad)
+except ValueError as e:
+    print("Non-monotonic x (deriv23):", e)
+
+# 6.3: x not 1D
+try:
+    x_2d = np.vstack([x, x])  # 2D
+    deriv14(y, x_2d)
+except ValueError as e:
+    print("x not 1D (deriv14):", e)
+
+

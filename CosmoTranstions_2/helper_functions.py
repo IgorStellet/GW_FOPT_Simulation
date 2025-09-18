@@ -87,12 +87,12 @@ def set_default_args(func: Callable, inplace: bool = True, **kwargs) -> Callable
     def _apply_inplace(f: Callable) -> Callable:
         # keyword-only defaults (dict)
         current_kwdefaults = getattr(f, "__kwdefaults__", None) or {}
-        current_kwdefaults = dict(current_kwdefaults)  # cópia mutável
+        current_kwdefaults = dict(current_kwdefaults)  # make a mutable copy
         current_kwdefaults.update(kwonly_updates)
         if current_kwdefaults:
             f.__kwdefaults__ = current_kwdefaults
         else:
-            # if it is empty, remove it to avoid residue
+            # if it is empty, clear kwdefaults to avoid stale state
             if hasattr(f, "__kwdefaults__"):
                 f.__kwdefaults__ = None
 
@@ -536,7 +536,7 @@ def deriv14_const_dx(y: np.ndarray, dx: float = 1.0) -> np.ndarray:
     Notes
     -----
     - Interior (k=2..n-3): central 5-point stencil
-      f'(x_k) ≈ (-f_{k-2} + 8 f_{k-1} - 8 f_{k+1} + f_{k+2}) / (12 h)
+      f'(x_k) ≈ (f_{k-2} - 8 f_{k-1} + 8 f_{k+1} - f_{k+2}) / (12 h)
     - Boundaries: one-sided 5-point stencils (standard coefficients).
     """
     y = np.asarray(y, dtype=float)
@@ -627,6 +627,67 @@ def deriv23(y: np.ndarray, x: np.ndarray) -> np.ndarray:
         idx = np.arange(k-2, k+3)
         w = fd_weights_1d(x[idx], x[k], der=2)
         d2y[..., k] = np.tensordot(y[..., idx], w, axes=([-1], [0]))
+
+    return d2y
+
+# -------------------------------------------------------------
+# Second derivative: 5-point (order ~4), uniform spacing fast-path
+# -------------------------------------------------------------
+def deriv23_const_dx(y: np.ndarray, dx: float = 1.0) -> np.ndarray:
+    """
+    Second derivative along the last axis with a uniform grid using 5-point
+    high-order formulas (fast path).
+
+    Parameters
+    ----------
+    y : array_like
+        Values on a uniform grid along the last axis (..., n).
+    dx : float, optional
+        Uniform spacing.
+
+    Returns
+    -------
+    d2y : ndarray
+        Same shape as y; ∂²y/∂x² along the last axis.
+
+    Notes
+    -----
+    - Interior (k=2..n-3): central 5-point stencil
+      f''(x_k) ≈ (-f_{k-2} + 16 f_{k-1} - 30 f_k + 16 f_{k+1} - f_{k+2}) / (12 h^2)
+    - Boundaries: one-sided 5-point stencils (standard coefficients).
+    - FIX compared to legacy: divide by 12*dx**2 (legacy code divided by 12*dx).
+    """
+    y = np.asarray(y, dtype=float)
+    if y.shape[-1] < 5:
+        raise ValueError("deriv23_const_dx requires at least 5 samples along the last axis.")
+    h = float(dx)
+    d2y = np.empty_like(y, dtype=float)
+
+    # Interior
+    d2y[..., 2:-2] = (
+        - y[..., :-4] + 16.0 * y[..., 1:-3] - 30.0 * y[..., 2:-2]
+        + 16.0 * y[..., 3:-1] - y[..., 4:]
+    ) / (12.0 * h * h)
+
+    # Left boundary (k=0,1)
+    d2y[..., 0] = (
+        35.0 * y[..., 0] - 104.0 * y[..., 1] + 114.0 * y[..., 2]
+        - 56.0 * y[..., 3] + 11.0 * y[..., 4]
+    ) / (12.0 * h * h)
+    d2y[..., 1] = (
+        11.0 * y[..., 0] - 20.0 * y[..., 1] + 6.0 * y[..., 2]
+        + 4.0 * y[..., 3] - 1.0 * y[..., 4]
+    ) / (12.0 * h * h)
+
+    # Right boundary (k=n-2, n-1)
+    d2y[..., -2] = (
+        11.0 * y[..., -1] - 20.0 * y[..., -2] + 6.0 * y[..., -3]
+        + 4.0 * y[..., -4] - 1.0 * y[..., -5]
+    ) / (12.0 * h * h)
+    d2y[..., -1] = (
+        35.0 * y[..., -1] - 104.0 * y[..., -2] + 114.0 * y[..., -3]
+        - 56.0 * y[..., -4] + 11.0 * y[..., -5]
+    ) / (12.0 * h * h)
 
     return d2y
 
