@@ -4,12 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="78e96966-4ec5-4cb0-aaf0-6f9bfa942e8f" name="Changes" comment="Modifying and improving the derivative functions (part 2)">
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/Numerical_integration.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests_helper_functions/__init__.py" afterDir="false" />
+    <list default="true" id="78e96966-4ec5-4cb0-aaf0-6f9bfa942e8f" name="Changes" comment="Organizing all files modified so far">
+      <change afterPath="$PROJECT_DIR$/tests_helper_functions/interpolation_functions.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Testes/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests_helper_functions/Miscellaneous_functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Testes/helper_functions_tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests_helper_functions/Numerical_derivatives.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CosmoTranstions_2/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/CosmoTranstions_2/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CosmoTranstions_2/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/CosmoTranstions_2/helper_functions.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -62,6 +61,7 @@
     "Python.fullTunneling.executor": "Run",
     "Python.helper_function_testes.executor": "Run",
     "Python.helper_functions_tests (1).executor": "Run",
+    "Python.interpolation_functions.executor": "Run",
     "Python.testModel1.executor": "Run",
     "Python.teste.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
@@ -79,7 +79,7 @@
       <recent name="C:\Users\Igor Stellet\PycharmProjects\GW_FOPT_Simulation\CosmoTranstions_2" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.Numerical_derivatives">
+  <component name="RunManager" selected="Python.interpolation_functions">
     <configuration name="Miscellaneous_functions" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GW_FOPT_Simulation" />
       <option name="ENV_FILES" value="" />
@@ -168,7 +168,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="helper_functions_tests" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="interpolation_functions" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GW_FOPT_Simulation" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -177,11 +177,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Testes" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests_helper_functions" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="C:\Users\Igor Stellet\PycharmProjects\GW_FOPT_Simulation\Testes\helper_functions_tests.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tests_helper_functions/interpolation_functions.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -192,11 +192,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.interpolation_functions" />
         <item itemvalue="Python.Numerical_derivatives" />
         <item itemvalue="Python.Numerical_integration" />
         <item itemvalue="Python.Miscellaneous_functions" />
         <item itemvalue="Python.helper_functions_tests (1)" />
-        <item itemvalue="Python.helper_functions_tests" />
       </list>
     </recent_temporary>
   </component>
@@ -280,7 +280,15 @@
       <option name="project" value="LOCAL" />
       <updated>1758222267289</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Organizing all files modified so far">
+      <option name="closed" value="true" />
+      <created>1758223944890</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1758223944890</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -315,6 +323,7 @@
     <MESSAGE value="Modifying and improving the derivative functions (part 1)" />
     <MESSAGE value="Tests done and checking all functions of numerical derivatives (part 1)" />
     <MESSAGE value="Modifying and improving the derivative functions (part 2)" />
-    <option name="LAST_COMMIT_MESSAGE" value="Modifying and improving the derivative functions (part 2)" />
+    <MESSAGE value="Organizing all files modified so far" />
+    <option name="LAST_COMMIT_MESSAGE" value="Organizing all files modified so far" />
   </component>
 </project>

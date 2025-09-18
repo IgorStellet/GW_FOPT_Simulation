@@ -981,3 +981,311 @@ class hessianFunction:
             H[..., i, i] = np.sum(vals * w, axis=-1)
 
         return H
+
+######################################################################################
+# Interpolation Functions - functions to approximate path between points by a function
+######################################################################################
+
+# -------------------------------------------------------------
+# Two-point interpolation: quintic with value/1st/2nd derivatives
+# -------------------------------------------------------------
+def makeInterpFuncs(y0, dy0, d2y0, y1, dy1, d2y1) -> Tuple[Callable, Callable]:
+    """
+    Build a 5th-degree polynomial on x in [0, 1] that matches:
+      f(0)=y0, f'(0)=dy0, f''(0)=d2y0,  f(1)=y1, f'(1)=dy1, f''(1)=d2y1.
+
+    Returns
+    -------
+    f  : callable
+        Evaluates the interpolant at x (scalar or array).
+    df : callable
+        Evaluates the derivative at x.
+
+    Notes
+    -----
+    The polynomial is p(x) = a0 + a1 x + ... + a5 x^5.
+    We set a0=y0, a1=dy0, a2=d2y0/2 and solve a 3x3 linear system for (a3,a4,a5)
+    from the constraints at x=1.
+    """
+    # Coefficients known from x=0 constraints
+    a0 = y0
+    a1 = dy0
+    a2 = 0.5 * d2y0
+
+    # Right-hand side remainders at x=1 after subtracting known (a0,a1,a2)
+    r1 = y1  - (a0 + a1 + a2)
+    r2 = dy1 - (a1 + 2.0*a2)
+    r3 = d2y1 - (2.0*a2)
+
+    # System for [a3, a4, a5]:
+    # [ 1  1   1 ] [a3] = r1
+    # [ 3  4   5 ] [a4] = r2
+    # [ 6 12  20 ] [a5] = r3
+    A = np.array([[1.0, 1.0, 1.0],
+                  [3.0, 4.0, 5.0],
+                  [6.0, 12.0, 20.0]], dtype=float)
+    b = np.array([r1, r2, r3], dtype=float)
+    a3, a4, a5 = np.linalg.solve(A, b)
+
+    coefs = np.array([a0, a1, a2, a3, a4, a5], dtype=float)
+
+    def f(x, c=coefs):
+        x = np.asarray(x, dtype=float)
+        # Horner for numerical stability
+        return (((((c[5]*x + c[4])*x + c[3])*x + c[2])*x + c[1])*x + c[0])
+
+    def df(x, c=coefs):
+        x = np.asarray(x, dtype=float)
+        # Derivative via Horner on p'(x)
+        d = np.array([c[1], 2*c[2], 3*c[3], 4*c[4], 5*c[5]], dtype=float)
+        return ((((d[4]*x + d[3])*x + d[2])*x + d[1])*x + d[0])
+
+    return f, df
+
+
+# -------------------------------------------------------------
+# Two-point interpolation: cubic Bézier/Hermite (values + slopes)
+# -------------------------------------------------------------
+class cubicInterpFunction:
+    """
+    Cubic interpolant between two points using value and 1st derivative at the ends.
+
+    Parameters
+    ----------
+    y0, dy0 : array_like
+        Value and slope at t=0.
+    y1, dy1 : array_like
+        Value and slope at t=1.
+
+    Notes
+    -----
+    Uses the Bezier representation equivalent to the Hermite form:
+      P0 = y0
+      P1 = y0 + (1/3) dy0
+      P2 = y1 - (1/3) dy1
+      P3 = y1
+    Then: B(t) = (1-t)^3 P0 + 3(1-t)^2 t P1 + 3(1-t) t^2 P2 + t^3 P3
+    """
+
+    def __init__(self, y0, dy0, y1, dy1):
+        y0 = np.asarray(y0, dtype=float)
+        dy0 = np.asarray(dy0, dtype=float)
+        y1 = np.asarray(y1, dtype=float)
+        dy1 = np.asarray(dy1, dtype=float)
+
+        P0 = y0
+        P1 = y0 + dy0/3.0
+        P2 = y1 - dy1/3.0
+        P3 = y1
+        self._ctrl = (P0, P1, P2, P3)
+
+    def __call__(self, t):
+        t = np.asarray(t, dtype=float)
+        P0, P1, P2, P3 = self._ctrl
+        mt = 1.0 - t
+        return (P0*(mt**3)
+              + 3.0*P1*(mt*mt*t)
+              + 3.0*P2*(mt*t*t)
+              + P3*(t**3))
+
+
+# -------------------------------------------------------------
+# B-spline basis functions and derivatives (Cox–de Boor recursion)
+# -------------------------------------------------------------
+def _safe_div(num, den):
+    """
+    Divide `num` by `den` with broadcasting, returning 0 where `den == 0`.
+
+    Shapes:
+      - `num`: any shape
+      - `den`: any shape broadcastable to `num`
+    Returns:
+      array with broadcasted shape
+    """
+    num = np.asarray(num, dtype=float)
+    den = np.asarray(den, dtype=float)
+
+    shape = np.broadcast(num,den).shape
+    out = np.zeros(shape, dtype=float)
+
+    np.divide(num, den, out=out, where=(den !=0))
+
+    return out
+
+def Nbspl(t, x, k=3):
+    """
+    Evaluate B-spline basis functions of degree k for knot vector `t` at points `x`.
+
+    Parameters
+    ----------
+    t : array_like, shape (m,)
+        Knot vector (non-decreasing). The number of basis functions is m - k - 1.
+    x : array_like, shape (n,)
+        Evaluation points.
+    k : int, optional
+        Spline degree (order). Must satisfy k <= len(t) - 2.
+
+    Returns
+    -------
+    N : ndarray, shape (n, m-k-1)
+        Basis functions N_{i,k}(x_j).
+
+    Notes
+    -----
+    - Uses Cox–de Boor recursion with a right-closed convention at each interval
+      (i.e. N_{i,0}(x)=1 on (t_i, t_{i+1}] ), to mirror the legacy behavior.
+    """
+    t = np.asarray(t, dtype=float)
+    x = np.asarray(x, dtype=float)
+    if k > len(t) - 2:
+        raise ValueError("Nbspl: require k <= len(t)-2")
+
+    n = x.size
+    m = t.size
+    n0 = m - 1                  # number of 0-degree pieces
+    nb = m - k - 1              # number of degree-k basis functions
+
+    # Degree 0: indicator on (t_i, t_{i+1}]
+    # Build matrix N0 with shape (n, n0)
+    x_col = x[:, None]          # (n,1)
+    N_prev = ((x_col > t[:-1]) & (x_col <= t[1:])).astype(float)  # (n, n0)
+
+    # Recursively elevate degree up to k
+    for p in range(1, k+1):
+        # For degree p, there are m - p - 1 bases
+        ncols = m - p - 1
+        N = np.zeros((n, ncols), dtype=float)
+
+        # denominators for left/right fractions
+        left_den  = (t[p:  p+ncols] - t[:ncols])          # (ncols,)
+        right_den = (t[p+1:p+1+ncols] - t[1:1+ncols])     # (ncols,)
+
+        # broadcast x against knot vectors
+        left_num  = x_col - t[:ncols]                     # (n, ncols)
+        right_num = t[p+1:p+1+ncols] - x_col              # (n, ncols)
+
+        N_left  = _safe_div(left_num,  left_den) * N_prev[:, :ncols]
+        N_right = _safe_div(right_num, right_den) * N_prev[:, 1:ncols+1]
+        N = N_left + N_right
+        N_prev = N
+
+    # N_prev is degree-k basis: shape (n, nb)
+    return N_prev
+
+
+def Nbspld1(t, x, k=3):
+    """
+    Same as `Nbspl` but also returns first derivatives dN/dx.
+
+    Returns
+    -------
+    N  : ndarray, shape (n, m-k-1)
+    dN : ndarray, shape (n, m-k-1)
+    """
+    t = np.asarray(t, dtype=float)
+    x = np.asarray(x, dtype=float)
+    if k > len(t) - 2:
+        raise ValueError("Nbspld1: require k <= len(t)-2")
+
+    n = x.size
+    m = t.size
+    x_col = x[:, None]
+
+    # Store N for all degrees up to k (we need degree k-1 for the derivative)
+    N_list = []
+
+    # Degree 0
+    N0 = ((x_col > t[:-1]) & (x_col <= t[1:])).astype(float)  # (n, m-1)
+    N_list.append(N0)
+
+    # Build up to degree k
+    for p in range(1, k+1):
+        ncols = m - p - 1
+        left_den  = (t[p:  p+ncols] - t[:ncols])
+        right_den = (t[p+1:p+1+ncols] - t[1:1+ncols])
+        left_num  = x_col - t[:ncols]
+        right_num = t[p+1:p+1+ncols] - x_col
+        N_prev = N_list[-1]
+        Np = _safe_div(left_num,  left_den) * N_prev[:, :ncols] \
+           + _safe_div(right_num, right_den) * N_prev[:, 1:ncols+1]
+        N_list.append(Np)
+
+    N = N_list[-1]                        # degree k
+    if k == 0:
+        dN = np.zeros_like(N)
+        return N, dN
+
+    Nk_1 = N_list[-2]                     # degree k-1
+    nb = N.shape[1]                       # m-k-1
+
+    # dN via closed form: dN_{i,k} = k/(t_{i+k}-t_i) N_{i,k-1} - k/(t_{i+k+1}-t_{i+1}) N_{i+1,k-1}
+    a = _safe_div(k*np.ones(nb), (t[k: k+nb] - t[:nb]))                # (nb,)
+    b = _safe_div(k*np.ones(nb), (t[k+1:k+1+nb] - t[1:1+nb]))          # (nb,)
+    dN = (Nk_1[:, :nb] * a) - (Nk_1[:, 1:nb+1] * b)
+
+    return N, dN
+
+
+def Nbspld2(t, x, k=3):
+    """
+    Same as `Nbspld1` but also returns the second derivatives d²N/dx².
+
+    Returns
+    -------
+    N   : ndarray, shape (n, m-k-1)
+    dN  : ndarray, shape (n, m-k-1)
+    d2N : ndarray, shape (n, m-k-1)
+    """
+    t = np.asarray(t, dtype=float)
+    x = np.asarray(x, dtype=float)
+    if k > len(t) - 2:
+        raise ValueError("Nbspld2: require k <= len(t)-2")
+
+    n = x.size
+    m = t.size
+    x_col = x[:, None]
+
+    # Build and store N for all degrees 0..k
+    N_list = []
+    N0 = ((x_col > t[:-1]) & (x_col <= t[1:])).astype(float)
+    N_list.append(N0)
+    for p in range(1, k+1):
+        ncols = m - p - 1
+        left_den  = (t[p:  p+ncols] - t[:ncols])
+        right_den = (t[p+1:p+1+ncols] - t[1:1+ncols])
+        left_num  = x_col - t[:ncols]
+        right_num = t[p+1:p+1+ncols] - x_col
+        N_prev = N_list[-1]
+        Np = _safe_div(left_num,  left_den) * N_prev[:, :ncols] \
+           + _safe_div(right_num, right_den) * N_prev[:, 1:ncols+1]
+        N_list.append(Np)
+
+    N = N_list[-1]
+    nb = N.shape[1]
+
+    # First derivatives for all degrees 0..k
+    dN_list = [np.zeros_like(N_list[0])]
+    for p in range(1, k+1):
+        # dN_p from N_{p-1}
+        ncols = m - p - 1
+        a = _safe_div(p*np.ones(ncols), (t[p: p+ncols] - t[:ncols]))
+        b = _safe_div(p*np.ones(ncols), (t[p+1:p+1+ncols] - t[1:1+ncols]))
+        dN_p = (N_list[p-1][:, :ncols] * a) - (N_list[p-1][:, 1:ncols+1] * b)
+        dN_list.append(dN_p)
+
+    dN = dN_list[-1]
+
+    # Second derivative: d2N_k from dN_{k-1}
+    if k == 0:
+        d2N = np.zeros_like(N)
+    elif k == 1:
+        # d2N_1 uses dN_0=0 → zero everywhere
+        d2N = np.zeros_like(N)
+    else:
+        # general: d2N_{i,k} = k/(t_{i+k}-t_i) dN_{i,k-1} - k/(t_{i+k+1}-t_{i+1}) dN_{i+1,k-1}
+        a2 = _safe_div(k*np.ones(nb), (t[k: k+nb] - t[:nb]))
+        b2 = _safe_div(k*np.ones(nb), (t[k+1:k+1+nb] - t[1:1+nb]))
+        dN_km1 = dN_list[-2]
+        d2N = (dN_km1[:, :nb] * a2) - (dN_km1[:, 1:nb+1] * b2)
+
+    return N, dN, d2N
