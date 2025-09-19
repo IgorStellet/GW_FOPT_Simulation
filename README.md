@@ -1,29 +1,35 @@
 # GW_FOPT_Simulation
-Project to simulate the thermodynamic parameters of the phase transition and calculate the spectrum of gravitational waves given an effective potential
 
-A ideia do projeto é atualizar e modificar o **CosmoTransitions** que, por mais que seja um código amplamente utilizado na literatura para transições de fase cosmológicas, está desatualizado por ter sido desenvolvido há bastante tempo. 
+With the emergence and rapid development of gravitational waves (GW's) detectors such as LIGO, LISA, Einstein Telescope [e.g., Virgo, KAGRA, Cosmic Explorer], studies of GW's generation mechanisms and sources have become essential and quite “hot” in the field of physics over the last few years. Cosmology is, of course, part of this effort. One of the mechanisms that has received growing attention is the production of GW's from first-order phase transitions (FOPTs). This mechanism can generate a cosmological stochastic background of GW's which, if detected, can probe the scalar sector and high energy scales still inaccessible to terrestrial colliders, offering insights into the early-universe dynamics, and provide a way to test theories beyond the Standard Model (that make FOPTs).
 
-Desse modo, o projeto visa realizar melhorias significativas no código, tornando-o mais otimizado, moderno e intuitivo, alinhado-o com os pacotes existentes atuais para python. 
+However, FOPTs face a central challenge: starting from a model’s effective potential, one must find bounce solutions and the thermodynamic parameters that characterize the phase transition in order to finally predict the gravitational wave spectrum, its peak frequencies, and other properties. This requires robust numerical codes to simulate the theory and obtain reliable results, so that we can assess detectability and frequency bands of the GWs.
 
-📅 Cronograma e Abordagem: O cronograma e fluxograma do projeto se encontram abaixo. A ideia central é dividir essa tarefa em 3 partes principais, cada uma com duração de 1 mês, realizando testes de consistência ao longo de todo o desenvolvimento, ao finalizar as modificações. Cada fase seguirá o ciclo: Modificação → Testes → Correção → Validação.
+Today, several codes are used in the literature toward this goal: AnyBubble, BubbleProfiles, FindBounce, and others—mostly written in C++. Notably, there is also **CosmoTransitions**, written in Python.
 
-A primeira fase visa atualizar os códigos de integração numérica e os módulos independentes, que são chamados pelos módulos principais. A segunda fase, os códigos que encontram a solução de bounce. Por fim, a terceira e última fase visa modificar as funções que criam o potencial genérico e os plots feitos dado os parâmetros iniciais. Tudo será feito para a parte 1D apenas.
+Because it is simple, open, and implemented in a widely used language, CosmoTransitions remains a common choice in the literature, even though its author, Carroll L. Wainwright, left the field and the code dates back to 2011 (i.e., it is no longer up to date).[Original repo: GitHub:https://github.com/clwainwright/CosmoTransitions]
 
-Dependendo do andamento do projeto será feito uma quarta fase visando acrescentar novos plots e gráficos ao código, assim como atualizar a parte que calcula o plot 3D.
+Recognizing the code’s relevance to the community, and to my Master’s project on FOPTs, I, Igor Almeida da Silva Gouvêa Stellet, together with my advisor, Felipe Tovar Falciano, set out to update it to a modern Python version (3.13), improving its syntax, indentation, and incode explanations across modules. Most importantly, I am adding examples and plots for every function in each module, as a new layer of consistency checks that did not exist in the original version. I am also adding clearer error handling in functions, so users can more easily diagnose where something “breaks.” Thanks to the previous author's work in making an already very good code, I have the possibility to improve it now with a lot of details.
 
-Há ainda alguns problemas em aberto em relação a como fazer os testes, eles se encontram no final da página.
+The goal is not only to improve my programming skills, but also my academic and professional development, my GitHub presence, the preparation for my own Master’s research, and, above all that, to share with the community a widely used code in a more modern form that can serve as a foundation for future research and researchers (even though C/C++ codes will often remain more performant).
 
+Therefore, this project aims to deliver substantial improvements to the original code, making it more optimized, modern, and intuitive, with modules, docstrings, and functions better explained and documented, and with example-based tests to build intuition. I am also adding more explicit error signals in each function. Below you will find the overall plan and organization of the project.
+
+📅 Schedule & Approach: The project’s timeline and flowchart are presented below. The main idea is to split this long task into three primary phases, each lasting up to one month, while running consistency tests throughout development and after finishing each phase. Each phase follows the cycle: Modification → Testing → Fixes → Validation.
+
+The first phase aims to update CosmoTransition's auxiliary modules, which are called by the main modules. The second phase, the codes that find the bounce solution and the thermodynamic parameters (two main modules). Finally, the third and final phase aims to modify the functions that create the generic potential and the plots generated given the initial parameters. Everything will be done for the 1D part for now; the 2D part will remain as before.
+
+Depending on the progress of the project, a fourth phase will be carried out to add new plots and graphs to the code, as well as update the part that calculates multiple fields.
 
 ## Flowchart of the modules
 
 ```mermaid
 graph TD
-    %% ========== MÓDULOS PRINCIPAIS ==========
-    subgraph "MÓDULOS PRINCIPAIS"
-        T1D[Tunneling1D<br/>Solução de bounce em 1 campo]
-        PD[pathDeformation<br/>Solução de bounce em múltiplos campos]
-        TF[transitionFinder<br/>Localização de transições Tn e estrutura de Fase]
-        GP[generic_potential<br/>Definição de modelos e plot do potencial]
+    %% ========== MAIN MODULES ==========
+    subgraph "MAIN MODULES"
+        T1D[Tunneling1D<br/>Bounce solution in 1 field]
+        PD[pathDeformation<br/>Bounce solution in multiple fields]
+        TF[transitionFinder<br/>Locate Tn and phase structure]
+        GP[generic_potential<br/>Model definition and potential plotting]
         
         T1D --> PD
         T1D --> TF
@@ -33,17 +39,17 @@ graph TD
         TF --> GP
     end
 
-    %% ========== MÓDULOS AUXILIARES ==========
-    subgraph "MÓDULOS AUXILIARES"
-        HF[helper_functions<br/>Funções auxiliares]
-        FT[finiteT<br/>Correções de temperatura finita]
-        MFP[multi_field_plotting<br/>Visualização para 3 ou mais campos]
+    %% ========== AUXILIARY MODULES ==========
+    subgraph "AUXILIARY MODULES"
+        HF[helper_functions<br/>Utility functions]
+        FT[finiteT<br/>Finite-temperature corrections]
+        MFP[multi_field_plotting<br/>Visualization for 3+ fields]
     end
 
-    %% ========== DEPENDÊNCIAS ==========
-    AUX --> PRINCIPAL
+    %% ========== DEPENDENCIES ==========
+    AUX --> MAIN
     
-    %% ========== ESTILOS ==========
+    %% ========== STYLES ==========
     style T1D fill:#357a38,color:white
     style PD fill:#d32f2f,color:white
     style TF fill:#357a38,color:white
@@ -60,133 +66,125 @@ graph TD
     linkStyle 5 stroke:#1b5e20,stroke-width:2px
     linkStyle 6 stroke:#0d47a1,stroke-width:3px
 ```
-### 📦 Módulos Principais
+### 📦 Main Modules
+| Module                                                  | Description                                                          | Methods/Functionality                                                                                                                                                                                                     |
+| :------------------------------------------------------ | :------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <span style="color:green">**Tunneling1D**</span>        | Computes the bounce (instanton) solution for a single scalar field.  | Uses the **overshooting/undershooting** method to solve the Euclidean equation of motion and find the tunneling profile.                                                                                                  |
+| <span style="color:red">**pathDeformation**</span>      | Computes instantons for multiple scalar fields.                      | First finds a 1D solution constrained to an initial path in field space. Then **iteratively deforms** this path until transverse forces vanish, yielding the correct multi-dimensional solution.                          |
+| <span style="color:green">**transitionFinder**</span>   | Computes the phase structure of the potential at finite temperature. | Locates potential minima as a function of temperature, determines **critical temperatures** (degenerate vacua), and computes the **nucleation temperature** for phase transitions.                                        |
+| <span style="color:green">**generic\_potential**</span> | Abstract class that defines the physical model of interest.          | The user provides a subclass implementing the specific effective potential $V(\phi, T)$. Also provides methods to **plot the potential** and visualize its phase structure (**I still don’t understand this very well**). |
 
-| Módulo | Descrição | Métodos/Funcionalidades |
-| :--- | :--- | :--- |
-| <span style="color:green">**Tunneling1D**</span> | Calcula a solução de bounce (instantons) para um único campo escalar. | Utiliza o método de **overshooting/undershooting** para resolver a equação de movimento euclidiana e encontrar o perfil do túnel. |
-| <span style="color:red">**pathDeformation**</span> | Calcula instantons para múltiplos campos escalares. | Primeiro encontra uma solução 1D restrita a um caminho inicial no espaço de campo. Em seguida, **deforma iterativamente** esse caminho até que as forças perpendiculares a ele se anulem, encontrando a solução multidimensional correta. |
-| <span style="color:green">**transitionFinder**</span> | Calcula a estrutura de fase do potencial em temperatura finita. | Localiza os mínimos do potencial em função da temperatura, determina **temperaturas críticas** (onde os vácuos são degenerados) e calcula a **temperatura de nucleação** para transições entre fases. |
-| <span style="color:green">**generic_potential**</span> | Classe abstrata que define o modelo físico de interesse. | O usuário fornece a subclasse para implementar o potencial efetivo específico (V(φ,T)). Também fornece métodos para **plotar o potencial** e visualizar sua estrutura de fases (Ainda não entendo tão bem). |
+### 🔧 Auxiliary Modules
+| Module                                                    | Description                                                         | Purpose                                                                                                                      |
+| :-------------------------------------------------------- | :------------------------------------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------- |
+| **helper\_functions**                                     | A set of numerical utility functions.                               | Provides helper operations (e.g., numerical integration, interpolation, numerical differentiation) used by the main modules. |
+| **finiteT**                                               | Computes finite-temperature corrections to the effective potential. | Implements the temperature-dependent partition-function terms (bosonic and fermionic loops). Used by `generic_potential`.    |
+| <span style="color:red">**multi\_field\_plotting**</span> | Visualization class for potentials with 3+ fields.                  | Tools for producing plots and visualizations of the high-dimensional effective potential.                                    |
 
-### 🔧 Módulos Auxiliares
+### 📖 Documentation & Recommended Reading (pre-modifications)
+Before modifying any module, consult the official documentation and/or the original paper to understand the algorithms:
 
-| Módulo | Descrição | Função |
-| :--- | :--- | :--- |
-| **helper_functions** | Conjunto de funções utilitárias numéricas. | Oferece operações auxiliares (ex.: interpolação, derivação numérica) usadas pelos módulos principais. |
-| **finiteT** | Calcula correções de temperatura finita ao potencial efetivo. | Implementa os termos da função de partição (loop de bósons e férmions) que dependem de T. É usado por `generic_potential`. |
-| <span style="color:red">**multi_field_plotting**</span> | Classe para visualização de potenciais com 3+ campos. | Fornece ferramentas para gerar gráficos e visualizações do potencial efetivo em alta dimensão. |
+* **Official Documentation:**[https://clwainwright.net/CosmoTransitions/index.html](https://clwainwright.net/CosmoTransitions/index.html)
+* **Original Paper (arXiv):** [arXiv:1109.4189](https://arxiv.org/abs/1109.4189)
+* **Computer Physics Communications:** [10.1016/j.cpc.2012.04.004](https://doi.org/10.1016/j.cpc.2012.04.004
 
-### 📖 Documentação e Leituras Recomendadas pré modificações
-
-Antes de modificar qualquer módulo, consultar a documentação oficial e/ou o artigo original para entender os algoritmos:
-*   **Documentação Oficial:** [https://clwainwright.net/CosmoTransitions/index.html](https://clwainwright.net/CosmoTransitions/index.html)
-*   **Artigo Original (arXiv):** [arXiv:1109.4189](https://arxiv.org/abs/1109.4189) 
-*   **Paper no Computer Physics Communications:** [10.1016/j.cpc.2012.04.004](https://doi.org/10.1016/j.cpc.2012.04.004)
-
-
-## Cronograma do Projeto
+## Project Timeline
 
 ```mermaid
 gantt
-    title Cronograma de Desenvolvimento - CosmoTransitions
+    title Development Timeline - CosmoTransitions
     dateFormat  YYYY-MM-DD
     axisFormat  %d/%m
     
-    section Fase 0: Planejamento
-    Fluxograma e Cronograma          :done, 2025-08-27, 7d
-    Definição de Metodologias        :active, 2025-09-05, 10d
+    section Phase 0: Planning
+    Flowchart and Timeline          :done, 2025-08-27, 7d
+    Methodology Definition          :done, 2025-09-05, 10d
     
-    section Fase 1: Modificação de Funções de Integração Numérica
-    Modificação helper_function.py            :2025-09-08, 10d
-    Modificação finiteT.py           :2025-09-19, 10d
+    section Phase 1: Numerical Integration Function Updates
+    Modify helper_function.py       :done, 2025-09-08, 10d
+    Modify finiteT.py               :active, 2025-09-19, 10d
     
-    section Fase 1.5: Testes das Modificações
-    Testes Integração Numérica       :2025-09-30, 5d
-    Correções e Ajustes              :2025-09-30, 5d
+    section Phase 1.5: Testing the Modifications
+    Testing all modifications       :2025-09-30, 5d
+    Fixes and Adjustments           :2025-09-30, 5d
     
-    section Fase 2: Modificação das Funções de Soluções Bounce
-    Modificação Tunneling1D.py       :2025-10-01, 12d
-    Modificação transitionsFinder.py :2025-10-12, 12d
+    section Phase 2: Bounce-Solution Functions
+    Modify Tunneling1D.py           :2025-10-01, 12d
+    Modify transitionsFinder.py     :2025-10-12, 12d
     
-    section Fase 2.5: Testes das Modificações
-    Testes Soluções Bounce           :2025-10-24, 5d
-    Validação Numérica               :2025-10-24, 5d
+    section Phase 2.5: Intermediate Testing
+    Bounce-Solution Tests           :2025-10-24, 5d
+    Numerical Validation            :2025-10-24, 5d
     
-    section Fase 3: Modificação dos Potenciais e Saídas das funções
-    Modificação generic_potential.py           :2025-11-03, 18d
+    section Phase 3: Potentials and Function Outputs
+    Modify generic_potential.py     :2025-11-03, 18d
     
-    section Fase 3.5: Testes Finais
-    Testes Completos                 :2025-11-27, 6d
-    Documentação                     :2025-11-27, 6d
+    section Phase 3.5: Final Tests
+    Full Test Suite                 :2025-11-27, 6d
+    Documentation                   :2025-11-27, 6d
     
-    section Fase 4: Extras (Opcional)
-    Plots Adicionais                 :2025-12-01, 10d
-    Solução para múltiplos campos    :2025-12-10, 10d
-    Otimizações Finais               :2025-12-10, 10d
+    section Phase 4: Extras (Optional)
+    Additional Plots                :2025-12-01, 10d
+    Multi-field Solution            :2025-12-10, 10d
+    Final Optimizations             :2025-12-10, 10d
 ```
 
-- [x] **Fase 0**: Planejamento e Primeira reunião 
-  - Criar fluxograma de dependências  
-  - Criar cronograma de refatoração  
+- [x] **Phase 0**: Planning and first meeting 
+  - Create dependency flowchart 
+  - Create refactoring schedule 
 
-- [ ] **Fase 1**: Núcleo numérico (Funções auxiliáres) 
-  - Refatorar `helper_functions.py` (usar SciPy para integrais e raízes)  
-  - Vetorizar `finiteT.py` (substituir loops por NumPy e atualizar correções)  
+- [ ] **Phase 1**: Numrical core (auxiliary functions) 
+  - Refactor `helper_functions.py` 
+  - Refactor `finiteT.py`
 
-- [ ] **Fase 1.5**: Testes de Modificações  
-  - Validar funções isoladas com exemplos analíticos simples  
-  - Comparar saídas numéricas com versão original  
+- [ ] **Phase 1.5**: Modification tests 
+  - Validate isolated functions with simple analytic examples  
+  - exercise error paths and validations
 
-- [ ] **Fase 2**: Solução do bounce e parâmetros de transição  
-  - Refatorar `tunneling1D.py` (usar `scipy.solve_ivp` no solver ODE)  
-  - Melhorar `transitionFinder.py` (algoritmos de busca mais eficientes)  
+- [ ] **Phase 2**: Bounce solution and transition parameters 
+  - Refactor `tunneling1D.py`  
+  - Improve `transitionFinder.py` (more efficiente search algorithms)  
 
-- [ ] **Fase 2.5**: Testes intermediários  
-  - Reproduzir resultados dos exemplos (`fullTunneling.py`)  
-  - Comparar ações críticas com versão antiga  
+- [ ] **Phase 2.5**: Intermediate tests  
+  - Reproduce example results (`fullTunneling.py`)  
+  - Compare critical actions with the legacy version 
 
-- [ ] **Fase 3**: Potencial e saídas  
-  - Modernizar `generic_potential.py` (usar `abc.ABC` para interface clara)  
-  - Atualizar gráficos plotados, acrescentar densidade de energia e outros úteis para o artigo/tese 
+- [ ] **Phase 3**: Potential and outputs  
+  - Modernize `generic_potential.py` 
+  - Update plotting, add energy density and other figures useful for paper/thesis
 
-- [ ] **Fase 3.5**: Testes finais  
-  - Rodar todos os exemplos e validar consistência  
-  - Criar notebooks substituindo scripts  
+- [ ] **Phase 3.5**: Final tests
+  - Run all examples and validate cosistency 
+  - Create notebooks replacing scripts
 
-- [ ] **Fase 4** *(opcional)*: Extensões
-  - Novos tipos de plots (ex.: espectro GW direto, densidade de GW no espaço para diferentes T e outros)  
-  - Modernizar os códigos que fazem plots para múltiplos campos `mult_field_plotting.py` e `path_deformation.py`
-
-**Problemas ainda em aberto:** Decidir como será testado as modificações, i.e, como iremos comparar o antigo código com o novo que estamos fazendo e termos um teste de consistência. Ideia inicial é:
-  - Teste 1: Dentro da própria módulo modificado fazer um teste simples que chamem a função e deem um resultado comparativo de antes e depois do seu output
-  - Teste 2: Testar o exemplo de modelo simples, do próprio cosmotransitions
-  - Teste 3: Comparar gráficos da forma do potencial antes e depois da modificação e observar as alterações. Possivelmente testar modelos conhecidos como o do próprio artigo do Glauber.
+- [ ] **Phase 4** *(optional)*: Extensions
+  - New plot types (e.g., direct GW spectrum, GW energy density vs T, etc.) 
+  - Modernize multi-field plotting codes `mult_field_plotting.py` and `path_deformation.py`
 
 ```mermaid
 graph TD
-    Start[Início do Projeto] --> Phase1[Fase 1: Integração Numérica]
-    Start --> Phase2[Fase 2: Solução Bounce]
-    Start --> Phase3[Fase 3: Potencial e Visualização]
+    Start[Project Start] --> Phase1[Phase 1: Numerical Integration]
+    Start --> Phase2[Phase 2: Bounce Solution]
+    Start --> Phase3[Phase 3: Potential and Visualization]
     
-    Phase1 --> Test1[Testes de Consistência]
-    Phase2 --> Test2[Testes de Consistência]
-    Phase3 --> Test3[Testes de Consistência]
+    Phase1 --> Test1[Consistency Tests]
+    Phase2 --> Test2[Consistency Tests]
+    Phase3 --> Test3[Consistency Tests]
     
-    Test1 --> Adjust1[Ajustes e Correções]
-    Test2 --> Adjust2[Ajustes e Correções]
-    Test3 --> Adjust3[Ajustes e Correções]
+    Test1 --> Adjust1[Adjustments and Fixes]
+    Test2 --> Adjust2[Adjustments and Fixes]
+    Test3 --> Adjust3[Adjustments and Fixes]
     
-    Adjust1 --> FinalValidation[Validação Final]
+    Adjust1 --> FinalValidation[Final Validation]
     Adjust2 --> FinalValidation
     Adjust3 --> FinalValidation
     
-    FinalValidation --> Decision{Andamento Satisfatório?}
+    FinalValidation --> Decision{Satisfactory progress?}
     
-    Decision -- Sim --> Phase4[Fase 4: Novos Plots e Gráficos]
-    Decision -- Não --> Review[Revisão e Otimizações]
+    Decision -- Yes --> Phase4[Phase 4: New Plots and Figures]
+    Decision -- No --> Review[Review and Optimizations]
     
-    Phase4 --> ProjectEnd[Projeto Concluído]
+    Phase4 --> ProjectEnd[Project Completed]
     Review --> ProjectEnd
 
     style Start fill:#e1f5fe
