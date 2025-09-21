@@ -12,4 +12,70 @@ Recognizing the code’s relevance to the community, and to my Master’s projec
 
 The goal is not only to improve my programming skills, but also my academic and professional development, my GitHub presence, the preparation for my own Master’s research, and, above all that, to share with the community a widely used code in a more modern form that can serve as a foundation for future research and researchers (even though C/C++ codes will often remain more performant).
 
-Therefore, this project aims to deliver substantial improvements to the original code, making it more optimized, modern, and intuitive, with modules, docstrings, and functions better explained and documented, and with example-based tests to build intuition. I am also adding more explicit error signals in each function. Below you will find the overall plan and organization of the project.
+Therefore, this project aims to deliver substantial improvements to the original code, making it more optimized, modern, and intuitive, with modules, docstrings, and functions better explained and documented, and with example-based tests to build intuition. I am also adding more explicit error signals in each function. Below you will find the overall links and organization of the project.
+
+---
+
+## 🔗 Quick links
+
+- 📚 **Documentation:** see [Roadmap & Schedule](docs/roadmap.md) and [Architecture & Module Flow](docs/architecture.md)  
+- 🧩 **New code (modernized):** [`src/CosmoTransitions`](src/CosmoTransitions/)  
+- 🧪 **Tests:** [`tests/`](tests/) 
+- 📓 **Examples:** [`examples/`](examples/)  
+- 🗄️ **Legacy (original layout):** [`legacy/cosmoTransitions`](legacy/cosmoTransitions/)
+
+---
+
+## 🚦 Project status
+
+- **Phase 0** (planning): ✅ done  
+- **Phase 1.1** (modifying helper functions): ✅ done  
+- **Phase 1.5.1** (tests of helper functions ): ✅ done
+- **Phase 1.2** (modifying finiteT): in progress — see [Roadmap](docs/roadmap.md)
+
+---
+
+## ⚙️ Install (dev) & quick start
+
+```bash
+python -m pip install -U pip
+pip install -e .[dev]   # editable install with dev deps (pytest, ruff, black)
+```
+---
+## 📜 License & citation
+- License: **MIT** (see [`LICENSE`](LICENSE)) — original notices preserved.
+- If you use this code, please cite **both**:
+  1)**The original CosmoTransitions paper** (Wainwright, 2012) and
+  2)**This modernization** (software citation below).
+**BibTeX**
+
+```bibtex
+@software{cosmotransitions_modernized,
+  title        = {CosmoTransitions (modernized): Python utilities for cosmological phase transitions and GW forecasts},
+  author       = {Igor Almeida da Silva Gouvêa Stellet and Felipe Tovar Falciano},
+  year         = {2025},
+  version      = {0.1.0},
+  url          = {https://github.com/IgorStellet/GW_FOPT_Simulation.git}
+}
+
+@article{wainwright2012cosmotransitions,
+  title   = {CosmoTransitions: Computing Cosmological Phase Transition Temperatures and Bubble Profiles With Multiple Fields},
+  author  = {Wainwright, Carroll L.},
+  journal = {Computer Physics Communications},
+  volume  = {183},
+  number  = {10},
+  pages   = {2006--2013},
+  year    = {2012},
+  doi     = {10.1016/j.cpc.2012.04.004},
+  eprint  = {1109.4189},
+  archivePrefix = {arXiv}
+}
+```
+---
+## 🙏 Acknowledgments
+
+Thanks to **Carroll L. Wainwright** for the original CosmoTransitions (MIT).  
+Thanks to **Felipe Tovar Falciano** for advising and guidance.  
+Thanks to the community for feedback, issues, and suggestions.
+
+---
