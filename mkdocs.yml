@@ -1,0 +1,24 @@
+site_name: CosmoTransitions (modernized)
+theme:
+  name: material
+markdown_extensions:
+  - toc:
+      permalink: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tasklist
+plugins:
+  - search
+nav:
+  - Home: index.md
+  - Roadmap & Flowchart: roadmap.md
+  - Architecture: architecture.md
+  - Modules:
+    - Helper Functions: modules/helper_functions.md
+    - Finite Temperature: modules/finiteT.md
+    - Tunneling (1D): modules/tunneling1D.md
+    - Transition Finder: modules/transitionFinder.md
+    - Generic Potential: modules/generic_potential.md
+    - Multi-field Plotting: modules/multi_field_plotting.md
+docs_dir: docs
