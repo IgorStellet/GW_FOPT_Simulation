@@ -1,0 +1,42 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "CosmoTransitions (modernized): Python utilities for cosmological phase transitions and GW forecasts"
+version: "0.1.0"
+date-released: "2025-12-12"
+authors:
+  - family-names: "Stellet"
+    given-names: "Igor Almeida da Silva Gouvêa"
+  - family-names: "Falciano"
+    given-names: "Felipe Tovar"
+preferred-citation:
+  type: software
+  title: "CosmoTransitions (modernized)"
+  version: "0.1.0"
+  year: 2025
+  url: "https://github.com/IgorStellet/GW_FOPT_Simulation.git"
+  authors:
+    - family-names: "Stellet"
+      given-names: "Igor Almeida da Silva Gouvêa"
+    - family-names: "Falciano"
+      given-names: "Felipe Tovar"
+repository-code: "https://github.com/IgorStellet/GW_FOPT_Simulation.git"
+license: "MIT"
+keywords:
+  - cosmology
+  - phase transitions
+  - gravitational waves
+  - bounce
+  - finite temperature
+references:
+  - type: article
+    title: "CosmoTransitions: Computing Cosmological Phase Transition Temperatures and Bubble Profiles With Multiple Fields"
+    authors:
+      - family-names: "Wainwright"
+        given-names: "Carroll L."
+    journal: "Computer Physics Communications"
+    volume: "183"
+    issue: "10"
+    pages: "2006-2013"
+    year: 2012
+    doi: "10.1016/j.cpc.2012.04.004"
+    notes: "See also arXiv:1109.4189"
