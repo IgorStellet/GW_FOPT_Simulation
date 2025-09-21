@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "CosmoTransitions"
+version = "0.1.0"
+description = "Modernized, tested Python update of CosmoTransitions for cosmological phase transitions and GW forecasts."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Igor Almeida da Silva Gouvêa Stellet" },
+  { name = "Felipe Tovar Falciano", role = "Advisor" }
+]
+keywords = ["cosmology", "phase transitions", "gravitational waves", "bounce", "finite temperature"]
+dependencies = [
+  "numpy>=1.26",
+  "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4",
+  "pytest-cov>=4.1",
+  "ruff>=0.5.0",
+  "black>=24.4",
+]
+docs = [
+  "mkdocs>=1.5",
+  "mkdocs-material>=9.5",
+  "mkdocstrings[python]>=0.24",
+  "pymdown-extensions>=10.7",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I", "UP", "B"]
+exclude = ["legacy/"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
