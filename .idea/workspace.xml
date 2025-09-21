@@ -4,11 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="78e96966-4ec5-4cb0-aaf0-6f9bfa942e8f" name="Changes" comment="Adding files again">
+    <list default="true" id="78e96966-4ec5-4cb0-aaf0-6f9bfa942e8f" name="Changes" comment="Merge with mark_1 and modifications in helper_functions.py">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CosmoTranstions_2/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/CosmoTranstions_2/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CosmoTranstions_2/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/CosmoTranstions_2/helper_functions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Testes/helper_function_testes.py" beforeDir="false" afterPath="$PROJECT_DIR$/Testes/helper_function_testes.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,7 +36,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/IgorStellet/GW_FOPT_Simulation.git&quot;,
-    &quot;accountId&quot;: &quot;919cff06-57b2-4b35-ab42-41b8f889a27e&quot;
+    &quot;accountId&quot;: &quot;dd811a57-3341-44e4-ab54-a15fca9b5ba5&quot;
   }
 }</component>
   <component name="ProjectColorInfo">{
@@ -185,17 +182,17 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.helper_function_testes" />
-        <item itemvalue="Python tests.Doctests in helper_functions" />
         <item itemvalue="Python.teste" />
         <item itemvalue="Python.__init__ (1)" />
         <item itemvalue="Python.__init__" />
+        <item itemvalue="Python tests.Doctests in helper_functions" />
       </list>
     </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-d7ad00fb9fc3-c546a90a8094-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-242.23726.102" />
+        <option value="bundled-python-sdk-98f27166c754-ba05f1cad1b1-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-242.21829.153" />
       </set>
     </attachedChunks>
   </component>
@@ -224,15 +221,7 @@
       <option name="project" value="LOCAL" />
       <updated>1757366645409</updated>
     </task>
-    <task id="LOCAL-00003" summary="Adding files again">
-      <option name="closed" value="true" />
-      <created>1757376492387</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1757376492387</updated>
-    </task>
-    <option name="localTasksCounter" value="4" />
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -262,7 +251,6 @@
     <MESSAGE value="Modiffing the Miscellaneous functions in helper_functions" />
     <MESSAGE value="Commit other files" />
     <MESSAGE value="Merge with mark_1 and modifications in helper_functions.py" />
-    <MESSAGE value="Adding files again" />
-    <option name="LAST_COMMIT_MESSAGE" value="Adding files again" />
+    <option name="LAST_COMMIT_MESSAGE" value="Merge with mark_1 and modifications in helper_functions.py" />
   </component>
 </project>
