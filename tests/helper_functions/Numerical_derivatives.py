@@ -4,8 +4,8 @@
 #######################
 import numpy as np
 import matplotlib.pyplot as plt
-from CosmoTranstions_2  import rkqs
-from CosmoTranstions_2 import deriv14, deriv14_const_dx, deriv23, deriv23_const_dx, deriv1n
+from src.CosmoTransitions import rkqs
+from src.CosmoTransitions import deriv14, deriv14_const_dx, deriv23, deriv23_const_dx, deriv1n
 
 # ==========================================
 # Tests for Numerical Derivatives + RKQS
@@ -198,7 +198,7 @@ except ValueError as e:
 # (continuation of previous suite)
 # ================================
 
-from CosmoTranstions_2 import gradientFunction, hessianFunction
+from src.CosmoTransitions import gradientFunction, hessianFunction
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 (needed for 3D)
 
 

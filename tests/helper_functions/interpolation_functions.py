@@ -4,7 +4,7 @@
 # ============================================================
 import numpy as np
 import matplotlib.pyplot as plt
-from CosmoTranstions_2 import makeInterpFuncs, cubicInterpFunction, Nbspl, Nbspld1, Nbspld2
+from src.CosmoTransitions import makeInterpFuncs, cubicInterpFunction, Nbspl, Nbspld1, Nbspld2
 
 np.set_printoptions(precision=6, suppress=True)
 

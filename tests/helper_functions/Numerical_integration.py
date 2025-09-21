@@ -4,7 +4,7 @@
 #######################
 import numpy as np
 import matplotlib.pyplot as plt
-from CosmoTranstions_2  import rkqs
+from src.CosmoTransitions import rkqs
 print("---------- TESTS NUMERICAL INTEGRATION ---------")
 
 """

@@ -4,7 +4,71 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="78e96966-4ec5-4cb0-aaf0-6f9bfa942e8f" name="Changes" comment="merger main with mark_1 | new helper_functions.py" />
+    <list default="true" id="78e96966-4ec5-4cb0-aaf0-6f9bfa942e8f" name="Changes" comment="merger main with mark_1 | new helper_functions.py">
+      <change afterPath="$PROJECT_DIR$/legacy/LICENSE.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/doc/Makefile.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/doc/Overview.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/doc/conf.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/doc/deform1.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/doc/dollarmath_ext.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/doc/finiteT.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/doc/generic_potential.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/doc/helper_functions.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/doc/index.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/doc/multi_field_plotting.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/doc/pathDeformation.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/doc/transitionFinder.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/doc/tunnelling1D.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/examples/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/examples/fullTunneling.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/examples/model1_contours.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/examples/model1_phases.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/examples/model1_profile.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/examples/testModel1.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/legacy/examples/testModel1_output.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/helper_functions/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CosmoTranstions_2/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/CosmoTransitions/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CosmoTranstions_2/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/CosmoTransitions/helper_functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cosmoTransitions/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/legacy/cosmoTransitions/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cosmoTransitions/finiteT.py" beforeDir="false" afterPath="$PROJECT_DIR$/legacy/cosmoTransitions/finiteT.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cosmoTransitions/generic_potential.py" beforeDir="false" afterPath="$PROJECT_DIR$/legacy/cosmoTransitions/generic_potential.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cosmoTransitions/helper_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/legacy/cosmoTransitions/helper_functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cosmoTransitions/multi_field_plotting.py" beforeDir="false" afterPath="$PROJECT_DIR$/legacy/cosmoTransitions/multi_field_plotting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cosmoTransitions/pathDeformation.py" beforeDir="false" afterPath="$PROJECT_DIR$/legacy/cosmoTransitions/pathDeformation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cosmoTransitions/transitionFinder.py" beforeDir="false" afterPath="$PROJECT_DIR$/legacy/cosmoTransitions/transitionFinder.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cosmoTransitions/tunneling1D.py" beforeDir="false" afterPath="$PROJECT_DIR$/legacy/cosmoTransitions/tunneling1D.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/fluxograma.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/Miscellaneous_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/Miscellaneous_functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/Numerical_derivatives.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/Numerical_derivatives.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/Numerical_integration.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/Numerical_integration.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_1.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/derivative_1.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_10.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/derivative_10.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_11.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/derivative_11.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_12.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/derivative_12.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_13.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/derivative_13.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_14.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/derivative_14.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_15.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/derivative_15.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_2.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/derivative_2.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_3.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/derivative_3.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_4.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/derivative_4.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_5.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/derivative_5.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_6.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/derivative_6.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_7.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/derivative_7.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_8.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/derivative_8.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/derivative_9.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/derivative_9.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/integration_1.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/integration_1.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/integration_2.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/integration_2.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/integration_3.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/integration_3.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/interpolation_1.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/interpolation_1.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/interpolation_2.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/interpolation_2.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/interpolation_3.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/interpolation_3.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/interpolation_4.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/interpolation_4.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/interpolation_5.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/interpolation_5.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/figures/interpolation_6.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/artifacts/interpolation_6.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests_helper_functions/interpolation_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/helper_functions/interpolation_functions.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -20,7 +84,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="main" />
+        <entry key="$PROJECT_DIR$" value="mark_1" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -48,8 +112,10 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "Python tests.Doctests in helper_functions.executor": "Run",
+    "Python.Miscellaneous_functions (1).executor": "Run",
     "Python.Miscellaneous_functions.executor": "Run",
     "Python.Numerical_derivatives.executor": "Run",
+    "Python.Numerical_integration (1).executor": "Run",
     "Python.Numerical_integration.executor": "Run",
     "Python.__init__ (1).executor": "Run",
     "Python.__init__.executor": "Run",
@@ -71,11 +137,14 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Igora\PycharmProjects\GW_FOPT_Simulation\tests" />
+      <recent name="C:\Users\Igora\PycharmProjects\GW_FOPT_Simulation\src" />
+      <recent name="C:\Users\Igora\PycharmProjects\GW_FOPT_Simulation\legacy" />
       <recent name="C:\Users\Igor Stellet\PycharmProjects\GW_FOPT_Simulation\CosmoTranstions_2" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.interpolation_functions">
-    <configuration name="Miscellaneous_functions" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python.Numerical_integration (1)">
+    <configuration name="Miscellaneous_functions (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GW_FOPT_Simulation" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -84,11 +153,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests_helper_functions" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests/helper_functions" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tests_helper_functions/Miscellaneous_functions.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tests/helper_functions/Miscellaneous_functions.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -119,7 +188,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="Numerical_integration" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="Numerical_integration (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GW_FOPT_Simulation" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -128,11 +197,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests_helper_functions" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests/helper_functions" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tests_helper_functions/Numerical_integration.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tests/helper_functions/Numerical_integration.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -141,7 +210,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="helper_functions_tests (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="interpolation_functions (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="GW_FOPT_Simulation" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -150,11 +219,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Testes" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests/helper_functions" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Testes/helper_functions_tests.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tests/helper_functions/interpolation_functions.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -187,11 +256,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.Numerical_integration (1)" />
+        <item itemvalue="Python.Miscellaneous_functions (1)" />
+        <item itemvalue="Python.interpolation_functions (1)" />
         <item itemvalue="Python.interpolation_functions" />
         <item itemvalue="Python.Numerical_derivatives" />
-        <item itemvalue="Python.Numerical_integration" />
-        <item itemvalue="Python.Miscellaneous_functions" />
-        <item itemvalue="Python.helper_functions_tests (1)" />
       </list>
     </recent_temporary>
   </component>

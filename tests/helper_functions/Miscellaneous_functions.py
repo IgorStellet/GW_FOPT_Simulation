@@ -1,4 +1,4 @@
-from CosmoTranstions_2 import (set_default_args, monotonic_indices, clamp_val)
+from src.CosmoTransitions import (set_default_args, monotonic_indices, clamp_val)
 #---------------- First round of tests and modifications ------------------------
 #########################
 # Miscellaneous functions
