@@ -68,5 +68,5 @@ graph TD
 | **helper\_functions**      | Numerical utilities (e.g., numerical integration, interpolation, numerical differentiation). | Called by **all** core modules.                                  | [Module page](modules/helper_functions.md)     |
 | **finiteT**                | Finite-temperature effective-potential corrections (boson/fermion thermal pieces).  | Feeds **generic\_potential** and **transition\_finder**.         | [Module page](modules/finiteT.md)              |
 | **multi\_field\_plotting** | Visualization helpers for 3+ field landscapes and paths.                            | Used mainly with **pathDeformation** and **generic\_potential**. | Module page - None |
-                               |
+                               
 ---
