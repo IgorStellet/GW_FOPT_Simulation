@@ -7,15 +7,11 @@ markdown_extensions:
   - admonition
   - pymdownx.details
   - pymdownx.tasklist
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.superfences
 
 plugins:
   - search
-  - mermaid
+  - mermaid2
 
 nav:
   - Home: index.md

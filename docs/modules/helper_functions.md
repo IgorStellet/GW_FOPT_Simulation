@@ -1,6 +1,5 @@
 # Miscellaneous functions
 
----
 ## `set_default_args`
 ### Signature
 
