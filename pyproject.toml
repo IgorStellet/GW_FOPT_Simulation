@@ -3,7 +3,7 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "CosmoTransitions"
+name = "CosmoTransitions"  # nome do projeto (pode ser capitalizado)
 version = "0.1.0"
 description = "Modernized, tested Python update of CosmoTransitions for cosmological phase transitions and GW forecasts."
 readme = "README.md"
@@ -33,6 +33,16 @@ docs = [
   "pymdown-extensions>=10.7",
 ]
 
+# --- layout "src/": diga ao setuptools onde estão os pacotes ---
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+# Se o diretório do pacote é src/CosmoTransitions, importe como "CosmoTransitions"
+include = ["CosmoTransitions*"]
+
+# -------------------- Ruff --------------------
 [tool.ruff]
 line-length = 100
 target-version = "py311"
@@ -51,9 +61,8 @@ select = [
   "F",   # pyflakes
   "I",   # isort (ordenação de imports)
 ]
-# Pode aliviar regras chatas no início:
 ignore = [
-  "E402",  # imports fora do topo (vamos corrigir depois)
+  "E402",  # imports fora do topo (resolveremos depois)
   # "E501",  # se quiser ignorar linha longa temporariamente
 ]
 
@@ -63,14 +72,8 @@ per-file-ignores = {
 }
 
 [tool.ruff.lint.isort]
-known-first-party = ["cosmotransitions"]
+known-first-party = ["CosmoTransitions", "cosmotransitions"]
 combine-as-imports = true
 force-sort-within-sections = true
 lines-after-imports = 2
 
-
-[tool.ruff.lint.isort]
-known-first-party = ["cosmotransitions"]
-combine-as-imports = true
-force-sort-within-sections = true
-lines-after-imports = 2
