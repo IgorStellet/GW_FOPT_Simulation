@@ -190,6 +190,7 @@ data = np.array([1e-6, -1e-8, 4.0])
 safe = clamp_val(data, 0.0, np.inf)
 print(np.sqrt(safe))  # well-defined
 ```
+---
 
 # Numerical Integration functions
 
