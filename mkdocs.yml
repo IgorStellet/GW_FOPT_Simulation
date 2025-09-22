@@ -6,19 +6,16 @@ markdown_extensions:
       permalink: true
   - admonition
   - pymdownx.details
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-        - class: mermaid
+  - pymdownx.superfences
   - pymdownx.tasklist
 
 plugins:
   - search
   - mermaid2
 
-#extra_javascript:
-#  - https://unpkg.com/mermaid@10/dist/mermaid.min.js
-#  - js/mermaid-init.js
+extra_javascript:
+  - https://unpkg.com/mermaid@10/dist/mermaid.min.js
+  - js/mermaid-init.js
 
 nav:
   - Home: index.md

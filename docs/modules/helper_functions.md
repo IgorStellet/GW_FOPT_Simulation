@@ -287,10 +287,10 @@ while t < t_end:
 
 ```
 - **Harmonic oscillator test images**  
-![Harmonic oscillator state](/docs/assets/helper_functions/integration_1.png)
+![Harmonic oscillator state](assets/helper_functions/integration_1.png)
 
 
-![Adaptive step sizes](/docs/assets/helper_functions/integration_2.png)
+![Adaptive step sizes](assets/helper_functions/integration_2.png)
 
 ---
 
