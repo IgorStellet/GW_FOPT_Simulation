@@ -10,6 +10,7 @@ markdown_extensions:
   - pymdownx.tasklist
 plugins:
   - search
+  - mermaid2
 nav:
   - Home: index.md
   - Roadmap & Flowchart: roadmap.md
