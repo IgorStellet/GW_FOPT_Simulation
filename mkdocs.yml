@@ -24,8 +24,6 @@ nav:
   - Home: index.md
   - Roadmap & Flowchart: roadmap.md
   - Architecture: architecture.md
-  - Assets:
-      - Images Helper Functions: assets/helper_functions
   - Modules:
     - Helper Functions: modules/helper_functions.md
     - Finite Temperature: modules/finiteT.md
