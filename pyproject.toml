@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "CosmoTransitions"      # pode ajustar depois
+version = "0.1.0"
+description = "Modernized CosmoTransitions for FOPTs and GW forecasts."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Igor Almeida da Silva Gouvêa Stellet" },
+  { name = "Felipe Tovar Falciano" }
+]
+dependencies = ["numpy>=1.26", "matplotlib>=3.8"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["CosmoTransitions*"]
