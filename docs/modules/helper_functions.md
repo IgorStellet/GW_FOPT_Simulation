@@ -139,6 +139,7 @@ y_mono = y[idx]
 ####################################
 ```
 ---
+
 ## `clamp_val`
 ### Signature
 
@@ -194,7 +195,6 @@ print(np.sqrt(safe))  # well-defined
 
 # Numerical Integration functions
 
----
 ## `_rkck`
 ### Signature
 
