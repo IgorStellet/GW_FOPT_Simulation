@@ -97,6 +97,7 @@ while t < t_end:
 ![Harmonic oscillator state](assets/integration_1.png)
 
 
+- **Adaptive step sizes**
 ![Adaptive step sizes](assets/integration_2.png)
 
 ---
