@@ -15,7 +15,7 @@ A modern, test-driven update of **CosmoTransitions** for studying **first-order 
 
 ## Index of all functions
 
-- **Helper Functions**:
+### Helper Functions
   - Miscellaneous Functions → [miscellaneous_functions.md](modules/helper_functions/Miscellaneous_functions.md)
   - Numerical integration Functions → [Numerical_integration.md](modules/helper_functions/Numerical_integration.md)
   - Numerical Derivatives Functions → [Numerical_derivatives.md](modules/helper_functions/Numerical_derivatives.md)
