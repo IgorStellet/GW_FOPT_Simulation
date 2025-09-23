@@ -13,7 +13,12 @@ authors = [
   { name = "Igor Almeida da Silva Gouvêa Stellet" },
   { name = "Felipe Tovar Falciano" }
 ]
-dependencies = ["numpy>=1.26", "matplotlib>=3.8"]
+dependencies = ["numpy>=1.26","scipy>=1.11" ,"matplotlib>=3.8"]
+
+[project.urls]
+Homepage = "https://github.com/IgorStellet/GW_FOPT_Simulation"
+Repository = "https://github.com/IgorStellet/GW_FOPT_Simulation"
+
 
 [tool.setuptools]
 package-dir = {"" = "src"}

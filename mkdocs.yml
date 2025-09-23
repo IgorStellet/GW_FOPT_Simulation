@@ -7,21 +7,31 @@ markdown_extensions:
   - admonition
   - pymdownx.details
   - pymdownx.tasklist
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
 
 plugins:
   - search
-  - mermaid2
 
 nav:
   - Home: index.md
   - Roadmap & Flowchart: roadmap.md
   - Architecture: architecture.md
   - Modules:
-    - Helper Functions: modules/helper_functions.md
-    - Finite Temperature: modules/finiteT.md
-    - Tunneling (1D): modules/tunneling1D.md
-    - Transition Finder: modules/transitionFinder.md
-    - Generic Potential: modules/generic_potential.md
-    - Multi-field Plotting: modules/multi_field_plotting.md
+    - Helper Functions:
+        - Miscellaneous Functions: modules/helper_functions/Miscellaneous_functions.md
+        - Numerical Integration Functions: modules/helper_functions/Numerical_integration.md
+        - Numerical Derivatives Functions: modules/helper_functions/Numerical_derivatives.md
+        - Interpolation Functions: modules/helper_functions/interpolation_functions.md
+    - Finite Temperature:
+        - Finete T Functions: modules/finiteT/finiteT.md
+    - Tunneling (1D):
+        - Tunneling Functions: modules/tunneling1D/tunneling1D.md
+    - Transition Finder:
+        - Transition Functions: modules/transtionFinder/transitionFinder.md
+    - Generic Potential:
+        - Potential Functions: modules/geric_potential/generic_potential.md
 docs_dir: docs
