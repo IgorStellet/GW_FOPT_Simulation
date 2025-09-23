@@ -8,10 +8,18 @@ A modern, test-driven update of **CosmoTransitions** for studying **first-order 
 ---
 ## Quick links
 
-- 🧭 **Roadmap & Schedule** → [droadmap.md](roadmap.md)  
-- 🧩 **Architecture & Module Flow** → [architecture.md](architecture.md)  
-- 📚 **index_helper_function** → [helper_functions.md](modules/helper_functions)
+- 🧭 **Roadmap & Schedule** → [roadmap.md](roadmap.md)  
+- 🧩 **Architecture & Module Flow** → [architecture.md](architecture.md)
 
+---
+
+## Index of all functions
+
+- **Helper Functions**:
+  - Miscellaneous Functions → [miscellaneous_functions.md](modules/helper_functions/Miscellaneous_functions.md)
+  - Numerical integration Functions → [Numerical_integration.md](modules/helper_functions/Numerical_integration.md)
+  - Numerical Derivatives Functions → [Numerical_derivatives.md](modules/helper_functions/Numerical_derivatives.md)
+  - Interpolation Functions → [intepolation_functions.md](modules/helper_functions/interpolation_functions.md)
 ---
 
 ## Install (dev) & Quick Start

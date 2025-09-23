@@ -31,7 +31,7 @@ nav:
     - Tunneling (1D):
         - Tunneling Functions: modules/tunneling1D/tunneling1D.md
     - Transition Finder:
-        - Transition Functions: modules/transtionFinder/transitionFinder.md
+        - Transition Functions: modules/transitionFinder/transitionFinder.md
     - Generic Potential:
-        - Potential Functions: modules/geric_potential/generic_potential.md
+        - Potential Functions: modules/generic_potential/generic_potential.md
 docs_dir: docs
