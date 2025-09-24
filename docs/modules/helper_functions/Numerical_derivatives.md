@@ -113,7 +113,7 @@ The routine is fully vectorized (no Python loops) and preserves the shape of `y`
 
 Use when your data are on a **uniform grid** and you want a **high-accuracy** first derivative with a small, explicit stencil and **fast vectorized** implementation.
 
-see the full test script in `[tests/helper_functions/Numerical_derivatives](/tests/helper_functions/Numerical_derivatives.py)` for more
+see the full test script in [tests/helper_functions/Numerical_derivatives](/tests/helper_functions/Numerical_derivatives.py) for more
 
 **Examples**
 
@@ -179,7 +179,7 @@ Works for strictly **increasing or decreasing** `x`!! .
 
 Use when your samples lie on a **non-uniform** 1D grid and you want **high order interior accuracy** without resampling to a uniform mesh.
 
-see the full test script in `[tests/helper_functions/Numerical_derivatives](/tests/helper_functions/Numerical_derivatives.py)` for more
+see the full test script in [tests/helper_functions/Numerical_derivatives](/tests/helper_functions/Numerical_derivatives.py) for more
 
 **Examples** *(same structure as `deriv14_const_dx`; you can adapt the `x` grid to be non-uniform)*:
 
@@ -204,9 +204,6 @@ Non-monotonic x (deriv14): x must be strictly monotonic (increasing or decreasin
 
 ---
 
-awesome — keeping it super lean and non-repetitive, just pointing back to the previous functions and leaving a slot for your examples.
-
----
 
 ## `deriv23`
 
@@ -230,7 +227,7 @@ Uses **5-point stencils** with **Fornberg weights** (`der=2`): centered in the i
 
 Use when you need **second derivatives** on **non-uniform** grids with high-order interior accuracy and robust boundary handling.
 
-see the full test script in `[tests/helper_functions/Numerical_derivatives](/tests/helper_functions/Numerical_derivatives.py)` for more
+see the full test script in [tests/helper_functions/Numerical_derivatives](/tests/helper_functions/Numerical_derivatives.py) for more
 
 **Examples**
 
@@ -280,7 +277,7 @@ with one-sided 5-point stencils at the boundaries
 
 Use for **uniform grids** when you want a **fast, vectorized** second derivative with high accuracy and small stencil.
 
-see the full test script in `[tests/helper_functions/Numerical_derivatives](/tests/helper_functions/Numerical_derivatives.py)` for more
+see the full test script in [tests/helper_functions/Numerical_derivatives](/tests/helper_functions/Numerical_derivatives.py) for more
 
 **Examples**
 
@@ -334,7 +331,7 @@ For smooth data on near-uniform meshes, interior truncation error scales **$\app
 
 When you want to **dial precision** (and stencil width) for first derivatives on **non-uniform** grids without resampling.
 
-see the full test script in `[tests/helper_functions/Numerical_derivatives](/tests/helper_functions/Numerical_derivatives.py)` for more
+see the full test script in [tests/helper_functions/Numerical_derivatives](/tests/helper_functions/Numerical_derivatives.py) for more
 
 **Examples**
 
@@ -398,7 +395,7 @@ Once constructed, `gradientFunction(...)` behaves like a function: `df(x) → �
 
 ### Notes
 
-* **Accuracy vs. step size:** truncation error decreases with smaller `eps`, but round-off grows—pick `eps` consistent with the scale of `x` and `f` (a common rule of thumb: start near $\sqrt{\varepsilon_\text{mach}} \times \text{scale}$ for order-2, and somewhat larger for order-4).
+* **Accuracy vs. step size:** truncation error decreases with smaller `eps`, but round off grows pick `eps` consistent with the scale of `x` and `f` (a common rule of thumb: start near $\sqrt{\varepsilon_\text{mach}} \times \text{scale}$ for order-2, and somewhat larger for order-4).
 * **Anisotropic steps:** use an `eps` vector to reflect different physical scales per axis.
 * **Performance/memory:** very large `Ndim` or huge batches may increase temporary array sizes; if needed, evaluate in tiles.
 
@@ -406,7 +403,7 @@ Once constructed, `gradientFunction(...)` behaves like a function: `df(x) → �
 
 Use when you need a **drop-in gradient** for a black-box scalar function (e.g., potentials $V(\phi)$ in multi-field models, without deriving/maintaining analytic gradients. It’s especially handy inside **optimizers**, **line searches**, or **field evolution** steps).
 
-see the full test script in `[tests/helper_functions/Numerical_derivatives](/tests/helper_functions/Numerical_derivatives.py)` for more
+see the full test script in [tests/helper_functions/Numerical_derivatives](/tests/helper_functions/Numerical_derivatives.py) for more
 
 **Examples**
 
@@ -526,7 +523,7 @@ Once constructed, `hessianFunction(...)` acts like a function: `hf(x) → H(x)` 
 
 Use when you need a **drop-in Hessian** for a black-box scalar potential—e.g., multi-field potentials $V(\phi)$ in phase-transition scans—without deriving analytic second derivatives. Useful in **Newton/Quasi-Newton** methods, curvature analysis, and stability checks.
 
-see the full test script in `[tests/helper_functions/Numerical_derivatives](/tests/helper_functions/Numerical_derivatives.py)` for more
+see the full test script in [tests/helper_functions/Numerical_derivatives](/tests/helper_functions/Numerical_derivatives.py) for more
 
 **Examples**
 

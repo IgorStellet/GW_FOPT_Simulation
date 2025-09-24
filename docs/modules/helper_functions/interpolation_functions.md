@@ -68,7 +68,7 @@ It returns two callables:
 
 Use when you need a **smooth segment** with **continuous value, slope, and curvature** at both ends (e.g., path stitching, potential profiles, or boundary-matched trajectories, without overshoot typical of low-order polynomials).
 
-see the full test script in `[tests/helper_functions/interpolation_functions](/tests/helper_functions/interpolation_functions.py)` for more
+see the full test script in [tests/helper_functions/interpolation_functions](/tests/helper_functions/interpolation_functions.py) for more
 
 **Example**
 
@@ -135,7 +135,7 @@ Implements the **Bézier form** that is algebraically equivalent to **Hermite** 
 
 Use when you need a **compact, slope controlled** segment between two states—great for smooth paths, schedules, or boundary-matched profiles—without the extra curvature constraints of the quintic.
 
-see the full test script in `[tests/helper_functions/Interpolation_functions](/tests/helper_functions/interpolation_functions.py)` for more
+see the full test script in [tests/helper_functions/interpolation_functions.py](/tests/helper_functions/interpolation_functions.py) for more
 
 **Example**
 
@@ -231,7 +231,7 @@ where $\text{nb} = m - k - 1$ is the number of degree-`k` basis functions (with 
 
 Use B-splines when you need **smooth, local-control** interpolation/approximation with tunable continuity via the knot vector—ideal for smooth paths, potentials, or any 1D field where you want **stability** and **partition-of-unity** behavior.
 
-see the full test script in `[tests/helper_functions/Interpolation_functions](/tests/helper_functions/interpolation_functions.py)` for more
+see the full test script in [tests/helper_functions/Interpolation_functions](/tests/helper_functions/interpolation_functions.py) for more
 
 **Examples**
 
@@ -240,6 +240,7 @@ see the full test script in `[tests/helper_functions/Interpolation_functions](/t
 ```python
 """"
 === Test 3: B-spline bases (partition of unity & local support) ===
+knots =  [0.  0.  0.  0.  0.2 0.4 0.6 0.8 1.  1.  1.  1. ]
 Partition of unity: max|sum_i N_i(x)-1| = 1.0
 Non-negativity: min(N) = 0.0  (should be >= 0)
 """
@@ -358,6 +359,7 @@ with the same zero-denominator convention.
 
 
 ### Examples
+see the full test script in [tests/helper_functions/Interpolation_functions](/tests/helper_functions/interpolation_functions.py) for more
 
 - **Basis Functions derivatives (first and second)**
 

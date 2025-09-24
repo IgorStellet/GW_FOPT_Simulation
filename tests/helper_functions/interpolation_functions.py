@@ -118,6 +118,7 @@ plt.tight_layout(); plt.show()
 print("\n=== Test 3: B-spline bases (partition of unity & local support) ===")
 a, b, k, nb = 0.0, 1.0, 3, 8  # cubic, 8 bases
 t = open_uniform_knots(a, b, k, nb)
+print(t)
 x = np.linspace(a, b, 400)
 N = Nbspl(t, x, k=k)  # shape (400, nb)
 
@@ -178,7 +179,9 @@ plt.show()
 print("\n=== Test 5: Exact interpolation via B-splines (solve for coefficients) ===")
 k, nb = 3, 10
 t = open_uniform_knots(0.0, 1.0, k, nb)
+print(t)
 Xi = greville_abscissae(t, k)   # collocation points (nb points)
+print(Xi)
 # target function
 f = lambda x: np.sin(2*np.pi*x) + 0.2*x
 y = f(Xi)
