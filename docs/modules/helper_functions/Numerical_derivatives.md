@@ -448,3 +448,87 @@ Non-scalar f (gradientFunction): ValueError('operands could not be broadcast tog
 """
 ```
 ---
+
+## `hessianFunction` (callable class)
+
+### Signature
+
+```python
+class hessianFunction:
+    def __init__(self, f: Callable, eps: ArrayLike, Ndim: int, order: int = 4) -> None: ...
+    def __call__(self, x: ArrayLike, *args, **kwargs) -> np.ndarray: ...
+```
+
+### Purpose
+
+Build a **callable Hessian operator** for a scalar field $f:\mathbb{R}^N\!\to\!\mathbb{R}$ using **finite differences** of **order 2 or 4** with **per-axis steps** `eps`.
+Once constructed, `hessianFunction(...)` acts like a function: `hf(x) → H(x)` with shape `(..., Ndim, Ndim)`.
+
+> Intuition (how entries are formed):
+> • **Diagonal** terms $H_{ii}$ use **1D second-derivative** stencils along axis $i$ (order-2: 3-point; order-4: 5-point).
+> • **Off-diagonal** terms $H_{ij}$ with $i\neq j$ use the **tensor product of two first-derivative stencils** (one in $i$, one in $j$), i.e.
+>
+> $$
+> \frac{\partial^2 f}{\partial x_i\,\partial x_j}(x)
+> \;\approx\;
+> \sum_{a,b}\frac{c^{(1)}_a}{\varepsilon_i}\,\frac{c^{(1)}_b}{\varepsilon_j}\;
+> f\!\big(x + a\,\varepsilon_i\,\hat e_i + b\,\varepsilon_j\,\hat e_j\big),
+> $$
+>
+> where $c^{(1)}$ are the central-difference coefficients of order 2 or 4. The class **precomputes** all shifts and weights and then evaluates `f` in **batched** fashion.
+
+### Why a **class** (not just a function)?
+
+* **Precomputation & reuse:** shifts/weights depend only on `(eps, Ndim, order)`. The class builds them **once** and reuses across many calls → less overhead in inner loops (optimizers, Newton steps, variational solvers).
+* **Stateful configuration:** keeps `f`, `Ndim`, `eps`, `order` together; exposes a clean **callable** API.
+* **Vectorized batching:** each diagonal/off-diagonal block is evaluated by feeding a whole bundle of shifted points to `f` at once, then combining with the stored weights.
+* **Symmetry by construction:** it sets $H_{ij}\!=\!H_{ji}$ after computing $i>j$.
+
+### Parameters, returns and Raises
+
+**`__init__(f, eps, Ndim, order=4)`**
+
+* `f` (`callable`): scalar field; must accept arrays with last axis size `Ndim` (any leading batch dims allowed) and return a scalar per point (same leading shape).
+* `eps` (`float | array_like`): FD step size(s). Scalar broadcasts to all axes; or pass a length-`Ndim` array for anisotropic steps.
+* `Ndim` (`int`): dimensionality of the input points.
+* `order` (`{2,4}`): finite-difference accuracy (order-2 or order-4 central stencils).
+
+**`__call__(x, *args, **kwargs)`**
+
+* `x` (`array_like`, shape `(..., Ndim)`): evaluation points.
+* Returns `H` (`np.ndarray`, shape `(..., Ndim, Ndim)`): the Hessian at `x`.
+* Any extra `*args/**kwargs` are forwarded to `f`.
+
+**Raises / Assumptions**
+
+* `ValueError` if `order ∉ {2,4}`, if `eps` is not scalar or `(Ndim,)`, or if `x`’s last axis ≠ `Ndim`.
+### Notes
+
+* **Stencils used:**
+  • Order-2: first-deriv offsets $[-1,+1]$ with coeffs $[-1/2,+1/2]$; second-deriv offsets $[-1,0,+1]$ with coeffs $[1,-2,1]$.
+  • Order-4: first-deriv offsets $[-2,-1,+1,+2]$ with coeffs $[+1,-8,+8,-1]/12$; second-deriv offsets $[-2,-1,0,+1,+2]$ with coeffs $[-1,16,-30,16,-1]/12$.
+* **Work per call (per point):** roughly $\sum_i m_2$ (diagonals) + $\sum_{i>j} m_1^2$ (off-diagonals) function evaluations, where $m_1$ and $m_2$ are the first/second-derivative stencil lengths (2 or 4 → $m_1=2,4$; $m_2=3,5$). These are **batched** per block to reduce Python overhead.
+* **Accuracy vs step size:** smaller `eps` reduces truncation error but increases round-off sensitivity; pick `eps` commensurate with scales of `x` and `f`.
+* **Anisotropic physics:** per-axis `eps` is useful when coordinates have different natural scales.
+
+### When to use and Examples
+
+Use when you need a **drop-in Hessian** for a black-box scalar potential—e.g., multi-field potentials $V(\phi)$ in phase-transition scans—without deriving analytic second derivatives. Useful in **Newton/Quasi-Newton** methods, curvature analysis, and stability checks.
+
+see the full test script in `[tests/helper_functions/Numerical_derivatives](/tests/helper_functions/Numerical_derivatives.py)` for more
+
+**Examples**
+
+```python
+"""
+=== Test 8: Hessian exactness on quadratic form (order=4) ===
+Max |H - A| = 1.426e-06,  Mean |H - A| = 7.628e-08
+Expected: near machine precision for smooth quadratics with small eps.
+=== Test 9: Hessian with mixed terms (order=4) ===
+Grid 60x60, eps=[1e-4,3e-4]: max |H_num - H_ex| = 7.461e-07
+=== Test 13: Expected error cases (hessian) ===
+Invalid order (hessianFunction): order must be 2 or 4
+Non-scalar f (hessianFunction): ValueError('operands could not be broadcast together with shapes (4,16,2) (16,) ')
+"""
+```
+---
