@@ -147,11 +147,11 @@ assert np.allclose(N, N2)  # same basis from both functions
 # Finite differences (central) in interior to avoid boundary effects
 h_idx = 1  # step in index
 dx = x[1] - x[0]
-dN_fd  = (N[2:, :] - N[:-2, :]) / (2*dx)
-d2N_fd = (N[2:, :] - 2*N[1:-1, :] + N[:-2, :]) / (dx*dx)
+dN_fd  = (N[3:-1, :] - N[1:-3, :]) / (2*dx)
+d2N_fd = (N[3:-1, :] - 2*N[2:-2, :] + N[1:-3, :]) / (dx*dx)
 # Compare on matched rows: dN[1:-1] vs dN_fd, d2N[1:-1] vs d2N_fd
-err_dN  = np.max(np.abs(dN[1:-1, :]  - dN_fd))
-err_d2N = np.max(np.abs(d2N[1:-1, :] - d2N_fd))
+err_dN  = np.max(np.abs(dN[2:-2, :]  - dN_fd))
+err_d2N = np.max(np.abs(d2N[2:-2, :] - d2N_fd))
 print(f"Max |dN - FD|  = {err_dN:.3e}")
 print(f"Max |d2N - FD| = {err_d2N:.3e}")
 print("Expected: small (method consistent); edges less accurate (central FD not applicable).")
@@ -241,9 +241,9 @@ axes[1].set_xlabel("x"); axes[1].set_ylabel("S'(x)"); axes[1].grid(True)
 plt.show()
 
 # ============================================================
-# 6) Expected error cases (robustness)
+# 7) Expected error cases (robustness)
 # ============================================================
-print("\n=== Test 6: Expected error cases ===")
+print("\n=== Test 7: Expected error cases ===")
 # 20.1 k too large for knot vector
 try:
     Nbspl([0,0,0,0], x=[0,0.5,1], k=4)

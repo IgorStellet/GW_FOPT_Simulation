@@ -1,6 +1,19 @@
 site_name: CosmoTransitions (modernized)
 theme:
   name: material
+  palette:
+    - scheme: slate
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light
+    - scheme: default
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to dark
 markdown_extensions:
   - toc:
       permalink: true
