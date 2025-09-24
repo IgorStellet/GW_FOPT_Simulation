@@ -132,6 +132,8 @@ Max abs error (dy): 1.945e-07  (expected ~O(h^4) ~ 9.7e-07)
 Note: boundary stencils are one-sided; error is typically larger at the ends than in the interior.
 '''
 ```
+
+
 ---
 
 ## `deriv14`
@@ -198,6 +200,8 @@ x not 1D (deriv14): x must be 1D
 Non-monotonic x (deriv14): x must be strictly monotonic (increasing or decreasing).
 '''
 ```
+
+
 ---
 
 awesome — keeping it super lean and non-repetitive, just pointing back to the previous functions and leaving a slot for your examples.
@@ -246,6 +250,7 @@ x not 1D (deriv23): x must be 1D
 Non-monotonic x (deriv23): x must be strictly monotonic (increasing or decreasing).
 '''
 ```
+
 ---
 
 ## `deriv23_const_dx`
@@ -292,6 +297,8 @@ Max abs error (d2y): 2.580e-05  (expected ~O(h^3) at edges ~ 3.1e-05)
 Notes: The interior is still O(h^4) (see graph)
 '''
 ```
+
+
 ---
 
 ## `deriv1n`
@@ -340,6 +347,8 @@ n=8 (stencil m=9): max abs error = 2.558e-13
 Expected: error generally decreases as stencil size increases (for smooth functions).
 """
 ```
+
+
 ---
 
 ## `gradientFunction` (callable class)
@@ -447,6 +456,8 @@ x last axis mismatch (gradientFunction): Last axis of x must have length Ndim=2
 Non-scalar f (gradientFunction): ValueError('operands could not be broadcast together with shapes (4,4,2,2) (4,2) ')
 """
 ```
+
+
 ---
 
 ## `hessianFunction` (callable class)
@@ -531,4 +542,6 @@ Invalid order (hessianFunction): order must be 2 or 4
 Non-scalar f (hessianFunction): ValueError('operands could not be broadcast together with shapes (4,16,2) (16,) ')
 """
 ```
+
+
 ---

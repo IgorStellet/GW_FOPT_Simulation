@@ -285,6 +285,7 @@ Max abs error on fine grid (approx. quality, not necessarily tiny): 2.234e-03
 
 * For **exact interpolation**, use **Greville points** to build a square, well-conditioned system and solve `N @ c = y`.
 * For **fitting/denoising**, solve `min_c ||N c − y||` (possibly with a smoothness regularizer).
+
 ---
 
 ## `Nbspld1`
@@ -394,6 +395,8 @@ knot length invalid (Nbspl): Nbspl: require k <= len(t)-2
 (Equal for Nbspl, Nbspld1 and Nbspld2)
 """
 ```
+
+
 ---
 
 
