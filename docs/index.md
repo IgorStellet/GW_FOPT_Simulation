@@ -30,4 +30,6 @@ A modern, test-driven update of **CosmoTransitions** for studying **first-order 
 python -m pip install -U pip
 pip install -e .[dev]   # editable install with dev deps (pytest, ruff, black)
 ```
+
+
 ---
