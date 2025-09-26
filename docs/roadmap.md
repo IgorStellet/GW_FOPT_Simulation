@@ -20,11 +20,12 @@ Before modifying any module, consult the official documentation and/or the origi
 - **Computer Physics Communications:** [10.1016/j.cpc.2012.04.004](https://doi.org/10.1016/j.cpc.2012.04.004
 
 ---
-
 ## Project Timeline
+
 
 ```mermaid
 gantt
+    %%%%%%%%
     title Development Timeline - CosmoTransitions
     dateFormat  YYYY-MM-DD
     axisFormat  %d/%m
@@ -62,7 +63,9 @@ gantt
     Final Optimizations             :2025-12-10, 10d
 ```
 
+
 ---
+
 ## Milestones & Checklist
 - [x] **Phase 0**: Planning and first meeting 
   - [x] Create dependency flowchart 
