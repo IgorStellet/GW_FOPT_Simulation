@@ -86,9 +86,8 @@ The routine is fully vectorized (no Python loops) and preserves the shape of `y`
 
 * **Interior (k = 2..n−3)**: centered 5-point, 4th-order
 
-  $$
-  f'(x_k)\ \approx\ \frac{f_{k-2}-8f_{k-1}+8f_{k+1}-f_{k+2}}{12h}.
-  $$
+$$f'(x_k)\ \approx\ \frac{f_{k-2}-8f_{k-1}+8f_{k+1}-f_{k+2}}{12h}$$
+
 * **Boundaries**: standard **one-sided 5-point** formulas (also 4th-order) for `k∈{0,1,n−2,n−1}`.
 
 

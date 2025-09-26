@@ -47,9 +47,8 @@ It returns two callables:
 
   * From the left endpoint:
 
-    $$
-    a_0=y_0,\quad a_1= d y_0,\quad a_2=\tfrac{1}{2} d^2 y_0.
-    $$
+    $$a_0=y_0,\quad a_1= d y_0,\quad a_2=\tfrac{1}{2} d^2 y_0$$
+
   * The remaining $(a_3,a_4,a_5)$ come from the right endpoint via
     a **fixed** 3×3 system (hard-coded matrix), solved against the residuals
     after subtracting the known $a_0,a_1,a_2$.
@@ -57,10 +56,8 @@ It returns two callables:
 * To interpolate over an arbitrary interval $[x_a,x_b]$, map $x$ to
   $s=(x-x_a)/(x_b-x_a)\in[0,1]$. Endpoint derivatives must be **scaled**:
 
-  $$
-  \frac{df}{dx}\Big|_{x_a} = \frac{1}{h}\frac{df}{ds}\Big|_{s=0},\quad
-  \frac{d^2 f}{dx^2}\Big|_{x_a} = \frac{1}{h^2}\frac{d^2 f}{ds^2}\Big|_{s=0},
-  $$
+  $$\frac{df}{dx}\Big|_{x_a} = \frac{1}{h}\frac{df}{ds}\Big|_{s=0},\quad
+  \frac{d^2 f}{dx^2}\Big|_{x_a} = \frac{1}{h^2}\frac{d^2 f}{ds^2}\Big|_{s=0}$$
 
   with $h=x_b-x_a$ (same at the right end).
 
@@ -118,16 +115,12 @@ Implements the **Bézier form** that is algebraically equivalent to **Hermite** 
 
 * **Bézier control points (from Hermite data):**
 
-  $$
-  P_0 = y_0,\quad P_1 = y_0 + \tfrac{1}{3}\,d y_0,\quad
-  P_2 = y_1 - \tfrac{1}{3}\,d y_1,\quad P_3 = y_1,
-  $$
+  $$P_0 = y_0,\quad P_1 = y_0 + \tfrac{1}{3}\,d y_0,\quad P_2 = y_1 - \tfrac{1}{3}\,d y_1,\quad P_3 = y_1 $$
 
   and
 
-  $$
-  B(t)=(1-t)^3P_0+3(1-t)^2 t P_1+3(1-t)t^2 P_2+t^3 P_3.
-  $$
+  $$B(t)=(1-t)^3P_0+3(1-t)^2 t P_1+3(1-t)t^2 P_2+t^3 P_3 $$
+
 * **Endpoint slopes & reparameterization:** if you want slopes with respect to a physical coordinate $x\in[x_a,x_b]$ (not $t$), map $t=(x-x_a)/h$ with $h=x_b-x_a$ and set
   `dy0 = (dy/dx at x_a) * h`, `dy1 = (dy/dx at x_b) * h`.
 
