@@ -61,6 +61,7 @@ gantt
     Multi-field Solution            :2025-12-10, 10d
     Final Optimizations             :2025-12-10, 10d
 ```
+
 ---
 ## Milestones & Checklist
 - [x] **Phase 0**: Planning and first meeting 
