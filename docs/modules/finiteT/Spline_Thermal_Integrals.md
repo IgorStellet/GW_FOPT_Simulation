@@ -185,3 +185,117 @@ The internal helpers follow the **same design** as for `Jf_spline`:
 **Reproducibility:** the cache pins the fitted spline; if the directory is read-only, the code still works (keeps the spline in memory).
 
 ---
+
+## Spline Thermal Integrals ($J_b, J_f$) — Tests
+
+This page documents the verification suite for the **Spline Thermal Integrals**.
+We validate that the spline surrogates `Jb_spline(θ)` and `Jf_spline(θ)` (with ($θ=x^2=(m/T)^2)$) reproduce the **exact** one-loop integrals and their **θ-derivatives**, 
+and that the spline implementation is **consistent** with the B-spline basis from `helper_functions.Nbspl`.
+
+**Plot styling used below**
+
+* **Solid**: exact curve (as a function of (x), with ($θ=x^2$)).
+* **Dashed**: spline curve.
+* **Dots**: collocation nodes (subset with ($x\le 10$)) used to fit the spline.
+* see [tests/finiteT/Spline_Thermal_Integrals](/tests/finiteT/Spline_Thermal_Integrals.py) for more
+
+We also print simple error metrics for quick checks.
+
+
+---
+
+### Test 1 — Spline vs exact for ($x\in[0,10]$)
+
+Compare `Jb_spline(θ=x^2)` and `Jf_spline(θ=x^2)` against `Jb_exact(x)` and `Jf_exact(x)` on the same (x)-grid.
+
+**Expectation:** curves overlap within quadrature/spline noise; max absolute error across the grid should be small.
+
+**Boson (J_b): exact vs spline (with nodes)**
+
+![J_b exact vs spline](assets/Spline_1.png)
+
+**Fermion (J_f): exact vs spline (with nodes)**
+
+![J_f exact vs spline](assets/Spline_2.png)
+
+
+```python
+"""
+=== Test 1: Spline vs Exact for x ∈ [0, 10] ===
+Max |J_b (spline) - J_b (exact)| over x∈[0,10]: 1.180e-03
+Max |J_f (spline) - J_f (exact)| over x∈[0,10]: 4.638e-05
+"""
+```
+
+---
+
+### Test 2 — Derivatives: ( $\partial J/\partial θ $) (spline) vs exact via chain rule
+
+The spline returns derivatives with respect to (θ). We compare against the exact derivative with respect to (x) using the chain rule:
+
+$$\frac{\partial J}{\partial θ} = \frac{\partial J}{\partial x}\frac{\partial x}{\partial θ} = 
+\frac{1}{2\sqrt{θ}},\frac{\partial J}{\partial x}
+\quad(\text{with } x=\sqrt{θ} θ>0)$$
+
+We avoid (x=0) (singularity in (1/(2x))) and take ($x\in(10^{-3},10]$).
+
+**Expectation:** close agreement; small deviations can appear near the very small-(x) end where the chain rule magnifies numerical noise.
+
+**Boson ($dJ_b/dθ$): exact vs spline (with nodes)**
+
+![dJ_b/dtheta exact vs spline](assets/Spline_3.png)
+
+
+**Fermion ($dJ_f$/dθ): exact vs spline (with nodes)**
+
+![dJ_f/dtheta exact vs spline](assets/Spline_4.png)
+
+```python
+"""
+=== Test 2: Derivatives — spline dJ/dtheta vs exact (chain rule) ===
+Max |dJ_b/dθ (spline) - dJ_b/dθ (exact)| over x∈(1e-3,10]: 3.156e-02
+Max |dJ_f/dθ (spline) - dJ_f/dθ (exact)| over x∈(1e-3,10]: 1.240e-03
+"""
+```
+
+---
+
+### Test 3 — Compatibility with `helper_functions.Nbspl`
+
+We reconstruct the spline value using the B-spline basis:
+
+$$s(θ) = \sum_i c_i,N_{i,k}(θ)$$
+
+where (t) (knots), (c) (coefficients) and (k) (degree) come from the fitted `BSpline`. We evaluate
+`Nbspl(t, θ, k) @ c` and compare to the direct `J*_spline(θ)` evaluation for ($θ\in[0,100]$).
+
+**Expectation:** the two evaluations should match to near machine precision.
+
+**Boson ($J_b$): BSpline vs Nbspl reconstruction**
+
+![J_b spline vs Nbspl spline](assets/Spline_5.png)
+
+
+**Fermion ($J_f$): BSpline vs Nbspl reconstruction**
+
+![J_f spline vs Nbspl spline](assets/Spline_6.png)
+
+
+```python
+"""
+=== Test 3: Compatibility with helper_functions.Nbspl ===
+Max |J_f (spline) - J_f (Nbspl rebuild)| on θ∈[0,100]: 4.441e-16
+Max |J_b (spline) - J_b (Nbspl rebuild)| on θ∈[0,100]: 2.220e-16
+"""
+```
+
+---
+
+
+### Notes & plotting details
+
+* Input to the splines is always ($θ=x^2$). For Tests 1–2, we **limit the x-axis to ([0,10])** and **filter the node dots** to ($x\le 10$) to avoid automatic axis expansion by far-right collocation nodes (which can reach ($x\sim\sqrt{θ_{\max}}$)).
+* Left boundary handling is **clamp** at ($θ_{\min}$); right boundary is **zero** for ($θ>θ_{\max}$), matching the legacy API (this is visible only if you probe beyond the fitted domain).
+* `Jf_exact(x)` returns complex (legacy); in the plots we show its **real part**, which is the physically relevant branch for real (x).
+
+---
