@@ -564,7 +564,7 @@ dJb_exact(x: ArrayLike) -> Union[float, np.ndarray]
   * `1/np.expm1(E)` for the Bose factor ($1/(e^E-1)$).
 * **Branching / complex inputs.**
 
-  * For **θ-API** (`*_exact2`): ($\theta\in\mathbb{R}$). If ($\theta<0$) the integral is split at ($y=\sqrt{|\theta|$}) and expressed with ($\cos$) / ($\sin$), yielding **real integrands** throughout.
+  * For **θ-API** (`*_exact2`): ($\theta\in\mathbb{R}$). If ($\theta<0$) the integral is split at ($y=\sqrt{|\theta|}$) and expressed with ($\cos$) / ($\sin$), yielding **real integrands** throughout.
   * For **x-API** (`*_exact`): complex (x) triggers the **legacy branch splitting** (over ($[0,|x|]$)) to keep the integrals numerically real/stable.
     **Physical note:** a **general complex (x)** has **no standard physical meaning** here; it is supported **only for backward compatibility**. In physics workflows, ($x=m/T$) is real (or equivalently ($\theta$) is real).
 * **Recommended usage.** Prefer the **θ based** functions (`Jf_exact2`, `Jb_exact2`) in new code (better for interpolation/splines and uniformly real integrands). Use x based names for seamless drop in replacement in legacy pipelines.
@@ -575,3 +575,236 @@ $$\frac{dJ_f}{dx}=\int_0^\infty y^2\frac{x}{E}\frac{1}{e^E+1}dy\qquad  \frac{dJ_
 
 ---
 
+## Exact Thermal Integrals — Examples 
+
+This page documents progressive sanity/consistency checks for the **exact** one-loop thermal integrals and their derivatives:
+
+$$J_b(x)=\int_0^\infty y^2\ln\bigl(1-e^{-\sqrt{y^2+x^2}}\bigr)dy\quad
+J_f(x)=\int_0^\infty -y^2\ln\bigl(1+e^{-\sqrt{y^2+x^2}}\bigr)dy$$
+We test the public API:
+`Jb_exact`, `Jf_exact`, `Jb_exact2`, `Jf_exact2`, `dJb_exact`, `dJf_exact`.
+
+All figures below are produced by the script
+`tests/finiteT/Exact_Thermal_Integrals.py`. see [tests/finiteT/Exact_Thermal_Integrals](/tests/finiteT/Exact_Thermal_Integrals.py) for more
+
+---
+
+### Test 1 — Small-x physics sanity: constants at (x=0) and near-zero behavior
+
+**What it checks**
+
+* The known limits:
+* 
+  $$J_b(0)=-\frac{\pi^4}{45},\qquad
+  J_f(0)=-\frac{7\pi^4}{360}.$$
+
+* For small positive (x), both (J_b) and (J_f) **increase toward 0**, as mass/temperature ($x=m/T$) grows.
+
+**Figure**
+
+* *Small-x behavior:*
+  ![Small-x behavior](assets/Exact_1.png)
+
+**Console output**
+
+```python
+"""
+=== Test 1: Small-x sanity (x → 0) ===
+J_b(0): num=-2.164646467421e+00, expected=-2.164646467422e+00, |Δ|=1.60e-12
+J_f(0): num=-1.894065658994e+00, expected=-1.894065658994e+00, |Δ|=6.66e-16
+Expectation: For both bosons and fermions, J(x) starts negative and increases toward 0 as x grows. 
+As we can see in the image above, this expectation is met.
+"""
+```
+
+---
+
+### Test 2 — Consistency: (J(x)) vs (J($\theta=x^2$)) for ($x\ge 0$)
+
+**What it checks**
+
+* Numerical agreement between the **x-API** (`J*_exact`) and the **θ-API** (`J*_exact2`) when ($\theta=x^2$) with ($x\ge 0$).
+* Differences should be at **quadrature noise** level.
+
+**Figure**
+
+* *Direct consistency, (J(x)-J($\theta$)):*
+  ![Consistency x vs theta](assets/Exact_2.png)
+
+**Console output**
+
+```python
+"""
+=== Test 2: Consistency J(x) vs J(theta=x^2) (x ≥ 0) ===
+Max |J_b(x) - J_b(theta)| over grid: 0.000e+00
+Max |J_f(x) - J_f(theta)| over grid: 0.000e+00
+Expectation: differences ~ 0 within quadrature noise. 
+This expectation its valid as we can see in the image above
+"""
+```
+
+---
+
+### Test 2b — Negative-($\theta$) branch and imaginary (x) cross-check
+
+**What it checks**
+
+* For ($\theta<0$), compare the **θ-API** values (J($\theta=-\mu^2$)) with the **x-API** evaluated at ($x=i\mu$) (dashed).
+  This confirms that our real, piecewise integrands for negative ($\theta$) match the legacy branch split for purely imaginary (x).
+
+**Figure**
+
+* *($\theta<0$) (solid) vs ($x=i\mu$) (dashed):*
+  ![Negative-theta vs imaginary-x](assets/Exact_3.png)
+
+**Console output**
+
+```python
+"""
+=== Test 2b: Negative-θ branch and imaginary-x consistency ===
+Max |J_b(θ<0) - J_b(x=iμ)| over grid: 5.551e-13
+Max |J_f(θ<0) - J_f(x=iμ)| over grid: 5.596e-12
+Expectation: solid and dashed curves overlap within quadrature accuracy.
+"""
+```
+
+---
+
+### Test 3 — Derivatives: shape and sign ($(dJ/dx \ge 0)$ for ($x\ge 0$))
+
+**What it checks**
+
+* From the derivative formulas,
+
+  $$\frac{dJ_f}{dx}=\int_0^\infty y^2\frac{x}{E}\frac{1}{e^E+1}dy\qquad
+  \frac{dJ_b}{dx}=\int_0^\infty y^2\frac{x}{E}\frac{1}{e^E-1}dy\quad E=\sqrt{y^2+x^2}$$
+
+  we expect **non negative** derivatives for ($x\ge 0$).
+* Plots should show both ($dJ_b/dx$) and ($dJ_f/dx$) positive and **decreasing toward 0** as (x) increases.
+
+**Figure**
+
+* *Derivatives vs (x):*
+  ![Derivatives vs x](assets/Exact_4.png)
+
+**Console output**
+
+```python
+"""
+=== Test 3: Derivative sign/shape (dJ/dx ≥ 0 for x ≥ 0) ===
+Min dJ_b/dx on grid: 0.000e+00  (expected ≥ 0)
+Min dJ_f/dx on grid: 0.000e+00  (expected ≥ 0)
+Expectation: derivatives are positive (curves move up toward 0). As we can see this is satisfied
+"""
+```
+
+---
+
+### Test 4 — Cross-check (dJ/dx) via finite-difference `gradientFunction` (order=4)
+
+**What it checks**
+
+* Independent numerical differentiation (order-4 central differences) reproduces `dJ*_exact` closely.
+
+**Figures**
+
+* *Boson derivative cross-check:*
+  ![dJb cross-check](assets/Exact_5.png)
+
+* *Fermion derivative cross-check:*
+  ![dJf cross-check](assets/Exact_6.png)
+
+**Console output**
+
+```python
+"""
+=== Test 4: Cross-check dJ/dx using gradientFunction (order=4) ===
+Max |dJ_b (FD) - dJ_b (exact)|: ...
+Max |dJ_f (FD) - dJ_f (exact)|: ...
+Expectation: order-4 finite differences should track the exact derivative closely (small max absolute error).
+"""
+```
+
+---
+
+###  Test 5A — Global trend: (x) from 0 to large (approach to 0)
+
+**What it checks**
+
+* Over a wide range ($x\in[0,10]$), both ($J_b$) and ($J_f$) **approach 0** as (x) grows (heavier mass over temperature).
+* The plot includes a **(y=0)** reference line.
+
+**Figure**
+
+* *Global trend with (y=0) guide:*
+  ![Global trend](assets/Exact_7.png)
+
+**Console output**
+
+```python
+"""
+=== Test 5A: Global trend (x from 0 to large) with y=0 reference ===
+Expectation: as x increases (heavier over T), both J_b and J_f approach 0 exponentially.
+"""
+```
+
+---
+
+### Test 5B — Large-(x) tails (semilog) and Bessel proxy ($x^2 K_2(x)$)
+
+**What it checks**
+
+* On a **semilog** scale, (|J|) decays roughly like ($\exp(-x)$).
+* The empirical proxy ($-x^2 K_2(x)$) captures the qualitative tail behavior.
+
+**Figures**
+
+* *Semilog magnitudes:*
+  ![Large-x semilog](assets/Exact_8.png)
+
+* *Tail ratio vs proxy:*
+  ![Tail ratio vs proxy](assets/Exact_9.png)
+
+**Console output**
+
+```python
+"""
+=== Test 5B: Large-x tail (semilog plots) ===
+Tail check (medians):
+ median[ J_b / ( -x^2 K2 ) ] = 1.000
+ median[ J_f / ( -x^2 K2 ) ] = 1.000
+Expectation: both |J| decay ~exp(-x); the Bessel proxy captures the trend qualitatively.
+"""
+```
+
+---
+
+### Test 6 — Physical illustration: thermal piece ($V_T\propto \sum_i n_i,J_{\pm}(m_i/T)$)
+
+**What it checks**
+
+* With illustrative degeneracies (n_b, n_f) and (T=1), thermal contributions built from ($J_b$) and ($J_$f) are largest near (x=0) and **vanish for ($x\gg 1$)**.
+
+**Figure**
+
+* *Illustrative thermal potential piece:*
+  ![Thermal piece VT](assets/Exact_10.png)
+
+**Console output**
+
+```python
+"""
+=== Test 6: Thermal contribution V_T ∝ J(x) with x = m/T ===
+Expectation: contributions are largest near x≈0 and vanish exponentially for x≫1.
+---------- END OF TESTS: Exact Thermal Integrals ----------
+"""
+```
+
+---
+
+### Reproducibility notes
+
+* Quadrature tolerances used internally: `epsabs=1e-10`, `epsrel=1e-8`, `limit=200`.
+* Small differences across machines/BLAS/SciPy versions are expected at the (10^{-9})–(10^{-7}) level in these tests.
+
+---

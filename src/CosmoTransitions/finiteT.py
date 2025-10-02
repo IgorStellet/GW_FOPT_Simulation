@@ -78,6 +78,7 @@ def _Jf_exact_scalar(x: Number) -> Number:
         xr = abs(x)
         def f(y: float) -> float:
             E = sqrt(y*y + xr*xr)
+            # - y^2 * log(1 + e^{-E})
             return -y*y * np.log1p(np.exp(-E))
         val, _ = integrate.quad(f, 0.0, np.inf, epsabs=1e-10, epsrel=1e-8, limit=200)
         return val
@@ -90,7 +91,7 @@ def _Jf_exact_scalar(x: Number) -> Number:
         # Keep same identity for consistency with legacy behavior
         return -y*y * np.log(2.0 * abs(np.cos(np.sqrt(ax2 - y*y)/2.0)))
     def f2(y: float) -> float:
-        E = sqrt(y*y + x*x)
+        E = float(np.sqrt(max(y*y - ax*ax, 0.0)))
         return -y*y * np.log1p(np.exp(-E))
     v1, _ = integrate.quad(f1, 0.0, ax, epsabs=1e-10, epsrel=1e-8, limit=200)
     v2, _ = integrate.quad(f2, ax, np.inf, epsabs=1e-10, epsrel=1e-8, limit=200)
@@ -115,7 +116,7 @@ def _Jb_exact_scalar(x: Number) -> Number:
     def f1(y: float) -> float:
         return y*y * np.log(2.0 * abs(np.sin(np.sqrt(ax2 - y*y)/2.0)))
     def f2(y: float) -> float:
-        E = sqrt(y*y + x*x)
+        E = float(np.sqrt(max(y*y - ax*ax, 0.0)))
         return y*y * np.log1p(-np.exp(-E))
     v1, _ = integrate.quad(f1, 0.0, ax, epsabs=1e-10, epsrel=1e-8, limit=200)
     v2, _ = integrate.quad(f2, ax, np.inf, epsabs=1e-10, epsrel=1e-8, limit=200)
@@ -184,9 +185,13 @@ def _dJb_exact_scalar(x: Number) -> float:
     if x == 0 or (getattr(x, "real", x) == 0 and getattr(x, "imag", 0.0) == 0.0):
         return 0.0
     xr = float(abs(x))
+    E_sw = 40.0  # switch where expm1(E) would overflow anyway
     def f(y: float) -> float:
         E = sqrt(y*y + xr*xr)
-        nB = 1.0 / np.expm1(E)       # 1/(e^E - 1)
+        if E <= E_sw:
+            nB = 1.0 / np.expm1(E)       # 1/(e^E - 1)
+        else:
+            nB = np.exp(-E)  # asymptotic form; avoids overflow
         return y*y * nB * (xr / E)
     val, _ = integrate.quad(f, 0.0, np.inf, epsabs=1e-10, epsrel=1e-8, limit=200)
     return float(val)
