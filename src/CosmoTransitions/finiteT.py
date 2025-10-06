@@ -7,7 +7,7 @@ from numpy.typing import ArrayLike
 from typing import Callable, Union, Tuple
 from scipy import integrate, special
 from scipy.interpolate import BSpline, make_interp_spline
-
+from scipy.special import factorial as fac
 
 ####################################
 # Exact Thermal Integrals (J_b, J_f)
@@ -599,3 +599,331 @@ def Jb_spline(X: ArrayLike, n: int = 0) -> ArrayLike:
     out[m_hi] = 0.0
 
     return float(out[0]) if scalar else out.reshape(X_arr.shape)
+
+
+#####################################
+# Approx Thermal Integrals (J_b, J_f)
+#####################################
+
+# -------------------------------
+# Low-x (high-T) asymptotic series
+# -------------------------------
+
+# ---- Precomputed coefficients (50 terms) ----
+# Bosons
+_a_b = -pi**4/45.0
+_b_b =  pi*pi/12.0
+_c_b = -pi/6.0
+_d_b = -1.0/32.0
+_logab = 1.5 - 2.0*euler_gamma + 2.0*np.log(4.0*pi)
+
+_l = np.arange(50, dtype=int) + 1
+_g_b = (-2.0 * pi**3.5 * (-1.0)**_l * (1.0 + special.zetac(2*_l + 1))
+        * special.gamma(_l + 0.5) / (fac(_l + 2) * (2.0*pi)**(2*_l + 4)))
+_g_b = np.asarray(_g_b, dtype=np.float64)
+
+# Fermions
+_a_f = -7.0*pi**4/360.0
+_b_f =  pi*pi/24.0
+_d_f =  1.0/32.0
+_logaf = 1.5 - 2.0*euler_gamma + 2.0*np.log(pi)
+
+_g_f = (0.25 * pi**3.5 * (-1.0)**_l * (1.0 + special.zetac(2*_l + 1))
+        * special.gamma(_l + 0.5) * (1.0 - 0.5**(2*_l + 1))
+        / (fac(_l + 2) * pi**(2*_l + 4)))
+_g_f = np.asarray(_g_f, dtype=np.float64)
+
+_MAX_LOW_TERMS = int(_g_b.size)  # = 50
+
+
+def _series_tail_sum(g: np.ndarray, x2: np.ndarray, n: int) -> np.ndarray:
+    """
+    Compute sum_{i=1..n} g[i-1] * x^(2i+4) in a vectorized, stable way:
+    x^(2i+4) = x^4 * (x^2)^i.
+    """
+    if n <= 0:
+        return np.zeros_like(x2, dtype=np.float64)
+    n = int(n)
+    n = min(max(n, 0), _MAX_LOW_TERMS)
+    x4 = (x2 * x2)
+    # powers of x2: (x2^1, x2^2, ..., x2^n)
+    pows = x2[..., None] ** np.arange(1, n + 1, dtype=np.int64)  # shape (..., n)
+    # dot along last axis with g[:n] -> shape (...)
+    return x4 * (pows @ g[:n])
+
+
+def Jb_low(x, n: int = 20):
+    r"""
+    Low-x (high-T) expansion for the bosonic thermal integral \(J_b(x)\).
+
+    Series (truncated at n terms in the tail):
+    \[
+    J_b(x) = -\frac{\pi^4}{45}
+             + \frac{\pi^2}{12}x^2
+             - \frac{\pi}{6}x^3
+             - \frac{1}{32}x^4\big(\log x^2 - \mathrm{const}_b\big)
+             + \sum_{i=1}^{n} g^{(b)}_i\, x^{2i+4},
+    \]
+    with \(\mathrm{const}_b = 1.5 - 2\gamma_E + 2\log(4\pi)\).
+
+    Parameters
+    ----------
+    x : float or array-like
+        Argument \(x=m/T\). Intended for \(|x|\ll 1\).
+    n : int, optional (default=20)
+        Number of tail terms \(\sum_{i=1}^n g_i x^{2i+4}\).
+        Clipped to the available maximum (50). Must be >= 0.
+
+    Returns
+    -------
+    y : float or ndarray
+        Approximation to \(J_b(x)\) with the chosen truncation.
+
+    Notes
+    -----
+    * Fully vectorized; scalar-in → scalar-out.
+    * The \(x^4\log x^2\) term is handled with a removable-singularity
+      convention: its contribution is set to 0 exactly at \(x=0\).
+    * Use the **exact** or **spline** implementations outside the small-x regime.
+    """
+    if n < 0:
+        raise ValueError("n must be non-negative.")
+    if np.iscomplexobj(x):
+        raise TypeError("Jb_low expects real x (use exact/spline for complex cases).")
+
+    x = _asarray(x).astype(np.float64, copy=False)
+    x2 = x * x
+
+    # Polynomial core up to x^3 plus x^4 log-term
+    y = (_a_b
+         + _b_b * x2
+         + _c_b * (x * x2))  # x^3
+
+    # log-term: d * x^4 * (log(x^2) - const_b), with safe handling at x=0
+    logx2 = np.empty_like(x, dtype=np.float64)
+    mask = (x != 0.0)
+    logx2[mask] = np.log(x2[mask])
+    logx2[~mask] = 0.0  # will be multiplied by x^4=0 => net 0 at x=0
+    y += _d_b * (x2 * x2) * (logx2 - _logab)
+
+    # Tail sum
+    y += _series_tail_sum(_g_b, x2, n)
+
+    return float(y) if _is_scalar(x) else y
+
+
+def Jf_low(x, n: int = 20):
+    r"""
+    Low-x (high-T) expansion for the fermionic thermal integral \(J_f(x)\).
+
+    Series (truncated at n terms in the tail):
+    \[
+    J_f(x) = -\frac{7\pi^4}{360}
+             + \frac{\pi^2}{24}x^2
+             + \frac{1}{32}x^4\big(\log x^2 - \mathrm{const}_f\big)
+             + \sum_{i=1}^{n} g^{(f)}_i\, x^{2i+4},
+    \]
+    with \(\mathrm{const}_f = 1.5 - 2\gamma_E + 2\log(\pi)\).
+
+    Parameters
+    ----------
+    x : float or array-like
+        Argument \(x=m/T\). Intended for \(|x|\ll 1\).
+    n : int, optional (default=20)
+        Number of tail terms \(\sum_{i=1}^n g_i x^{2i+4}\).
+        Clipped to the available maximum (50). Must be >= 0.
+
+    Returns
+    -------
+    y : float or ndarray
+        Approximation to \(J_f(x)\) with the chosen truncation.
+
+    Notes
+    -----
+    * Fully vectorized; scalar-in → scalar-out.
+    * The \(x^4\log x^2\) term is handled with a removable-singularity
+      convention: its contribution is set to 0 exactly at \(x=0\).
+    * Use the **exact** or **spline** implementations outside the small-x regime.
+    """
+    if n < 0:
+        raise ValueError("n must be non-negative.")
+    if np.iscomplexobj(x):
+        raise TypeError("Jf_low expects real x (use exact/spline for complex cases).")
+
+    x = _asarray(x).astype(np.float64, copy=False)
+    x2 = x * x
+
+    # Polynomial core up to x^2 (no x^3 term for fermions)
+    y = (_a_f
+         + _b_f * x2)
+
+    # log-term: d * x^4 * (log(x^2) - const_f), with safe handling at x=0
+    logx2 = np.empty_like(x, dtype=np.float64)
+    mask = (x != 0.0)
+    logx2[mask] = np.log(x2[mask])
+    logx2[~mask] = 0.0  # x=0 => contribution 0
+    y += _d_f * (x2 * x2) * (logx2 - _logaf)
+
+    # Tail sum
+    y += _series_tail_sum(_g_f, x2, n)
+
+    return float(y) if _is_scalar(x) else y
+
+
+# ----------------------------------------------
+# High-x (low-T) asymptotics via Bessel K
+# J_b^high and J_f^high with up to 3 derivatives
+#------------------------------------------------
+
+
+# ---- Single-k term contributions (even/odd symmetry handled) ----
+def x2K2(k: int, x):
+    """
+    Term:  - x^2 * K_2(k|x|) / k^2
+    Limit x→0:  -2 / k^4
+    """
+    if k <= 0:
+        raise ValueError("k must be a positive integer.")
+    if np.iscomplexobj(x):
+        raise TypeError("x2K2 expects real x.")
+    xa = np.abs(_asarray(x)).astype(np.float64, copy=False)
+    z = k * xa
+    val = - (xa * xa) * special.kv(2, z) / (k * k)
+    if _is_scalar(x):
+        return float(-2.0 / (k**4)) if xa == 0.0 else float(val)
+    out = val
+    m0 = (xa == 0.0)
+    if np.any(m0):
+        out = out.copy()
+        out[m0] = -2.0 / (k**4)
+    return out
+
+def dx2K2(k: int, x):
+    """
+    First derivative wrt x:
+      d/dx [ -x^2 K_2(k|x|)/k^2 ]  =  sign(x) * |x|^2 * K_1(k|x|) / k
+    Implemented as x*|x|/k * K_1(k|x|), which is odd in x and 0 at x=0.
+    """
+    if k <= 0:
+        raise ValueError("k must be a positive integer.")
+    if np.iscomplexobj(x):
+        raise TypeError("dx2K2 expects real x.")
+    x_arr = _asarray(x).astype(np.float64, copy=False)
+    xa = np.abs(x_arr)
+    z = k * xa
+    val = (x_arr * xa) * special.kv(1, z) / k
+    return float(val) if _is_scalar(x) else val
+
+
+def d2x2K2(k: int, x):
+    """
+    Second derivative wrt x (even):
+      d^2/dx^2 [ -x^2 K_2(k|x|)/k^2 ] = |x| * ( K_1(k|x|)/k - |x| * K_0(k|x|) )
+    Limit x→0:  1 / k^2
+    """
+    if k <= 0:
+        raise ValueError("k must be a positive integer.")
+    if np.iscomplexobj(x):
+        raise TypeError("d2x2K2 expects real x.")
+    xa = np.abs(_asarray(x)).astype(np.float64, copy=False)
+    z = k * xa
+    val = xa * (special.kv(1, z) / k - xa * special.kv(0, z))
+    if _is_scalar(x):
+        return float(1.0 / (k**2)) if xa == 0.0 else float(val)
+    out = val
+    m0 = (xa == 0.0)
+    if np.any(m0):
+        out = out.copy()
+        out[m0] = 1.0 / (k**2)
+    return out
+
+
+def d3x2K2(k: int, x):
+    """
+    Third derivative wrt x (odd):
+      d^3/dx^3 [ -x^2 K_2(k|x|)/k^2 ] = x * ( |x|*k*K_1(k|x|) - 3*K_0(k|x|) )
+    This is identically 0 at x=0 (factor x).
+    """
+    if k <= 0:
+        raise ValueError("k must be a positive integer.")
+    if np.iscomplexobj(x):
+        raise TypeError("d3x2K2 expects real x.")
+    x_arr = _asarray(x).astype(np.float64, copy=False)
+    xa = np.abs(x_arr)
+    z = k * xa
+    val = x_arr * (xa * k * special.kv(1, z) - 3.0 * special.kv(0, z))
+    return float(val) if _is_scalar(x) else val
+
+
+# ---- High-x sums for bosons/fermions ----
+def _select_K(deriv: int):
+    if deriv not in (0, 1, 2, 3):
+        raise ValueError("`deriv` must be 0, 1, 2, or 3.")
+    return (x2K2, dx2K2, d2x2K2, d3x2K2)[deriv]
+
+
+def Jb_high(x, deriv: int = 0, n: int = 8):
+    """
+    Bosonic high-x (low-T) expansion:
+      J_b(x) ≈ Σ_{k=1..n} T_k(x), where T_k is the k-th Bessel-K term (or its derivatives).
+    Parameters
+    ----------
+    x : float or array-like (real)
+    deriv : {0,1,2,3}, optional
+        0 → J itself, 1 → dJ/dx, 2 → d²J/dx², 3 → d³J/dx³
+    n : int, optional (default 8)
+        Number of exponential terms to sum (positive).
+    Returns
+    -------
+    float or ndarray
+        Truncated high-x sum; scalar-in → scalar-out.
+    Notes
+    -----
+    * Each term decays ~ e^{-k|x|}, so the series is rapidly convergent for large |x|.
+    * Uses |x| inside Bessel arguments to maintain the even/odd symmetry of derivatives.
+    """
+    if n <= 0:
+        raise ValueError("`n` must be a positive integer.")
+    if np.iscomplexobj(x):
+        raise TypeError("Jb_high expects real x.")
+    K = _select_K(deriv)
+    # small n (default 8): simple loop is fast, keeps memory footprint tiny
+    acc = 0.0
+    for k in range(1, n + 1):
+        acc = acc + K(k, x)
+    return float(acc) if _is_scalar(x) else _asarray(acc)
+
+
+def Jf_high(x, deriv: int = 0, n: int = 8):
+    """
+    Fermionic high-x (low-T) expansion:
+      J_f(x) ≈ Σ_{k=1..n} (-1)^{k-1} T_k(x), with the same T_k used for bosons.
+    Parameters
+    ----------
+    x : float or array-like (real)
+    deriv : {0,1,2,3}, optional
+        0 → J itself, 1 → dJ/dx, 2 → d²J/dx², 3 → d³J/dx³
+    n : int, optional (default 8)
+        Number of exponential terms to sum (positive).
+    Returns
+    -------
+    float or ndarray
+        Truncated high-x sum; scalar-in → scalar-out.
+    Notes
+    -----
+    * Alternating signs reflect Fermi–Dirac statistics.
+    * Rapid exponential convergence for large |x|.
+    """
+    if n <= 0:
+        raise ValueError("`n` must be a positive integer.")
+    if np.iscomplexobj(x):
+        raise TypeError("Jf_high expects real x.")
+    K = _select_K(deriv)
+    acc = 0.0
+    s = 1.0
+    for k in range(1, n + 1):
+        acc = acc + s * K(k, x)
+        s = -s
+    return float(acc) if _is_scalar(x) else _asarray(acc)
+
+##########################################################
