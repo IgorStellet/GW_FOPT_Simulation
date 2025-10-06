@@ -107,6 +107,46 @@ For full validation plots and quantitative error checks against the **exact** in
 
 ---
 
+### Low-x (High-T) - Test
+
+Comparison: exact vs. low-x series
+
+**Setup:** ($x \in [0,,1.5]$). We intentionally go beyond the strictly small-(x) window to show where the series starts to degrade. Truncation length (n=20) (can be tuned).
+
+**Note:** If you change the grid one can see that for $x \geq 3$, $J_f$ diverges quickly. The same thing happens for $x \geq 5.5$ in $J_b$. 
+
+#### Plots
+
+* **Boson:** exact vs. low-x approximation
+  ![Boson — exact vs low-x](assets/Approx_1.png)
+
+* **Fermion:** exact vs. low-x approximation
+  ![Fermion — exact vs low-x](assets/Approx_2.png)
+
+* **Relative error** (both species on one panel; log scale)
+  ![LOW-x relative error](assets/Approx_3.png)
+
+#### Expected behavior
+
+* Near ($x\approx 0$), the low (x) series is excellent for both ($J_b$) and ($J_f$).
+* Accuracy gradually decreases as (x) grows; with (n\approx 20), the series is typically reliable up to ($x\sim 0.6{-}0.8$).
+
+#### Console output
+
+```text
+=== Test 1: LOW-x (high-T) comparison: exact vs low-x series ===
+Boson  (low-x)  n=20: max abs err=9.492e-10, max rel err=7.029e-10
+Fermion(low-x)  n=20: max abs err=9.492e-10, max rel err=7.411e-10
+  threshold 1e-03: max x with rel err < thr →  J_b: 1.500,  J_f: 1.500
+  threshold 1e-04: max x with rel err < thr →  J_b: 1.500,  J_f: 1.500
+Expectation: The low-x series is excellent near x≈0 and degrades gradually;
+             truncation at n≈20 is typically sufficient up to x~0.6–0.8.
+```
+
+* see [tests/finiteT/Approx_Thermal_Integrals](/tests/finiteT/Approx_Thermal_Integrals.py) for more
+
+---
+
 ## High-x (Low-T) Approximate Thermal Integrals
 
 This page documents the **large (x)** (low temperature) asymptotic expansions of the 1 loop thermal integrals,
@@ -229,3 +269,52 @@ val_f = Jf_high(5.0, 2, 10) # d²/dx² with 10 terms
 
 ---
 
+### High-x (Low-T) - Test
+
+comparison: exact vs. high x series
+
+**Setup:** ($x \in [2,,10]$). We compare the exact integrals against the high (x) sums with **($n\in{4,8,12}$)** terms to illustrate exponential convergence.
+
+#### Plots
+
+* **Boson:** ($|J_b|$) semilog — exact vs. high-(x) (n=4,8,12)
+  ![Boson — high-x semilog](assets/Approx_4.png)
+
+* **Fermion:** ($|J_f|$) semilog — exact vs. high-(x) (n=4,8,12)
+  ![Fermion — high-x semilog](assets/Approx_5.png)
+
+* **Boson:** relative error vs. (x) (n=4,8,12)
+  ![Boson — high-x relative error](assets/Approx_6.png)
+
+* **Fermion:** relative error vs. (x) (n=4,8,12)
+  ![Fermion — high-x relative error](assets/Approx_7.png)
+
+#### Expected behavior
+
+* Both ($|J_b|$) and ($|J_f|$) decay roughly ($\sim e^{-x}$); the high-(x) sums track the exact curves closely on semilog axes.
+* Relative error drops rapidly with increasing (n) and (x); (n\approx 8{-}12) is usually very accurate for ($x\gtrsim 2$).
+
+#### Console output
+
+```text
+=== Test 2: HIGH-x (low-T) comparison: exact vs high-x series ===
+
+High-x error summary (boson):
+  n= 4: max rel err=1.619e-04, median rel err=3.945e-12
+  n= 8: max rel err=6.351e-07, median rel err=3.778e-16
+  n=12: max rel err=4.527e-09, median rel err=2.949e-16
+
+High-x error summary (fermion):
+  n= 4: max rel err=1.113e-04, median rel err=3.929e-12
+  n= 8: max rel err=3.878e-07, median rel err=3.485e-16
+  n=12: max rel err=2.618e-09, median rel err=2.686e-16
+
+Expectation: High-x sums converge exponentially fast with n and x;
+             even n≈8–12 is typically very accurate for x≳2.
+
+---------- END OF TESTS: Approx Thermal Integrals ----------
+```
+
+* see [tests/finiteT/Approx_Thermal_Integrals](/tests/finiteT/Approx_Thermal_Integrals.py) for more
+
+---
