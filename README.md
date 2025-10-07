@@ -18,7 +18,7 @@ Therefore, this project aims to deliver substantial improvements to the original
 
 ## 🔗 Quick links
 
-- 📚 **Documentation:** see [docs/index.md](docs/index.md), [Roadmap & Schedule](docs/roadmap.md) and [Architecture & Module Flow](docs/architecture.md)  
+- 📚 **Documentation:** see the [documentation](https://igorstellet.github.io/GW_FOPT_Simulation) or [docs/index.md](docs/index.md) 
 - 🧩 **New code (modernized):** [`src/CosmoTransitions`](src/CosmoTransitions/)  
 - 🧪 **Tests:** [`tests/`](tests/) 
 - 📓 **Examples:** [`examples/`](examples/)  
