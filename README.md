@@ -29,9 +29,9 @@ Therefore, this project aims to deliver substantial improvements to the original
 ## 🚦 Project status
 
 - **Phase 0** (planning): ✅ done  
-- **Phase 1.1** (modifying helper functions): ✅ done  
-- **Phase 1.5.1** (tests of helper functions ): ✅ done
-- **Phase 1.2** (modifying finiteT): in progress — see [Roadmap](docs/roadmap.md)
+- **Phase 1** (modifying auxiliar functions): ✅ done  
+- **Phase 1.5** (Test, docs & validation of auxiliar functions ): ✅ done
+- **Phase 2** (modifying tunneling1D): in progress — see [Roadmap](docs/roadmap.md)
 
 ---
 
