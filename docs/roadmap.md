@@ -17,7 +17,7 @@ Before modifying any module, consult the official documentation and/or the origi
 
 - **Official Documentation:**[https://clwainwright.net/CosmoTransitions/index.html](https://clwainwright.net/CosmoTransitions/index.html)
 - **Original Paper (arXiv):** [arXiv:1109.4189](https://arxiv.org/abs/1109.4189)
-- **Computer Physics Communications:** [10.1016/j.cpc.2012.04.004](https://doi.org/10.1016/j.cpc.2012.04.004
+- **Computer Physics Communications:** [10.1016/j.cpc.2012.04.004](https://doi.org/10.1016/j.cpc.2012.04.004)
 
 ---
 ## Project Timeline

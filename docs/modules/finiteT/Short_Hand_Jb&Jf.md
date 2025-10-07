@@ -63,7 +63,7 @@ Jf(x, approx: str = "high", deriv: int = 0, n: int = 8)  -> float | complex | np
 ### Test A — Exact ($J_b$, $J_f$) on ($[0,10]$)
 
 **What it checks:** Baseline curves from numerical quadrature; values at (x=0) match
-($J_b$(0)=-\pi^4/45) and ($J_f(0)$=-7\pi^4/360).
+$(J_b(0)=-\pi^4/45)$ and $(J_f(0)=-7\pi^4/360)$.
 **Expectation:** Both start negative and monotonically approach 0 as (x) grows.
 
 **Figure**
@@ -96,7 +96,7 @@ Max relative diff spline vs exact on [0,10]:  J_b: 5.564e-04,  J_f: 2.479e-05
 
 ---
 
-### Test C — Exact first derivatives ($\mathrm dJ$/$\mathrm dx$) on ([0,10])
+### Test C — Exact first derivatives $(\mathrm dJ/\mathrm dx)$ on ([0,10])
 
 **What it checks:** Direct quadrature of (dJ/dx).
 **Expectation:** (dJ/dx) is (0) at (x=0) (removable singularity handled),
@@ -116,8 +116,8 @@ dJ_b/dx at x=0: 0.000e+00 (expected 0);  dJ_f/dx at x=0: 0.000e+00 (expected 0)
 
 ### Test D — Spline first derivative mapped to (x) via chain rule
 
-**What it checks:** Spline derivatives (computed in ($\theta)$) correctly mapped to
-(x): ($ \frac{dJ}{dx} = 2x,\frac{dJ}{d\theta}$ ).
+**What it checks:** Spline derivatives (computed in $(\theta))$ correctly mapped to
+(x): $(\frac{dJ}{dx} = 2x,\frac{dJ}{d\theta})$.
 **Expectation:** Close agreement with exact (dJ/dx).
 
 **Figure**
@@ -148,7 +148,9 @@ $$\frac{d^2J}{dx^2} = 2,\frac{dJ}{d\theta} + 4x^2\frac{d^2J}{d\theta^2}$$
 ### Test F — Low-(x) series vs exact (with relative error)
 
 **What it checks:** High-T (small (x)) series accuracy windows.
+
 **Ranges:** ($J_b$) on ([0,7]), (J_f) on ([0,3.7]).
+
 **Expectation:** Low relative error in these windows; error grows as (x) leaves
 the intended regime.
 

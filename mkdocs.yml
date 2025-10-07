@@ -47,8 +47,11 @@ nav:
         - Numerical Integration Functions: modules/helper_functions/Numerical_integration.md
         - Numerical Derivatives Functions: modules/helper_functions/Numerical_derivatives.md
         - Interpolation Functions: modules/helper_functions/interpolation_functions.md
-    - Finite Temperature:
-        - Finete T Functions: modules/finiteT/finiteT.md
+    - Finite Temperature (One loop corrections):
+        - Exact Thermal Integrals: modules/finiteT/Exact_Thermal_Integrals.md
+        - Spline Thermal Integrals: modules/finiteT/Spline_Thermal_Integrals.md
+        - Approx Thermal Integrals: modules/finiteT/Approx_Thermal_Integrals.md
+        - Short Hand for All Thermal Integrals: modules/finiteT/Short_Hand_Jb&Jf.md
     - Tunneling (1D):
         - Tunneling Functions: modules/tunneling1D/tunneling1D.md
     - Transition Finder:

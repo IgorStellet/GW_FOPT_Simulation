@@ -11,6 +11,8 @@ fd_weights_1d(x_nodes: np.ndarray, x0: float, der: int) -> np.ndarray
 ### Purpose
 Computes the **finite difference weithts** that approximate the `der`-th derivatie of a function at point `x0`
 using an **aribtraty stencil** `x_nodes` (they do not need to be uniform or ordered).
+see [fw_weights_jornal](https://www.colorado.edu/amath/sites/default/files/attached-files/2020_f_hermite-fd_ima_j_num_anal.pdf) 
+if you want to know more.
 
 It is the “engine” that the derivative routines use to form linear combinations of the type
 
@@ -39,7 +41,7 @@ filling a table `c[j,k] ` (node **j**, derivative order **k**) and returning the
 
 **Notes**
 
-- **Typical accuracy (near-uniform stencils):** $\mathcal{O}$(h^{m-der}) for smooth functions, with h a characteristic spacing
+- **Typical accuracy (near-uniform stencils):** $(\mathcal{O}(h^{m-der}))$ for smooth functions, with h a characteristic spacing
 - **Polynomial exactness:** Exact for all polynomials up do degree `m-1`
 
 ---
@@ -309,7 +311,7 @@ deriv1n(y: np.ndarray, x: np.ndarray, n: int) -> np.ndarray
 
 General **first-derivative** on a **non-uniform** 1D grid using an **(n+1)-point** stencil with **Fornberg weights**.
 Same overall idea/policies as `deriv14` (centered interior, one-sided near boundaries), but here the **stencil size is configurable** via `n` (so `m = n+1` points). 
-For smooth data on near-uniform meshes, interior truncation error scales **$\approx \mathcal{O}(h^n)$* (e.g., `n=4` → 5-point, ~4th-order like `deriv14`).
+For smooth data on near-uniform meshes, interior truncation error scales **$(\approx \mathcal{O}(h^n))$** (e.g., `n=4` → 5-point, ~4th-order like `deriv14`).
 
 **What’s different vs. `deriv14` / `deriv14_const_dx`:**
 

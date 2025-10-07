@@ -1,20 +1,25 @@
 # Spline Thermal Integrals (Jb, Jf)
 
+The advantage of these functions is that, after creating a spline from the exact function's placement points, 
+we can quickly obtain a value for any desired point x on the curve without having to go through the integration process directly required by the exact method.
+Furthermore, we can expect good compatibility between the values. This is one of the spline's main uses.
+
 ---
 
 ## Spline Thermal Integrals (J_f)
 
 ### Purpose
 
+
 Provide a **fast, differentiable surrogate** for the exact fermionic thermal integral
 
 $$J_f(\theta)\equiv J_f\bigl(x^2\bigr)\quad \theta=(m/T)^2\in\mathbb{R}$$
 
-by fitting a **cubic B-spline** to samples of the exact function (J_f(\theta)) on a **non-uniform grid**.
+by fitting a **cubic B-spline** to samples of the exact function $(J_f(\theta))$ on a **non-uniform grid**.
 The spline preserves the **legacy API/behavior**:
 
 * Input is **($\theta=x^2$)** (not (x)); ($\theta$) can be **negative** (imaginary (x) branch).
-* For ($\theta < \theta_{\min}$): returns the **clamped** value ($J_f(\theta_{\min})$).
+* For ($\theta < \theta_{\min}$): returns the **clamped** value $(J_f(\theta_{\min}))$.
 * For ($\theta > \theta_{\max}$): returns **0** (and its derivatives 0), matching the physical larg -mass suppression in the legacy code.
 * Supports **derivatives w.r.t. ($\theta$)** via `n` (uses `BSpline.derivative(n)`).
 
@@ -42,10 +47,10 @@ Jf_spline(X: float | np.ndarray, n: int = 0) -> float | np.ndarray
 
 #### Returns
 
-* `out` (`float | ndarray`): ($J_f(\theta)$) (or its (n)-th ($\theta$)-derivative) evaluated by the spline.
+* `out` (`float | ndarray`): $(J_f(\theta))$ (or its (n)-th ($\theta$)-derivative) evaluated by the spline.
   Behavior outside the fit domain:
 
-  * If ($\theta < \theta_{\min}$): returns the **constant** value at (\theta_{\min}).
+  * If ($\theta < \theta_{\min}$): returns the **constant** value at $(\theta_{\min})$.
   * If ($\theta > \theta_{\max}$): returns **0.0** (derivatives also 0.0), per legacy behavior.
 
 #### Notes
@@ -66,7 +71,7 @@ _ensure_Jf_spline() -> scipy.interpolate.BSpline
 
 #### Purpose
 
-Construct (once) and return the **global** `BSpline` object for (J_f(\theta)).
+Construct (once) and return the **global** `BSpline` object for $(J_f(\theta))$.
 First tries to **load** a cached spline; if not found, it **builds** the dataset with `Jf_exact2()`, fits a cubic spline, and **saves** the spline parameters to disk.
 
 #### Notes
@@ -86,7 +91,7 @@ _build_Jf_dataset(n_neg: int = 420, n_pos_lin: int = 380, n_pos_log: int = 300) 
 
 #### Purpose
 
-Generate a **non-uniform theta grid** and its exact values ($J_f(\theta)$) used to fit the spline.
+Generate a **non-uniform theta grid** and its exact values $(J_f(\theta))$ used to fit the spline.
 
 * Negative branch: **linear** grid on ($[\theta_{\min}, 0]$) (dense).
 * Positive small: **linear** grid on ($[0, 50]$).
@@ -124,13 +129,13 @@ _save_Jf_cache(theta: np.ndarray, coeffs: np.ndarray, t: np.ndarray, k: int) -> 
 ### Purpose
 
 Provide a **fast, differentiable surrogate** for the exact bosonic thermal integral
-($J_b(\theta) \equiv J_b(x^2)$) with ($\theta=(m/T)^2\in\mathbb{R}$), by fitting a **cubic B-spline** to samples of the exact function ($J_b(\theta)$) on a **non-uniform grid**.
+$(J_b(\theta) \equiv J_b(x^2))$ with ($\theta=(m/T)^2\in\mathbb{R}$), by fitting a **cubic B-spline** to samples of the exact function $(J_b(\theta))$ on a **non-uniform grid**.
 The spline preserves the **legacy API/behavior**:
 
 * Input is **($\theta=x^2$)** (not (x)); ($\theta$) may be **negative** (imaginary-mass branch handled via the exact routine during fitting).
-* For ($\theta < \theta_{\min}$): return the **clamped** value ($J_b(\theta_{\min})$).
+* For ($\theta < \theta_{\min}$): return the **clamped** value $(J_b(\theta_{\min}))$.
 * For ($\theta > \theta_{\max}$): return **0.0** (and derivatives 0.0), matching the legacy tail suppression.
-* Support **derivatives w.r.t. (\theta)** via parameter `n` (uses `BSpline.derivative(n)`).
+* Support **derivatives w.r.t. $(\theta)$** via parameter `n` (uses `BSpline.derivative(n)`).
 
 **Domain used (legacy-compatible):**
 ($\displaystyle \theta_{\min} = -3.72402637,\qquad \theta_{\max} = 1.41\times 10^3.$)
@@ -150,11 +155,11 @@ Jb_spline(X: float | np.ndarray, n: int = 0) -> float | np.ndarray
 #### Parameters
 
 * `X` (`float | array_like`): Input **theta** values ($\theta=(m/T)^2$). Scalar-in → scalar-out.
-* `n` (`int`, default `0`): Derivative **order w.r.t. (\theta)** (0 for the function value, 1 for first derivative, etc.).
+* `n` (`int`, default `0`): Derivative **order w.r.t. $(\theta)$** (0 for the function value, 1 for first derivative, etc.).
 
 #### Returns
 
-* `out` (`float | ndarray`): ($J_b(\theta)$) (or its (n)-th ($\theta$)-derivative) evaluated by the spline.
+* `out` (`float | ndarray`): $(J_b(\theta))$ (or its (n)-th ($\theta$)-derivative) evaluated by the spline.
   Outside the fitted domain:
 
   * If ($\theta < \theta_{\min}$): returns the **constant** value at ($\theta_{\min}$).
@@ -172,8 +177,8 @@ Jb_spline(X: float | np.ndarray, n: int = 0) -> float | np.ndarray
 
 The internal helpers follow the **same design** as for `Jf_spline`:
 
-* **Dataset build**: generate a **non-uniform** (\theta) grid
-  (linear on ($[\theta_{\min},0]$), linear on ($[0,50]$), logarithmic on ((50,\theta_{\max}])) and compute **ground-truth** values via `Jb_exact2(theta)`.
+* **Dataset build**: generate a **non-uniform** $(\theta)$ grid
+  (linear on ($[\theta_{\min},0]$), linear on ($[0,50]$), logarithmic on $((50,\theta_{\max}]))$ and compute **ground-truth** values via `Jb_exact2(theta)`.
   *(Function: `_build_Jb_dataset`.)*
 * **Spline fit**: build a **cubic interpolating spline** (`make_interp_spline`) with `extrapolate=False`.
   *(Created inside `_ensure_Jb_spline`.)*
@@ -182,6 +187,7 @@ The internal helpers follow the **same design** as for `Jf_spline`:
   *(Functions: `_load_Jb_cache`, `_save_Jb_cache`, called by `_ensure_Jb_spline`.)*
 
 **Performance:** first build takes seconds (due to exact quadrature at a few hundred (\theta) nodes); subsequent runs are **milliseconds** (BSpline evaluation).
+
 **Reproducibility:** the cache pins the fitted spline; if the directory is read-only, the code still works (keeps the spline in memory).
 
 ---
@@ -189,7 +195,7 @@ The internal helpers follow the **same design** as for `Jf_spline`:
 ## Spline Thermal Integrals ($J_b, J_f$) — Tests
 
 This page documents the verification suite for the **Spline Thermal Integrals**.
-We validate that the spline surrogates `Jb_spline(θ)` and `Jf_spline(θ)` (with ($θ=x^2=(m/T)^2)$) reproduce the **exact** one-loop integrals and their **θ-derivatives**, 
+We validate that the spline surrogates `Jb_spline(θ)` and `Jf_spline(θ)` (with $(\theta=x^2=(m/T)^2)$ ) reproduce the **exact** one-loop integrals and their **θ-derivatives**, 
 and that the spline implementation is **consistent** with the B-spline basis from `helper_functions.Nbspl`.
 
 **Plot styling used below**
@@ -210,11 +216,11 @@ Compare `Jb_spline(θ=x^2)` and `Jf_spline(θ=x^2)` against `Jb_exact(x)` and `J
 
 **Expectation:** curves overlap within quadrature/spline noise; max absolute error across the grid should be small.
 
-**Boson (J_b): exact vs spline (with nodes)**
+**Boson $(J_b)$: exact vs spline (with nodes)**
 
 ![J_b exact vs spline](assets/Spline_1.png)
 
-**Fermion (J_f): exact vs spline (with nodes)**
+**Fermion $(J_f)$: exact vs spline (with nodes)**
 
 ![J_f exact vs spline](assets/Spline_2.png)
 

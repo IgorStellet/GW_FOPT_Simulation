@@ -53,7 +53,7 @@ and ($\gamma_E$) is the Euler Mascheroni constant. The tail coefficients ($g^{(b
 
 **Implementation notes**
 
-* The ($x^4\ln x^2$) piece has a **removable singularity** at (x=0). We evaluate it as *exactly zero* at ($x=0$) to avoid ($0\times(-\infty)$) numerics.
+* The ($x^4\ln x^2$) piece has a **removable singularity** at (x=0). We evaluate it as *exactly zero* at ($x=0$) to avoid $(0\times(-\infty))$ numerics.
 * The tail ($\sum_{i=1}^{n}g_i x^{2i+4}$) is accumulated as ($x^4 \sum_i g_i (x^2)^i$) for stability and performance.
 
 ---
@@ -67,7 +67,7 @@ and ($\gamma_E$) is the Euler Mascheroni constant. The tail coefficients ($g^{(b
 
 **Returns (both)**
 
-* `float | np.ndarray`: ($J_{b,f}(x)$) with the chosen truncation; preserves scalar/array shape.
+* `float | np.ndarray`: $(J_{b,f}(x))$ with the chosen truncation; preserves scalar/array shape.
 
 **Raises (both)**
 
@@ -107,7 +107,7 @@ For full validation plots and quantitative error checks against the **exact** in
 
 ---
 
-### Low-x (High-T) - Test
+### Test - Low-x (High-T) 
 
 Comparison: exact vs. low-x series
 
@@ -129,7 +129,7 @@ Comparison: exact vs. low-x series
 #### Expected behavior
 
 * Near ($x\approx 0$), the low (x) series is excellent for both ($J_b$) and ($J_f$).
-* Accuracy gradually decreases as (x) grows; with (n\approx 20), the series is typically reliable up to ($x\sim 0.6{-}0.8$).
+* Accuracy gradually decreases as (x) grows; with $(n\approx 20)$, the series is typically more reliable up to ($x\sim 1.5{-}2$).
 
 #### Console output
 
@@ -140,7 +140,7 @@ Fermion(low-x)  n=20: max abs err=9.492e-10, max rel err=7.411e-10
   threshold 1e-03: max x with rel err < thr →  J_b: 1.500,  J_f: 1.500
   threshold 1e-04: max x with rel err < thr →  J_b: 1.500,  J_f: 1.500
 Expectation: The low-x series is excellent near x≈0 and degrades gradually;
-             truncation at n≈20 is typically sufficient up to x~0.6–0.8.
+             truncation at n≈20 is typically sufficient up to x~1.5–2.
 ```
 
 * see [tests/finiteT/Approx_Thermal_Integrals](/tests/finiteT/Approx_Thermal_Integrals.py) for more
@@ -292,7 +292,7 @@ comparison: exact vs. high x series
 #### Expected behavior
 
 * Both ($|J_b|$) and ($|J_f|$) decay roughly ($\sim e^{-x}$); the high-(x) sums track the exact curves closely on semilog axes.
-* Relative error drops rapidly with increasing (n) and (x); (n\approx 8{-}12) is usually very accurate for ($x\gtrsim 2$).
+* Relative error drops rapidly with increasing (n) and (x); $(n\approx 8{-}12)$ is usually very accurate for ($x\gtrsim 2$).
 
 #### Console output
 

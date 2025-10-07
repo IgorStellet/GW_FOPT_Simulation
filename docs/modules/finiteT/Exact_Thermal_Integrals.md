@@ -128,22 +128,21 @@ This scalar kernel is used internally by the vectorized public wrapper `Jf_exact
 ### Where the formula comes from (QFT background)
 
 At one loop in finite-temperature field theory, the thermal correction for fermionic modes is proportional to
-($\int d^3p \ln\big(1+e^{-E_p/T}\big)$). After factoring constants and using spherical coordinates ($p/T \to y$), the angular integration yields ($4\pi$), and the radial part becomes exactly the integral above with the weight ($y^2$).
+$(\int d^3 p \ln \big (1+e^{-E_p/T}\big))$. After factoring constants and using spherical coordinates ($p/T \to y$), the angular integration yields ($4\pi$), and the radial part becomes exactly the integral above with the weight ($y^2$).
 
 ### Real-argument path (direct integral)
 
 For **real** (x), the integrand is real and we integrate directly:
 
-$$
-J_f(x)=\int_0^\infty -y^2\ln\big(1+e^{-E}\big)dy \qquad E=\sqrt{y^2+x^2}.$$
+$$J_f(x)=\int_0^\infty -y^2\ln\big(1+e^{-E}\big)dy \qquad E=\sqrt{y^2+x^2}$$
 
-We use the numerically stable identity ($\ln(1+e^{-E})=\mathrm{log1p}(e^{-E})$).
+We use the numerically stable identity $(ln(1+e^{-E})=\mathrm{log1p} (e^{-E}))$.
 
 ### Pore Complex-argument path (domain split)
 
 If (x) carries an imaginary part only, then for ($0\le y \le |x|$) the principal branch energy becomes **purely imaginary**:
 
-(E= i,z) with ($z=\sqrt{|x|^2-y^2}$). In this regime,
+(E= iz) with $(z=\sqrt{|x|^2-y^2})$. In this regime,
 
 $$1+e^{-E} = 1+e^{-i z} = 2e^{-i z/2}\cos(z/2)\quad\Rightarrow\quad \big|1+e^{-E}\big| = 2|\cos(z/2)|.$$
 
@@ -164,7 +163,7 @@ so that both pieces are **real valued** integrands, suitable for high accuracy q
 
 **Returns**
 
-* `Number`: The value of (J_f(x)). For real `x`, the result is real. For complex `x`, the value is computed via real integrands on both pieces and is real as well (principal-branch prescription).
+* `Number`: The value of $(J_f(x))$. For real `x`, the result is real. For complex `x`, the value is computed via real integrands on both pieces and is real as well (principal-branch prescription).
 
 **Raises / Assumptions**
 
@@ -187,7 +186,7 @@ _Jb_exact_scalar(x: Number) -> Number
 
 ### Purpose
 
-Evaluate the **exact one-loop bosonic thermal integral** ($J_b(x)$) for a **scalar** input (x) (real or complex),
+Evaluate the **exact one-loop bosonic thermal integral** $(J_b(x))$ for a **scalar** input (x) (real or complex),
 
 $$J_b(x) = \int_{0}^{\infty} dy y^2\ln\Big(1 - e^{-\sqrt{y^2+x^2}}\Big)$$
 
@@ -197,7 +196,7 @@ This scalar kernel is used internally by the vectorized public wrapper `Jb_exact
 
 ### Where the formula comes from (QFT background)
 
-For bosonic modes, the finite (T) one-loop contribution is proportional to ($\int d^3p ,\ln(1-e^{-E_p/T})$).
+For bosonic modes, the finite (T) one-loop contribution is proportional to $(\int d^3p \ln(1-e^{-E_p/T}))$.
 After the angular integral and rescaling ($p/T\to y$), we obtain the radial integral above with weight ($y^2$).
 
 ### Real-argument path (direct integral)
@@ -206,7 +205,7 @@ For **real** (x),
 
 $$J_b(x)=\int_0^\infty y^2\ln\big(1-e^{-E}\big)dy\qquad E=\sqrt{y^2+x^2}$$
 
-We employ the stable identity ($\ln(1-e^{-E})=\mathrm{log1p}(-e^{-E})$).
+We employ the stable identity $(\ln(1-e^{-E})=\mathrm{log1p}(-e^{-E}))$.
 
 ### Pure Complex-argument path (domain split)
 
@@ -232,7 +231,7 @@ which again yields **real** integrands in both intervals.
 
 **Returns**
 
-* `Number`: The value of ($J_b(x)$). For real `x` the result is real; with complex `x`, the split formulas ensure a real valued integral (principal branch choice).
+* `Number`: The value of ($J_b(x) $). For real `x` the result is real; with complex `x`, the split formulas ensure a real valued integral (principal branch choice).
 
 **Raises / Assumptions**
 
@@ -276,11 +275,11 @@ This is the scalar kernel used internally by the vectorized public wrapper `Jf_e
 
 $$J_f(\theta)=\int_0^\infty -y^2\ln\big(1+e^{-\sqrt{y^2+\theta}}\big)dy$$
 
-computed directly with the numerically stable identity ($\ln(1+e^{-E})=\mathrm{log1p}(e^{-E})$).
+computed directly with the numerically stable identity $(\ln(1+e^{-E})=\mathrm{log1p}(e^{-E}))$.
 
 ### Negative-θ branch $(\theta<0)$ — domain split with real integrands
 
-Write ($\theta=-\mu^2) ((\mu>0)$). Then
+Write $(\theta=-\mu^2) ((\mu>0))$. Then
 
 $$E=\sqrt{y^2+\theta}=\sqrt{y^2-\mu^2}=
 \begin{cases}
@@ -288,7 +287,7 @@ i\sqrt{\mu^2-y^2}\equiv i z & 0\le y<\mu
 \sqrt{y^2-\mu^2}\in\mathbb{R}*+  & y\ge \mu.
 \end{cases}$$
 
-For (E=i z), ($1+e^{-E}=2e^{-iz/2}\cos(z/2)$) and ($\big|1+e^{-E}\big|=2|\cos(z/2)|$).
+For (E=iz), ($1+e^{-E}=2e^{-iz/2}\cos(z/2)$) and ($\big|1+e^{-E}\big|=2|\cos(z/2)|$).
 Thus we split:
 
 $$\boxed{
@@ -307,7 +306,7 @@ Both pieces are **real**, ensuring stable high-accuracy quadrature.
 
 **Returns**
 
-* `float`: ($J_f(\theta)$) as a real number.
+* `float`: $(J_f(\theta))$ as a real number.
 
 **Raises / Assumptions**
 
@@ -352,7 +351,7 @@ Same rationale as fermions:
 
 $$J_b(\theta)=\int_0^\infty y^2\ln\big(1-e^{-\sqrt{y^2+\theta}}\big)dy$$
 
-computed via the stable ($\ln(1-e^{-E})=\mathrm{log1p}(-e^{-E})$).
+computed via the stable $(\ln(1-e^{-E})=\mathrm{log1p}(-e^{-E}))$.
 
 ### Negative-θ branch $(\theta<0)$ — domain split with real integrands
 
@@ -379,7 +378,7 @@ Again, both integrands are **real**.
 
 **Returns**
 
-* `float`: ($J_b(\theta)$) as a real number.
+* `float`: $(J_b(\theta))$ as a real number.
 
 **Raises / Assumptions**
 
@@ -392,7 +391,7 @@ Again, both integrands are **real**.
 
 ### Relationship between the x- and θ based functions
 
-* If (x) is **real** or **purely imaginary** ($(x=i\mu\Rightarrow \theta=-\mu^2)$), both APIs are **equivalent** and yield the same physics.
+* If (x) is **real** or **purely imaginary** $((x=i\mu\Rightarrow \theta=-\mu^2))$, both APIs are **equivalent** and yield the same physics.
 * The θ-API enforces ($\theta\in\mathbb{R}$) and constructs **real integrands** in all regimes, which improves numerical behavior and matches how downstream interpolation/approximations will operate.
 * The x API remains for **backward compatibility** with callers that already supply ($x=m/T$).
 
@@ -409,7 +408,7 @@ _dJf_exact_scalar(x: Number) -> float
 
 ### Purpose
 
-Compute the **exact derivative** ( $\dfrac{dJ_f}{dx}$ ) for a **scalar** (x) with a numerically stable integrand.
+Compute the **exact derivative** $(\dfrac{dJ_f}{dx})$ for a **scalar** (x) with a numerically stable integrand.
 For fermions,
 
 $$J_f(x)=\int_0^\infty -y^2\ln\Big(1+e^{-\sqrt{y^2+x^2}}\Big)dy \qquad E\equiv\sqrt{y^2+x^2}.$$
@@ -421,7 +420,8 @@ Under standard regularity conditions (smooth, absolutely integrable integrand), 
 $$\frac{dJ_f}{dx} =\int_0^\infty \frac{\partial}{\partial x}\left[-y^2\ln\big(1+e^{-E}\big)\right]dy.$$
 
 Using
-$$ \frac{d}{dE}\Big[-\ln\big(1+e^{-E}\big)\Big] =\frac{e^{-E}}{1+e^{-E}} =\frac{1}{e^{E}+1}\equiv  n_F(E) \qquad \frac{dE}{dx}=\frac{x}{E}$$
+
+$$\frac{d}{dE}\Big[-\ln\big(1+e^{-E}\big)\Big] =\frac{e^{-E}}{1+e^{-E}} =\frac{1}{e^{E}+1}\equiv  n_F(E) \qquad \frac{dE}{dx}=\frac{x}{E}$$
 
 we obtain the **fermionic derivative kernel**
 
@@ -431,9 +431,9 @@ $$\boxed{
 ### Numerical stability choices
 
 * We implement ( $n_F(E)=\dfrac{1}{e^{E}+1}$ ) as `special.expit(-E)` (the logistic function), which is stable for large (E).
-* By **parity**, ($J_f(x)$) is **even** in (x) (i.e., ($J_f(-x)=J_f(x)$)), hence ( $\tfrac{dJ_f}{dx}\big|_{x=0}=0 $). The function returns **0** exactly at (x=0).
+* By **parity**, $(J_f(x))$ is **even** in (x) (i.e., $(J_f(-x)=J_f(x))$ ), hence ( $\tfrac{dJ_f}{dx}\big|_{x=0}=0 $). The function returns **0** exactly at (x=0).
 * Internally we form ($E=\sqrt{y^2+x_r^2}$) with ($x_r=|x|\ge 0$) to guarantee ($E\ge 0$). In physical use ($x=m/T\ge 0$).
-  (For explicit sign handling: ($ \tfrac{dJ_f}{dx}(-x)=-\tfrac{dJ_f}{dx}(x) $).)
+  (For explicit sign handling: $(\tfrac{dJ_f}{dx}(-x)=-\tfrac{dJ_f}{dx}(x))$ ).
 
 ### Parameters, returns and Raises
 
@@ -443,12 +443,12 @@ $$\boxed{
 
 **Returns**
 
-* `float`: The real value of ( $\dfrac{dJ_f}{dx}$ ).
+* `float`: The real value of $(\dfrac{dJ_f}{dx})$.
 
 **Notes**
 
 * Quadrature settings: `epsabs=1e-10`, `epsrel=1e-8`, `limit=200`.
-* Integration domain (y\in[0,\infty)) with stable integrand ($y^2,\dfrac{x}{E},n_F(E)$).
+* Integration domain $(y\in[0,\infty))$ with stable integrand $(y^2,\dfrac{x}{E},n_F(E))$.
 
 ---
 
@@ -462,7 +462,7 @@ _dJb_exact_scalar(x: Number) -> float
 
 ### Purpose
 
-Compute the **exact derivative** ($ \dfrac{dJ_b}{dx} $) for a **scalar** (x).
+Compute the **exact derivative** $(\dfrac{dJ_b}{dx})$ for a **scalar** (x).
 For bosons,
 
 $$ J_b(x)=\int_0^\infty y^2\ln\Big(1-e^{-\sqrt{y^2+x^2}}\Big)dy \qquad E\equiv\sqrt{y^2+x^2}.$$
@@ -484,7 +484,7 @@ $$\boxed{ \frac{dJ_b}{dx}
 ### Numerical stability choices
 
 * We implement ( $n_B(E)=\dfrac{1}{e^{E}-1}$ ) as `1/np.expm1(E)`, which is stable as ($E\to 0^+$).
-* By **parity**, ($J_b(x)$) is **even** in (x) (i.e., ($J_b(-x)=J_b(x)$)), hence ($ \tfrac{dJ_b}{dx}\big|_{x=0}=0 $). The function returns **0** at (x=0).
+* By **parity**, $(J_b(x))$ is **even** in (x) (i.e., $(J_b(-x)=J_b(x))$ ), hence $(\tfrac{dJ_b}{dx}\big|_{x=0}=0)$. The function returns **0** at (x=0).
 * Internally ($E=\sqrt{y^2+x_r^2}$) with ($x_r=|x|\ge 0$), consistent with the physical case ($x=m/T\ge 0$).
   (For sign handling: ( $\tfrac{dJ_b}{dx}(-x)=-\tfrac{dJ_b}{dx}(x) $).)
 
@@ -496,12 +496,12 @@ $$\boxed{ \frac{dJ_b}{dx}
 
 **Returns**
 
-* `float`: The real value of ( $\dfrac{dJ_b}{dx}$ ).
+* `float`: The real value of $(\dfrac{dJ_b}{dx})$.
 
 **Notes**
 
 * Quadrature settings: `epsabs=1e-10`, `epsrel=1e-8`, `limit=200`.
-* Integration domain ($y\in[0,\infty)$) with stable integrand ($y^2,\dfrac{x}{E}n_B(E)$).
+* Integration domain $(y\in[0,\infty))$ with stable integrand $(y^2,\dfrac{x}{E}n_B(E))$.
 
 ---
 
@@ -560,8 +560,8 @@ dJb_exact(x: ArrayLike) -> Union[float, np.ndarray]
 * **Numerical stability.** Internally use stable forms:
 
   * `log1p` / `log1p(-exp(-E))` for the logs,
-  * `special.expit(-E)` for the Fermi factor ($1/(e^E+1)$),
-  * `1/np.expm1(E)` for the Bose factor ($1/(e^E-1)$).
+  * `special.expit(-E)` for the Fermi factor $(1/(e^E+1))$,
+  * `1/np.expm1(E)` for the Bose factor $(1/(e^E-1))$.
 * **Branching / complex inputs.**
 
   * For **θ-API** (`*_exact2`): ($\theta\in\mathbb{R}$). If ($\theta<0$) the integral is split at ($y=\sqrt{|\theta|}$) and expressed with ($\cos$) / ($\sin$), yielding **real integrands** throughout.
@@ -719,8 +719,8 @@ Expectation: derivatives are positive (curves move up toward 0). As we can see t
 ```python
 """
 === Test 4: Cross-check dJ/dx using gradientFunction (order=4) ===
-Max |dJ_b (FD) - dJ_b (exact)|: ...
-Max |dJ_f (FD) - dJ_f (exact)|: ...
+Max |dJ_b (FD) - dJ_b (exact)|: 1.318e-10
+Max |dJ_f (FD) - dJ_f (exact)|: 1.705e-11
 Expectation: order-4 finite differences should track the exact derivative closely (small max absolute error).
 """
 ```
@@ -750,12 +750,12 @@ Expectation: as x increases (heavier over T), both J_b and J_f approach 0 expone
 
 ---
 
-### Test 5B — Large-(x) tails (semilog) and Bessel proxy ($x^2 K_2(x)$)
+### Test 5B — Large-(x) tails (semilog) and Bessel proxy $(x^2 K_2(x))$
 
 **What it checks**
 
-* On a **semilog** scale, (|J|) decays roughly like ($\exp(-x)$).
-* The empirical proxy ($-x^2 K_2(x)$) captures the qualitative tail behavior.
+* On a **semilog** scale, (|J|) decays roughly like $(\exp(-x))$.
+* The empirical proxy $(-x^2 K_2(x))$ captures the qualitative tail behavior.
 
 **Figures**
 
@@ -779,11 +779,11 @@ Expectation: both |J| decay ~exp(-x); the Bessel proxy captures the trend qualit
 
 ---
 
-### Test 6 — Physical illustration: thermal piece ($V_T\propto \sum_i n_i,J_{\pm}(m_i/T)$)
+### Test 6 — Physical illustration: thermal piece $(V_T\propto \sum_i n_i,J_{\pm}(m_i/T))$
 
 **What it checks**
 
-* With illustrative degeneracies (n_b, n_f) and (T=1), thermal contributions built from ($J_b$) and ($J_$f) are largest near (x=0) and **vanish for ($x\gg 1$)**.
+* With illustrative degeneracies (n_b, n_f) and (T=1), thermal contributions built from ($J_b$) and ($J_f$) are largest near (x=0) and **vanish for ($x\gg 1$)**.
 
 **Figure**
 
@@ -794,6 +794,13 @@ Expectation: both |J| decay ~exp(-x); the Bessel proxy captures the trend qualit
 
 ```python
 """
+# For illustration only (not a strict unit test):
+T = 1.0  # set T=1 to focus on x=m/T
+deg_b, deg_f = 2.0, 4.0  # example degeneracies
+x_phys = np.linspace(0.0, 10.0, 160)
+Vb = (T**4 / (2*np.pi**2)) * deg_b * Jb_exact(x_phys)
+Vf = (T**4 / (2*np.pi**2)) * deg_f * Jf_exact(x_phys).real
+
 === Test 6: Thermal contribution V_T ∝ J(x) with x = m/T ===
 Expectation: contributions are largest near x≈0 and vanish exponentially for x≫1.
 ---------- END OF TESTS: Exact Thermal Integrals ----------
@@ -805,6 +812,6 @@ Expectation: contributions are largest near x≈0 and vanish exponentially for x
 ### Reproducibility notes
 
 * Quadrature tolerances used internally: `epsabs=1e-10`, `epsrel=1e-8`, `limit=200`.
-* Small differences across machines/BLAS/SciPy versions are expected at the (10^{-9})–(10^{-7}) level in these tests.
+* Small differences across machines/BLAS/SciPy versions are expected at the $(10^{-9})$-$(10^{-7})$ level in these tests.
 
 ---

@@ -56,8 +56,7 @@ It returns two callables:
 * To interpolate over an arbitrary interval $[x_a,x_b]$, map $x$ to
   $s=(x-x_a)/(x_b-x_a)\in[0,1]$. Endpoint derivatives must be **scaled**:
 
-  $$\frac{df}{dx}\Big|_{x_a} = \frac{1}{h}\frac{df}{ds}\Big|_{s=0},\quad
-  \frac{d^2 f}{dx^2}\Big|_{x_a} = \frac{1}{h^2}\frac{d^2 f}{ds^2}\Big|_{s=0}$$
+$$\frac{df}{dx}\Big|_{x_a} = \frac{1}{h}\frac{df}{ds}\Big|_{s=0}\quad \frac{d^2 f}{dx^2}\Big|_{x_a} = \frac{1}{h^2}\frac{d^2 f}{ds^2}\Big|_{s=0}$$
 
   with $h=x_b-x_a$ (same at the right end).
 
@@ -181,7 +180,7 @@ $$
 S(x_j)\;=\;\sum_{i=0}^{\text{nb}-1} c_i\,N_{i,k}(x_j),
 $$
 
-where $\text{nb} = m - k - 1$ is the number of degree-`k` basis functions (with $m=\text{len}(t)$) and $c_i$ are your control coefficients.
+where $\text{nb} = m - k - 1$ is the number of degree-`k` basis functions (with m=len(t)) and $c_i$ are your control coefficients.
 
 > Intuition (how it works):
 > • **Degree 0 (piecewise constants):** each $N_{i,0}$ is 1 on the knot interval $(t_i, t_{i+1}]$ and 0 elsewhere (this code uses a **right-closed** convention to mirror the legacy behavior).
