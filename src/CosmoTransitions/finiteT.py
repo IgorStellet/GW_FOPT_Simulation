@@ -926,4 +926,149 @@ def Jf_high(x, deriv: int = 0, n: int = 8):
         s = -s
     return float(acc) if _is_scalar(x) else _asarray(acc)
 
-##########################################################
+#######################
+# Short Hand (J_b, J_f)
+#######################
+
+# ---------------------------------------------------------
+# Public convenience wrappers (preserve legacy API)
+# ---------------------------------------------------------
+
+def Jb(x, approx: str = "high", deriv: int = 0, n: int = 8):
+    """
+    Shorthand dispatcher for the bosonic thermal integral.
+
+    Parameters
+    ----------
+    x : float, array-like
+        Input argument. Interpretation depends on `approx`:
+        - approx == "exact" | "low" | "high": `x` is the usual real mass ratio x = m/T.
+        - approx == "spline": `x` is **theta = (m/T)^2** (can be negative to model tachyonic curvature).
+          This matches the legacy behavior, where the spline was built in θ.
+    approx : {"exact","high","low","spline"}, optional
+        Which evaluator to use. Default: "high".
+        - "exact": numerical quadrature of the defining integral (supports d/dx).
+        - "low":   small-x (high-T) series (function value only).
+        - "high":  large-x (low-T) Bessel-K sum (supports up to 3 derivatives).
+        - "spline": cubic spline in θ (supports up to 3 derivatives; input is θ).
+    deriv : int, optional
+        Derivative order w.r.t. x for "exact"/"high", or w.r.t. θ for "spline".
+        Allowed ranges per mode:
+        - exact: 0 or 1
+        - low:   0 only
+        - high:  0..3
+        - spline:0..3
+        Default: 0.
+    n : int, optional
+        Truncation parameter:
+        - "low": number of tail terms in the small-x series (max 50).
+        - "high": number of exponential terms ∑_{k=1}^n (…).
+        Ignored for "exact" and "spline". Default: 8.
+
+    Returns
+    -------
+    out : float or ndarray
+        J_b evaluated element-wise (scalar-in → scalar-out).
+
+    Notes
+    -----
+    • The "spline" mode expects θ, not x, by design (legacy API). This allows θ<0.
+    • Complex x has no physical meaning here and is not supported in this wrapper.
+      Use the exact scalar routines directly if you really need complex analysis.
+    """
+    mode = str(approx).lower()
+    if mode == "exact":
+        if deriv == 0:
+            return Jb_exact(x)
+        if deriv == 1:
+            return dJb_exact(x)
+        raise ValueError("For approx='exact', 'deriv' must be 0 or 1.")
+    elif mode == "spline":
+        if not (0 <= int(deriv) <= 3):
+            raise ValueError("For approx='spline', 'deriv' must be in {0,1,2,3}.")
+        # In spline mode, x is *theta* by legacy convention
+        return Jb_spline(x, n=int(deriv))
+    elif mode == "low":
+        if deriv != 0:
+            raise ValueError("For approx='low', 'deriv' must be 0 (series gives function value only).")
+        if int(n) > 50:
+            raise ValueError("For approx='low', 'n' must be ≤ 50 (series length).")
+        return Jb_low(x, n=int(n))
+    elif mode == "high":
+        if not (0 <= int(deriv) <= 3):
+            raise ValueError("For approx='high', 'deriv' must be in {0,1,2,3}.")
+        return Jb_high(x, deriv=int(deriv), n=int(n))
+    else:
+        raise ValueError("Invalid 'approx'. Choose one of: 'exact', 'high', 'low', 'spline'.")
+
+
+def Jf(x, approx: str = "high", deriv: int = 0, n: int = 8):
+    """
+    Shorthand dispatcher for the fermionic thermal integral.
+
+    Parameters
+    ----------
+    x : float, array-like
+        Input argument. Interpretation depends on `approx`:
+        - approx == "exact" | "low" | "high": `x` is the usual real mass ratio x = m/T.
+        - approx == "spline": `x` is **theta = (m/T)^2** (can be negative to model tachyonic curvature).
+          This matches the legacy behavior, where the spline was built in θ.
+    approx : {"exact","high","low","spline"}, optional
+        Which evaluator to use. Default: "high".
+        - "exact": numerical quadrature of the defining integral (supports d/dx).
+        - "low":   small-x (high-T) series (function value only).
+        - "high":  large-x (low-T) Bessel-K alternating sum (supports up to 3 derivatives).
+        - "spline": cubic spline in θ (supports up to 3 derivatives; input is θ).
+    deriv : int, optional
+        Derivative order w.r.t. x for "exact"/"high", or w.r.t. θ for "spline".
+        Allowed ranges per mode:
+        - exact: 0 or 1
+        - low:   0 only
+        - high:  0..3
+        - spline:0..3
+        Default: 0.
+    n : int, optional
+        Truncation parameter:
+        - "low": number of tail terms in the small-x series (max 50).
+        - "high": number of exponential terms ∑_{k=1}^n (with alternating sign).
+        Ignored for "exact" and "spline". Default: 8.
+
+    Returns
+    -------
+    out : float, complex, or ndarray
+        J_f evaluated element-wise (scalar-in → scalar-out).
+        Note: in "exact" mode we preserve the legacy complex dtype; take `.real`
+        if you only need the physical (real) value for real x.
+
+    Notes
+    -----
+    • The "spline" mode expects θ, not x, by design (legacy API). This allows θ<0.
+    • Complex x has no physical meaning here and is not supported in this wrapper.
+      Use the exact scalar routines directly if you really need complex analysis.
+    """
+    mode = str(approx).lower()
+    if mode == "exact":
+        if deriv == 0:
+            return Jf_exact(x)
+        if deriv == 1:
+            return dJf_exact(x)
+        raise ValueError("For approx='exact', 'deriv' must be 0 or 1.")
+    elif mode == "spline":
+        if not (0 <= int(deriv) <= 3):
+            raise ValueError("For approx='spline', 'deriv' must be in {0,1,2,3}.")
+        # In spline mode, x is *theta* by legacy convention
+        return Jf_spline(x, n=int(deriv))
+    elif mode == "low":
+        if deriv != 0:
+            raise ValueError("For approx='low', 'deriv' must be 0 (series gives function value only).")
+        if int(n) > 50:
+            raise ValueError("For approx='low', 'n' must be ≤ 50 (series length).")
+        return Jf_low(x, n=int(n))
+    elif mode == "high":
+        if not (0 <= int(deriv) <= 3):
+            raise ValueError("For approx='high', 'deriv' must be in {0,1,2,3}.")
+        return Jf_high(x, deriv=int(deriv), n=int(n))
+    else:
+        raise ValueError("Invalid 'approx'. Choose one of: 'exact', 'high', 'low', 'spline'.")
+
+#################################### End of FiniteT modifications ####################################
