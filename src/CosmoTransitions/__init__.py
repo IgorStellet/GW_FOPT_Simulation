@@ -13,4 +13,6 @@ from .finiteT import  (_asarray, _is_scalar, _apply_elementwise,
                        _series_tail_sum, Jb_low, Jf_low, _select_K, x2K2, dx2K2, d2x2K2, d3x2K2, Jb_high, Jf_high,
                        Jb, Jf)
 
+from .tunneling1D import (PotentialError, SingleFieldInstanton)
+
 __version__ = "0.1.0"
