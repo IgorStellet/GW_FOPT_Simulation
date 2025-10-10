@@ -123,8 +123,8 @@ def compare_derivatives(name, V, dV_true, d2V_true):
 
     # Light barrier sanity (Lot SF-2 will test in depth)
     V_meta = V(inst4.phi_metaMin)
-    #V_bar  = V(inst4.phi_bar)
-    #print(f"[{name}] barrier check: V(phi_bar) - V(phi_metaMin) = {V_bar - V_meta:+.3e}")
+    V_bar  = V(inst4.phi_bar)
+    print(f"[{name}] barrier check: V(phi_bar) - V(phi_metaMin) = {V_bar - V_meta:+.3e}")
 
 compare_derivatives("THIN",  V_thin,  dV_thin,  d2V_thin)
 compare_derivatives("THICK", V_thick, dV_thick, d2V_thick)
@@ -169,6 +169,7 @@ def plot_set(name, V, dV_true, d2V_true):
     plt.plot(phi_grid, Vg, label="V(φ)", lw=2)
     plt.title(f"{name}: Potential")
     plt.xlabel("φ"); plt.ylabel("V(φ)")
+    #plt.xlim(0, 1.2)
     plt.grid(True, alpha=0.3); plt.tight_layout(); plt.show()
 
     plt.figure(figsize=(9, 5))
@@ -176,6 +177,7 @@ def plot_set(name, V, dV_true, d2V_true):
     plt.plot(phi_grid, dV_fd,  "--", label="V'(φ) builtin FD (o4)")
     plt.title(f"{name}: First derivative")
     plt.xlabel("φ"); plt.ylabel("V'(φ)")
+    #plt.xlim(0, 1.2)
     plt.legend(); plt.grid(True, alpha=0.3); plt.tight_layout(); plt.show()
 
     plt.figure(figsize=(9, 5))
@@ -183,6 +185,7 @@ def plot_set(name, V, dV_true, d2V_true):
     plt.plot(phi_grid, d2V_fd,  "--", label="V''(φ) builtin FD (o4)")
     plt.title(f"{name}: Second derivative")
     plt.xlabel("φ"); plt.ylabel("V''(φ)")
+    #plt.xlim(0, 1.2)
     plt.legend(); plt.grid(True, alpha=0.3); plt.tight_layout(); plt.show()
 
     # Residual summaries

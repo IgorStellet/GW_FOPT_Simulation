@@ -2,7 +2,7 @@
 
 This document describes the **single-field instanton** solver and the public API that underpins it. The implementation follows 
 the overshoot/undershoot shooting method and supports both **thin-wall** and **thick-wall** regimes with robust numerical defaults.
-
+see the [example](examples_single_field.md) page of this class if you want to understand more of each function!.
 ---
 
 ## Module overview
@@ -221,6 +221,8 @@ dV_from_absMin(delta_phi: float) -> float
 
 High-accuracy derivative at $(\phi=\phi_{\rm absMin}+\delta\phi)$. Near the minimum, direct finite differences can lose precision;
 we therefore **blend** a Taylor estimate using (V'') with the FD estimate.
+This happens because near the true minimum V'$(\phi)$ it's expected to be exactly zero, therefore it's relevant to evaluate with an
+alternative Method, i.e., `V'(\phi) \approx V''(\phi_{\rm absMin}) (\phi-\phi_{\rm absMin})`
 
 #### Method
 
@@ -278,5 +280,136 @@ If the user supplied a custom `d2V`, that takes precedence.
 * Vectorized; preserves input shape (scalar-in → scalar-out).
 
 ---
+
+## Lot SF-2 — Barrier & scales
+
+This lot modernizes how we **locate the barrier** that separates the metastable (false) vacuum from the absolute (true) vacuum and 
+how we estimate a **characteristic radial scale** for the instanton solution. 
+Both functions keep their legacy names and public behavior, but the numerics and diagnostics are stronger and more transparent.
+
+---
+
+### `findBarrierLocation`
+
+#### Signature
+
+```python
+findBarrierLocation(self) -> float
+```
+
+#### Purpose
+
+Return the **edge of the barrier** (`phi_bar`) defined implicitly by
+
+$$V(\phi_{\mathrm{bar}}) = V(\phi_{\mathrm{metaMin}})$$
+
+on the **downhill** side of the barrier when moving from the metastable minimum toward the absolute minimum.
+This is the crossing point at which the field “leaves” the false-vacuum plateau as it rolls toward the true vacuum.
+
+#### Behavior & algorithm (what’s new)
+
+* We first **locate the barrier top** (`phi_top`) — the maximizer of (V) — in the open interval between the two minima via a bounded 1D search (robust even if the potential has gentle wiggles).
+* We then solve for the **downhill crossing** of $(G(\phi)=V(\phi)-V(\phi_{\rm metaMin}))$ between `phi_top` and the absolute minimum using a **bracketed Brent root**.
+* On success, we return `phi_bar`. We also cache diagnostics in `self._barrier_info`:
+
+  * `phi_bar`, `phi_top`,
+  * `V_top_minus_Vmeta = V(phi_top) - V(phi_metaMin)`,
+  * `V_meta`, `V_abs`,
+  * `interval = (min(phi_metaMin, phi_absMin), max(...))`.
+
+This approach eliminates fragile reliance on strict monotonicity and makes error messages precise.
+
+#### Parameters, returns and Raises
+
+**Parameters**
+
+*None (uses the instance state).*
+
+**Returns**
+
+* `float`: `phi_bar` such that $(V(\phi_{\rm bar})=V(\phi_{\rm metaMin}))$.
+
+**Raises**
+
+* `PotentialError("…", "no barrier")`: if the barrier top cannot be located inside the interval, or the barrier height is non-positive (no barrier).
+* `PotentialError("…", "stable, not metastable")`: defensively raised if $(V(\phi_{\rm metaMin}) \le V(\phi_{\rm absMin}))$.
+
+#### Notes
+
+* The method is **purely 1D** and makes no smoothness assumptions beyond what the line search and root solver require (continuous (V)).
+* The cached `self._barrier_info` lets you reuse `phi_top` and heights in later analysis/plots without recomputation.
+
+---
+
+### `findRScale`
+
+#### Signature
+
+```python
+findRScale(self) -> float
+```
+
+#### Purpose
+
+Estimate a **characteristic radial scale** $(r_{\rm scale})$ for the instanton solution. 
+This sets physical step sizes for ODE integration and helps select plotting ranges.
+
+#### Physical meaning of the scale
+
+Near the **barrier top** the Euclidean EoM linearizes to
+
+$$\phi'' + \frac{\alpha}{r}\phi' \simeq V''(\phi_{\rm top}) \bigl(\phi - \phi_{\rm top}\bigr)$$
+
+If the top were strictly quadratic with curvature $(V''(\phi_{\rm top})<0)$, a naive local scale is $(r_{\rm curv}\sim 1/\sqrt{\lvert V''(\phi_{\rm top})\rvert})$.
+However, many relevant potentials in cosmology/phase transitions have **flat-topped** barriers $((V''(\phi_{\rm top})\approx 0))$, making $(r_{\rm curv})$ blow up 
+even when tunneling is well-defined.
+
+To remain stable and **legacy-compatible**, we adopt a **cubic surrogate** for the barrier shape that matches:
+
+* a **maximum** at the top $((\phi_{\rm top}))$,
+* a **minimum** at the metastable vacuum $((\phi_{\rm metaMin}))$,
+
+which yields the robust scale
+
+$$\boxed{
+r_{\rm scale} = r_{\rm cubic} =
+\frac{\bigl|\phi_{\rm top}-\phi_{\rm metaMin}\bigr|}
+{\sqrt{6[V(\phi_{\rm top})-V(\phi_{\rm metaMin})]}} }$$
+
+This remains finite on flat tops and empirically tracks the small-oscillation period scale up to an $(\mathcal{O}(1))$
+factor — ideal for setting numerics.
+
+#### Behavior & algorithm (what’s new)
+
+* Reuses `findBarrierLocation` to validate the barrier and obtain `phi_top` and its height above the false vacuum.
+* Computes and **returns** the legacy **cubic** scale $(r_{\rm cubic})$ (unchanged public behavior).
+* Also computes an optional **curvature** diagnostic $(r_{\rm curv} = 1/\sqrt{-V''(\phi_{\rm top})})$ when 
+$(V''(\phi_{\rm top})<0)$ (otherwise (+\infty)).
+* Caches diagnostics in `self._scale_info`:
+
+  * `phi_top`, `V_top_minus_Vmeta`, `xtop = phi_top - phi_metaMin`,
+  * `rscale_cubic`, `rscale_curv`, `d2V_top`.
+
+#### Parameters, returns and Raises
+
+**Parameters**
+
+*None (uses the instance state).*
+
+**Returns**
+
+* `float`: $(r_{\rm scale} = r_{\rm cubic})$, used elsewhere for step sizes and domain lengths.
+
+**Raises**
+
+* `PotentialError("…", "no barrier")`: if the barrier fails validation (no interior top or non-positive height).
+
+#### Notes
+
+* Returning the cubic scale preserves the **legacy interface** and numerical behavior.
+* The diagnostics are helpful for **thin-wall detection**, performance tuning, and sanity plots.
+
+---
+
 
 

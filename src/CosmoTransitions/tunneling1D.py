@@ -171,8 +171,7 @@ class SingleFieldInstanton:
 
         # Barrier location (accept given value but optionally sanity-check it)
         if phi_bar is None:
-
-            self.phi_bar = None  #self.findBarrierLocation()
+            self.phi_bar = self.findBarrierLocation()
         else:
             self.phi_bar = float(phi_bar)
             if validate:
@@ -192,7 +191,7 @@ class SingleFieldInstanton:
                     )
 
         # Characteristic scale
-        #self.rscale = float(self.findRScale()) if rscale is None else float(rscale)
+        self.rscale = float(self.findRScale()) if rscale is None else float(rscale)
 
         # Other parameters
         self.alpha = float(alpha)
@@ -237,7 +236,7 @@ class SingleFieldInstanton:
         r"""
         High-accuracy :math:`dV/d\phi` at ``phi = phi_absMin + delta_phi``.
 
-        Near the minimum, floating-point cancellation can degrade the FD
+        Near the TRUE minimum, floating-point cancellation can degrade the FD
         derivative. We therefore blend the finite-difference value with the
         linearized Taylor estimate
         :math:`V'(\phi) \approx V''(\phi_{\rm absMin}) (\phi-\phi_{\rm absMin})`.
@@ -296,3 +295,231 @@ class SingleFieldInstanton:
                     + 16 * V(phi + h) - V(phi + 2 * h)) / (12.0 * h * h)
         # 2nd-order fallback
         return (V(phi + h) - 2 * V(phi) + V(phi - h)) / (h * h)
+
+    def findBarrierLocation(self) -> float:
+        R"""
+        Locate the **edge of the barrier** between the metastable and absolute minima.
+
+        We define ``phi_bar`` as the point **between** ``phi_metaMin`` and ``phi_absMin``
+        where the potential crosses the false vacuum level:
+        :math:`V(\phi_{\rm bar}) = V(\phi_{\rm metaMin})`, on the *downhill* side of
+        the barrier (moving from the metastable minimum toward the absolute minimum).
+
+        Implementation notes
+        --------------------
+        - We first locate the barrier **top** (argmax of :math:`V`) within the open
+          interval between the two minima using a bounded 1D search. This is robust
+          even when the potential is not strictly monotonic away from the top.
+        - We then **root-find** :math:`G(\phi) \equiv V(\phi)-V(\phi_{\rm metaMin})`
+          on the interval between the top and the absolute minimum; this bracket
+          has opposite signs under metastability and guarantees a clean crossing.
+        - Results (``phi_bar``, ``phi_top``, heights, etc.) are cached to
+          ``self._barrier_info`` for inspection and reuse by other methods.
+
+        Returns
+        -------
+        float
+            ``phi_bar`` such that :math:`V(\phi_{\rm bar}) = V(\phi_{\rm metaMin})`.
+
+        Raises
+        ------
+        PotentialError
+            If no barrier top is found inside the interval, or the barrier height
+            is non-positive (i.e. no barrier), with reason code ``"no barrier"``.
+        """
+        # Basic interval & scales
+        a, b = (self.phi_metaMin, self.phi_absMin)
+        left, right = (a, b) if a < b else (b, a)
+        dphi = abs(self.phi_metaMin - self.phi_absMin)
+        if dphi == 0:
+            raise PotentialError(
+                "phi_metaMin and phi_absMin coincide; barrier is ill-defined.",
+                "no barrier"
+            )
+
+        V = self.V
+        V_meta = V(self.phi_metaMin)
+        V_abs = V(self.phi_absMin)
+        if not (V_meta > V_abs):
+            # This should already be caught in __init__, but keep it defensive.
+            raise PotentialError(
+                "Expected V(phi_metaMin) > V(phi_absMin); metastability violated.",
+                "stable, not metastable"
+            )
+
+        # 1) Find the barrier top robustly in (left, right).
+        # Use a bounded scalar maximization of V, i.e. minimization of -V.
+        xtol = max(1e-12 * dphi, np.finfo(float).eps**0.5 * dphi)
+        res = optimize.minimize_scalar(
+            lambda x: -V(x),
+            bounds=(left, right),
+            method="bounded",
+            options={"xatol": xtol}
+        )
+        phi_top = float(res.x)
+
+        # Sanity: top must lie strictly within the interval.
+        if not (left < phi_top < right):
+            raise PotentialError(
+                "Barrier top not found inside (phi_metaMin, phi_absMin). "
+                "Assume no barrier.",
+                "no barrier"
+            )
+
+        Vtop = V(phi_top) - V_meta
+        if not (Vtop > 0.0):
+            # No rise above the false vacuum level → no barrier.
+            raise PotentialError(
+                "Barrier height above the false vacuum is non-positive.",
+                "no barrier"
+            )
+
+        # 2) Find phi_bar where G(phi) = V(phi) - V_meta crosses zero on the
+        # downhill side of the barrier (from phi_top to the absolute minimum).
+        def G(x: float) -> float:
+            return V(x) - V_meta
+
+        # Determine which side is the absolute minimum w.r.t. phi_top.
+        # We always choose the segment [phi_top, absMin_side] that contains the
+        # downhill crossing.
+        if self.phi_absMin > self.phi_metaMin:
+            # absMin is to the right; bracket [phi_top, absMin]
+            x_lo, x_hi = phi_top, self.phi_absMin
+        else:
+            # absMin is to the left; bracket [absMin, phi_top] but keep (lo, hi) ordered
+            x_lo, x_hi = self.phi_absMin, phi_top
+
+        # Ensure a clean sign change; G(phi_top) > 0 by construction, G(abs) < 0.
+        G_lo, G_hi = G(x_lo), G(x_hi)
+        if not (np.sign(G_lo) * np.sign(G_hi) <= 0.0):
+            # Very rare numeric corner: reinforce bracket by a tiny inward nudge.
+            epsx = 1e-12 * dphi
+            x_lo2 = x_lo + np.sign(x_hi - x_lo) * max(epsx, xtol)
+            G_lo2 = G(x_lo2)
+            if np.sign(G_lo2) * np.sign(G_hi) > 0.0:
+                # As a last resort, scan a coarse grid to detect the first sign change.
+                grid = np.linspace(x_lo, x_hi, 256)
+                Gg = np.array([G(x) for x in grid])
+                idx = np.where(np.sign(Gg[:-1]) * np.sign(Gg[1:]) <= 0.0)[0]
+                if idx.size == 0:
+                    raise PotentialError(
+                        "Could not bracket the barrier edge where V=V(phi_metaMin).",
+                        "no barrier"
+                    )
+                x_lo, x_hi = grid[idx[0]], grid[idx[0] + 1]
+
+        # Robust root with Brent.
+        phi_bar = float(optimize.brentq(G, x_lo, x_hi, xtol=xtol, rtol=1e-12, maxiter=200))
+
+        # Cache useful diagnostics
+        self._barrier_info = {
+            "phi_bar": phi_bar,
+            "phi_top": phi_top,
+            "V_top_minus_Vmeta": Vtop,
+            "V_meta": V_meta,
+            "V_abs": V_abs,
+            "interval": (left, right),
+        }
+        return phi_bar
+
+    def findRScale(self) -> float:
+        R"""
+        Estimate a **characteristic radial scale** for the instanton.
+
+        Physics & rationale
+        -------------------
+        Near the barrier **top** the Euclidean EoM linearizes to
+        :math:`\phi'' + (\alpha/r)\phi' \simeq V''(\phi_{\rm top}) (\phi - \phi_{\rm top})`.
+        A naive estimate would be :math:`r_{\rm curv} \sim 1/\sqrt{|V''(\phi_{\rm top})|}`.
+        However, for **flat-topped** barriers :math:`V''(\phi_{\rm top}) \to 0`, making this
+        estimate blow up even when tunneling is well-defined.
+
+        We therefore use a **cubic-model** surrogate (legacy-compatible and robust):
+        fit a cubic that has a maximum at the barrier top and a minimum at the false
+        vacuum, which yields the scale
+
+        .. math::
+            r_{\rm cubic} = \frac{|\phi_{\rm top} - \phi_{\rm metaMin}|}
+                                    {\sqrt{6 [V(\phi_{\rm top}) - V(\phi_{\rm metaMin})] }}.
+
+        This stays finite on flat tops and tracks the small-oscillation period scale
+        up to an :math:`\mathcal{O}(1)` factor.
+
+        Implementation notes
+        --------------------
+        - Reuses/derives the barrier top from :meth:`findBarrierLocation`.
+        - Optionally computes the curvature-based scale (diagnostic), but **returns
+          the cubic scale** to remain fully backward compatible with cosmoTransitions.
+        - Stores diagnostics in ``self._scale_info`` for introspection.
+
+        Returns
+        -------
+        float
+            The characteristic scale (cubic model), used elsewhere to set
+            integration step sizes and wall extent.
+
+        Raises
+        ------
+        PotentialError
+            If the barrier does not exist or has non-positive height, with reason
+            code ``"no barrier"``.
+        """
+        # Ensure barrier info exists (also validates the barrier)
+        try:
+            phi_bar = getattr(self, "phi_bar", None)
+            if phi_bar is None:
+                phi_bar = self.findBarrierLocation()
+        except PotentialError:
+            # Propagate with the same message
+            raise
+
+        # Either use the cached top or recompute to be safe.
+        if not hasattr(self, "_barrier_info") or "phi_top" not in self._barrier_info:
+            # Recreate minimal info via a lightweight call
+            _ = self.findBarrierLocation()
+
+        info = getattr(self, "_barrier_info", {})
+        phi_top = info.get("phi_top", None)
+        if phi_top is None:
+            # Fallback: recompute locally
+            left, right = sorted((self.phi_metaMin, self.phi_absMin))
+            dphi = abs(self.phi_metaMin - self.phi_absMin)
+            xtol = max(1e-12 * dphi, np.finfo(float).eps**0.5 * dphi)
+            res = optimize.minimize_scalar(
+                lambda x: -self.V(x),
+                bounds=(left, right),
+                method="bounded",
+                options={"xatol": xtol}
+            )
+            phi_top = float(res.x)
+
+        V_meta = self.V(self.phi_metaMin)
+        Vtop = self.V(phi_top) - V_meta
+        if not (Vtop > 0.0):
+            raise PotentialError(
+                "Barrier height above the false vacuum is non-positive.",
+                "no barrier"
+            )
+
+        # Legacy-compatible cubic scale (robust for flat tops)
+        xtop = phi_top - self.phi_metaMin
+        rscale_cubic = abs(xtop) / np.sqrt(6.0 * Vtop)
+
+        # Optional diagnostic: curvature-based scale near the top
+        try:
+            d2V_top = float(self.d2V(phi_top))
+            rscale_curv = (1.0 / np.sqrt(-d2V_top)) if d2V_top < 0.0 else np.inf
+        except Exception:
+            d2V_top, rscale_curv = np.nan, np.inf
+
+        # Cache diagnostics for users
+        self._scale_info = {
+            "phi_top": phi_top,
+            "V_top_minus_Vmeta": Vtop,
+            "xtop": xtop,
+            "rscale_cubic": rscale_cubic,
+            "rscale_curv": rscale_curv,
+            "d2V_top": d2V_top,
+        }
+
+        return rscale_cubic
