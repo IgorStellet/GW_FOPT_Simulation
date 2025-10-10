@@ -296,6 +296,7 @@ class SingleFieldInstanton:
         # 2nd-order fallback
         return (V(phi + h) - 2 * V(phi) + V(phi - h)) / (h * h)
 
+    # --- SF-2: Barriers and Scales -------------------------------------
     def findBarrierLocation(self) -> float:
         R"""
         Locate the **edge of the barrier** between the metastable and absolute minima.
@@ -523,3 +524,228 @@ class SingleFieldInstanton:
         }
 
         return rscale_cubic
+
+    # -----------------------------------------------------------------------
+    # Lot SF-3 — Quadratic local solution (exactSolution) & Initial conditions
+    # ------------------------------------------------------------------------
+    _exactSolution_rval = namedtuple("exactSolution_rval", "phi dphi")
+
+    def exactSolution(self, r: float, phi0: float, dV: float, d2V: float):
+        r"""
+        Regular solution of the EOM at radius r assuming a *local quadratic*
+        potential around ``phi0``:
+
+            phi'' + (alpha/r) phi' = V'(phi0) + V''(phi0) * (phi - phi0)
+
+        Let ``nu = (alpha-1)/2``. With ``beta = sqrt(|d2V|)`` and ``t = beta*r``:
+
+        * If ``d2V > 0``:
+            phi(r) - phi0 = (dV/d2V) * [ Γ(nu+1) * (t/2)^(-nu) I_nu(t) - 1 ]
+
+        * If ``d2V < 0`` (write ``beta = sqrt(-d2V)``):
+            replace ``I_nu -> J_nu``.
+
+        * If **d2V == 0** (flat curvature): the EOM reduces to a constant drive,
+          and the *exact regular* solution is
+
+            phi(r) = phi0 + dV * r^2 / (2*(alpha+1)),     phi'(r) = dV * r / (alpha+1).
+
+        Numerical strategy
+        ------------------
+        * Return exactly ``(phi0, 0.0)`` for ``r == 0``.
+        * Use the closed form above for ``d2V == 0`` (robust and overflow-free).
+        * For small arguments (``t = beta*r`` below a cutoff), evaluate via a short
+          even-power series that is well-conditioned and manifestly regular.
+        * Otherwise, use the Bessel/modified-Bessel forms and suppress harmless
+          overflow warnings (the combinations we form are finite).
+
+        Parameters
+        ----------
+        r : float
+            Radius (>= 0). At r=0 the regular solution has phi'(0)=0.
+        phi0 : float
+            Field value at r=0 about which the quadratic expansion is taken.
+        dV : float
+            V'(phi0).
+        d2V : float
+            V''(phi0).
+
+        Returns
+        -------
+        exactSolution_rval
+            Named tuple ``(phi, dphi)`` evaluated at r.
+
+        Notes
+        -----
+        * Regularity enforces phi'(0)=0 for any alpha >= 0.
+        * The small-t series keeps terms up to O(t^6), which is plenty for
+          t ≲ 1e-2 in double precision.
+        """
+        # Input hygiene
+        if not np.isfinite(r) or r < 0:
+            raise ValueError("exactSolution: 'r' must be finite and >= 0.")
+        if not (np.isfinite(phi0) and np.isfinite(dV) and np.isfinite(d2V)):
+            raise ValueError("exactSolution: phi0, dV, and d2V must be finite.")
+
+        # r = 0 → regular boundary condition
+        if r == 0.0:
+            return self._exactSolution_rval(phi0, 0.0)
+
+        # Trivial "flat" curvature: exact closed form, avoids any Bessel work
+        if d2V == 0.0:
+            denom = (self.alpha + 1.0)
+            # alpha >= 0 in physical use; denom>0. Keep formula general nonetheless.
+            phi = phi0 + (dV * r * r) / (2.0 * denom)
+            dphi = (dV * r) / denom
+            return self._exactSolution_rval(float(phi), float(dphi))
+
+        # Common definitions
+        nu = 0.5 * (self.alpha - 1.0)
+        beta = float(np.sqrt(abs(d2V)))
+        t = beta * r
+
+        # If the local slope is zero, we still need the structure for dphi; keep path.
+        if dV == 0.0:
+            # In all branches, the solution collapses to phi(r)=phi0, phi'(r)=0.
+            return self._exactSolution_rval(phi0, 0.0)
+
+        # Robust small-argument expansion (even powers of t). Coefficients:
+        # c_k = Γ(nu+1) / [ k! Γ(k+nu+1) ] for k >= 1, so that
+        # Γ(nu+1)*(t/2)^(-nu) I_nu(t) - 1 ≈ Σ_{k=1..K} c_k (t/2)^{2k}
+        # Derivative follows analytically.
+        def small_t_series(sign: float):
+            # sign = +1 for d2V>0 (I_nu), -1 for d2V<0 (J_nu) because J-series alternates
+            g = special.gamma
+            tau = 0.5 * t
+            # Accumulate up to k=3 (t^6), which is ample for t ≲ 1e-2
+            phi_acc = 0.0
+            dphi_acc = 0.0
+            for k in (1, 2, 3):
+                ck = g(nu + 1.0) / (float(special.factorial(k)) * g(k + nu + 1.0))
+                term = ck * (tau ** (2 * k))
+                # For J_nu the even-power series alternates: I_nu → (+), J_nu → (+,-,+,...)
+                term *= (sign ** k)
+                phi_acc += term
+                # d/d r of (tau^{2k}) = (2k) * tau^{2k-1} * (dtau/dr); dtau/dr = beta/2
+                dphi_acc += (2 * k) * (tau ** (2 * k - 1)) * (beta / 2.0) * (sign ** k)
+            # Multiply by dV/d2V and add phi0; derivative picks the same prefactor.
+            pref = (dV / d2V)
+            phi = phi0 + pref * phi_acc
+            dphi = pref * dphi_acc
+            return float(phi), float(dphi)
+
+        # Choose evaluation path
+        small_cut = 1e-2  # conservative; keeps series well within FP accuracy
+        if t <= small_cut:
+            # d2V>0 → I_nu (sign=+1); d2V<0 → J_nu (sign alternation)
+            sign = +1.0 if d2V > 0.0 else -1.0
+            return self._exactSolution_rval(*small_t_series(sign))
+
+        # Full expressions via Bessel/modified-Bessel for moderate/large t
+        gamma = special.gamma
+        if d2V > 0.0:
+            # Modified Bessel case (I_nu)
+            with np.errstate(over='ignore', under='ignore', divide='ignore', invalid='ignore'):
+                iv = special.iv
+                # phi
+                core = gamma(nu + 1.0) * (0.5 * t) ** (-nu) * iv(nu, t) - 1.0
+                phi = phi0 + (dV / d2V) * core
+                # dphi: careful with the r in the denominator; we are not in small-t branch anymore
+                term1 = -nu * ((0.5 * t) ** (-nu) / r) * iv(nu, t)
+                term2 = (0.5 * t) ** (-nu) * 0.5 * beta * (iv(nu - 1.0, t) + iv(nu + 1.0, t))
+                dphi = (gamma(nu + 1.0) * (dV / d2V)) * (term1 + term2)
+            return self._exactSolution_rval(float(phi), float(dphi))
+        else:
+            # Ordinary Bessel case (J_nu)
+            with np.errstate(over='ignore', under='ignore', divide='ignore', invalid='ignore'):
+                jv = special.jv
+                core = gamma(nu + 1.0) * (0.5 * t) ** (-nu) * jv(nu, t) - 1.0
+                phi = phi0 + (dV / d2V) * core
+                term1 = -nu * ((0.5 * t) ** (-nu) / r) * jv(nu, t)
+                term2 = (0.5 * t) ** (-nu) * 0.5 * beta * (jv(nu - 1.0, t) - jv(nu + 1.0, t))
+                dphi = (gamma(nu + 1.0) * (dV / d2V)) * (term1 + term2)
+            return self._exactSolution_rval(float(phi), float(dphi))
+
+    _initialConditions_rval = namedtuple("initialConditions_rval", "r0 phi dphi")
+
+    def initialConditions(self, delta_phi0: float, rmin: float, delta_phi_cutoff: float):
+        r"""
+        Construct *regular* initial conditions away from the r=0 singular point.
+
+        Strategy
+        --------
+        Let ``phi0 = phi_absMin + delta_phi0``. Use the local quadratic solution
+        (``exactSolution``) to evaluate the field at ``rmin``. If that already
+        satisfies the requested *offset* from the absolute minimum,
+
+            |phi(r0) - phi_absMin|  >  |delta_phi_cutoff|,
+
+        we start at r0 = rmin. Otherwise, we *increase* r geometrically until the
+        condition is met, and then solve for the *exact* r0 with a 1D root find.
+
+        Edge cases & safeguards
+        -----------------------
+        * If the field is initially moving *toward the wrong side* (sign mismatch
+          between ``dphi(rmin)`` and ``delta_phi0``), we return r0=rmin rather than
+          pushing r out (increasing r will not fix the direction).
+        * All returns are **named tuples** for consistency.
+        * If the geometric search fails to bracket the root (pathological V),
+          a clear ``IntegrationError`` is raised.
+
+        Parameters
+        ----------
+        delta_phi0 : float
+            Offset at the center: ``phi(0) - phi_absMin``.
+        rmin : float
+            Minimal radius to start the integration (>= 0).
+        delta_phi_cutoff : float
+            Target offset at r0: ``phi(r0) - phi_absMin`` in magnitude.
+
+        Returns
+        -------
+        initialConditions_rval
+            Named tuple ``(r0, phi(r0), dphi(r0))``.
+        """
+        if rmin < 0 or not np.isfinite(rmin):
+            raise ValueError("initialConditions: rmin must be finite and >= 0.")
+        if not (np.isfinite(delta_phi0) and np.isfinite(delta_phi_cutoff)):
+            raise ValueError("initialConditions: delta_phi0 and delta_phi_cutoff must be finite.")
+
+        phi0 = self.phi_absMin + delta_phi0
+        dV0 = self.dV_from_absMin(delta_phi0)
+        d2V0 = self.d2V(phi0)
+
+        # Evaluate at rmin via the regular local solution
+        phi_r0, dphi_r0 = self.exactSolution(rmin, phi0, dV0, d2V0)
+
+        # If rmin already meets the requested offset, start there
+        if abs(phi_r0 - self.phi_absMin) > abs(delta_phi_cutoff):
+            return self._initialConditions_rval(rmin, float(phi_r0), float(dphi_r0))
+
+        # If the field is moving the "wrong" way, do not expand r0 further
+        if np.sign(dphi_r0) != np.sign(delta_phi0) and dphi_r0 != 0.0 and delta_phi0 != 0.0:
+            return self._initialConditions_rval(rmin, float(phi_r0), float(dphi_r0))
+
+        # Geometric growth to bracket the solution where |phi - phi_absMin| crosses the cutoff
+        r_left = rmin if rmin > 0.0 else np.finfo(float).eps
+        r = max(r_left, rmin)
+        max_tries = 60  # extremely generous; avoids silent infinite loops
+        growth = 10.0  # legacy behavior
+        for _ in range(max_tries):
+            r_last = r
+            r *= growth
+            phi, _dphi = self.exactSolution(r, phi0, dV0, d2V0)
+            if abs(phi - self.phi_absMin) > abs(delta_phi_cutoff):
+                break
+        else:
+            # Failed to bracket — this suggests a pathological potential or parameters
+            raise IntegrationError("initialConditions: failed to bracket r0 (no crossing found).")
+
+        # Root for |phi(r) - phi_absMin| - |delta_phi_cutoff| = 0 on [r_last, r]
+        def deltaPhiDiff(r_):
+            p, _ = self.exactSolution(r_, phi0, dV0, d2V0)
+            return abs(p - self.phi_absMin) - abs(delta_phi_cutoff)
+
+        r0 = optimize.brentq(deltaPhiDiff, r_last, r, disp=False)
+        phi_r0, dphi_r0 = self.exactSolution(r0, phi0, dV0, d2V0)
+        return self._initialConditions_rval(float(r0), float(phi_r0), float(dphi_r0))

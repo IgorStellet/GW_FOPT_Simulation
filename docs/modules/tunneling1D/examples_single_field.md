@@ -143,7 +143,7 @@ Physics intuition:
 * **Thin wall** (nearly degenerate minima) → **sharper** barrier (more negative (V'') at the top) → **smaller** length scale (wall is thinner).
 * **Thick wall** (more separated minima) → **broader** barrier → **larger** length scale.
 
-See the full, executable script for this lot here: [`tests/single_field/Lot_SF_1.py`](/tests/tunneling1D/single_field/Lot_SF2.py).
+See the full, executable script for this lot here: [`tests/single_field/Lot_SF2.py`](/tests/tunneling1D/single_field/Lot_SF2.py).
 for all example the potential chosen was:
 
 $$\text{THIN}: \frac{1}{4}\phi ^4 - 0.49\phi ^3 + 0.235 \phi ^2 $$
@@ -156,7 +156,7 @@ $$\text{THICK}:  \frac{1}{4}\phi ^4 - \frac{2}{5}\phi^3 + \frac{1}{10}\phi^2 $$
 **How to run just this case (Run both examples at once)**
 
 ```bash
-python -m tests.single_field.Lot_SF_2  # it includes thin- and thick-wall cases
+python -m tests.tunneling1D.single_field.Lot_SF2  # it includes thin- and thick-wall cases
 ```
 
 ---
@@ -232,3 +232,143 @@ Scale diagnostics:
 
 ---
 
+## Lot 3 — Quadratic local solution & initial conditions
+
+See the full, executable script for this lot here: [`tests/single_field/Lot_SF3.py`](/tests/tunneling1D/single_field/Lot_SF3.py).
+for all example the potential chosen was:
+
+$$\text{THIN}: \frac{1}{4}\phi ^4 - 0.49\phi ^3 + 0.235 \phi ^2 $$
+
+$$\text{THICK}:  \frac{1}{4}\phi ^4 - \frac{2}{5}\phi^3 + \frac{1}{10}\phi^2 $$
+
+
+This lot illustrates the *local* (small-radius) analytic solution used by `SingleFieldInstanton.exactSolution` and how we choose
+practical starting points via `SingleFieldInstanton.initialConditions`. We work with the same thin- and thick-wall toy potentials from previous lots.
+
+**How to run just this case (Run both examples at once)**
+
+```bash
+python -m tests.tunneling1D.single_field.Lot_SF3  # it includes all tests (more than the ones here)
+```
+
+---
+
+### Test 1 — Local quadratic solution near the true minimum (stable curvature)
+
+**What it shows**
+
+* Around the stable minimum, $(V''(\phi_0)>0)$, the non-singular solution behaves smoothly with $(\phi'(0)=0)$ and a quadratic rise at small (r).
+* The plot overlays $(\phi(r)-\phi_0)$ and $(\phi'(r))$ computed by `exactSolution`.
+
+**Expected result**
+
+* $(\phi'(0)=0)$ numerically.
+* $(\phi(r)-\phi_0)$ grows $(\propto r^2)$ for very small (r); $(\phi'(r)\propto r)$.
+
+**Console excerpts (typical)**
+
+```
+=== Test 1: Local quadratic solution near abs minimum (d2V > 0) ===
+ Thin: dV(phi0)=5.315e-04, d2V(phi0)=5.331e-01, rscale≈1.668e+00
+  Expectation: phi'(0)=0, smooth quadratic rise; numerical curve should be regular.
+
+ Thick: dV(phi0)=8.018e-04, d2V(phi0)=8.036e-01, rscale≈2.357e+00
+  Expectation: phi'(0)=0, smooth quadratic rise; numerical curve should be regular.
+```
+
+**Figure**
+
+![Test 1 — Near abs minimum (d2V>0): thin wall; (\phi(r)-\phi\_0) and (\phi'(r))](assets/SF3_1.png)
+
+![Test 1 — Near abs minimum (d2V>0): thick wall; (\phi(r)-\phi\_0) and (\phi'(r))](assets/SF3_2.png)
+
+---
+
+### Test 2 — Local solution near the barrier top (unstable curvature)
+
+**What it shows**
+
+* At the barrier top $(\phi_{\text{top}})$, $(V'(\phi_{\text{top}})\approx 0)$ and $(V''(\phi_{\text{top}})<0)$.
+* `exactSolution` switches to the $(J_\nu)$ branch; the solution remains regular at (r=0) with $(\phi'(0)=0)$, 
+* but the local shape reflects the inverted curvature.
+
+**Expected result**
+
+* Printed curvature satisfies $(d^2V(\phi_{\text{top}})<0)$ (up to near-flat numerical cases).
+* Plots show a small-(r) “inverted” profile relative to $(\phi_{\text{top}})$, still smooth at the origin.
+
+**Console excerpts (typical)**
+
+```
+=== Test 2: Local solution near barrier top (d2V < 0) ===
+ Thin: phi_top=0.470000, dV(phi_top)=-1.268e-10, d2V(phi_top)=-2.491e-01
+  Expectation: d2V < 0 → oscillatory (J_ν) behavior; still regular at r=0 with phi'(0)=0.
+
+ Thick: phi_top=0.200000, dV(phi_top)=-2.250e-11, d2V(phi_top)=-1.600e-01
+  Expectation: d2V < 0 → oscillatory (J_ν) behavior; still regular at r=0 with phi'(0)=0.
+```
+
+**Figure**
+
+![Test 2 — Near barrier top thin (d2V<0): (\phi(r)-\phi\_{\text{top}}) and (\phi'(r))](assets/SF3_3.png)
+
+![Test 2 — Near barrier top thick (d2V<0): (\phi(r)-\phi\_{\text{top}}) and (\phi'(r))](assets/SF3_4.png)
+
+
+---
+
+### Test 4 — `initialConditions`: pick $((r_0,\phi(r_0),\phi'(r_0)))$ and visualize the short path
+
+**What it shows**
+
+* Given an interior offset $(\Delta\phi_0)$ and a target cutoff $(|\Delta\phi(r_0)|)$, we solve for a practical $(r_0)$.
+* The short trajectory from (r=0) to $(r=r_0)$ is plotted using the same local quadratic solution; the chosen starting point is marked.
+
+**Expected result**
+
+* $(|\phi(r_0)-\phi_{\text{abs}}|\gtrsim )$ cutoff.
+* $(\operatorname{sign}(\phi'(r_0))=\operatorname{sign}(\Delta\phi_0))$.
+
+**Console excerpts (typical)**
+
+```
+=== Test 4: initialConditions (r0, phi(r0), phi'(r0)) ===
+ Thin: r0=1.667709e-03, phi(r0)=1.018316e+00, phi'(r0)=8.527581e-06
+  Expectation: |phi(r0)-phi_absMin| ≳ cutoff, and phi'(r0) has the same sign as delta_phi0.
+```
+
+**Figure**
+
+![Test 4 — initialConditions: short path to (r\_0) and start marker thin](assets/SF3_7.png)
+
+![Test 4 — initialConditions: short path to (r\_0) and start marker thick](assets/SF3_8.png)
+
+---
+
+### Test 5 — `initialConditions` error path (unreachable cutoff)
+
+**What it shows**
+
+* If $(\Delta\phi_0=0)$ exactly (starting right at the true minimum) and the cutoff is strictly positive, 
+* the local model never reaches the cutoff; the function raises a clear `IntegrationError`.
+
+**Expected result**
+
+* A caught `IntegrationError` with an informative message.
+
+**Console excerpts (typical)**
+
+```
+=== Test 5: initialConditions error (unreachable cutoff) ===
+ Thin: Caught expected IntegrationError:
+   initialConditions: failed to bracket r0 (no crossing found).
+
+ Thick: Caught expected IntegrationError:
+   initialConditions: failed to bracket r0 (no crossing found).
+   
+---------- END OF TESTS: Lot SF-3 ----------
+```
+
+* For more context (potential, barrier, and scaling) see Lots **SF1** and **SF2** above.
+
+---

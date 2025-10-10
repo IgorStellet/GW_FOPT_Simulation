@@ -411,5 +411,187 @@ $(V''(\phi_{\rm top})<0)$ (otherwise (+\infty)).
 
 ---
 
+Here’s the continuation of **`single_field.md`** for the next block.
 
+---
+
+## Lot SF-3 — Quadratic local solution & initial conditions
+
+This block implements the *local* (near-center) analytic control we use to (i) evaluate the field in a small neighborhood of the bubble center and
+(ii) generate safe initial conditions away from the (r=0) singular point of the radial equation.
+The two public members covered here are:
+
+* `exactSolution(r, phi0, dV, d2V)`
+* `initialConditions(delta_phi0, rmin, delta_phi_cutoff)`
+
+Both are methods of `SingleFieldInstanton`.
+
+### Physical background (why Bessel functions appear)
+
+The Euclidean bounce equation for a spherically symmetric profile in $((\alpha+1))$ spatial dimensions is
+
+$$\phi''(r) + \frac{\alpha}{r}\phi'(r) = V'(\phi)\qquad r\ge 0$$
+
+Near a chosen point $(\phi_0)$ (typically very close to the true minimum $(\phi_{\rm absMin})$ when constructing thin-wall bounces), 
+Taylor-expand the potential to quadratic order:
+
+$$V'(\phi) \approx dV + d2V(\phi-\phi_0); \quad dV = V'(\phi_0);\quad d2V = V''(\phi_0)$$
+
+Let $(\delta\phi(r)=\phi(r)-\phi_0)$. Then
+
+$$\delta\phi'' + \frac{\alpha}{r}\delta\phi' - d2V\delta\phi = dV$$
+
+Shift out the constant drive with $(\delta\phi=\psi + dV/d2V)$ (when $(d2V\neq 0)$), to obtain the homogeneous equation
+
+$$\psi'' + \frac{\alpha}{r}\psi' - d2V\psi = 0$$
+
+whose regular solution at the origin is expressed in terms of Bessel functions. Defining
+
+$$\nu \equiv \frac{\alpha-1}{2}\qquad ,\beta \equiv \sqrt{|d2V|},\qquad t \equiv \beta r$$
+
+the *regular* solution is
+
+* **Stable curvature** ((d2V>0), harmonic well):
+
+$$\phi(r)-\phi_0 = \frac{dV}{d2V}\Bigg[\Gamma(\nu+1)\Big(\tfrac{t}{2}\Big)^{-\nu} I_\nu(t)-1\Bigg]$$
+
+* **Unstable curvature** ((d2V<0), inverted well, e.g. near the barrier top): replace $(I_\nu \to J_\nu)$.
+
+Regularity at the origin enforces $(\phi'(0)=0)$ for any $(\alpha\ge 0)$.
+
+If **(d2V=0)** (flat curvature), the ODE reduces to a constant drive and the *exact* regular solution is the polynomial
+
+$$\phi(r)=\phi_0 + \frac{dV}{2(\alpha+1)}r^2\qquad \phi'(r)=\frac{dV}{\alpha+1}r$$
+
+These closed forms are what the code evaluates, with numerically stable branches for small/large arguments.
+
+---
+
+### `exactSolution`
+
+#### Signature
+
+```python
+exactSolution(r: float, phi0: float, dV: float, d2V: float) -> exactSolution_rval
+# exactSolution_rval = namedtuple("exactSolution_rval", "phi dphi")
+```
+
+#### Purpose
+
+Compute the **regular** local solution $((\phi(r),\phi'(r)))$ at radius (r) assuming a quadratic expansion of the potential around $(\phi_0)$.
+This is used to:
+
+* accurately probe the profile near the origin,
+* build safe, physically consistent initial conditions for the global ODE solver.
+
+#### Key definitions (appearing in formulas and code)
+
+* $(\alpha)$: friction power in the radial term, i.e. spacetime dimension minus 1.
+* $(\nu=(\alpha-1)/2)$: effective Bessel index fixed by the radial Laplacian.
+* $(\beta=\sqrt{|d2V|})$ and $(t=\beta r)$: scale & argument controlling oscillatory/exponential behavior.
+* Regularity: $(\phi'(0)=0)$ (enforced exactly by the implementation).
+
+#### Parameters
+
+* `r` (`float`): radius (≥ 0). At `r==0` the method returns `(phi0, 0.0)` exactly.
+* `phi0` (`float`): expansion point for the quadratic model.
+* `dV` (`float`): $(V'(\phi_0))$.
+* `d2V` (`float`): $(V''(\phi_0))$.
+
+#### Returns
+
+* `exactSolution_rval(phi, dphi)`: field and radial derivative at radius `r`.
+
+#### Implementation notes
+
+* **Flat curvature** (`d2V==0`): uses the exact polynomial solution above (no Bessel calls).
+* **Small argument** (`t = beta*r ≤ 1e-2`): uses a **short even-power series** up to (t^6), which is well-conditioned and avoids any division by `r`.
+* **General case**: uses the Bessel/modified-Bessel forms, with overflow/underflow warnings suppressed locally; the combined expressions are finite.
+* Input validation ensures all inputs are finite and `r≥0`.
+
+#### Physical interpretation
+
+* (d2V>0): local **restoring force**; near a true minimum the solution is “massive” and grows as $(I_\nu(t))$ but regularized to match $(\phi'(0)=0)$.
+* (d2V<0): local **tachyonic/inverted** curvature, relevant near the barrier top; the solution is oscillatory via $(J_\nu)$.
+* (d2V=0): locally flat—driven purely by the constant slope (dV); the profile starts quadratically from the center.
+
+---
+
+### `initialConditions`
+
+#### Signature
+
+```python
+initialConditions(delta_phi0: float, rmin: float, delta_phi_cutoff: float) -> initialConditions_rval
+# initialConditions_rval = namedtuple("initialConditions_rval", "r0 phi dphi")
+```
+
+#### Purpose
+
+Choose **where** to start integrating the full ODE (away from the (r=0) singularity) and with **which values** $((\phi,\phi'))$,
+using the local quadratic solution as a high-accuracy guide. 
+The goal is to start just outside the bubble center yet already sufficiently displaced from the true minimum to keep the 
+overshoot/undershoot search efficient and stable.
+
+#### Inputs & meaning
+
+* `delta_phi0`: desired central offset $( \phi(0)-\phi_{\rm absMin} )$. In thin-wall cases this can be *very* small.
+* `rmin`: the **smallest** radius allowed for starting the global integration (relative to `rscale` in higher-level code).
+* `delta_phi_cutoff`: the target magnitude of the field offset at the starting radius $(r_0)$:
+  $(|\phi(r_0)-\phi_{\rm absMin}| > |\delta\phi_{\rm cutoff}|)$.
+
+#### Strategy (what the code does)
+
+1. Construct $(\phi_0 = \phi_{\rm absMin} + \delta\phi_0)$ and compute $(dV=V'(\phi_0))$, $(d2V=V''(\phi_0))$.
+2. Use `exactSolution` at `rmin`.
+
+   * If $(|\phi(r_{\min})-\phi_{\rm absMin}| > |\delta\phi_{\rm cutoff}|)$, **start there**.
+   * If the field is moving the **wrong way** (sign of $(\phi'(r_{\min}))$ opposite to $(\delta\phi_0))$, **start there** as well; increasing (r) won’t fix the direction.
+3. Otherwise, **geometrically increase** (r) (×10 each step) and re-evaluate with `exactSolution` until the cutoff is exceeded (this brackets the crossing).
+4. Solve for the exact $(r_0)$ by a 1D root find on
+   $(f(r)=|\phi(r)-\phi_{\rm absMin}|-|\delta\phi_{\rm cutoff}|)$.
+5. Return $((r_0,\phi(r_0),\phi'(r_0)))$ as a named tuple.
+
+If the geometric search fails to bracket the crossing (pathological potential/settings), a clear `IntegrationError` is raised.
+
+#### Returns
+
+* `initialConditions_rval(r0, phi, dphi)`: starting radius and values to feed the global integrator.
+
+#### Notes & guidance
+
+* This method is agnostic to the global wall shape; it only relies on the **local** quadratic model, which is accurate near the true minimum where $(r_0)$ lives in thin-wall cases.
+* Choosing a too large `delta_phi_cutoff` may degrade accuracy (starting too far from the regime where the quadratic model is excellent). Too small can slow down the shoot or underflow numerics. The default policy used upstream balances these effects.
+* The named-tuple interface is intentional—downstream code can unpack by name or position.
+
+---
+
+### Common assumptions (for both functions)
+
+* **Spherical symmetry** and **regularity at the origin** $((\phi'(0)=0))$.
+* The **principal** branches for $(\sqrt{\cdot})$ and Bessel functions are used.
+* $(\alpha\ge 0)$ (physical cases); nonetheless, the formulas are coded generically.
+* All inputs are finite; non-finite inputs raise a value error upfront.
+
+---
+
+### Numerical stability & accuracy
+
+* **Small-argument regime**: the (t)-series keeps terms through $(t^6)$, which is more than enough for $(t\lesssim 10^{-2})$ in double precision.
+* **Flat curvature**: handled by an **exact polynomial**; no Bessel calls or divisions-by-(r).
+* **Overflow/underflow**: benign warnings inside SciPy’s Bessel routines are silenced locally, and the combinations used are finite by construction.
+* **Deterministic regularity**: at `r==0`, `exactSolution` returns `(phi0, 0.0)` exactly.
+
+---
+
+### Quick reference (symbols)
+
+* $(\alpha)$: friction power in the radial Laplacian; equals spacetime dimension minus 1.
+* $(\nu=(\alpha-1)/2)$: Bessel index.
+* $(dV=V'(\phi_0))$, $(d2V=V''(\phi_0))$: local slope & curvature of the potential.
+* $(\beta=\sqrt{|d2V|})$, $(t=\beta r)$: scale and argument for Bessel functions.
+* $(\phi_{\rm absMin})$, $(\phi_{\rm metaMin})$: true and false vacuum field values (set in the class constructor).
+* `delta_phi0`, `delta_phi_cutoff`: user-level displacements used to place the start of the integration.
+
+---
 
