@@ -749,3 +749,289 @@ class SingleFieldInstanton:
         r0 = optimize.brentq(deltaPhiDiff, r_last, r, disp=False)
         phi_r0, dphi_r0 = self.exactSolution(r0, phi0, dV0, d2V0)
         return self._initialConditions_rval(float(r0), float(phi_r0), float(dphi_r0))
+
+    # -------------------------------
+    # Lot SF-4 — ODE core (EOM + RKQS driver + sampler)
+    # -------------------------------
+    @staticmethod
+    def _normalize_tolerances(epsfrac, epsabs):
+        ef_arr = np.atleast_1d(epsfrac).astype(float)
+        ea_arr = np.atleast_1d(epsabs).astype(float)
+
+        # Scalars for rkqs (conservative / strictest across components)
+        ef_scalar = float(np.min(ef_arr))
+        ea_scalar = float(np.min(ea_arr))
+
+        # Per-component absolute thresholds for event/convergence checks
+        if ea_arr.size == 1:
+            eps_phi = eps_dphi = 3.0 * ea_arr[0]
+        else:
+            eps_phi  = 3.0 * ea_arr[0]
+            eps_dphi = 3.0 * ea_arr[1]
+        return ef_scalar, ea_scalar, eps_phi, eps_dphi
+
+    def equationOfMotion(self, y, r):
+        """
+        Right-hand side (RHS) of the single-field bounce ODE.
+
+        Solves the 2D first-order system for y = [phi, dphi]:
+
+            dphi/dr   = y[1]
+            d^2phi/dr^2 = dV/dphi(phi) - (alpha / r) * dphi
+
+        Notes
+        -----
+        - The regular instanton solution satisfies dphi ~ O(r) near r → 0,
+          so (alpha/r)*dphi stays finite. We nevertheless guard against r <= 0
+          to avoid spurious divisions in any caller that might probe r=0.
+
+        Parameters
+        ----------
+        y : array_like of shape (2,)
+            Current state vector [phi(r), dphi(r)].
+        r : float
+            Current radius (r > 0 in all production paths).
+
+        Returns
+        -------
+        np.ndarray shape (2,)
+            RHS evaluated at (y, r).
+        """
+        # Ensure a small but finite radius for the friction term
+        # (robust against accidental r=0 calls from external drivers).
+        r_eff = r if r > 0.0 else 1e-30
+        phi, dphi = float(y[0]), float(y[1])
+        return np.array([dphi, self.dV(phi) - self.alpha * dphi / r_eff], dtype=float)
+
+    _integrateProfile_rval = namedtuple("integrateProfile_rval", "r y convergence_type")
+
+    def integrateProfile(self, r0, y0, dr0,
+                         epsfrac, epsabs, drmin, rmax, *eqn_args):
+        r"""
+        Integrate the bubble-wall ODE until we (a) converge to the false minimum,
+        (b) bracket an overshoot/undershoot and extrapolate, or (c) hit limits.
+
+        Equation
+        --------
+        .. math::
+            \frac{d^2\phi}{dr^2} + \frac{\alpha}{r}\frac{d\phi}{dr} = \frac{dV}{d\phi}.
+
+        Stopping modes
+        --------------
+        - "converged": |phi - phi_metaMin| and |dphi| are both within tolerance.
+        - "overshoot": phi crosses phi_metaMin within the step; we cubic-interpolate
+          to the crossing point.
+        - "undershoot": field turns around (dphi has the "wrong" sign); we
+          cubic-interpolate to the turning point where dphi = 0.
+
+        Parameters
+        ----------
+        r0 : float
+            Starting radius.
+        y0 : array_like, shape (2,)
+            Starting state [phi(r0), dphi(r0)].
+        dr0 : float
+            Initial stepsize supplied to the adaptive RK driver.
+        epsfrac, epsabs : array_like, shape (2,)
+            Relative/absolute tolerances passed to :func:`helper_functions.rkqs`.
+            They also set our convergence thresholds.
+        drmin : float
+            Minimum allowed step size; below this we abort with IntegrationError.
+        rmax : float
+            Maximum allowed integration span (absolute); if r exceeds r0 + rmax,
+            we abort with IntegrationError.
+        *eqn_args :
+            Extra arguments forwarded to :meth:`equationOfMotion` (used by subclasses).
+
+        Returns
+        -------
+        r : float
+            Final radius (end of integration or extrapolated event location).
+        y : np.ndarray, shape (2,)
+            Final state [phi, dphi].
+        convergence_type : {"converged", "overshoot", "undershoot"}
+            Classification of the stopping condition.
+
+        Raises
+        ------
+        IntegrationError
+            If step control fails (dr < drmin), if we exceed rmax, or if the
+            event extrapolation cannot be bracketed.
+        """
+        # Normalize inputs
+        y0 = np.asarray(y0, dtype=float)
+        if y0.shape != (2,):
+            raise ValueError("integrateProfile: y0 must have shape (2,) [phi, dphi].")
+        if not (np.isfinite(r0) and np.isfinite(y0).all()):
+            raise ValueError("integrateProfile: non-finite initial state.")
+
+        # Local view of the ODE
+        def dY(y, r, args=eqn_args):
+            return self.equationOfMotion(y, r, *args)
+
+        # Precompute tolerances for event tests
+        ef_scalar, ea_scalar, eps_phi, eps_dphi = self._normalize_tolerances(epsfrac, epsabs)
+
+
+        dydr0 = dY(y0, r0)
+        # Direction flag: if phi starts essentially at phi_metaMin, use -sign(dphi)
+        # so that "moving away" is labeled undershoot and "crossing" is overshoot.
+        disp0 = y0[0] - self.phi_metaMin
+        ysign = 1.0 if disp0 >= 0.0 else -1.0
+
+        r_limit = r0 + float(rmax)
+        dr = float(dr0)
+
+        # Integration loop
+        while True:
+            dy, dr, drnext = rkqs(y0, dydr0, r0, dY, dr, ef_scalar, ea_scalar)
+            r1 = r0 + dr
+            y1 = y0 + dy
+            dydr1 = dY(y1, r1)
+
+            # Hard guards
+            if r1 > r_limit:
+                raise IntegrationError(
+                    f"integrateProfile: exceeded rmax (r={r1:.6e} > {r_limit:.6e}).")
+            if dr < drmin:
+                raise IntegrationError(
+                    f"integrateProfile: step underflow (dr={dr:.3e} < drmin={drmin:.3e}).")
+
+            # Converged?
+            if (abs(y1[0] - self.phi_metaMin) < eps_phi) and (abs(y1[1]) < eps_dphi):
+                return self._integrateProfile_rval(r1, y1, "converged")
+
+            # Event detection
+            disp1 = (y1[0] - self.phi_metaMin)
+            slope1 = y1[1]
+
+            # Undershoot: slope keeps the field moving away from the target
+            if slope1 * ysign > +eps_dphi:
+                # Interpolate within [0,1] in normalized substep to find dphi=0
+                f = cubicInterpFunction(y0, dr * dydr0, y1, dr * dydr1)
+                g0, g1 = f(0.0)[1], f(1.0)[1]
+                # Try to bracket; otherwise fall back to the minimum |dphi|
+                try:
+                    if g0 * g1 > 0.0:
+                        raise ValueError("no bracket for dphi=0")
+                    x = optimize.brentq(lambda x: f(x)[1], 0.0, 1.0)
+                except Exception:
+                    # Fallback: pick x that minimizes |dphi|
+                    xs = np.linspace(0.0, 1.0, 33)
+                    x = xs[np.argmin(np.abs([f(t)[1] for t in xs]))]
+                r_evt = r0 + dr * x
+                y_evt = f(x)
+                return self._integrateProfile_rval(r_evt, y_evt, "undershoot")
+
+            # Overshoot: we crossed phi = phi_metaMin within the step
+            if disp1 * ysign < -eps_phi:
+                f = cubicInterpFunction(y0, dr * dydr0, y1, dr * dydr1)
+                h0, h1 = f(0.0)[0] - self.phi_metaMin, f(1.0)[0] - self.phi_metaMin
+                try:
+                    if h0 * h1 > 0.0:
+                        raise ValueError("no bracket for phi crossing")
+                    x = optimize.brentq(lambda x: f(x)[0] - self.phi_metaMin, 0.0, 1.0)
+                except Exception:
+                    # Fallback: pick x that minimizes |phi - phi_metaMin|
+                    xs = np.linspace(0.0, 1.0, 33)
+                    x = xs[np.argmin(np.abs([f(t)[0] - self.phi_metaMin for t in xs]))]
+                r_evt = r0 + dr * x
+                y_evt = f(x)
+                return self._integrateProfile_rval(r_evt, y_evt, "overshoot")
+
+            # Advance
+            r0, y0, dydr0 = r1, y1, dydr1
+            dr = drnext
+
+    profile_rval = namedtuple("Profile1D", "R Phi dPhi Rerr")
+
+    def integrateAndSaveProfile(self, R, y0, dr, epsfrac, epsabs, drmin, *eqn_args):
+        """
+        Integrate the bubble profile and sample it at user-specified radio R.
+
+        This is a thin wrapper around the adaptive driver used in
+        `integrateProfile`, but here we *always* step through the whole R grid,
+        filling with cubic Hermite interpolation between accepted RK steps.
+
+        Parameters
+        ----------
+        R : array_like
+            Monotonic array of radii at which to record [phi, dphi].
+            The first element (R[0]) is the starting radius.
+        y0 : array_like, shape (2,)
+            Initial state [phi(R[0]), dphi(R[0])].
+        dr : float
+            Initial stepsize suggestion for the adaptive RK driver.
+        epsfrac, epsabs : array_like, shape (2,)
+            Relative and absolute tolerances (as in `integrateProfile`).
+        drmin : float
+            Minimum allowed step.
+        *eqn_args :
+            Extra arguments forwarded to :meth:`equationOfMotion`.
+
+        Returns
+        -------
+        Profile1D
+            Named tuple with fields:
+            - R   : np.ndarray of sample radii
+            - Phi : np.ndarray of \phi(R)
+            - dPhi: np.ndarray of d\phi/dR at the same points
+            - Rerr: first radius where `dr < drmin`, else None
+
+        Notes
+        -----
+        - If a step would drop below `drmin`, we clamp it to `drmin`, record
+          `Rerr` (first occurrence), and keep going so the output is still filled.
+        """
+        R = np.asarray(R, dtype=float)
+        if R.ndim != 1 or len(R) < 2:
+            raise ValueError("integrateAndSaveProfile: R must be 1D with at least 2 points.")
+        N = len(R)
+        r0 = R[0]
+        y0 = np.asarray(y0, dtype=float)
+        if y0.shape != (2,):
+            raise ValueError("integrateAndSaveProfile: y0 must have shape (2,).")
+
+        Yout = np.zeros((N, len(y0)))
+        Yout[0] = y0
+
+        def dY(y, r, args=eqn_args):
+            return self.equationOfMotion(y, r, *args)
+
+        dydr0 = dY(y0, r0)
+        Rerr = None
+
+        ef_scalar, ea_scalar, _, _ = self._normalize_tolerances(epsfrac, epsabs)
+
+        i = 1
+        while i < N:
+            dy, dr, drnext = rkqs(y0, dydr0, r0, dY, dr, ef_scalar, ea_scalar)
+
+            # Apply the step, clamping if necessary
+            if dr >= drmin:
+                r1 = r0 + dr
+                y1 = y0 + dy
+            else:
+                # Clamp and tag the first occurrence
+                y1 = y0 + dy * (drmin / max(dr, 1e-300))
+                dr = drnext = drmin
+                r1 = r0 + dr
+                if Rerr is None:
+                    Rerr = r1
+
+            dydr1 = dY(y1, r1)
+
+            # Fill samples between r0 and r1
+            if (r0 < R[i] <= r1):
+                f = cubicInterpFunction(y0, dr * dydr0, y1, dr * dydr1)
+                while (i < N) and (r0 < R[i] <= r1):
+                    x = (R[i] - r0) / dr
+                    Yout[i] = f(x)
+                    i += 1
+
+            # Advance
+            r0, y0, dydr0 = r1, y1, dydr1
+            dr = drnext
+
+        rval = (R,) + tuple(Yout.T) + eqn_args + (Rerr,)
+        return self.profile_rval(*rval)

@@ -595,3 +595,214 @@ If the geometric search fails to bracket the crossing (pathological potential/se
 
 ---
 
+## Lot SF-4 — ODE core (equation, adaptive driver, sampler)
+
+This lot contains the numerical engine that integrates the bounce equation once the potential interface and scales are known. It provides:
+
+* the **equation of motion** in first-order form;
+* an **adaptive step driver** that marches the solution and classifies the outcome as *overshoot*, *undershoot*, or *converged*;
+* a **sampler** that fills a user-chosen radial grid with a smooth profile using cubic Hermite interpolation between accepted RK steps;
+* a small **tolerance normalizer** to make error controls explicit and robust.
+
+Throughout, we solve the radial Euclidean EOM for a single field,
+
+$$\frac{d^2\phi}{dr^2}+\frac{\alpha}{r}\frac{d\phi}{dr}= \frac{dV}{d\phi}(\phi)$$
+
+where $(\alpha)$ is the “friction” coefficient (commonly $(\alpha=2)$ for (O(3)) finite-temperature bounces and $(\alpha=3)$ for $(O(4))$ zero-temperature bounces). 
+The $(\alpha/r)$ term comes from the radial Laplacian in $((\alpha+1))$ dimensions.
+
+---
+
+### `_normalize_tolerances` (internal helper)
+
+**Signature**
+
+```python
+@staticmethod
+_normalize_tolerances(epsfrac, epsabs) -> tuple[float, float, float, float]
+```
+
+**Purpose**
+
+Accepts *either* scalars *or* 2-component arrays for the relative/absolute tolerances and returns:
+
+1. `ef_scalar` – a single relative tolerance passed to the RK stepper (strictest across components);
+2. `ea_scalar` – a single absolute tolerance for the RK stepper (strictest across components);
+3. `eps_phi`   – absolute threshold (3× `epsabs` for $(\phi)$) used by our *event/convergence* tests;
+4. `eps_dphi`  – absolute threshold (3× `epsabs` for $(d\phi)$) used likewise.
+
+This keeps the step controller simple (scalar tolerances) while still giving per-component, physically meaningful stopping criteria.
+
+**Notes**
+
+* If `epsabs` is scalar, both $(\phi)$ and $(d\phi)$ use the same $(3\times)$ threshold; with a 2-vector, they may differ.
+* The factor **3** in `eps_phi`, `eps_dphi` mirrors the legacy “within ~3× absolute tol ⇒ good enough” convention used elsewhere in this module.
+
+---
+
+### `equationOfMotion`
+
+**Signature**
+
+```python
+equationOfMotion(y: np.ndarray, r: float) -> np.ndarray
+```
+
+**Purpose**
+
+Right-hand side of the first-order system for $(y=[\phi, \dot\phi])$ $(dot ≡ (d/dr))$:
+
+$$\dot{\phi} = y_1\qquad \dot{y}_1 = \frac{dV}{d\phi}(\phi) - \frac{\alpha}{r} y_1$$
+
+**Implementation details**
+
+* To guard against accidental calls at (r=0) (which should not happen in production—integrations always start at (r>0)), we replace (r) by a tiny positive `r_eff` if needed so the friction term stays finite.
+* Uses the user-provided/derived `self.dV(phi)`.
+
+**Physics notes**
+
+The $( \alpha/r )$ “friction” originates from the radial Laplacian in $((\alpha+1))$ Euclidean dimensions.
+Regular bounce solutions satisfy $( d\phi/dr = \mathcal{O}(r) )$ as $( r\to 0 )$, so the product $( (\alpha/r)d\phi )$ remains finite.
+
+---
+
+### `integrateProfile`
+
+**Signature**
+
+```python
+integrateProfile(
+    r0: float,
+    y0: array_like,      # [phi(r0), dphi(r0)]
+    dr0: float,
+    epsfrac, epsabs,     # scalar or 2-vector tolerances
+    drmin: float,
+    rmax: float,
+    *eqn_args
+) -> namedtuple("integrateProfile_rval", "r y convergence_type")
+```
+
+**What it does**
+
+Advances the ODE solution from $((r_0,y_0))$ using an **adaptive Cash–Karp RK5(4)** stepper (`rkqs`) until one of three conditions is met:
+
+1. **converged** – both $(|\phi-\phi_{\rm metaMin}|<\epsilon_{\phi})$ and $(|d\phi|<\epsilon_{d\phi})$;
+2. **overshoot** – within a step the field crosses $(\phi_{\rm metaMin})$;
+3. **undershoot** – within a step the field “turns back” (sign of $(d\phi)$ indicates motion away from the target).
+
+In (2) and (3), we locate the event **inside the last accepted step** by **cubic Hermite interpolation** (our `cubicInterpFunction`), and refine with a bracketing root find (`scipy.optimize.brentq`).
+If bracketing fails (rare, degenerate slope), we fall back to the point minimizing the relevant magnitude (either $(|\phi-\phi_{\rm metaMin}|)$ or $(|d\phi|))$ on a small uniform subgrid of the step.
+
+**Inputs & error control**
+
+* `epsfrac`, `epsabs` can be scalars or 2-vectors. They are normalized via `_normalize_tolerances`:
+
+  * `ef_scalar`, `ea_scalar` go to `rkqs`;
+  * `eps_phi`, `eps_dphi` define the *event/convergence* thresholds.
+* `drmin` prevents step underflow; if an accepted step requests `dr<drmin`, we abort with a clear `IntegrationError`.
+* `rmax` limits the total travelled distance; we abort if $(r > r_0 + r_{\max})$.
+
+**Direction logic (overshoot vs. undershoot)**
+
+We define a sign `ysign` that encodes “where the target is” relative to the current motion:
+
+* If we start noticeably away from the target, `ysign = sign(phi - phi_metaMin)`.
+* If we start essentially on target, we use `ysign = -sign(dphi)` so that moving *away* is treated as an undershoot and a crossing back is an overshoot.
+
+Given `ysign`, we classify a step by looking at:
+
+* **undershoot** if `dphi * ysign > +eps_dphi` (slope keeps pushing further from target);
+* **overshoot** if `(phi - phi_metaMin) * ysign < -eps_phi` (crossing the target).
+
+**Return value**
+
+A named tuple with:
+
+* `r` – the final radius (event location or the last time where convergence was satisfied),
+* `y` – the final state $([\phi, d\phi])$ at that radius,
+* `convergence_type` – one of `"converged"`, `"overshoot"`, `"undershoot"`.
+
+**Why cubic Hermite interpolation?**
+
+We know $((y_0, dy/dr|*{r_0}))$ and $((y_1, dy/dr|*{r_1}))$ for both ends of a step. 
+The cubic Hermite (a.k.a. piecewise cubic with end slopes) reconstructs a smooth in-step curve that respects both values and slopes, 
+giving accurate, monotone-friendly event localization without taking extra ODE mini-steps.
+
+**Typical usage**
+
+`findProfile` uses this method in a bisection-like loop over the shooting parameter, reading only the outcome (“over/under/converged”) and the precise event radius. 
+After the best initial condition is found, it calls `integrateAndSaveProfile` to produce a full, nicely sampled wall profile.
+
+---
+
+### `integrateAndSaveProfile`
+
+**Signature**
+
+```python
+integrateAndSaveProfile(
+    R: array_like,       # monotonically increasing radii
+    y0: array_like,      # [phi(R[0]), dphi(R[0])]
+    dr: float,
+    epsfrac, epsabs,     # scalar or 2-vector tolerances
+    drmin: float,
+    *eqn_args
+) -> namedtuple("Profile1D", "R Phi dPhi Rerr")
+```
+
+**Purpose**
+
+Integrate the ODE once more **and fill a user-specified radial grid** (R) with $(\phi(R_i))$ and $(d\phi/dR(R_i))$. 
+This is the second (“sampling”) pass typically used *after* the shooting has determined the correct initial condition and outer radius.
+
+**How it works**
+
+* Uses the same adaptive RK driver as `integrateProfile`.
+* Between accepted RK step endpoints $((r_0,y_0))$ and $((r_1,y_1))$, it evaluates the **same cubic Hermite interpolant** and writes samples for all `R[i] ∈ (r0, r1]`.
+* If a proposed accepted step would have `dr < drmin`, it **clamps** to `drmin`, records `Rerr` on first occurrence (the radius where step clamping first became necessary), and continues so the output arrays are always fully populated.
+
+**Outputs**
+
+* `R` – the input grid, echoed back;
+* `Phi` – values $(\phi(R_i))$;
+* `dPhi` – values $(d\phi/dR(R_i))$;
+* `Rerr` – `None` if every accepted step satisfied `dr ≥ drmin`; otherwise the **first** radius where clamping was applied.
+
+**Notes**
+
+* This routine does **not** attempt to classify events (over/under/converged). That logic belongs in `integrateProfile`. Here the goal is to *sample* a known good solution.
+
+---
+
+### Practical guidance
+
+* **Tolerances.** A good starting point mirrors the legacy defaults used in the higher-level driver:
+
+  * `epsfrac = [phitol, phitol]`,
+  * `epsabs = [|Δφ|·phitol, |Δφ|/rscale · phitol]`,
+    with `phitol ~ 1e-4` and `Δφ = φ_metaMin − φ_absMin`. You can also pass scalars.
+* **Initial step.** Set `dr0 ~ rmin` (the same “small” radius where we start, coming from Lot SF-2’s `rscale`).
+* **Limits.** Choose `rmax` comfortably above the expected wall thickness (often `~O(10)·rscale)`); choose `drmin` at least a few orders of magnitude below the smallest features you want to resolve.
+* **Performance.** The cubic Hermite interpolation avoids tiny corrective micro-steps for event localization, which keeps the driver fast while maintaining smooth, physically sensible crossings.
+
+---
+
+### Failure modes and messages
+
+* `IntegrationError("... exceeded rmax ...")` – the profile did not settle/cross within the allowed domain; revisit `rmax` or the shooting parameter.
+* `IntegrationError("... step underflow ...")` – the stepper kept asking for `dr < drmin` to meet tolerances; loosen tolerances or increase `drmin` cautiously.
+* Value errors guard obvious API misuse (non-finite `y0`, wrong shapes, non-monotonic `R`, etc.).
+
+---
+
+### Summary
+
+Lot SF-4 equips the `SingleFieldInstanton` class with a clean, robust integrator:
+
+* a **physically faithful ODE** (with friction and a safe $(r\to 0)$ guard),
+* an **adaptive, tolerance-driven stepper** with explicit convergence semantics (over/under/converged),
+* and a **high-quality sampler** that turns accepted steps into smooth profiles on any grid.
+
+These pieces are deliberately modular: subclasses (e.g., constant friction walls) reuse the same machinery by passing extra arguments to `equationOfMotion` via `*eqn_args`, while keeping the numerics identical.
+
+---
