@@ -44,7 +44,6 @@ def V1(phi):  # Thin-walled example
 def dV1(phi):
     # d/dphi [phi*(phi - 0.47)*(phi - 1)]
     g  = phi*phi - 1.47*phi + 0.47
-    gp = 2.0*phi - 1.47
     return phi*g
 
 def d2V1(phi):

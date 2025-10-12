@@ -877,7 +877,7 @@ class SingleFieldInstanton:
         # Direction flag: if phi starts essentially at phi_metaMin, use -sign(dphi)
         # so that "moving away" is labeled undershoot and "crossing" is overshoot.
         disp0 = y0[0] - self.phi_metaMin
-        ysign = 1.0 if disp0 >= 0.0 else -1.0
+        ysign = np.sign(disp0) if abs(disp0) > eps_phi else -np.sign(y0[1]) or 1.00
 
         r_limit = r0 + float(rmax)
         dr = float(dr0)
@@ -945,7 +945,8 @@ class SingleFieldInstanton:
 
     profile_rval = namedtuple("Profile1D", "R Phi dPhi Rerr")
 
-    def integrateAndSaveProfile(self, R, y0, dr, epsfrac, epsabs, drmin, *eqn_args):
+    def integrateAndSaveProfile(self, R, y0, dr, epsfrac, epsabs, drmin,
+                                *eqn_args):
         """
         Integrate the bubble profile and sample it at user-specified radio R.
 
@@ -1033,5 +1034,5 @@ class SingleFieldInstanton:
             r0, y0, dydr0 = r1, y1, dydr1
             dr = drnext
 
-        rval = (R,) + tuple(Yout.T) + eqn_args + (Rerr,)
+        rval = (R,) + tuple(Yout.T) + (Rerr,)
         return self.profile_rval(*rval)

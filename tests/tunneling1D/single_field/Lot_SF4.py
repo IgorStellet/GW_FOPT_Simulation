@@ -138,12 +138,12 @@ def test_B_events_thin():
 
     # Choose x values to provoke undershoot and overshoot
     x_under = 6.0   # too close to absMin => low energy => turning point before metaMin
-    x_over  = 30 # too close to metaMin => high energy => crosses metaMin
+    x_over  = 0.2 # too close to metaMin => high energy => crosses metaMin (?)
 
     fig, ax = plt.subplots(1, 2, figsize=(12, 4.2), sharey=True)
-    for ax_i, (mode, x) in zip(ax, [("undershoot", x_under), ("overshoot", x_over)]):
+    for ax_i, (mode, x) in zip(ax, [("undershoot", x_under), ("undershoot", x_over)]):
         # Initial conditions
-        r0, y0 = initial_conditions_from_x(inst, x, thinCutoff=0.01)
+        r0, y0 = initial_conditions_from_x(inst, x, thinCutoff=0.1)
         # Integrate until event
         dy, dr0_try = None, 1e-3 * inst.rscale
         try:
@@ -230,7 +230,7 @@ def test_D_sampler():
     epsfrac, epsabs = build_tolerances(inst, phitol=2e-6)
     drmin = 0.01 * 1e-3 * inst.rscale
 
-    x_demo = 1.0
+    x_demo = 15
     r0, y0 = initial_conditions_from_x(inst, x_demo, thinCutoff=0.01)
     # Build a user grid (monotone) and sample
     R = np.linspace(r0, r0 + 10.0 * inst.rscale, 300)
@@ -269,6 +269,55 @@ def test_E_error_guard():
         print(f"[expected] IntegrationError: {err}")
 
 # -----------------------------------------------------------------------------
+# Test F — Explict Initial Conditions (thin-wall)
+# -----------------------------------------------------------------------------
+def test_F_explicit_initial_Condition_thin():
+    print("\n=== Test F: Explict Initial Conditions on thin-wall potential ===")
+    inst = make_inst(V_thin, dV_thin, "thin-wall")
+    epsfrac, epsabs = build_tolerances(inst, phitol=1e-4)
+    drmin = 0.01 * 1e-3 * inst.rscale    # consistent with rmin used in ICs
+    rmax  = 100.0 * inst.rscale
+
+    # Choose x values to provoke undershoot and overshoot
+    x_under = [0.001, [0.9, -0.1]] # r_0, phi_0 , dphi_0
+    x_over  = [1, [0.3, -2]]
+
+    fig, ax = plt.subplots(1, 2, figsize=(12, 4.2), sharey=True)
+    for ax_i, (mode, x) in zip(ax, [("undershoot", x_under), ("overshoot", x_over)]):
+        # Initial conditions
+        r0, y0 = x
+        # Integrate until event
+        dy, dr0_try = None, 1e-3 * inst.rscale
+        try:
+            r_evt, y_evt, ctype = inst.integrateProfile(
+                r0=r0, y0=y0, dr0=dr0_try,
+                epsfrac=epsfrac, epsabs=epsabs,
+                drmin=drmin, rmax=rmax
+            )
+        except IntegrationError as err:
+            print(f"[thin-wall :: x={x}] IntegrationError: {err}")
+            continue
+
+        print(f"[thin-wall :: x={x}] event = {ctype:>10s} at r={r_evt:.6e} "
+              f"(phi={y_evt[0]:.6e}, dphi={y_evt[1]:.6e})")
+
+        # Sample up to the event for a smooth curve
+        prof = sample_up_to_event(inst, r0, y0, r_evt, epsfrac, epsabs, drmin)
+        ax_i.plot(prof.R, prof.Phi, lw=2, label=r"$\phi(r)$")
+        ax_i.axhline(inst.phi_metaMin, ls="--", lw=1.0, label=r"$\phi_{\rm metaMin}$")
+        ax_i.axvline(r_evt, ls=":", lw=1.0, label="event $r$")
+        ax_i.plot([r_evt], [y_evt[0]], "o", ms=5)
+        ax_i.set_title(f"thin-wall — expected {mode}")
+        ax_i.set_xlabel("r")
+        ax_i.grid(True, alpha=0.3)
+
+    ax[0].set_ylabel(r"$\phi(r)$")
+    handles, labels = ax[0].get_legend_handles_labels()
+    ax[1].legend(handles, labels, loc="best", ncol=2)
+    plt.tight_layout()
+    plt.show()
+
+# -----------------------------------------------------------------------------
 # Main
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
@@ -288,5 +337,8 @@ if __name__ == "__main__":
 
     # E) Error guard demo
     test_E_error_guard()
+
+    # F) Explicit Initial Conditions
+    test_F_explicit_initial_Condition_thin()
 
     print("---------- END: Lot SF-4 examples ----------")

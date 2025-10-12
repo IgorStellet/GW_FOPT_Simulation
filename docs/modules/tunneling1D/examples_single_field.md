@@ -372,3 +372,169 @@ python -m tests.tunneling1D.single_field.Lot_SF3  # it includes all tests (more 
 * For more context (potential, barrier, and scaling) see Lots **SF1** and **SF2** above.
 
 ---
+
+## Lot SF-4 — ODE core (EOM, event detection, sampler)
+
+**Goal.** Exercise the heart of the solver:
+
+* The **equation of motion** (EOM) used everywhere:
+
+$$\frac{d^2\phi}{dr^2} + \frac{\alpha}{r}\frac{d\phi}{dr} = b\frac{dV}{d\phi}(\phi)$$
+
+  written as a first-order system in $(y=(\phi,\phi'))$.
+* The **adaptive RKQS driver** that advances the solution and classifies steps as
+  **undershoot** (turning point before reaching the false vacuum) or **overshoot**
+  (crosses $(\phi_{\rm meta})$ within the step).
+* The **sampler** that records $((\phi,\phi'))$ on a user grid (R) using cubic
+  Hermite interpolation between accepted RK steps.
+
+**Physics intuition.**
+
+* For the bounce, the field starts near the **true** minimum $(\phi_{\rm abs})$ and tries to “climb” toward the **false** minimum $(\phi_{\rm meta})$.
+* If it **turns around** $((\phi'\to 0))$ before it ever reaches $(\phi_{\rm meta})$, we say **undershoot**.
+* If it **crosses** $(\phi_{\rm meta})$ at finite radius, that’s an **overshoot**.
+* The friction term $(\alpha,\phi'/r)$ is large at small (r), so the outcome depends delicately on the starting offset and slope.
+
+**Script:** `tests/tunneling1D/single_field/Lot_SF4.py`
+**Run all examples in this lot:**
+
+```bash
+python -m tests.tunneling1D.single_field.Lot_SF4
+```
+
+We keep the same toy potentials as before:
+
+$$\textbf{THIN}: \quad \tfrac14\phi^4 - 0.49\phi^3 + 0.235\phi^2$$
+
+$$\textbf{THICK}: \quad \tfrac14\phi^4 - \tfrac{2}{5}\phi^3 + \tfrac{1}{10}\phi^2$$
+
+**Notes on tolerances.** In the examples we build
+$(\texttt{epsfrac}=[\texttt{phitol},\texttt{phitol}])$ and
+$(\texttt{epsabs}=[\texttt{phitol}\cdot|\Delta\phi|,\texttt{phitol}\cdot|\Delta\phi|/r_{\rm scale}])$.
+If you see a “step size underflow” in thin-wall cases, relaxing to `phitol=1e-4` is often enough.
+
+---
+
+### Test B — Thin-wall: event detection (two undershoots)
+
+**What this shows**
+
+* How `integrateProfile` detects **turning points** on a thin-wall potential.
+* Two runs with different “shooting” parameters (x) (mapped internally to the initial offset $(\Delta\phi_0 = e^{-x}(\phi_{\rm meta}-\phi_{\rm abs})))$.
+* For this potential and the chosen cutoff, both choices typically **undershoot** (large friction and small initial energy).
+
+**Expected outcome**
+
+* Printed classification: `undershoot` in both panels, with an event radius $(r_{\rm evt})$ where $(\phi'(r_{\rm evt})\approx 0)$.
+* Plots show $(\phi(r))$ decreasing from near (\phi_{\rm abs}), then flattening at the turning point before reaching $(\phi_{\rm meta})$ (dashed line).
+
+**How the figure is built**
+
+* We integrate until the event is detected, then call `integrateAndSaveProfile` to **sample** $(\phi(r))$ densely up to $(r_{\rm evt})$.
+* The event is marked with a vertical dotted line and a dot at $((r_{\rm evt},\phi(r_{\rm evt})))$.
+
+**Console excerpt**
+
+```
+=== Test B: Event detection on thin-wall potential ===
+[thin-wall :: x=6.00] event = undershoot at r=1.566617e+01 (phi=2.441311e-01, dphi=6.852158e-17)
+[thin-wall :: x=0.20] event = undershoot at r=1.046569e-02 (phi=1.812700e-01, dphi=1.498745e-04)
+```
+
+**Figure**
+*Thin-wall: two trajectories that undershoot (turning point before the false vacuum).*
+
+![Test B —  Event detection on thin-wall potential](assets/SF4_1.png)
+
+---
+
+### Test C — Thick-wall: one undershoot, one overshoot
+
+**What this shows**
+
+* On the thick-wall potential, different (x) give **opposite outcomes**:
+
+  * A smaller initial offset (low energy) → **undershoot**;
+  * A larger offset (high energy) → **overshoot** (crossing of $(\phi_{\rm meta})$).
+
+**Expected outcome**
+
+* Left panel: `undershoot` with $(\phi'(r_{\rm evt})\approx 0)$ at finite (r), and $(\phi(r))$ still above $(\phi_{\rm meta})$.
+* Right panel: `overshoot` with a detected root of $(\phi(r)-\phi_{\rm meta}=0)$; the crossing point is annotated.
+
+**Console excerpt**
+
+```
+=== Test C: Event detection on thick-wall potential ===
+[thick-wall :: x=0.20] event = undershoot at r=4.714045e-03 (phi=1.812693e-01, dphi=4.642159e-06)
+[thick-wall :: x=6.00] event =  overshoot at r=1.218941e+01 (phi=-4.989932e-15, dphi=-1.713411e-01)
+```
+
+**Figure**
+*Thick-wall: undershoot (left) and overshoot (right); both events detected and marked.*
+![Test C —  Event detection on thick-wall potential](assets/SF4_2.png)
+
+
+---
+
+### Test D — Sampling with `integrateAndSaveProfile` on a user grid
+
+**What this shows**
+
+* You provide a **monotone grid** $(R={r_i})$ and a starting state $((r_0,\phi(r_0),\phi'(r_0)))$.
+* The solver advances with adaptive RK and **fills every requested point** using **cubic Hermite** interpolation (the same shape preserved internally for events).
+
+**Expected outcome**
+
+* A smooth curve $(\phi(r))$ across the whole user grid.
+* `Rerr` is `None` in typical runs; if the step would fall below `drmin`, the step is clamped and `Rerr` reports the **first** radius where this happened.
+
+**Console excerpt (paste your run)**
+
+```
+=== Test D: integrateAndSaveProfile on a user R-grid ===
+Profile sampled at 300 points.
+Rerr (first clamped step radius) = None
+```
+
+**Figure**
+*“Sampling $(\phi(r))$ on a fixed grid provided by the user.*
+![Test D —  Event detection on thick-wall potential](assets/SF4_3.png)
+
+
+---
+
+### Test F — Explicit initial conditions (thin-wall)
+
+**What this shows**
+
+* Instead of deriving $((r_0,\phi(r_0),\phi'(r_0)))$ from a shooting parameter (x), we **set them explicitly** to demonstrate that the event classification logic does not depend on how the initial state was chosen.
+* Two examples:
+
+  * A gentle start near the true minimum with a small negative slope → often **undershoot**.
+  * A more aggressive start with sizable downhill slope → tends to **overshoot** (depending on details of the potential and tolerances).
+
+**Expected outcome**
+
+* Clear printed event classification with the detected $(r_{\rm evt})$.
+* Plots up to the event look consistent with the classification (turning point vs. crossing).
+
+**Console excerpt (paste your run)**
+
+```
+=== Test F: Explict Initial Conditions on thin-wall potential ===
+[thin-wall :: x=[0.001, [0.9, -0.1]]] event = undershoot at r=1.045860e+01 (phi=3.544355e-01, dphi=0.000000e+00)
+[thin-wall :: x=[1, [0.3, -2]]] event =  overshoot at r=1.176781e+00 (phi=-1.040834e-17, dphi=-1.439106e+00)
+---------- END: Lot SF-4 examples ----------
+```
+
+**Figure**
+*Thin-wall with explicit initial states: undershoot (left) and overshoot (right).*
+![Test F —  Event detection on thick-wall potential](assets/SF4_4.png)
+
+---
+
+**See more:** full executable script at
+[`tests/single_field/Lot_SF4.py`](/tests/tunneling1D/single_field/Lot_SF4.py).
+
+---
