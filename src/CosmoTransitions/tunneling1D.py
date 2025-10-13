@@ -36,7 +36,7 @@ from typing import Callable, Optional, Union
 import warnings
 
 # Internal helpers
-from .helper_functions import rkqs, IntegrationError, clamp_val, cubicInterpFunction
+from .helper_functions import rkqs, IntegrationError, clamp_val, cubicInterpFunction, monotonic_indices
 
 __all__ = ["PotentialError","SingleFieldInstanton"]
 
@@ -1268,3 +1268,285 @@ class SingleFieldInstanton:
             profile = self.profile_rval(R_all, Phi_all, dPhi_all, profile.Rerr)
 
         return profile
+
+    # -------------------------------------------------
+    # Lot SF-6 — Action and other importants parameters
+    # -------------------------------------------------
+    def findAction(self, profile):
+        r"""
+        Compute the Euclidean action for the bounce profile.
+
+        Definition
+        ----------
+        For ``alpha = d-1`` (so d is the dimension of the radial integral),
+        the action we compute is
+
+            S = ∫ [ ½ (dφ/dr)^2 + ( V(φ) - V(φ_metaMin) ) ] * r^α dr * Ω_α
+
+        where Ω_α is the area of the unit α-sphere:
+            Ω_α = 2 π^{(α+1)/2} / Γ((α+1)/2).
+
+        Notes
+        -----
+        - The profile usually starts at r = r0 > 0 in thin-wall cases.
+          The gradient contribution from (0, r0) is negligible to leading order
+          (regularity implies φ'(r) ~ O(r)), but the *potential* bulk term inside
+          the bubble matters. We therefore add the interior volume term
+
+              ΔS_interior = Vol_d(r0) * [ V(φ(r0)) - V(φ_metaMin) ] ,
+
+          with Vol_d(R) = π^{d/2} R^d / Γ(d/2 + 1).
+        - The returned value is a scalar float. For a detailed breakdown, use
+          :meth:`actionBreakdown` introduced below.
+
+        Parameters
+        ----------
+        profile : namedtuple
+            Output of :meth:`findProfile`, with fields R, Phi, dPhi (and Rerr).
+
+        Returns
+        -------
+        float
+            Euclidean action S.
+        """
+        # Validate
+        r = np.asarray(profile.R, dtype=float)
+        phi = np.asarray(profile.Phi, dtype=float)
+        dphi = np.asarray(profile.dPhi, dtype=float)
+        if r.ndim != 1 or phi.shape != r.shape or dphi.shape != r.shape or r.size < 2:
+            raise ValueError("findAction: malformed profile (R, Phi, dPhi must be 1D and same length ≥ 2).")
+
+        # Geometry factors
+        d = self.alpha + 1  # radial integration dimension
+        omega = 2.0 * np.pi ** (0.5 * (self.alpha + 1)) / special.gamma(0.5 * (self.alpha + 1))
+        weight = (r ** self.alpha) * omega
+
+        # Action density (excluding interior bulk correction)
+        dV = self.V(phi) - self.V(self.phi_metaMin)
+        kin = 0.5 * dphi ** 2
+        integrand = (kin + dV) * weight
+        S_line = simpson(integrand, x=r)
+
+        # Interior bulk (potential-only) correction from 0 to r0
+        r0 = float(r[0])
+        if r0 > 0.0:
+            volume_d = (np.pi ** (0.5 * d)) * (r0 ** d) / special.gamma(0.5 * d + 1.0)
+            S_interior = volume_d * (self.V(phi[0]) - self.V(self.phi_metaMin))
+        else:
+            S_interior = 0.0
+
+        return float(S_line + S_interior)
+
+    def evenlySpacedPhi(self, phi, dphi, npoints=100, k=1, fixAbs=True):
+        """
+        Resample (phi, dphi) on a uniformly-spaced phi-grid.
+
+        This is a convenient post-processing step to analyze quantities as
+        functions of the *field value* rather than the radius. Typical use is to
+        take (Phi, dPhi) from :meth:`findProfile`.
+
+        Parameters
+        ----------
+        phi, dphi : array_like
+            1D arrays with the same length (usually `profile.Phi` and `profile.dPhi`).
+        npoints : int, default 100
+            Number of output samples.
+        k : int, default 1
+            Spline degree for `scipy.interpolate.splrep` (k=1 linear, k=3 cubic).
+        fixAbs : bool, default True
+            If True, ensure the resampled grid spans exactly
+            [phi_absMin, phi_metaMin] by padding endpoints with (dphi=0). If False,
+            use the provided endpoint of `phi` as the lower bound.
+
+        Returns
+        -------
+        phi2, dphi2 : np.ndarray
+            `phi2` is uniformly spaced; `dphi2` is the spline-evaluated derivative
+            at those points.
+
+        Notes
+        -----
+        - We first enforce monotonicity of `phi` along the trajectory using
+          `helper_functions.monotonicIndices` to avoid small numerical wiggles.
+        - Endpoints are padded with zero slope when `fixAbs=True`, which is correct
+          for regular solutions asymptoting to the vacua.
+        """
+        phi = np.asarray(phi, dtype=float).ravel()
+        dphi = np.asarray(dphi, dtype=float).ravel()
+        if phi.size != dphi.size or phi.ndim != 1:
+            raise ValueError("evenlySpacedPhi: phi and dphi must be 1D arrays of equal length.")
+
+        # Optional endpoint padding to enforce [phi_absMin, phi_metaMin]
+        if fixAbs:
+            phi = np.append(self.phi_absMin, np.append(phi, self.phi_metaMin))
+            dphi = np.append(0.0, np.append(dphi, 0.0))
+        else:
+            phi = np.append(phi, self.phi_metaMin)
+            dphi = np.append(dphi, 0.0)
+
+        # Enforce monotonicity of phi (remove tiny backtracks)
+        idx = monotonic_indices(phi)
+        phi_mono = phi[idx]
+        dphi_mono = dphi[idx]
+
+        # Build the spline in φ-space and evaluate on a uniform φ-grid
+        tck = interpolate.splrep(phi_mono, dphi_mono, k=int(k))
+        if fixAbs:
+            phi2 = np.linspace(self.phi_absMin, self.phi_metaMin, int(npoints))
+        else:
+            phi2 = np.linspace(phi_mono[0], self.phi_metaMin, int(npoints))
+        dphi2 = interpolate.splev(phi2, tck)
+
+        return phi2, np.asarray(dphi2, dtype=float)
+
+    # New functions over the legacy versions
+
+    _ActionBreakdown = namedtuple("ActionBreakdown", "S_total S_kin S_pot S_interior r phi dphi density")
+
+    def actionBreakdown(self, profile):
+        """
+        Detailed action diagnostics.
+
+        Returns a namedtuple with:
+          - S_total   : total action (same as `findAction`)
+          - S_kin     : ∫ ½ (dφ/dr)^2 r^α Ω_α dr
+          - S_pot     : ∫ [V(φ)-V(φ_meta)] r^α Ω_α dr
+          - S_interior: potential-only interior bulk from [0, r0]
+          - r, phi, dphi: arrays copied from `profile`
+          - density   : dict with arrays:
+                'kin' : ½ (dφ/dr)^2 * r^α Ω_α
+                'pot' : (V(φ)-V(φ_meta)) * r^α Ω_α
+                'tot' : sum of the two (line contribution only)
+
+        Notes
+        -----
+        - The interior bulk term is not added to `density['tot']` (it lives at r<r0).
+        """
+        r = np.asarray(profile.R, dtype=float)
+        phi = np.asarray(profile.Phi, dtype=float)
+        dphi = np.asarray(profile.dPhi, dtype=float)
+
+        d = self.alpha + 1
+        omega = 2.0 * np.pi ** (0.5 * (self.alpha + 1)) / special.gamma(0.5 * (self.alpha + 1))
+        w = (r ** self.alpha) * omega
+
+        dV = self.V(phi) - self.V(self.phi_metaMin)
+        kin = 0.5 * dphi ** 2
+        dens_kin = kin * w
+        dens_pot = dV * w
+        dens_tot = dens_kin + dens_pot
+
+        S_kin = simpson(dens_kin, x=r)
+        S_pot = simpson(dens_pot, x=r)
+
+        r0 = float(r[0])
+        if r0 > 0.0:
+            volume_d = (np.pi ** (0.5 * d)) * (r0 ** d) / special.gamma(0.5 * d + 1.0)
+            S_interior = volume_d * (self.V(phi[0]) - self.V(self.phi_metaMin))
+        else:
+            S_interior = 0.0
+
+        S_total = float(S_kin + S_pot + S_interior)
+
+        density = {"kin": dens_kin, "pot": dens_pot, "tot": dens_tot}
+        return self._ActionBreakdown(S_total, float(S_kin), float(S_pot), float(S_interior),
+                                r, phi, dphi, density)
+
+    _WallStats = namedtuple("WallStats", "r_peak r_mid r_lo r_hi thickness phi_lo phi_hi")
+
+    def wallDiagnostics(self, profile, frac=(0.1, 0.9)):
+        """
+        Estimate wall location and thickness from the profile.
+
+        Parameters
+        ----------
+        profile : namedtuple
+            Output of :meth:`findProfile`.
+        frac : tuple(float, float), default (0.1, 0.9)
+            Fractions f_lo < f_hi defining φ levels
+            φ(f) = φ_absMin + f * (φ_metaMin - φ_absMin).
+            The thickness is | r(φ_hi) - r(φ_lo) |.
+
+        Returns
+        -------
+        WallStats (namedtuple)
+            - r_peak: radius where |dφ/dr| is maximal (center of the wall)
+            - r_mid : radius where φ = (φ_absMin + φ_metaMin)/2
+            - r_lo, r_hi: radii at the chosen fractional levels
+            - thickness: |r_hi - r_lo|
+            - phi_lo, phi_hi: the corresponding φ levels
+        """
+        r = np.asarray(profile.R, dtype=float)
+        phi = np.asarray(profile.Phi, dtype=float)
+        dphi = np.asarray(profile.dPhi, dtype=float)
+
+        # Peak of |dφ/dr|
+        i_peak = int(np.nanargmax(np.abs(dphi)))
+        r_peak = float(r[i_peak])
+
+        # Levels in φ
+        phi_lo = float(self.phi_absMin + frac[0] * (self.phi_metaMin - self.phi_absMin))
+        phi_hi = float(self.phi_absMin + frac[1] * (self.phi_metaMin - self.phi_absMin))
+        phi_mid = 0.5 * (self.phi_absMin + self.phi_metaMin)
+
+        # Enforce monotonic φ for robust inversion
+        idx = monotonic_indices(phi)
+        r_mono, phi_mono = r[idx], phi[idx]
+
+        def _interp_r_at(phi_star):
+            # map φ -> r via linear interpolation on the monotone branch
+            return float(np.interp(phi_star, phi_mono, r_mono))
+
+        r_lo = _interp_r_at(phi_lo)
+        r_hi = _interp_r_at(phi_hi)
+        r_mid = _interp_r_at(phi_mid)
+        thickness = abs(r_hi - r_lo)
+
+        return self._WallStats(r_peak=r_peak, r_mid=r_mid, r_lo=r_lo, r_hi=r_hi,
+                          thickness=thickness, phi_lo=phi_lo, phi_hi=phi_hi)
+
+    def betaEff(self, profile, method="rscale"):
+        r"""
+        Return a *proxy* for the nucleation rate timescale β (dimension of inverse length),
+        useful for order-of-magnitude reasoning in the absence of a full thermal history.
+
+        Parameters
+        ----------
+        profile : namedtuple
+            Output of :meth:`findProfile`.
+        method : {"rscale", "curvature", "wall"}, default "rscale"
+            - "rscale"   : β_eff ≡ 1 / rscale  (robust, always defined)
+            - "curvature": β_eff ≡ sqrt( |V''(φ_top)| )  at the barrier top
+                           (needs a proper barrier; may coincide with 1/rscale up to O(1))
+            - "wall"     : β_eff ≡ 1 / thickness, with thickness from :meth:`wallDiagnostics`.
+
+        Returns
+        -------
+        float
+            β_eff in the same units as inverse radius.
+
+        Notes
+        -----
+        This is *not* the cosmological β ≡ -d(S3/T)/dt used for nucleation histories.
+        Computing that requires the temperature dependence of the potential and the
+        derivative of S3(T)/T with respect to time (or T). Here we provide geometry/
+        curvature-based proxies that are often used as quick scales.
+        """
+        method = str(method).lower().strip()
+        if method == "rscale":
+            return 1.0 / float(self.rscale)
+
+        if method == "wall":
+            ws = self.wallDiagnostics(profile)
+            return float(np.inf) if ws.thickness == 0.0 else 1.0 / ws.thickness
+
+        if method == "curvature":
+            # re-locate the barrier top between meta and bar and use |V''|^1/2
+            x1 = min(self.phi_bar, self.phi_metaMin)
+            x2 = max(self.phi_bar, self.phi_metaMin)
+            phi_tol = abs(self.phi_bar - self.phi_metaMin) * 1e-8
+            phi_top = optimize.fminbound(lambda x: -self.V(x), x1, x2, xtol=phi_tol)
+            d2 = self.d2V(phi_top)
+            return float(np.sqrt(abs(d2)))
+
+        raise ValueError("betaEff: unknown method (use 'rscale', 'curvature', or 'wall').")

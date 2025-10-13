@@ -936,3 +936,195 @@ $$epsabs = \big[\texttt{phitol}\cdot |\Delta\phi|, \texttt{phitol}\cdot |\Delta\
 and (iii) a dense sampler (`integrateAndSaveProfile`)—into a robust overshoot/undershoot search in the single scalar parameter (x).
 
 ---
+
+## Lot SF-6 — Action & post-processing
+
+**Goal.** 
+Given a converged bounce profile $((R,\Phi(R),\Phi'(R)))$, compute the **Euclidean action** and provide **diagnostics** 
+and **geometric scales** that are useful for interpretation and downstream phenomenology.
+This lot modernizes the legacy `findAction` and adds practical post-processing helpers.
+
+**Context & notation**
+
+* We work in $(d=\alpha+1)$ radial dimensions (i.e., $(\alpha=d-1)$ in the ODE).
+* The unit $(\alpha)$-sphere area is
+
+$$\Omega_\alpha \equiv \frac{2\pi^{(\alpha+1)/2}}{\Gamma!\big((\alpha+1)/2\big)}$$
+
+* A profile is the named tuple returned by `findProfile`: `profile.R`, `profile.Phi`, `profile.dPhi` (and `profile.Rerr`).
+* We subtract the false-vacuum energy $(V(\phi_{\rm meta}))$ so the action density is anchored at the metastable vacuum.
+
+---
+
+### What’s new vs. the legacy
+
+* **New**: `actionBreakdown(profile)` — splits (S) into kinetic/potential/“interior bulk” pieces and returns per-radius **densities** for plotting and checks.
+* **New**: `wallDiagnostics(profile, frac=(0.1,0.9))` — estimates **wall position** and **thickness** directly from the profile (levels in $(\phi)$ and peak $(|\Phi'|)$).
+* **New**: `betaEff(profile, method=...)` — **proxies** for an inverse length/time scale $(\beta_{\rm eff})$ (`"rscale"`, `"curvature"`, `"wall"`).
+* **Improved**: `evenlySpacedPhi(...)` — robust $(\phi)$-space resampling with monotonicity enforcement and endpoint padding (zero slopes at vacua).
+
+---
+
+### Physics background (why these formulas)
+
+The action (with the false-vacuum constant removed) is
+
+$$S = \int_{r_0}^{\infty}\Big[\tfrac12(\partial_r\phi)^2+\big(V(\phi)-V(\phi_{\rm meta})\big)\Big]  r^\alpha dr\Omega_\alpha +$$
+
+$$+\underbrace{ \int_{0}^{r_0} \big(V(\phi(r_0)) - V(\phi_{\rm meta})\big),d^dr }_{\text{“interior bulk”}}$$
+
+because thin-wall integrations start at $(r=r_0>0)$. Regularity implies$ (\phi'(r)\sim\mathcal{O}(r))$,
+so the **gradient** contribution from $([0,r_0])$ is negligible,
+but the **potential** offset must be accounted for via the (d)-ball volume:
+
+$${\rm Vol}_d(r_0)=\frac{\pi^{d/2}}{\Gamma(d/2+1)}r_0^d$$
+
+This matches the original legacy semantics while making the computation explicit and numerically stable.
+
+---
+
+### `findAction(profile)`
+
+**What it computes.**
+The scalar Euclidean action (S) using
+
+$$S_{\rm line}=\int_{r_0}^{\infty}\left[\tfrac12\Phi'(r)^2 + V(\Phi(r))-V(\phi_{\rm meta})\right] r^\alpha dr\Omega_\alpha$$
+
+$$\Delta S_{\rm interior}={\rm Vol}*d(r_0)\big[V(\Phi(r_0))-V(\phi*{\rm meta})\big]$$
+
+and returns $(S=S_{\rm line}+\Delta S_{\rm interior})$.
+
+**Inputs.**
+`profile` (from `findProfile`): arrays `R`, `Phi`, `dPhi` must be 1D, same length $(\ge 2)$.
+
+**Output.**
+A single `float` — the Euclidean action.
+
+**Why it matters.**
+(S) controls the (zero-temperature) tunneling rate prefactor $( \Gamma \propto e^{-S} )$ (up to determinants).
+In thermal problems $(S_3/T)$ plays the analogous role; 
+our formulation and helpers are designed to interface cleanly with those workflows later.
+
+**Numerical notes.**
+
+* Uses Simpson integration on the line contribution with the correct geometric weight $(r^\alpha\Omega_\alpha)$.
+* Adds the interior potential-only bulk term if $(r_0>0)$.
+
+---
+
+### `evenlySpacedPhi(phi, dphi, npoints=100, k=1, fixAbs=True)`
+
+**What it does.**
+Resamples $((\phi(r), \phi'(r)))$ onto a **uniform grid in $(\phi)$**,
+returning arrays $((\phi_i, \phi'_i))$ with $(\phi_i)$ equally spaced.
+
+**Why it’s useful.**
+
+* Many diagnostics/plots are more readable vs **field value** than vs radius (e.g., comparing kinetic vs potential terms along the wall).
+* Makes it easy to overlay different profiles in the same $(\phi)$-space.
+
+**Key options.**
+
+* `fixAbs=True` pads endpoints to **exactly** $((\phi_{\rm abs},\phi_{\rm meta}))$ with zero slopes — physically correct for regular instantons.
+* Enforces **monotonic $(\phi)$** (drops tiny backtracks before spline fitting) to avoid oscillatory spline artifacts.
+* `k=1` (linear) is very robust; `k=3` gives smooth derivatives when the data are clean.
+
+**Output.**
+`phi2`, `dphi2` (both 1D arrays with length `npoints`).
+
+---
+
+### `actionBreakdown(profile)`  — **New**
+
+**What it returns.**
+A named tuple with:
+
+* `S_total`: same value as `findAction(profile)`.
+* `S_kin`, `S_pot`: line integrals of the kinetic and potential pieces **separately**.
+* `S_interior`: the interior bulk correction.
+* Copies of `r`, `phi`, `dphi`.
+* `density`: a dict with arrays
+
+  * `density["kin"]` = $tfrac12\Phi'^2 r^\alpha \Omega_\alpha$,
+  * `density["pot"]` = $(V(\Phi)-V_{\rm meta}) r^\alpha \Omega_\alpha$
+  * `density["tot"] = density["kin"] + density["pot"]`.
+
+**Why it’s helpful.**
+
+* Lets you **plot** where the action is accumulated (e.g., most weight sits in the wall).
+* Makes **sanity checks** straightforward (e.g., verify positivity of densities, small contribution far from the wall, etc.).
+
+**Caveat.**
+`density["tot"]` covers only the **line** part; the interior bulk is a single additive scalar, not a distributed density.
+
+---
+
+### `wallDiagnostics(profile, frac=(0.1, 0.9))`  — **New**
+
+**Idea.**
+Characterize the **wall geometry** directly from the profile.
+
+**Definitions.**
+
+* Let $(\Delta\phi \equiv \phi_{\rm meta}-\phi_{\rm abs})$.
+* Define field levels
+
+$$\phi_{\rm lo}=\phi_{\rm abs}+f_{\rm lo}\Delta\phi$$
+
+$$\phi_{\rm hi}= \phi_{\rm abs}+f_{\rm hi}\Delta\phi  $$
+
+$$(\phi_{\rm mid}=\tfrac12(\phi_{\rm abs}+\phi_{\rm meta})) $$
+
+* Invert the (monotonic) profile to get radii $(r(\phi))$;
+
+**What it returns.**
+
+* `r_peak`: radius where $(|\Phi'|)$ is maximal (often used as “wall center”).
+* `r_mid`: radius where $(\phi=\phi_{\rm mid})$.
+* `r_lo`, `r_hi`: radii at the chosen fractional field levels.
+* `thickness` = $|r_{\rm hi} - r_{\rm lo}|$.
+* The field levels `phi_lo`, `phi_hi`.
+
+**Why it’s useful.**
+
+* Provides a **coordinate-free** estimate of wall thickness and location.
+* Enables simple comparisons between thin- and thick-wall regimes.
+
+---
+
+### `betaEff(profile, method="rscale")`  — **New**
+
+**Purpose.**
+Return a **proxy** for the inverse timescale/length $(\beta_{\rm eff})$ often used for order-of-magnitude reasoning. 
+This is **not** the cosmological $(\beta \equiv -d(S_3/T)/dt)$; computing that requires a (T)-dependent potential and $(S_3(T)/T)$.
+
+**Methods.**
+
+* `"rscale"`: $(\beta_{\rm eff} = 1/\texttt{rscale})$.
+  Always defined; `rscale` was obtained in Lot SF-2 from barrier geometry.
+* `"curvature"`: $(\beta_{\rm eff} = \sqrt{|V''(\phi_{\rm top})|})$.
+  Uses the second derivative at the barrier top; agrees with $(1/\texttt{rscale})$ up to $(\mathcal{O}(1))$ in many models.
+* `"wall"`: $(\beta_{\rm eff}=1/\texttt{thickness})$.
+  Thickness from `wallDiagnostics`; simple geometric proxy tied to the wall width.
+
+**When to use which.**
+
+* If you just need **one number**: `"rscale"`.
+* If the **barrier curvature** is physically meaningful in your model: `"curvature"`.
+* If your analysis hinges on **wall width** (e.g., friction effects): `"wall"`.
+
+---
+
+### Practical guidance & pitfalls
+
+* **Profiles starting at $(r_0>0)$ (thin walls):**
+  Expect a **nonzero interior bulk** potential term. The kinetic part from $([0,r_0])$ is suppressed by regularity.
+* **Units & scaling:**
+  (S) is dimensionless if (r) and (V) are in consistent units (as in the usual bounce conventions). All geometric addends preserve dimensional consistency.
+* **Monotonicity in (\phi):**
+  Small numerical back-and-forth in (\phi(r)) can spoil interpolation in (\phi)-space. The resampler removes those via a monotonic-indices filter before spline fitting.
+* **Interpreting densities:**
+  Most of the action density typically **localizes in the wall**; plotting `density["kin"]` and `density["pot"]` helps verify this and diagnose integration issues.
+
+---
+
