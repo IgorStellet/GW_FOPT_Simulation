@@ -635,7 +635,7 @@ class SingleFieldInstanton:
             return float(phi), float(dphi)
 
         # Choose evaluation path
-        small_cut = 1e-2  # conservative; keeps series well within FP accuracy
+        small_cut = 1e-5  # conservative; keeps series well within FP accuracy
         if t <= small_cut:
             # d2V>0 → I_nu (sign=+1); d2V<0 → J_nu (sign alternation)
             sign = +1.0 if d2V > 0.0 else -1.0

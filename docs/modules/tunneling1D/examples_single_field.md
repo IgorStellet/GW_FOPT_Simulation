@@ -333,7 +333,10 @@ python -m tests.tunneling1D.single_field.Lot_SF3  # it includes all tests (more 
 
 ```
 === Test 4: initialConditions (r0, phi(r0), phi'(r0)) ===
- Thin: r0=1.667709e-03, phi(r0)=1.018316e+00, phi'(r0)=8.527581e-06
+ Thin: r0=1.667709e-03, phi(r0)=1.018316e+00, phi'(r0)=5.685050e-06
+  Expectation: |phi(r0)-phi_absMin| ≳ cutoff, and phi'(r0) has the same sign as delta_phi0.
+
+ Thick: r0=2.357023e-03, phi(r0)=1.018316e+00, phi'(r0)=1.199135e-05
   Expectation: |phi(r0)-phi_absMin| ≳ cutoff, and phi'(r0) has the same sign as delta_phi0.
 ```
 

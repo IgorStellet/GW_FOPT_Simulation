@@ -505,7 +505,7 @@ This is used to:
 #### Implementation notes
 
 * **Flat curvature** (`d2V==0`): uses the exact polynomial solution above (no Bessel calls).
-* **Small argument** (`t = beta*r ≤ 1e-2`): uses a **short even-power series** up to (t^6), which is well-conditioned and avoids any division by `r`.
+* **Small argument** (`t = beta*r ≤ 1e-5`): uses a **short even-power series** up to (t^6), which is well-conditioned and avoids any division by `r`.
 * **General case**: uses the Bessel/modified-Bessel forms, with overflow/underflow warnings suppressed locally; the combined expressions are finite.
 * Input validation ensures all inputs are finite and `r≥0`.
 
