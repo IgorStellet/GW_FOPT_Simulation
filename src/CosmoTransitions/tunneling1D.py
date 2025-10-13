@@ -1036,3 +1036,235 @@ class SingleFieldInstanton:
 
         rval = (R,) + tuple(Yout.T) + (Rerr,)
         return self.profile_rval(*rval)
+
+    # -------------------------------
+    # Lot SF-5 — Find Profile
+    # -------------------------------
+
+    def findProfile(self,
+                    xguess: float = None,
+                    xtol: float = 1e-4,
+                    phitol: float = 1e-4,
+                    thinCutoff: float = 0.01,
+                    npoints: int = 500,
+                    rmin: float = 1e-4,
+                    rmax: float = 1e4,
+                    max_interior_pts: int = None):
+        r"""
+        Search for the bounce profile by **shooting** on the initial value
+        :math:`\phi(0)` using the classic **overshoot/undershoot** strategy.
+
+        Strategy
+        --------
+        We parametrize the center value via a monotone "shooting" parameter
+
+        .. math::
+            \phi(0) \equiv \phi_{\rm absMin} +
+            e^{-x}\,(\phi_{\rm metaMin}-\phi_{\rm absMin}) \,,
+
+        so that small ``x`` places the field close to the false vacuum
+        (high energy ⇒ likely **overshoot**), while large ``x`` puts it close to
+        the true vacuum (low energy ⇒ likely **undershoot**). For each trial ``x``:
+
+        1. Build practical starting conditions at :math:`r=r_0>0` using
+           :meth:`initialConditions(\Delta\phi_0,r_{\min},\Delta\phi_{\rm cutoff})`.
+        2. Integrate with :meth:`integrateProfile` until convergence or an event:
+           **overshoot** (crossing :math:`\phi_{\rm metaMin}`) or **undershoot**
+           (turning point :math:`\phi'=0`).
+        3. Update the bracketing interval in ``x`` and bisect until the target
+           tolerance is met.
+        4. Reintegrate once more and sample densely with
+           :meth:`integrateAndSaveProfile` to return the full profile.
+
+        Parameters
+        ----------
+        xguess : float, optional
+            Initial guess for the shooting parameter. If ``None``, choose a
+            barrier-informed value so that the implied ``phi(0)`` is close to
+            ``phi_bar``.
+        xtol : float, optional
+            Target half-width for the bracketing in ``x``. When
+            ``xmax - xmin < xtol``, the search stops.
+        phitol : float, optional
+            Base fractional tolerance that sets both the **relative** (``epsfrac``)
+            and **absolute** (``epsabs``) tolerances used in the adaptive integrator.
+            Internally we scale absolute tolerances as
+            ``[phitol*|Δφ|, phitol*|Δφ|/rscale]`` for ``[φ, φ']``.
+        thinCutoff : float, optional
+            Dimensionless cutoff for the starting surface,
+            :math:`|\Delta\phi(r_0)| = \texttt{thinCutoff}\cdot |\phi_{\rm metaMin}-\phi_{\rm absMin}|`.
+            Larger values push :math:`r_0` outward (useful for very thin walls).
+        npoints : int
+            Number of sample radii to return in the final profile (≥ 2).
+        rmin : float
+            Minimum starting radius **in units of** ``rscale``. Also sets the
+            initial stepsize and the minimum admissible stepsize (``0.01*rmin``).
+        rmax : float
+            Maximum integration span **in units of** ``rscale``.
+        max_interior_pts : int, optional
+            If provided and > 0, fill the bubble **interior** (``0 ≤ r < r0``)
+            with up to this many extra points using the local quadratic solution
+            (see :meth:`exactSolution`). If ``None``, defaults to ``npoints//2``.
+            If zero, no interior points are added.
+
+        Returns
+        -------
+        profile : profile_rval
+            Named tuple (default: ``Profile1D``) with fields
+            ``R, Phi, dPhi, Rerr``. For thin walls, note that ``R[0]`` can be
+            significantly greater than zero.
+
+        Raises
+        ------
+        IntegrationError
+            If the solver cannot bracket a usable solution (e.g. both trial
+            trajectories converge to the same side), or if step-size underflow /
+            excessive range is encountered during the search.
+
+        Notes
+        -----
+        * ``epsfrac``/``epsabs`` are passed as *2-vectors* for ``[φ, φ']``; the
+          driver normalizes them internally (strictest scalar for RK step control,
+          per-component thresholds for event checks).
+        * The search caps the number of trial integrations to avoid infinite loops
+          on pathological potentials; if that cap is hit, a clear error is raised.
+        """
+        # ---- 0) Sanity on npoints
+        npoints = max(int(npoints), 2)
+
+        # ---- 1) Dimensionful radii/scales
+        rmin = float(rmin) * self.rscale
+        dr0 = rmin  # initial step guess
+        drmin = 0.01 * rmin  # hard lower bound for adaptive steps
+        rmax = float(rmax) * self.rscale  # absolute span limit
+
+        # ---- 2) Integration tolerances
+        delta_phi = self.phi_metaMin - self.phi_absMin
+        epsfrac = np.array([phitol, phitol], dtype=float)
+        epsabs = np.array([abs(delta_phi) * phitol,
+                           abs(delta_phi) * phitol / max(self.rscale, 1e-14)], dtype=float)
+
+        # thin-wall cutoff for the ICs (magnitude only)
+        delta_phi_cutoff = abs(thinCutoff * delta_phi)
+
+        # ---- 3) Initial guess/brackets in x
+        if xguess is None:
+            # Put φ(0) roughly at φ_bar by default
+            x = -np.log(
+                abs((self.phi_bar - self.phi_absMin) /
+                    (self.phi_metaMin - self.phi_absMin))
+            )
+        else:
+            x = float(xguess)
+
+        xmin = float(xtol) * 10.0
+        xmax = np.inf
+        xincrease = 5.0  # geometric expansion when no upper bound exists
+        _MAX_ITERS = 200  # robust cap on trial integrations
+
+        # Convenience bundle fed to integrateProfile
+        integration_args = (dr0, epsfrac, epsabs, drmin, rmax)
+
+        # Keep last successful ICs and end state (for the final sampling pass)
+        r0 = rf = None
+        y0 = yf = None
+        last_event = None
+
+        # ---- 4) Bracket in x by overshoot/undershoot and bisect
+        for _ in range(_MAX_ITERS):
+            # Map x -> center offset and build ICs at r0>0
+            delta_phi0 = np.exp(-x) * delta_phi
+            try:
+                r0_try, phi0, dphi0 = self.initialConditions(delta_phi0, rmin, delta_phi_cutoff)
+            except Exception as err:
+                # If IC construction fails, try nudging x toward the "safer" side
+                if xmax is np.inf:
+                    x *= xincrease
+                else:
+                    x = 0.5 * (xmin + xmax)
+                continue
+
+            # Guard: ICs must be finite
+            if not (np.isfinite(r0_try) and np.isfinite(phi0) and np.isfinite(dphi0)):
+                if xmax is np.inf:
+                    x *= xincrease
+                else:
+                    x = 0.5 * (xmin + xmax)
+                continue
+
+            r0 = float(r0_try)
+            y0 = np.array([phi0, dphi0], dtype=float)
+
+            # Integrate until event/convergence
+            rf, yf, ctype = self.integrateProfile(r0, y0, *integration_args)
+            last_event = ctype
+
+            # Classify and update bracket
+            if ctype == "converged":
+                break
+
+            if ctype == "undershoot":
+                # x too *large* (too close to true minimum) → increase xmin
+                xmin = x
+                x = x * xincrease if np.isinf(xmax) else 0.5 * (xmin + xmax)
+
+            elif ctype == "overshoot":
+                # x too *small* (too close to false minimum) → decrease xmax
+                xmax = x
+                x = 0.5 * (xmin + xmax)
+
+            # Stopping by bracket width
+            if (not np.isinf(xmax)) and (xmax - xmin < xtol):
+                break
+        else:
+            raise IntegrationError(
+                "findProfile: failed to bracket a solution within the iteration cap. "
+                f"Last event='{last_event}', bracket=[{xmin:.6g}, {xmax:.6g}]."
+            )
+
+        # ---- 5) Final dense pass (sampled profile)
+        # Ensure we have a finite span; if rf == r0 (very rare), pad by a tiny step
+        if not np.isfinite(rf) or not np.isfinite(r0):
+            raise IntegrationError("findProfile: non-finite integration bounds for final pass.")
+        if rf <= r0:
+            rf = r0 + max(1e-12, 1e-6 * self.rscale)
+
+        R = np.linspace(r0, rf, npoints)
+        profile = self.integrateAndSaveProfile(R, y0, dr0, epsfrac, epsabs, drmin)
+
+        # ---- 6) (Optional) Fill interior points 0 ≤ r < r0 using the local solution
+        if max_interior_pts is None:
+            max_interior_pts = len(R) // 2
+
+        if max_interior_pts and max_interior_pts > 0:
+            dx0 = R[1] - R[0]
+            if R[0] / dx0 <= max_interior_pts:
+                n = int(np.ceil(R[0] / dx0))
+                R_int = np.linspace(0.0, R[0], n + 1)[:-1]
+            else:
+                n = int(max_interior_pts)
+                # Non-uniform interior spacing that meets R[0] and avoids clustering
+                a = (R[0] / dx0 - n) * 2.0 / (n * (n + 1))
+                N = np.arange(1, n + 1)[::-1]
+                R_int = R[0] - dx0 * (N + 0.5 * a * N * (N + 1))
+                R_int[0] = 0.0  # enforce exactly
+
+            Phi_int = np.empty_like(R_int)
+            dPhi_int = np.empty_like(R_int)
+
+            # Center value implied by current x (delta_phi0 computed last)
+            Phi_int[0] = self.phi_absMin + delta_phi0
+            dPhi_int[0] = 0.0
+            dV0 = self.dV_from_absMin(delta_phi0)
+            d2V0 = self.d2V(Phi_int[0])
+
+            for i in range(1, len(R_int)):
+                Phi_int[i], dPhi_int[i] = self.exactSolution(R_int[i], Phi_int[0], dV0, d2V0)
+
+            # Concatenate interior + integrated segments
+            R_all = np.append(R_int, profile.R)
+            Phi_all = np.append(Phi_int, profile.Phi)
+            dPhi_all = np.append(dPhi_int, profile.dPhi)
+            profile = self.profile_rval(R_all, Phi_all, dPhi_all, profile.Rerr)
+
+        return profile

@@ -806,3 +806,133 @@ Lot SF-4 equips the `SingleFieldInstanton` class with a clean, robust integrator
 These pieces are deliberately modular: subclasses (e.g., constant friction walls) reuse the same machinery by passing extra arguments to `equationOfMotion` via `*eqn_args`, while keeping the numerics identical.
 
 ---
+
+## Lot SF-5 — Profile search (overshoot/undershoot)
+
+**Goal.** Find the full bounce profile $( \phi(r) )$ by *shooting* on the unknown center value $( \phi(0) )$. 
+We adjust a scalar parameter (x) so that the outward integration converges onto the false (metastable) vacuum as $( r\to\infty )$. 
+The search uses classic **overshoot/undershoot** bracketing and a final dense sampling pass.
+
+---
+
+### `SingleFieldInstanton.findProfile(...)`
+
+**Signature (unchanged).**
+
+```python
+findProfile(
+    xguess=None, xtol=1e-4, phitol=1e-4,
+    thinCutoff=0.01, npoints=500, rmin=1e-4, rmax=1e4,
+    max_interior_pts=None
+) -> Profile1D  # (R, Phi, dPhi, Rerr)
+```
+
+#### What problem this solves
+
+We need the solution of
+
+$$\phi''(r) + \frac{\alpha}{r}\phi'(r) = V'(\phi)$$
+
+that starts at the true minimum $((\phi\approx\phi_{\rm absMin}))$ near (r=0) and asymptotes to the false minimum $((\phi\to\phi_{\rm metaMin}))$ for large (r). 
+The correct central value $(\phi(0))$ is *not* known a priori; we determine it by shoot-and-correct.
+
+#### The shooting parameter (x)
+
+Instead of varying $(\phi(0))$ directly, we vary
+
+$$\boxed{\phi(0) \equiv \phi_{\rm absMin}+ e^{-x}\big(\phi_{\rm metaMin}-\phi_{\rm absMin}\big)}$$
+  so that:
+
+- **Small** (x) → $(\phi(0))$ close to the *false* minimum (high potential energy) → dynamics tend to **overshoot** across $(\phi_{\rm metaMin})$.
+- **Large** (x) → $(\phi(0))$ close to the *true* minimum (low energy) → dynamics turn around before reaching $(\phi_{\rm metaMin})$ (**undershoot**).
+
+If `xguess` is not provided, we choose a sensible default by placing $(\phi(0))$ near the barrier “edge” $(\phi_{\rm bar})$, i.e.
+
+$$x_{\rm init} \approx -\ln\left(
+\frac{\phi_{\rm bar}-\phi_{\rm absMin}}{\phi_{\rm metaMin}-\phi_{\rm absMin}}
+\right).$$
+
+#### Radii and tolerances (numerics)
+
+* We scale all radii with the characteristic `rscale` (Lot SF-2).
+
+  * `rmin * rscale`: the **starting radius** guess and initial stepsize.
+  * `drmin = 0.01 * rmin * rscale`: **minimum** allowed stepsize for the RK driver.
+  * `rmax * rscale`: **maximum** travel distance from the start.
+* Error controls for the adaptive RK driver (Lot SF-4):
+
+  * `phitol` sets both **relative** (`epsfrac=[phitol, phitol]`) and **absolute** tolerances
+    
+$$epsabs = \big[\texttt{phitol}\cdot |\Delta\phi|, \texttt{phitol}\cdot |\Delta\phi|/\texttt{rscale}\big]$$
+    for $([\phi,\phi'])$.
+  * The driver uses a strict scalar for per-step control and per-component thresholds for event detection and convergence.
+
+#### Step-by-step algorithm
+
+1. **Map $(x\to\Delta\phi_0)$.**
+   $(\Delta\phi_0 = e^{-x}(\phi_{\rm metaMin}-\phi_{\rm absMin}))$.
+
+2. **Practical initial surface at $(r_0>0)$.**
+   Call `initialConditions(Δφ0, rmin*rscale, thinCutoff*|Δφ|)`.
+   This uses the local quadratic solution (Lot SF-3) to pick $(r_0)$ such that
+   $(|\phi(r_0)-\phi_{\rm absMin}| \approx \texttt{thinCutoff}\cdot|\Delta\phi|)$
+   and returns$ ((r_0,\phi(r_0),\phi'(r_0)))$.
+   *Intuition:* for thin walls, start integration near the wall (not at the exact center), which stabilizes shooting.
+
+3. **Trial integration and event classification.**
+   Run `integrateProfile(r0, y0, ...)` (Lot SF-4). Three outcomes:
+
+   * `"converged"`: $( |\phi-\phi_{\rm metaMin}| )$ and $( |\phi'| )$ are within tolerance.
+   * `"overshoot"`: within the last step, $(\phi)$ **crossed** $(\phi_{\rm metaMin})$;
+     we locate the crossing by **cubic Hermite** interpolation (with consistent slopes).
+   * `"undershoot"`: the field **turns around** before reaching $(\phi_{\rm metaMin})$
+     (detected via $(\phi'=0 )$), again located by cubic interpolation.
+
+4. **Bracket in (x) and bisect.**
+   Maintain $([x_{\min}, x_{\max}])$ such that:
+
+   * undershoot ⇒ $(x_{\min} \leftarrow x)$ (we were too close to the true minimum);
+   * overshoot ⇒ ($x_{\max} \leftarrow x)$ (we were too close to the false minimum).
+     If no upper bound yet, expand geometrically (`xincrease ≈ 5`).
+     Once bracketing exists, **bisect** until $(x_{\max}-x_{\min}<\texttt{xtol})$ or we get `"converged"`.
+
+5. **Final dense pass (returned profile).**
+   With the last valid $((r_0,y_0))$ and end radius $(r_f)$, build a uniform array
+   `R = linspace(r0, rf, npoints)` and call
+   `integrateAndSaveProfile(R, y0, ...)`.
+   This integrates adaptively **and** fills every `R[i]` by cubic Hermite interpolation between accepted RK steps. The return object is:
+
+   * `R`: radii,
+   * `Phi`: (\phi(R)),
+   * `dPhi`: (\phi'(R)),
+   * `Rerr`: first radius where the step would have fallen below `drmin` (if it happened), else `None`.
+
+6. **(Optional) Interior points $(0 \le r < r_0)$.**
+   If `max_interior_pts` is not zero, we synthesize points in the **bubble interior** using the analytic *local* solution (`exactSolution`) derived in Lot SF-3. We place up to `max_interior_pts` points on a non-uniform grid that lands exactly on (r=0) and $(r=r_0)$, then concatenate interior and integrated segments.
+
+   * If `max_interior_pts=None`, we default to `npoints//2`.
+   * Set it to `0` to skip interior fill.
+
+#### Convergence / failure modes (and what to tweak)
+
+* **Iteration cap reached** while bracketing in (x): increase `rmax`, relax `phitol`, or widen `thinCutoff` so the initial surface is farther from the center (easier shooting).
+* **Step underflow** (`dr < drmin`) in the driver: increase `rmin` (hence `drmin`) or relax `phitol`.
+* **Both trials on the same side** (can't bracket): try a smaller/larger `xguess`, or increase `xincrease` (implicitly done inside); extreme thin-wall cases often benefit from a larger `thinCutoff` (e.g. `0.05–0.2`).
+
+#### Physical interpretation
+
+* In the **thin-wall** limit (almost degenerate minima), the correct (x) is *large*: $(\phi(0))$ sits very close to the true vacuum and the wall is narrow. Small changes in (x) produce large changes in outcome—hence the careful bracketing.
+* In the **thick-wall** regime, the search is gentler: the field starts farther from the true minimum, and both overshoot/undershoot are easier to bracket.
+
+#### Output guarantees
+
+* The returned profile always corresponds to the **last successful integration** over $([r_0,r_f])$, sampled at `npoints`. If an interior segment is synthesized, the profile begins at (r=0); otherwise it begins at $(r=r_0>0)$ (typical for thin walls).
+* `Rerr` is purely diagnostic: if not `None`, it marks the first place where the integrator had to clamp a too-small step to `drmin`; the profile remains valid.
+
+---
+
+**In short:** `findProfile` wraps three building blocks developed in the previous lots—(i) a stable *local* start (`initialConditions`), 
+(ii) an event-aware, tolerance-controlled driver (`integrateProfile`),
+and (iii) a dense sampler (`integrateAndSaveProfile`)—into a robust overshoot/undershoot search in the single scalar parameter (x).
+
+---

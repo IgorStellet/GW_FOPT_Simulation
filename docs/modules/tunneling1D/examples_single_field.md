@@ -538,3 +538,108 @@ Rerr (first clamped step radius) = None
 [`tests/single_field/Lot_SF4.py`](/tests/tunneling1D/single_field/Lot_SF4.py).
 
 ---
+
+## Lot SF-5 — Profile search (`findProfile`)
+
+**Goal.** Demonstrate the full **overshoot/undershoot** shooting procedure that determines the instanton profile $( \phi(r) )$,
+and show how two knobs—`thinCutoff` and the optional “interior fill”—affect only the very small-( r ) part of the curve in thin-wall situations.
+
+*Solver recap (physics):* We want the regular (non-singular) solution that starts near the true minimum $( \phi_{\rm abs} )$ at ( r=0 ) and asymptotes to the false minimum $( \phi_{\rm meta} )$ as $( r\to\infty )$. 
+`findProfile` varies the “shooting” parameter ( x ) (equivalently $( \Delta\phi_0 \propto e^{-x} )$ ) 
+and repeatedly integrates the ODE.
+
+* If the trajectory **crosses** $( \phi_{\rm meta} )$ within a step ⇒ **overshoot** (initial kick too large).
+* If it **turns around** (hits $( \phi'(r)=0 )$ ) before reaching $( \phi_{\rm meta} )$ ⇒ **undershoot** (kick too small).
+  Bisection on ( x ) lands on the unique critical trajectory; then the profile is sampled densely.
+
+See the full, executable script here: [`tests/tunneling1D/single_field/Lot_SF5.py`](/tests/tunneling1D/single_field/Lot_SF5.py).
+
+For all examples we reuse the same toy potentials:
+
+$$\textbf{THIN:}\quad \tfrac{1}{4}\phi^4 - 0.49,\phi^3 + 0.235,\phi^2$$
+
+$$\textbf{THICK:}\quad \tfrac{1}{4}\phi^4 - \tfrac{2}{5}\phi^3 + \tfrac{1}{10}\phi^2$$
+
+with $( \phi_{\rm abs}=1 )$ and $( \phi_{\rm meta}=0 )$, and $( \alpha=2 )$ (O(3) bounce).
+
+**Script:** `tests/tunneling1D/single_field/Lot_SF5.py`
+**How to run just this lot**
+
+```bash
+python -m tests.tunneling1D.single_field.Lot_SF5
+```
+
+---
+
+### Test 1 — Legacy demo: thin & thick walls (default settings)
+
+**What this shows**
+
+* A faithful reproduction of the legacy quick-start: one call per potential,
+
+```
+  profile = SingleFieldInstanton(1.0, 0.0, V, dV).findProfile()
+```
+
+  and a plot of $( \phi(r) )$.
+* Horizontal guides at $( \phi_{\rm abs} )$ and $( \phi_{\rm meta} )$ for context.
+* Console diagnostics: start/end radii, terminal residual $( |\phi(r_f)-\phi_{\rm meta}| )$.
+
+**Physical expectations**
+
+* **Thin-wall**: The field sits near $( \phi_{\rm abs} )$ until a relatively sharp transition (“thin” wall) then approaches $( \phi_{\rm meta} )$.
+* **Thick-wall**: Transition is more gradual; the wall is “thicker.”
+* Both runs should converge without manual tuning (defaults are chosen to be robust).
+
+**Paste your console excerpt here**
+
+```
+=== Test 1: Legacy demo — thin & thick walls ===
+=== Test 1: Legacy demo — thin & thick walls ===
+[thin-wall] profile: R[0]=0.000000e+00, R[-1]=6.193054e+01
+         φ(r0)=1.000000e+00, φ(rf)=-1.857581e-04, |φ(rf)-φ_meta|=1.858e-04, φ'(rf)=-1.679e-04
+         Rerr=None
+
+[thick-wall] profile: R[0]=0.000000e+00, R[-1]=2.089406e+01
+         φ(r0)=7.420233e-01, φ(rf)=9.449128e-06, |φ(rf)-φ_meta|=9.449e-06, φ'(rf)=-1.251e-04
+         Rerr=None
+```
+
+**Figure**
+*“findProfile — legacy thin/thick demos; horizontal guides at $( \phi_{\rm abs} )$ and $( \phi_{\rm meta} )$.”*
+![Test 1 — legacy thin/thick demos](assets/SF5_1.png)
+
+---
+
+### Test 2 — Sensitivity to `thinCutoff` and interior fill (thin wall)
+
+**What this shows**
+
+* Two thin-wall profiles with identical physics but different handling of the **tiny-radius** region:
+
+  * **Case A:** `thinCutoff=0.01`, `max_interior_pts=None` (default). The solver places synthetic points inside the bubble using the local quadratic solution to illustrate the smooth $( r\to0 )$ behavior.
+  * **Case B:** `thinCutoff=0.15`, `max_interior_pts=0`. We start farther from the origin (bigger cutoff) and **disable** interior fill, so the curve begins at $( r=r_0>0 )$.
+
+**Physical expectations**
+
+* The two curves should **match** once ( r ) is beyond the artificially chosen $( r_0 )$. Only the very small-( r ) portion differs—this is numerical bookkeeping, not different physics.
+* The terminal residual and action should be essentially unchanged; only $( r_0 )$ and the early segment of $( \phi(r) )$ shift.
+
+**Paste your console excerpt here**
+
+```
+=== Test 2: Sensitivity to thinCutoff and interior fill (thin wall) ===
+[thin (A: thinCutoff=0.01, interior ON)] profile: R[0]=0.000000e+00, R[-1]=6.323233e+01
+         φ(r0)=1.000000e+00, φ(rf)=-2.498747e-20, |φ(rf)-φ_meta|=2.499e-20, φ'(rf)=-1.572e-05
+         Rerr=None
+
+[thin (B: thinCutoff=0.15, interior OFF)] profile: R[0]=3.469565e+01, R[-1]=5.052437e+01
+         φ(r0)=8.500000e-01, φ(rf)=1.395670e-04, |φ(rf)-φ_meta|=1.396e-04, φ'(rf)=4.599e-18
+         Rerr=None
+```
+
+**Figure**
+*Effect of `thinCutoff` & interior fill in a thin-wall case — curves overlay for ( r \gtrsim r_0 ).*
+![Test 2 — Effect of `thinCutoff` & interior fill in a thin-wall](assets/SF5_2.png)
+
+---
