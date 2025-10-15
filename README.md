@@ -31,7 +31,7 @@ Therefore, this project aims to deliver substantial improvements to the original
 - **Phase 0** (planning): ✅ done  
 - **Phase 1** (modifying auxiliar functions): ✅ done  
 - **Phase 1.5** (Test, docs & validation of auxiliar functions ): ✅ done
-- **Phase 2** (modifying tunneling1D): in progress — see [Roadmap](docs/roadmap.md)
+- **Phase 2** (modifying/examples tunneling1D): in progress — see [Roadmap](docs/roadmap.md)
 
 ---
 

@@ -43,16 +43,16 @@ gantt
     Fixes and Adjustments           :done,2025-10-02, 4d
     
     section Phase 2: Tunneling 1D Module
-    Modify Tunneling1D.py           :active,2025-10-07, 12d
-    Testing Tunneling1D.py          :2025-10-20, 3d
+    Modify/tests Tunneling1D.py     :done,2025-10-07, 12d
+    Examples Tunneling1D.py         :active,2025-10-20, 3d
     
     section Phase 3: Transtions Finder Module
-    Modify transitionFinder.py      :2025-10-24, 12d      
-    Testing transitionFinder        :2025-11-06, 3d
+    Modify/tests transitionFinder.py :2025-10-24, 12d      
+    Examples transitionFinder        :2025-11-06, 3d
     
     section Phase 4: Generic Potential Module
-    Modify generic_potential.py     :2025-11-10, 12d
-    Testing generic_potential.py     :2025-11-25, 5d
+    Modify/tests generic_potential.py  :2025-11-10, 12d
+    Examples generic_potential.py      :2025-11-25, 5d
     
     section Phase 5: Extras (Optional)
     Additional Plots                :2025-12-01, 10d
@@ -77,8 +77,8 @@ gantt
   - [x] exercise error paths and validations
 
 - [ ] **Phase 2**: Tunneling 1D Core Module 
-  - Refactor `tunneling1D.py` 
-  - Test modernized `tunneling1D.py` 
+  - [x] Refactor `tunneling1D.py` 
+  -  Examples modernized `tunneling1D.py` 
 
 - [ ] **Phase 3**: Transtions Finder Core Module 
   - Refactor `transtionFinder.py` 
