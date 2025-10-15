@@ -1,4 +1,4 @@
-# Examples — Single Field Instanton
+# Tests — Single Field Instanton
 
 This page collects **hands-on examples** for the Single Field Instanton module, organized by lot. 
 Each example states the **physical meaning**, the **expected outcome**, a slot for the **console output/code** and (when applicable) an **image** slot.
@@ -646,3 +646,170 @@ python -m tests.tunneling1D.single_field.Lot_SF5
 ![Test 2 — Effect of `thinCutoff` & interior fill in a thin-wall](assets/SF5_2.png)
 
 ---
+
+## Lot SF-6 — Action & post-processing
+
+**Goal.** Take a computed bounce profile and extract physically meaningful, easy-to-compare summaries:
+
+* Total Euclidean action via `findAction`.
+* A full **action breakdown** (kinetic, potential, interior bulk) and **per-r densities** via `actionBreakdown`.
+* A **uniform φ-grid** view of the wall via `evenlySpacedPhi`.
+* **Wall geometry** (location and thickness) via `wallDiagnostics`.
+* Order-of-magnitude **β-proxies** via `betaEff` (`rscale`, `curvature`, `wall`).
+
+We continue to use the same benchmark potentials as in earlier lots:
+
+$$\textbf{THIN:}\quad V(\phi)=\tfrac14\phi^4 - 0.49\phi^3 + 0.235\phi^2 $$
+
+$$ \textbf{THICK:}\quad V(\phi)=\tfrac14\phi^4 - 0.40\phi^3 + 0.10\phi^2 $$
+
+with $(\phi_{\rm abs}=1)$ (true vacuum) and $(\phi_{\rm meta}=0)$ (false vacuum).
+
+**Script:** `tests/tunneling1D/single_field/Lot_SF6.py`
+**Run all examples:**
+
+```bash
+python -m tests.tunneling1D.single_field.Lot_SF6
+```
+
+---
+
+### Test A — Action & density breakdown
+
+**What this shows**
+
+* For each potential, we compute the profile, then:
+
+  * `findAction(profile)` → total Euclidean action (S).
+  * `actionBreakdown(profile)` → numerical values of (S_{\rm kin}), (S_{\rm pot}), interior bulk, and arrays of per-r **densities**:
+
+$$\text{kin density}=\tfrac12(\phi')^2r^{\alpha}\Omega_\alpha $$
+
+$$\text{pot density}=\big[V(\phi)-V(\phi_{\rm meta})\big]r^{\alpha}\Omega_\alpha$$
+
+* Plots of the densities vs (r) highlight **where** the action accumulates (typically in the wall).
+
+**Expected outcome (physics)**
+
+* The **thin-wall** case shows a **narrow, high** density peak (sharper wall).
+* The **thick-wall** case shows a **broader** distribution (wall spread out).
+* Console check: $(S_{\rm total}\approx S_{\rm kin}+S_{\rm pot}+S_{\rm interior})$ (within numerical accuracy).
+
+**Example console excerpt**
+
+```
+=== Test A: Actions and density breakdown ===
+[thin-wall]
+  S_total    = 1.093093e+03
+   S_kin     = 1.639021e+03
+   S_pot     = -5.459281e+02
+   S_interior= 0.000000e+00
+  (check) S_kin + S_pot + S_interior = 1.093093e+03
+[thick-wall]
+  S_total    = 6.630329e+00
+   S_kin     = 9.946114e+00
+   S_pot     = -3.315785e+00
+   S_interior= 0.000000e+00
+  (check) S_kin + S_pot + S_interior = 6.630329e+00
+```
+
+**Figure**
+*“Action densities vs (r): thin (left) and thick (right). The peak localizes around the wall.”*
+![Test A — Action densities vs (r)](assets/SF6_1.png)
+
+---
+
+### Test B — Uniform φ-grid resampling (`evenlySpacedPhi`)
+
+**What this shows**
+
+* We resample $((\phi,\phi'))$ on an **evenly spaced grid in $(\phi)$** rather than (r):
+
+  * This gives a clean, potential-centric view of the wall: $(d\phi/dr)$ vs $(\phi)$.
+  * Helpful to compare how quickly the field *sweeps* through field space.
+
+**Expected outcome (physics)**
+
+* Thin-wall: a **sharper feature** in $(d\phi/dr)$ near mid-$(\phi)$ (rapid transition).
+* Thick-wall: a **smoother, broader** shape in $(d\phi/dr)$ across $(\phi)$.
+
+**Figure**
+*“Resampled $(d\phi/dr)$ vs $(\phi)$: thin and thick. Both curves start/end with zero slope at the vacua.”*
+![Test B1 — Resampled $(d\phi/dr)$ vs $(\phi)$](assets/SF6_2.png)
+
+
+![Test B2 — Resampled $(d\phi/dr)$ vs $(\phi)$](assets/SF6_3.png)
+
+
+---
+
+### Test C — Wall diagnostics (location & thickness)
+
+**What this shows**
+
+* `wallDiagnostics(profile, frac=(0.1,0.9))` reports:
+
+  * `r_peak`: where $(|\phi'|)$ is maximal (wall center),
+  * `r_lo`/`r_hi`: radii where $(\phi)$ reaches 10% and 90% of the total excursion,
+  * `thickness` = $(|r_{\rm hi}-r_{\rm lo}|)$
+  * `r_mid`: where $(\phi)$ is halfway between the vacua.
+
+**Expected outcome (physics)**
+
+* Thin-wall → **smaller** thickness; `r_peak` between `r_lo` and `r_hi`.
+* Thick-wall → **larger** thickness; markers spaced farther apart.
+
+**Example console excerpt**
+
+```
+=== Test C: Wall diagnostics (location & thickness) ===
+[thin-wall] r_peak=4.706284e+01, r_mid=4.707676e+01, r_lo=4.396172e+01, r_hi=5.019140e+01, thickness=6.229675e+00 (phi_lo=0.900, phi_hi=0.100)
+[thick-wall] r_peak=4.399554e+00, r_mid=3.787229e+00, r_lo=0.000000e+00, r_hi=7.990970e+00, thickness=7.990970e+00 (phi_lo=0.900, phi_hi=0.100)
+```
+
+**Figure**
+*“(\phi(r)) with vertical markers at `r_lo`, `r_mid`, `r_hi`, and `r_peak`.”*
+![Test C1 — (\phi(r)) with vertical markers](assets/SF6_4.png)
+
+
+![Test C2 — (\phi(r)) with vertical markers](assets/SF6_5.png)
+
+
+
+---
+
+### Test D — $(\beta_{\rm eff})$ proxies: `rscale` vs `curvature` vs `wall`
+
+**What this shows**
+
+We compare three quick *inverse-length* scales (proxies for a nucleation timescale):
+
+1. **`rscale`**: $(\beta_{\rm eff}=1/r_{\rm scale})$ (always defined, robust).
+2. **`curvature`**: $(\beta_{\rm eff}=\sqrt{|V''(\phi_{\rm top})|})$ (requires a well-defined barrier top).
+3. **`wall`**: $(\beta_{\rm eff}=1/\text{thickness})$ (from `wallDiagnostics`).
+
+**Expected outcome (physics)**
+
+* Thin-wall: **larger** $(\beta_{\rm eff}(\text{wall}))$ (thinner wall → shorter scale).
+* `rscale` and `curvature` are often comparable within $(\mathcal{O}(1))$ factors.
+* Thick-wall: all three proxies tend to be **smaller**.
+
+**Example console excerpt**
+
+```
+=== Test D: β_eff proxies (rscale, curvature, wall) ===
+[thin-wall] β_rscale=5.996249e-01, β_curv=4.990992e-01, β_wall=1.605220e-01
+[thick-wall] β_rscale=4.242641e-01, β_curv=4.000000e-01, β_wall=1.251412e-01
+---------- END: Lot SF-6 examples ----------
+```
+
+**Figure**
+*“Grouped bars of $(\beta_{\rm eff})$ for thin vs thick, comparing the three proxies.”*
+![Test D — Grouped bars of \beta_{\rm eff}](assets/SF6_6.png)
+
+---
+
+**See the full, executable script for this lot here:**
+[`tests/single_field/Lot_SF6.py`](/tests/tunneling1D/single_field/Lot_SF6.py)
+
+*Tip:* When comparing different models or temperatures, keep the **same plotting and diagnostics** so differences in actions, wall thickness, and $(\beta_{\rm eff})$ are immediately visible and quantitatively comparable.

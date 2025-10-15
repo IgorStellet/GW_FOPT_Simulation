@@ -564,7 +564,7 @@ class SingleFieldInstanton:
         r : float
             Radius (>= 0). At r=0 the regular solution has phi'(0)=0.
         phi0 : float
-            Field value at r=0 about which the quadratic expansion is taken.
+            Field value at r\approx 0 about which the quadratic expansion is taken.
         dV : float
             V'(phi0).
         d2V : float
@@ -1049,7 +1049,8 @@ class SingleFieldInstanton:
                     npoints: int = 500,
                     rmin: float = 1e-4,
                     rmax: float = 1e4,
-                    max_interior_pts: int = None):
+                    max_interior_pts: int = None,
+                    _MAX_ITERS = 200):
         r"""
         Search for the bounce profile by **shooting** on the initial value
         :math:`\phi(0)` using the classic **overshoot/undershoot** strategy.
@@ -1160,7 +1161,7 @@ class SingleFieldInstanton:
         xmin = float(xtol) * 10.0
         xmax = np.inf
         xincrease = 5.0  # geometric expansion when no upper bound exists
-        _MAX_ITERS = 200  # robust cap on trial integrations
+
 
         # Convenience bundle fed to integrateProfile
         integration_args = (dr0, epsfrac, epsabs, drmin, rmax)
@@ -1448,7 +1449,7 @@ class SingleFieldInstanton:
 
         S_total = float(S_kin + S_pot + S_interior)
 
-        density = {"kin": dens_kin, "pot": dens_pot, "tot": dens_tot}
+        density = {"kin": dens_kin, "pot": dens_pot,"int": S_interior , "tot": dens_tot}
         return self._ActionBreakdown(S_total, float(S_kin), float(S_pot), float(S_interior),
                                 r, phi, dphi, density)
 

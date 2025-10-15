@@ -2,7 +2,7 @@
 
 This document describes the **single-field instanton** solver and the public API that underpins it. The implementation follows 
 the overshoot/undershoot shooting method and supports both **thin-wall** and **thick-wall** regimes with robust numerical defaults.
-see the [example](examples_single_field.md) page of this class if you want to understand more of each function!.
+see the [example](tests_single_field) page of this class if you want to understand more of each function!.
 ---
 
 ## Module overview
