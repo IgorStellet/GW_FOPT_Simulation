@@ -326,8 +326,8 @@ python -m tests.tunneling1D.single_field.Lot_SF3  # it includes all tests (more 
 
 **Expected result**
 
-* $(|\phi(r_0)-\phi_{\text{abs}}|\gtrsim )$ cutoff.
-* $(\operatorname{sign}(\phi'(r_0))=\operatorname{sign}(\Delta\phi_0))$.
+* $|\phi(r_0)-\phi_{\text{abs}}|\gtrsim $ cutoff.
+* $sign(\phi'(r_0))=\operatorname{sign}(\Delta\phi_0)$.
 
 **Console excerpts (typical)**
 
@@ -458,7 +458,7 @@ If you see a “step size underflow” in thin-wall cases, relaxing to `phitol=1
 * On the thick-wall potential, different (x) give **opposite outcomes**:
 
   * A smaller initial offset (low energy) → **undershoot**;
-  * A larger offset (high energy) → **overshoot** (crossing of $(\phi_{\rm meta})$).
+  * A larger offset (high energy) → **overshoot** (crossing of $\phi_{meta}$ ).
 
 **Expected outcome**
 
@@ -501,7 +501,7 @@ Rerr (first clamped step radius) = None
 ```
 
 **Figure**
-*“Sampling $(\phi(r))$ on a fixed grid provided by the user.*
+*“Sampling $\phi(r)$ on a fixed grid provided by the user.*
 ![Test D —  Event detection on thick-wall potential](assets/SF4_3.png)
 
 
@@ -609,7 +609,7 @@ python -m tests.tunneling1D.single_field.Lot_SF5
 ```
 
 **Figure**
-*“findProfile — legacy thin/thick demos; horizontal guides at $( \phi_{\rm abs} )$ and $( \phi_{\rm meta} )$.”*
+*“findProfile — legacy thin/thick demos; horizontal guides at $\phi_{abs}$ and $\phi_{meta}$.”*
 ![Test 1 — legacy thin/thick demos](assets/SF5_1.png)
 
 ---
@@ -642,7 +642,7 @@ python -m tests.tunneling1D.single_field.Lot_SF5
 ```
 
 **Figure**
-*Effect of `thinCutoff` & interior fill in a thin-wall case — curves overlay for ( r \gtrsim r_0 ).*
+*Effect of `thinCutoff` & interior fill in a thin-wall case — curves overlay for $r \gtrsim r_0$.*
 ![Test 2 — Effect of `thinCutoff` & interior fill in a thin-wall](assets/SF5_2.png)
 
 ---

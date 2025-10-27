@@ -115,7 +115,7 @@ The instance owns all numerical settings (finite-difference step/accuracy, frict
 * `phi_eps` *(float, default `1e-3`)*
   **Relative** finite-difference step used by the built-in `dV`/`d2V`. The absolute step is
   
-$$h = \texttt{phi_eps}\times |\phi_{\rm metaMin}-\phi_{\rm absMin}|$$
+$$h = \texttt{phi_eps}\times |\phi_{metaMin}-\phi_{absMin}| $$
 
   A safe lower floor is applied automatically (see *Notes*).
 
@@ -221,7 +221,7 @@ dV_from_absMin(delta_phi: float) -> float
 
 High-accuracy derivative at $(\phi=\phi_{\rm absMin}+\delta\phi)$. Near the minimum, direct finite differences can lose precision;
 we therefore **blend** a Taylor estimate using (V'') with the FD estimate.
-This happens because near the true minimum V'$(\phi)$ it's expected to be exactly zero, therefore it's relevant to evaluate with an
+This happens because near the true minimum $V'(\phi)$ it's expected to be exactly zero, therefore it's relevant to evaluate with an
 alternative Method, i.e., `V'(\phi) \approx V''(\phi_{\rm absMin}) (\phi-\phi_{\rm absMin})`
 
 #### Method
@@ -257,7 +257,7 @@ d2V(phi: float | np.ndarray) -> float | np.ndarray
 
 #### Purpose
 
-Built-in finite-difference approximation to ( V''(\phi) ). Works with scalars or arrays (broadcasted). 
+Built-in finite-difference approximation to $(V''(\phi))$. Works with scalars or arrays (broadcasted). 
 If the user supplied a custom `d2V`, that takes precedence.
 
 #### Scheme
@@ -724,7 +724,7 @@ A named tuple with:
 
 **Why cubic Hermite interpolation?**
 
-We know $((y_0, dy/dr|*{r_0}))$ and $((y_1, dy/dr|*{r_1}))$ for both ends of a step. 
+We know $(y_0, dy/dr\cdot {r_0})$ and $(y_1, dy/dr\cdot {r_1})$ for both ends of a step. 
 The cubic Hermite (a.k.a. piecewise cubic with end slopes) reconstructs a smooth in-step curve that respects both values and slopes, 
 giving accurate, monotone-friendly event localization without taking extra ODE mini-steps.
 

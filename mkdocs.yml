@@ -53,7 +53,8 @@ nav:
         - Approx Thermal Integrals: modules/finiteT/Approx_Thermal_Integrals.md
         - Short Hand for All Thermal Integrals: modules/finiteT/Short_Hand_Jb&Jf.md
     - Tunneling (1D):
-        - Tunneling Functions: modules/tunneling1D/tunneling1D.md
+        - Single Field functions: modules/tunneling1D/single_field.md
+        - Tests of SF functions: modules/tunneling1D/tests_single_field.md
     - Transition Finder:
         - Transition Functions: modules/transitionFinder/transitionFinder.md
     - Generic Potential:
