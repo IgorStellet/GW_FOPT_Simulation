@@ -1233,6 +1233,7 @@ class SingleFieldInstanton:
         R = np.linspace(r0, rf, npoints)
         profile = self.integrateAndSaveProfile(R, y0, dr0, epsfrac, epsabs, drmin)
 
+
         # ---- 6) (Optional) Fill interior points 0 ≤ r < r0 using the local solution
         if max_interior_pts is None:
             max_interior_pts = len(R) // 2
@@ -1267,6 +1268,26 @@ class SingleFieldInstanton:
             Phi_all = np.append(Phi_int, profile.Phi)
             dPhi_all = np.append(dPhi_int, profile.dPhi)
             profile = self.profile_rval(R_all, Phi_all, dPhi_all, profile.Rerr)
+        # --- BEGIN: capture r0/phi0 metadata for downstream plots ---
+        try:
+            # r0_found must be the radius where the outward integration starts (your "shooting" r0).
+            # If your code uses a different variable, use that here.
+            r0_found = float(r0)  # <- replace with your actual variable if named differently
+
+            # After interior filling the index of r0 may no longer be 0; find it robustly:
+            i0 = int(np.argmin(np.abs(R - r0_found)))
+
+            # Sidecar info (mirrors your existing _scale_info pattern)
+            self._profile_info = {
+                "r0": r0_found,
+                "r0_idx": i0,
+                "phi0": float(y0[0]),
+                "dphi0": float(y0[1]),
+            }
+        except Exception:
+            # Don't break findProfile if anything above fails
+            self._profile_info = {"r0": float(R[0]), "r0_idx": 0, "phi0": float(y0[0]), "dphi0": float(y0[1])}
+        # --- END: capture r0/phi0 metadata ---
 
         return profile
 
