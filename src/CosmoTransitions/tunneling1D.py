@@ -1468,7 +1468,7 @@ class SingleFieldInstanton:
         else:
             S_interior = 0.0
 
-        S_total = float(S_kin + S_pot + S_interior)
+        S_total = self.findAction(profile)
 
         density = {"kin": dens_kin, "pot": dens_pot,"int": S_interior , "tot": dens_tot}
         return self._ActionBreakdown(S_total, float(S_kin), float(S_pot), float(S_interior),

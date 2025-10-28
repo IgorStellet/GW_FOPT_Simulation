@@ -25,10 +25,11 @@ from typing import Tuple, Optional
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import optimize, interpolate
+from scipy import optimize, interpolate, integrate
 
 # Import the modernized class
 from src.CosmoTransitions import SingleFieldInstanton
+from src.CosmoTransitions import deriv23, deriv14
 
 np.set_printoptions(precision=6, suppress=True)
 
@@ -365,23 +366,38 @@ def example_E_spherical_maps(inst: SingleFieldInstanton,
     """
     from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 (needed for 3D projection)
 
-    r = np.asarray(profile.R); phi = np.asarray(profile.Phi)
+    r = np.asarray(profile.R); phi = np.asarray(profile.Phi); dphi = np.asarray(profile.dPhi)
 
     # Interpolant φ(r) with sensible fill outside the tabulated range
-    fr = interpolate.interp1d(
-        r, phi, kind="linear", bounds_error=False,
-        fill_value=(phi[0], inst.phi_metaMin)
-    )
+    chs = interpolate.CubicHermiteSpline(
+        r, phi, dphi, extrapolate=True)
+
+    # Helper that clamps outside to the correct vacua
+    def phi_of_r(Rad):
+        Rad = np.asarray(Rad, dtype=float)
+        val = chs(np.clip(Rad, r[0], r[-1]))
+        # fill interior (r<r[0]) with φ(r[0]) and exterior (r>r[-1]) with φ_meta
+        val = np.where(Rad < r[0],  phi[0], val)
+        val = np.where(Rad > r[-1], inst.phi_metaMin, val)
+        return val
 
     # rscale: pick cubic if finite, else curvature
     sinfo = getattr(inst, "_scale_info", {}) or {}
     rscale_cubic = sinfo.get("rscale_cubic", np.nan)
     rscale_curv  = sinfo.get("rscale_curv", np.inf)
-    rscale = rscale_cubic if np.isfinite(rscale_cubic) else rscale_curv
+    rscale = rscale_curv if np.isfinite(rscale_curv) else rscale_cubic
+
+    # --- wall location near the false-vacuum side ---
+    ws = inst.wallDiagnostics(profile, frac=(0.1, 0.9))  # r_lo ~ true side; r_hi ~ false side
+    r_wall = float(ws.r_hi)
+    thickness = float(ws.thickness)
 
     print("\n[E] t=0 visualization")
-    print(f"  rscale ≈ {rscale:.6e}  (expected interior–exterior separation scale)")
+    print(f"  rscale ≈ {rscale:.6e}   (expected interior–exterior separation scale)")
+    print(f"  thichness = {thickness:.3e} (thickness found by wall status)")
     print("  This is the instantaneous t=0 slice of the nucleated bubble.")
+
+
 
     # Cartesian slice
     Rmax = float(r[-1])
@@ -391,7 +407,7 @@ def example_E_spherical_maps(inst: SingleFieldInstanton,
     y = np.linspace(-Rmax-pad, Rmax+pad, Ny)
     X, Y = np.meshgrid(x, y, indexing="xy")
     RAD = np.hypot(X, Y)
-    PHI = fr(RAD)
+    PHI = phi_of_r(RAD)
 
     vmin = min(inst.phi_metaMin, inst.phi_absMin)
     vmax = max(inst.phi_metaMin, inst.phi_absMin)
@@ -401,16 +417,15 @@ def example_E_spherical_maps(inst: SingleFieldInstanton,
                     vmin=vmin, vmax=vmax, cmap="viridis", interpolation="nearest")
     ax1.set_aspect("equal")
     ax1.set_xlabel("x"); ax1.set_ylabel("y")
-    ax1.set_title("Cartesian slice: φ(√(x²+y²)) | Bounce profile at t=0")
+    ax1.set_title(r"Bounce profile at t=z=0 (Cartesian slice: $\phi(\rho))$ ")
     cb = plt.colorbar(im, ax=ax1, pad=0.02)
-    cb.set_label(f"φ   (φ_true={inst.phi_absMin:.3f} ;  φ_meta={inst.phi_metaMin:.3f})")
+    cb.set_label(fr"$\phi$  (φ_true={inst.phi_absMin:.2f} ;  φ_meta={inst.phi_metaMin:.2f})")
 
-    # small radial "bar" at θ=0 to indicate rscale, if finite and within view
-    if np.isfinite(rscale) and rscale < (Rmax + pad):
-        ytick = 0.03 * (y.max() - y.min())
-        ax1.plot([rscale, rscale], [-ytick, +ytick], color="w", lw=2.0, solid_capstyle="butt")
-        ax1.text(rscale, +1.8*ytick, "rscale", color="w", ha="center", va="bottom", fontsize=9)
-
+    # small radial "bar"  to indicate rscale
+    if np.isfinite(r_wall):
+        ax1.plot([0.0, 0.0], [r_wall-rscale, r_wall], color="w", lw=2.0, solid_capstyle="butt")
+        ax1.text(0, r_wall+0.5*rscale, "thickness", color="w", ha="center", va="bottom", fontsize=9)
+                        #+0.1*(r.max()-r.min())
     plt.tight_layout()
     plt.show()
     savefig(fig1, save_dir, "E1_cartesian_slice_with_rscale")
@@ -422,8 +437,8 @@ def example_E_spherical_maps(inst: SingleFieldInstanton,
     step = max(1, int(Nx/220))
     ax2.plot_surface(X[::step, ::step], Y[::step, ::step], PHI[::step, ::step],
                      linewidth=0, antialiased=True, cmap="viridis")
-    ax2.set_xlabel("x"); ax2.set_ylabel("y"); ax2.set_zlabel("φ")
-    ax2.set_title("3D view of φ(x,y) at t=0")
+    ax2.set_xlabel("x"); ax2.set_ylabel("y"); ax2.set_zlabel(r"\phi")
+    ax2.set_title(r"3D view of \phi(x,y) at t=z=0")
     plt.tight_layout()
     plt.show()
     savefig(fig2, save_dir, "E2_surface3D_t0")
@@ -444,24 +459,23 @@ def example_F_ode_terms(inst: SingleFieldInstanton,
     """
     r = np.asarray(profile.R); phi = np.asarray(profile.Phi); dphi = np.asarray(profile.dPhi)
 
+    phi0 = phi[0]
+
     # Second derivative φ'' via centered finite difference (with end corrections)
-    d2phi = np.zeros_like(phi)
-    dr = np.diff(r)
-    # Internal points (2..N-1): use three-point stencil
-    for i in range(1, len(r)-1):
-        dr_f = r[i+1] - r[i]
-        dr_b = r[i]   - r[i-1]
-        # Non-uniform second-derivative approximation
-        d2phi[i] = 2.0 * (
-            (phi[i+1] - phi[i]) / (dr_f*(dr_f + dr_b)) -
-            (phi[i]   - phi[i-1]) / (dr_b*(dr_f + dr_b))
-        )
-    # One-sided for endpoints (order 2)
-    d2phi[0]  = (phi[2] - 2*phi[1] + phi[0]) / ((r[1]-r[0])*(r[2]-r[0]))
-    d2phi[-1] = (phi[-1] - 2*phi[-2] + phi[-3]) / ((r[-1]-r[-2])*(r[-1]-r[-3]))
+    d2phi = deriv14(dphi,r)
 
     friction = inst.alpha * dphi / np.maximum(r, 1e-30)  # (α/r) φ'
     force = inst.dV(phi)                                  # V'(φ)
+
+    # --- potential levels and drop ---
+    V_meta = float(inst.V(inst.phi_metaMin))
+    V_0 = float(inst.V(phi0))
+    dV_drop = V_0 - V_meta
+
+    print("\n[F] False → True vacuum potential drop")
+    print(f"  V_0 = {V_0:.3e}")
+    print(f"  V_meta = {V_meta:.3e}")
+    print(f"  ΔV = V_0 - V_meta = {dV_drop:.3e}   (|ΔV| = {abs(dV_drop):.3e})")
 
     # Plot ODE terms vs r
     fig, ax = plt.subplots(figsize=(8.8, 5.0))
@@ -479,6 +493,20 @@ def example_F_ode_terms(inst: SingleFieldInstanton,
     ax.set_title("ODE term decomposition along the profile")
     ax.grid(True, alpha=0.3)
 
+    # --- place ΔV bar at the wall (false-vacuum side) ---
+    ws = inst.wallDiagnostics(profile, frac=(0.1, 0.9))
+    r_mark = (3*float(ws.r_hi) +r[-1])/4  # center of the wall
+    y0, y1 = (V_0, V_meta)
+    y_lo, y_hi = (min(y0, y1), max(y0, y1))
+    ax2.vlines(r_mark, y_lo, y_hi, color="tab:purple", lw=3.0, alpha=0.9)
+    ax2.scatter([r_mark, r_mark], [y0, y1], s=18, color="tab:purple", zorder=5)
+    # annotate ΔV next to the bar
+    xpad = 0.02 * (r[-1] - r[0])
+    ax2.text(r_mark + xpad, 0.5*(y_lo + y_hi),
+             f"ΔV = {dV_drop:.1e}",
+             color="tab:purple", va="center", ha="left",
+             bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.6))
+
     # Build a unified legend
     lines1, labels1 = ax.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
@@ -486,6 +514,79 @@ def example_F_ode_terms(inst: SingleFieldInstanton,
     plt.tight_layout()
     plt.show()
     savefig(fig, save_dir, "F_ode_terms_and_potential")
+
+# -----------------------------------------------------------------------------
+# Example G
+# -----------------------------------------------------------------------------
+def example_G_action_and_beta(inst: SingleFieldInstanton,
+                              profile,
+                              save_dir: Optional[str] = None,
+                              beta_methods=("rscale", "curvature", "wall")):
+    """
+    G) Action diagnostics:
+       - Print S_total and its breakdown (kin, pot, interior).
+       - Print β_eff proxies.
+       - Plot action *density* versus r and the *cumulative* action S(<r).
+    """
+    br = inst.actionBreakdown(profile)
+
+    # --- prints ---
+    print("\n[G] Action and β proxies")
+    print(f"  S_total     = {br.S_total:.6e}")
+    print(f"   S_kin      = {br.S_kin:.6e}")
+    print(f"   S_pot      = {br.S_pot:.6e}")
+    print(f"   S_interior = {br.S_interior:.6e}")
+    print(f"  (check) S_kin + S_pot + S_interior = {br.S_kin + br.S_pot + br.S_interior:.6e}")
+
+    betas = {}
+    for m in beta_methods:
+        try:
+            betas[m] = float(inst.betaEff(profile, method=m))
+        except Exception:
+            betas[m] = np.nan
+        print(f"  beta_{m:9s}= {betas[m]:.6e}")
+
+    # --- data for plots ---
+    r = np.asarray(br.r)
+    dens_kin = np.asarray(br.density["kin"])
+    dens_pot = np.asarray(br.density["pot"])
+    dens_tot = np.asarray(br.density["tot"])
+
+    # cumulative action: S(<r) = S_interior + ∫_r0^r (dens_tot) dr
+    S_line_cum = integrate.cumulative_trapezoid(dens_tot, r, initial=0.0)
+    S_cum = S_line_cum + br.S_interior
+
+    # --- figure: densities + cumulative action ---
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.4, 4.8), sharex=False)
+
+    # left: densities
+    ax1.plot(r, dens_kin, lw=1.9, label="kinetic density")
+    ax1.plot(r, dens_pot, lw=1.9, ls="--", label="potential density")
+    ax1.plot(r, dens_tot, lw=2.2, label="total density", alpha=0.9)
+    ax1.axhline(0.0, color="k", lw=0.8, alpha=0.5)
+    ax1.set_xlabel("r"); ax1.set_ylabel("action density")
+    ax1.set_title("Action density vs r")
+    ax1.grid(True, alpha=0.3)
+    ax1.legend(loc="best")
+
+    # right: cumulative action
+    ax2.plot(r, S_cum, lw=2.2, color="#1f77b4",
+             label=r"$S(<r)=S_{\mathrm{int}}+\int \mathrm{dens}_{\mathrm{tot}}\,dr$")
+    ax2.axhline(br.S_total, color="#ff7f0e", lw=1.6, ls="--",
+                label=f"S_total = {br.S_total:.3e}")
+    ax2.scatter([r[-1]], [br.S_total], color="#ff7f0e", zorder=5)
+    # opcional: marcar r0
+    r0 = float(r[0])
+    ax2.axvline(r0, color="#888", lw=1.0, ls=":", alpha=0.8)
+    ax2.text(r0, ax2.get_ylim()[0], " r0", va="bottom", ha="left", color="#666")
+
+    ax2.set_xlabel("r"); ax2.set_ylabel("action")
+    ax2.set_title("Cumulative action")
+    ax2.grid(True, alpha=0.3)
+    ax2.legend(loc="best")
+
+    plt.tight_layout(); plt.show()
+    savefig(fig, save_dir, "G_action_density_and_cumulative")
 
 # -----------------------------------------------------------------------------
 # Orchestration
@@ -552,6 +653,9 @@ def run_all(case: str = "thin",
 
     # F) ODE terms decomposition along the profile
     example_F_ode_terms(inst, profile, save_dir=save_dir)
+
+    # G) Action and β proxies (print β; only action is plotted)
+    example_G_action_and_beta(inst, profile, save_dir=save_dir)
 
     print("=== Showcase complete. ===")
     if save_dir:
