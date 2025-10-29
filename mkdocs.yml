@@ -42,7 +42,7 @@ nav:
   - Roadmap & Flowchart: roadmap.md
   - Architecture: architecture.md
   - Examples (Core modules):
-      - Tunneling 1D full example: docs/examples/example_tunneling1D.md
+      - Tunneling 1D full example: examples/example_tunneling1D.md
   - Modules:
     - Helper Functions:
         - Miscellaneous Functions: modules/helper_functions/Miscellaneous_functions.md

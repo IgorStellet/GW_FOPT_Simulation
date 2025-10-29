@@ -244,7 +244,7 @@ Note that if we choose a very high cutoff we may find a wrong solution that woul
 
 Bellow are one example of a bad use of the $\Delta \phi_{cutoff}$ in a thin wall case:
 
-*Error case Thin-wall — $\Delta \phi_{cutoff} = 0.15$*
+*Error case Thin-wall* — $\Delta \phi_{cutoff} =0.15$
 ![Thin_error](assets/error_case.png)
 
 **So how do I know I've found the right one cutoff?** I had the same question, but the key is to realize that if 
@@ -260,10 +260,10 @@ In the end  are the correct solutions with $\Delta \phi_{cutoff}=0.01$.
 
 Bellow are the plots for $\phi$ and $\phi'$ near $r=0$
 
-*Thin-wall - $\phi$ near r=0*
+*Thin-wall* - $\phi$ near r=0
 ![Thin_B_approx](assets/thin/B_small_r_phi_and_dphi_from_exactSolution.png)
 
-*Thick-wall — $\phi$ near r=0*
+*Thick-wall* — $\phi$ near r=0
 ![Thick_B_approx](assets/thick/B_small_r_phi_and_dphi_from_exactSolution.png)
 
 We can clearly see that both prevent the singularity of the friction term at the origin.
@@ -368,13 +368,13 @@ This bisection on (x) repeats until both end-point tolerances are satisfied.
 
 Builds a radius grid
 
-$$R={r_0,\dots,r_f}\quad\text{with}\quad \texttt{n_points}$$
+$$R={r_0,\dots,r_f}\quad\text{with}\quad \text{n_points}$$
 
 starting at the **found** $r_0$ from the initial-condition logic and going out to $r_f$. 
 Note that $r_0$ can be **well above** zero (especially in thin wall): the field may 
 sit almost flat before it “decides” to roll.
 
-For the **interior** $r$ < r_0$, The code fills the bubble by the exact small-(r) expansion 
+For the **interior** $r$ < $r_0$, The code fills the bubble by the exact small-(r) expansion 
 around $\phi_0$ (we effectively have $\phi'\approx 0$ there), which gives a smooth and 
 physically correct core.
 
@@ -404,18 +404,18 @@ phi = profile.Phi
 dphi = profile.dPhi
 ```
 
-*Thin-wall - Path of $\phi(r)$ on $V(\phi)$*
+*Thin-wall* - Path of $\phi(r)$ on $V(\phi)$
 ![Thin_C_inverted](assets/thin/C_inverted_path_with_arrows.png)
 
-*Thin-wall - Path of $\phi(r)$ on $V(\phi)$*
+*Thin-wall* - Path of $\phi(r)$ on $V(\phi)$
 ![Thick_C_inverted](assets/thick/C_inverted_path_with_arrows.png)
 
 ---
 
-*Thin-wall - Bounce Solution ($\phi_b(r)$) $\phi(r)$x r*
+*Thin-wall* - Bounce Solution ($\phi_b(r)$) $\phi(r)$x r
 ![Thin_D_inverted](assets/thin/D_phi_of_r.png)
 
-*Thick-wall - Bounce Solution ($\phi_b(r)$) $\phi(r)$x r*
+*Thick-wall* - Bounce Solution ($\phi_b(r)$) $\phi(r)$x r
 ![Thick_D_inverted](assets/thick/D_phi_of_r.png)
 
 ---
@@ -466,7 +466,7 @@ A named tuple with:
 * Copies of `r`, `phi`, `dphi`.
 * `density`: a dict with arrays
 
-  * `density["kin"]` = $tfrac12\Phi'^2 r^\alpha \Omega_\alpha$,
+  * `density["kin"]` = $\frac{1}{2}\Phi'^2 r^\alpha \Omega_\alpha$,
   * `density["pot"]` = $(V(\Phi)-V_{\rm meta}) r^\alpha \Omega_\alpha$
   * `density["tot"] = density["kin"] + density["pot"]`.
 
@@ -570,7 +570,7 @@ def V_mine(phi: float) ->float:
 ```
 2. Go to the end of the code and uncomment the line with
 
-```python
+```text
 run_all(case="mine", xguess=None, phitol=1e-5,thinCutoff=0.01,
              phi_abs= 1.0, phi_meta =0.0, save_dir=None)
 ```
