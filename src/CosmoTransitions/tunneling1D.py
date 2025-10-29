@@ -1205,12 +1205,12 @@ class SingleFieldInstanton:
                 break
 
             if ctype == "undershoot":
-                # x too *large* (too close to true minimum) → increase xmin
+                # x too *small* (too close to false minimum) → increase xmin
                 xmin = x
                 x = x * xincrease if np.isinf(xmax) else 0.5 * (xmin + xmax)
 
             elif ctype == "overshoot":
-                # x too *small* (too close to false minimum) → decrease xmax
+                # x too *large* (too close to true minimum) → decrease xmax
                 xmax = x
                 x = 0.5 * (xmin + xmax)
 

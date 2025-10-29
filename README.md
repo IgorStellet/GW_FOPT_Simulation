@@ -21,7 +21,7 @@ Therefore, this project aims to deliver substantial improvements to the original
 - 📚 **Documentation:** see the [documentation](https://igorstellet.github.io/GW_FOPT_Simulation) or [docs/index.md](docs/index.md) 
 - 🧩 **New code (modernized):** [`src/CosmoTransitions`](src/CosmoTransitions/)  
 - 🧪 **Tests:** [`tests/`](tests/) 
-- 📓 **Examples:** [`examples/`](examples/)  
+- 📓 **Examples:** [`examples/`](docs/examples)  
 - 🗄️ **Legacy (original layout):** [`legacy/cosmoTransitions`](legacy/cosmoTransitions/)
 
 ---

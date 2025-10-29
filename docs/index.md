@@ -13,6 +13,17 @@ A modern, test-driven update of **CosmoTransitions** for studying **first-order 
 
 ---
 
+## Examples (Core modules only)
+
+If you are only interested in learning how to use the main modules and obtain the results/graphs for the phase transition, here is the place.
+Below are links to explanations of only the most important aspects needed to use each main function and get the respective results/plots.
+
+The main explanation of the codes used and all images can be found in the [example](examples) folder.
+
+### Tunneling 1D
+  - Single Field Instaton → [example_single_field.md](examples/example_tunneling1D.md)
+
+
 ## Index of all functions
 
 ---
@@ -28,6 +39,10 @@ A modern, test-driven update of **CosmoTransitions** for studying **first-order 
   - Spline Thermal Integrals →  [Spline_Thermal_Integrals.md](modules/finiteT/Spline_Thermal_Integrals.md)
   - Approx Thermal Integrals →  [Approx_Thermal_Integrals.md](modules/finiteT/Approx_Thermal_Integrals.md)
   - Short Hand for all Thermal Integrals → [Short_Hand_Jb&Jf.md](modules/finiteT/Short_Hand_Jb&Jf.md)
+
+### Tunneling1D Functions
+  - Single Field functions: [modules/tunneling1D/single_field](modules/tunneling1D/single_field.md)
+  - Tests of SF functions: [modules/tunneling1D/tests_single_field](modules/tunneling1D/tests_single_field.md)
 
 ---
 

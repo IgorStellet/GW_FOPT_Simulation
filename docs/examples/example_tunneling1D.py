@@ -3,7 +3,7 @@
 # -----------------------------------------------------------------------------
 # What this script provides
 # ------------------------
-# Six cohesive examples (A..F) that take you from the potential geometry, to
+# Seven cohesive examples (A..G) that take you from the potential geometry, to
 # initial conditions, to the final bounce profile and physically meaningful
 # diagnostics/visualizations. This is intended for users who prefer a “single
 # narrative” over per-function unit tests.
@@ -21,15 +21,16 @@
 from __future__ import annotations
 import os
 import math
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Callable
+import json, sys, io, contextlib
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import optimize, interpolate, integrate
+from scipy import interpolate, integrate
 
 # Import the modernized class
 from src.CosmoTransitions import SingleFieldInstanton
-from src.CosmoTransitions import deriv23, deriv14
+from src.CosmoTransitions import deriv14
 
 np.set_printoptions(precision=6, suppress=True)
 
@@ -48,7 +49,7 @@ def V_mine(phi: float) ->float:
 # -----------------------------------------------------------------------------
 # Utilities
 # -----------------------------------------------------------------------------
-def make_inst(case: str = "thin", alpha: int = 2) -> Tuple[SingleFieldInstanton, str]:
+def make_inst(case: str = "thin", alpha: int = 2, phi_abs: float = 1.0, phi_meta: float =0.0) -> Tuple[SingleFieldInstanton, str]:
     """
     Construct a SingleFieldInstanton with the standard vacua:
       phi_absMin = 1.0 (true/stable), phi_metaMin = 0.0 (false/metastable).
@@ -59,12 +60,13 @@ def make_inst(case: str = "thin", alpha: int = 2) -> Tuple[SingleFieldInstanton,
     elif case == "thick":
         V, label = V_thick, "thick-wall"
     elif case == "mine":
-        V, label = V_mine, "my potential V"
+        V, label = V_mine, "my_potential"
+        phi_abs, phi_meta = phi_abs, phi_meta
     else:
         raise ValueError("Unknown case (use 'thin' 'thick' or mine).")
     inst = SingleFieldInstanton(
-        phi_absMin=1.0,
-        phi_metaMin=0.0,
+        phi_absMin= phi_abs,
+        phi_metaMin=phi_meta,
         V=V,
         alpha=alpha,
         phi_eps=1e-3,
@@ -86,6 +88,30 @@ def build_phi_grid(inst: SingleFieldInstanton, margin: float = 0.1, n: int = 800
 def savefig(fig: plt.Figure, save_dir: Optional[str], name: str):
     if save_dir:
         fig.savefig(os.path.join(save_dir, f"{name}.png"), dpi=160, bbox_inches="tight")
+
+@contextlib.contextmanager
+def tee_stdout(save_dir: Optional[str], filename: str = "showcase_log.txt"):
+    """
+    If save_dir is provided, duplicate all `print` output to save_dir/filename.
+    Otherwise, behave as a no-op.
+    """
+    if not save_dir:
+        yield
+        return
+    os.makedirs(save_dir, exist_ok=True)
+
+    class _Tee(io.TextIOBase):
+        def __init__(self, *streams): self.streams = streams
+        def write(self, s):
+            for st in self.streams: st.write(s); st.flush()
+        def flush(self):
+            for st in self.streams: st.flush()
+
+    log_path = os.path.join(save_dir, filename)
+    with open(log_path, "w", encoding="utf-8") as f, \
+         contextlib.redirect_stdout(_Tee(sys.stdout, f)):
+        yield
+
 
 # -----------------------------------------------------------------------------
 # Example A
@@ -588,6 +614,94 @@ def example_G_action_and_beta(inst: SingleFieldInstanton,
     plt.tight_layout(); plt.show()
     savefig(fig, save_dir, "G_action_density_and_cumulative")
 
+def gather_diagnostics(inst: SingleFieldInstanton, profile, label: str = "") -> dict:
+    r0info = getattr(inst, "_profile_info", {}) or {}
+    sinfo  = getattr(inst, "_scale_info", {}) or {}
+
+    # basic geometry
+    V_meta = float(inst.V(inst.phi_metaMin))
+    V_true = float(inst.V(inst.phi_absMin))
+    dV_true_meta = V_true - V_meta
+    phi_top = float(sinfo.get("phi_top", np.nan))
+    V_top  = float(inst.V(phi_top)) if np.isfinite(phi_top) else np.nan
+
+    # actions
+    br = inst.actionBreakdown(profile)
+
+    # betas
+    def _safe_beta(method):
+        try:
+            return float(inst.betaEff(profile, method=method))
+        except Exception:
+            return np.nan
+
+    betas = {
+        "beta_rscale":   _safe_beta("rscale"),
+        "beta_curvature":_safe_beta("curvature"),
+        "beta_wall":     _safe_beta("wall"),
+    }
+
+    # wall
+    try:
+        ws = inst.wallDiagnostics(profile, frac=(0.1, 0.9))
+        r_wall = float(ws.r_hi); thickness = float(ws.thickness)
+    except Exception:
+        r_wall, thickness = np.nan, np.nan
+
+    return {
+        "label": label,
+        "phi_metaMin": float(inst.phi_metaMin),
+        "phi_absMin":  float(inst.phi_absMin),
+        "phi_bar":     float(getattr(inst, "phi_bar", np.nan)),
+        "phi_top":     phi_top,
+        "V(phi_meta)": V_meta,
+        "V(phi_true)": V_true,
+        "V(phi_top)":  V_top,
+        "DeltaV_true_minus_meta": dV_true_meta,
+        "r0": float(r0info.get("r0", np.nan)),
+        "phi0": float(r0info.get("phi0", np.nan)),
+        "dphi0": float(r0info.get("dphi0", np.nan)),
+        "rscale_cubic": float(sinfo.get("rscale_cubic", np.nan)),
+        "rscale_curv":  float(sinfo.get("rscale_curv",  np.nan)),
+        "wall_r_hi": r_wall,
+        "wall_thickness": thickness,
+        "S_total": float(br.S_total),
+        "S_kin":   float(br.S_kin),
+        "S_pot":   float(br.S_pot),
+        "S_interior": float(br.S_interior),
+        **betas,
+    }
+
+def save_diagnostics_summary(
+    di: dict,
+    save_dir: Optional[str],
+    basename: str = "diagnostics_summary",
+    fmt: str = "json",   # choose: "json" | "csv" | "txt"
+):
+    if not save_dir:
+        return
+    os.makedirs(save_dir, exist_ok=True)
+    fmt = fmt.lower()
+    path = os.path.join(save_dir, f"{basename}.{fmt}")
+
+    if fmt == "json":
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(di, f, indent=2)
+    elif fmt == "csv":
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("key,value\n")
+            for k, v in di.items():
+                f.write(f"{k},{v}\n")
+    elif fmt == "txt":
+        pad = max(len(k) for k in di.keys())
+        with open(path, "w", encoding="utf-8") as f:
+            for k, v in di.items():
+                f.write(f"{k.ljust(pad)} : {v}\n")
+    else:
+        raise ValueError("fmt must be one of: 'json', 'csv', 'txt'")
+
+
+
 # -----------------------------------------------------------------------------
 # Orchestration
 # -----------------------------------------------------------------------------
@@ -614,7 +728,10 @@ def compute_profile(inst: SingleFieldInstanton,
 def run_all(case: str = "thin",
             xguess: Optional[float] = None,
             phitol: float = 1e-5,
-            save_dir: Optional[str] = None):
+            save_dir: Optional[str] = None,
+            phi_abs: float = 1.0,
+            phi_meta: float =0.0,
+            thinCutoff= 0.01):
     """
     Execute all examples A..F in sequence for the chosen case ("thin", "thick" or "mine").
 
@@ -630,11 +747,11 @@ def run_all(case: str = "thin",
         If provided, figures are saved under this folder.
     """
     save_dir = ensure_dir(save_dir)
-    inst, label = make_inst(case)
+    inst, label = make_inst(case, phi_abs = phi_abs, phi_meta =phi_meta)
     print(f"=== Running complete showcase on: {label} potential ===")
 
     # Solve once and reuse the profile for all examples
-    profile = compute_profile(inst, xguess=xguess, phitol=phitol, npoints=800)
+    profile = compute_profile(inst, xguess=xguess, phitol=phitol, npoints=800, thinCutoff=thinCutoff)
 
     # A) Potential geometry & inverted view with φ0
     example_A_potential_geometry(inst, profile, save_dir=save_dir)
@@ -657,6 +774,10 @@ def run_all(case: str = "thin",
     # G) Action and β proxies (print β; only action is plotted)
     example_G_action_and_beta(inst, profile, save_dir=save_dir)
 
+    # consolidated table
+    di = gather_diagnostics(inst, profile, label=label)
+    save_diagnostics_summary(di, save_dir, basename="diagnostics_summary", fmt = "json")
+
     print("=== Showcase complete. ===")
     if save_dir:
         print(f"Figures saved under: {os.path.abspath(save_dir)}")
@@ -666,7 +787,11 @@ def run_all(case: str = "thin",
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
     # Thin-wall demo (set save_dir to a folder to save images)
-    run_all(case="thin", xguess=None, phitol=1e-5, save_dir=None)
+    run_all(case="thin", xguess=None, phitol=1e-5, thinCutoff=0.01, save_dir=None)
 
-    # Uncomment to also run thick-wall in one go:
-    #run_all(case="thick", xguess=None, phitol=1e-5, save_dir=None)
+    # Uncomment to also run thick-wall:
+    #run_all(case="thick", xguess=None, phitol=1e-5,thinCutoff=0.01, save_dir="assets/thick")
+
+    # Uncomment to also run your potential
+    #run_all(case="mine", xguess=None, phitol=1e-5,thinCutoff=0.01,
+             #phi_abs= 1.0, phi_meta =0.0, save_dir=None)
