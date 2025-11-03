@@ -43,8 +43,22 @@ def V_thin(phi: float) -> float:
 def V_thick(phi: float) -> float:
     return 0.25*phi**4 - 0.40*phi**3 + 0.100*phi**2
 
-def V_mine(phi: float) ->float:
-    return 0.25 * phi ** 4 - 0.49 * phi ** 3 + 0.235 * phi ** 2
+#def V_mine(phi: float) ->float:
+#    return 0.25 * phi ** 4 - 0.49 * phi ** 3 + 0.235 * phi ** 2
+
+def V_mine(phi, lam=1.0, A=0.49, m2=0.47, eps=-0.02, Lam=1.0): # paper like (glauber)
+    """
+    Higgs-like quartic + cubic + quadratic with a small logarithmic correction.
+    Defaults chosen to mimic your thin-wall toy and add a mild log term.
+    """
+    phi = np.asarray(phi)
+    return (
+        0.25*lam*phi**4          # quartic
+        - A*phi**3               # cubic (creates the barrier)
+        + 0.5*m2*phi**2          # quadratic (keeps φ=0 metastable)
+        + eps*(phi**4)*np.log1p((phi**2)/(Lam**2))  # measure-like log correction
+    )
+
 
 # -----------------------------------------------------------------------------
 # Utilities
@@ -787,11 +801,11 @@ def run_all(case: str = "thin",
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
     # Thin-wall demo (set save_dir to a folder to save images)
-    run_all(case="thin", xguess=None, phitol=1e-5, thinCutoff=0.01, save_dir=None)
+    #run_all(case="thin", xguess=None, phitol=1e-5, thinCutoff=0.01, save_dir=None)
 
     # Uncomment to also run thick-wall:
     #run_all(case="thick", xguess=None, phitol=1e-5,thinCutoff=0.01, save_dir="assets/thick")
 
     # Uncomment to also run your potential
-    #run_all(case="mine", xguess=None, phitol=1e-5,thinCutoff=0.01,
-             #phi_abs= 1.0, phi_meta =0.0, save_dir=None)
+    run_all(case="mine", xguess=None, phitol=1e-5,thinCutoff=0.01,
+             phi_abs= 1.1833, phi_meta =0.0, save_dir=None)
