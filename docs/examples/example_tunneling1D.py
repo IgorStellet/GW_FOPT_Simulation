@@ -808,4 +808,4 @@ if __name__ == "__main__":
 
     # Uncomment to also run your potential
     run_all(case="mine", xguess=None, phitol=1e-5,thinCutoff=0.01,
-             phi_abs= 1.1833, phi_meta =0.0, save_dir=None)
+             phi_abs= 1.1833, phi_meta =0.0, save_dir="assets")
