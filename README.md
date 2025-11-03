@@ -41,6 +41,17 @@ Therefore, this project aims to deliver substantial improvements to the original
 python -m pip install -U pip
 pip install -e .[dev]   # editable install with dev deps (pytest, ruff, black)
 ```
+
+## Run all examples
+```bash
+scripts/run_examples.sh
+
+# Run a subset
+
+#scripts/run_examples.sh --grep finiteT
+```
+
+
 ---
 ## 📜 License & citation
 - License: **MIT** (see [`LICENSE`](LICENSE)) — original notices preserved.

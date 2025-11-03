@@ -26,3 +26,20 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["CosmoTransitions*"]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "pytest-cov",
+  "ruff",
+  "black",
+  "isort",
+  "pre-commit",
+  "mypy",
+]
+docs = [
+  "mkdocs>=1.6",
+  "mkdocs-material",
+  "pymdown-extensions",
+  "mkdocs-mermaid2-plugin",
+]
