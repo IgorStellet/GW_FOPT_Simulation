@@ -29,8 +29,8 @@ import matplotlib.pyplot as plt
 from scipy import interpolate, integrate
 
 # Import the modernized class
-from src.CosmoTransitions import SingleFieldInstanton
-from src.CosmoTransitions import deriv14
+from CosmoTransitions import SingleFieldInstanton
+from CosmoTransitions import deriv14
 
 np.set_printoptions(precision=6, suppress=True)
 
@@ -801,7 +801,7 @@ def run_all(case: str = "thin",
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
     # Thin-wall demo (set save_dir to a folder to save images)
-    #run_all(case="thin", xguess=None, phitol=1e-5, thinCutoff=0.01, save_dir=None)
+    #run_all(case="thin", xguess=None, phitol=1e-5, thinCutoff=0.01, save_dir="assets/thin")
 
     # Uncomment to also run thick-wall:
     #run_all(case="thick", xguess=None, phitol=1e-5,thinCutoff=0.01, save_dir="assets/thick")
