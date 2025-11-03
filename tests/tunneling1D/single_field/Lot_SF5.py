@@ -22,8 +22,8 @@ from __future__ import annotations
 import numpy as np
 import matplotlib.pyplot as plt
 
-from src.CosmoTransitions import SingleFieldInstanton, PotentialError
-from src.CosmoTransitions.helper_functions import IntegrationError
+from CosmoTransitions import SingleFieldInstanton, PotentialError
+from CosmoTransitions.helper_functions import IntegrationError
 
 np.set_printoptions(precision=6, suppress=True)
 

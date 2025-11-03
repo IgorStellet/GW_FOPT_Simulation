@@ -22,7 +22,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Import the modernized class
-from src.CosmoTransitions import SingleFieldInstanton, PotentialError
+from CosmoTransitions import SingleFieldInstanton, PotentialError
 
 np.set_printoptions(precision=6, suppress=True)
 

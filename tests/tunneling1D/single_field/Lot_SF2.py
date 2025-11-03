@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 
 # --- Flexible import to match your project layout --------------------------------
 
-from src.CosmoTransitions import SingleFieldInstanton, PotentialError
+from CosmoTransitions import SingleFieldInstanton, PotentialError
 
 # ----------------------------------------------------------------------
 # Potentials: thin-wall and thick-wall demos (with analytic dV, d2V)

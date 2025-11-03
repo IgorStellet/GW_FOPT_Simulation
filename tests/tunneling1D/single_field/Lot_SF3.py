@@ -28,8 +28,8 @@ import matplotlib.pyplot as plt
 from scipy import optimize
 
 # Import the modernized class and errors
-from src.CosmoTransitions import SingleFieldInstanton, PotentialError
-from src.CosmoTransitions.helper_functions import IntegrationError
+from CosmoTransitions import SingleFieldInstanton, PotentialError
+from CosmoTransitions.helper_functions import IntegrationError
 
 
 np.set_printoptions(precision=6, suppress=True)
