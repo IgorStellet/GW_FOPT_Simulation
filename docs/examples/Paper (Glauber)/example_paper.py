@@ -31,50 +31,141 @@ from scipy import interpolate, integrate
 # Import the modernized class
 from CosmoTransitions import SingleFieldInstanton
 from CosmoTransitions import deriv14
+from CosmoTransitions import Jb, Jf
 
 np.set_printoptions(precision=6, suppress=True)
 
 # -----------------------------------------------------------------------------
-# Potentials used across the examples
+# Potentials used at the paper
 # -----------------------------------------------------------------------------
-def V_thin(phi: float) -> float:
-    return 0.25*phi**4 - 0.49*phi**3 + 0.235*phi**2
 
-def V_thick(phi: float) -> float:
-    return 0.25*phi**4 - 0.40*phi**3 + 0.100*phi**2
+# Masses and vev in GeV
+_VEW = 246.0
+_MH  = 125.0
+_MW  = 80.36
+_MZ  = 91.19
+_MT  = 173.1
 
-#def V_mine(phi: float) ->float:
-#    return 0.25 * phi ** 4 - 0.49 * phi ** 3 + 0.235 * phi ** 2
+# Degeneracies (bosons +, fermions -); couplings g_i = m_i / v
+_nW, _nZ, _nt = 6.0, 3.0, -12.0
+_gW, _gZ, _gt = _MW/_VEW, _MZ/_VEW, _MT/_VEW
+_64pi2 = 64.0 * np.pi**2
+_8pi2  = 8.0  * np.pi**2
 
-def V_mine(phi, lam=1.0, A=0.49, m2=0.47, eps=-0.02, Lam=1.0): # paper like (glauber)
+
+def V_paper(phi: np.ndarray | float, C: float = 3.0, Lambda: float = 1000.0,
+            finiteT: bool =False, T: float | None= None, include_daisy: bool= True) -> np.ndarray:
     """
-    Higgs-like quartic + cubic + quadratic with a small logarithmic correction.
-    Defaults chosen to mimic your thin-wall toy and add a mild log term.
-    """
-    phi = np.asarray(phi)
-    return (
-        0.25*lam*phi**4          # quartic
-        - A*phi**3               # cubic (creates the barrier)
-        + 0.5*m2*phi**2          # quadratic (keeps φ=0 metastable)
-        + eps*(phi**4)*np.log1p((phi**2)/(Lam**2))  # measure-like log correction
-    )
+    Zero-temperature effective potential with modified functional measure.
+    optional finite-temperature corrections (your Eq. 21).
 
+    Parameters
+    ----------
+    phi : array_like
+        Higgs radial field ϕ (GeV).
+    C : float
+        Measure-deformation parameter (C=0 recovers SM one-loop).
+    Lambda : float
+        Sensitivity scale of the modified measure (GeV).
+
+    Notes
+    -----
+    * Zero-T one-loop piece matches your correction: φ^4 * (ln(φ^2/v^2) - 3/2) only.
+    * Thermal integrals use your finiteT module: FT.Jb(x), FT.Jf(x) with x = m/T.
+    * Daisy term: simplified EW longitudinal resummation consistent with the paper’s
+      shorthand '3 m_L^3' → 2×W_L + 1×Z_L.
+
+    Returns
+    -------
+    V : ndarray
+        V(ϕ, 0) in GeV^4. We choose the renormalization conditions at ϕ=v
+        exactly as in the paper.
+    """
+    phi = np.asarray(phi, dtype=float)
+    v   = _VEW
+
+    # Tree
+    V_tree = (_MH**2)/(8.0*v**2) * (phi**2 - v**2)**2
+
+    # One-loop CW-like piece (W, Z, top); M_i(ϕ)=g_i ϕ and n_i as below.
+    # Use safe log for ϕ=0 (limit ϕ^4 log(ϕ^2) -> 0).
+    with np.errstate(divide='ignore', invalid='ignore'):
+        log_phi = np.where(phi != 0.0, np.log((phi**2)/(v**2)), 0.0)
+    common_bracket = (phi**4)*(log_phi - 1.5) + 2.0*(phi**2)/(v**2)
+    pref = 1/_64pi2
+    V_loops = pref * (
+        _nW*_gW**4 + _nZ*_gZ**4 + _nt*_gt**4
+    ) * common_bracket
+
+    # Measure contribution, Eq. (3.4): t = C ϕ^2 / Λ^2, t0 = C v^2 / Λ^2
+    t  = C * (phi**2) / (Lambda**2)
+    t0 = C * (v**2)   / (Lambda**2)
+    one_minus_t0 = 1.0 - t0
+    denom = (one_minus_t0**2)
+
+    # Guard the log for t -> 1 (ϕ -> Λ/√C): mask beyond the branch cut
+    valid = (t < 1.0) | (C <= 0.0)
+    log_term = np.empty_like(t)
+    log_term[valid]   = np.log(1.0 - t[valid])
+    log_term[~valid]  = np.nan  # outside the domain, as in the paper’s discussion
+
+    poly = ((1.0 - 2.0*t0) * t + 0.5 * t**2) / denom
+    V_meas = - (Lambda**4)/_8pi2 * (log_term + poly)
+
+    V0 = V_tree + V_loops + V_meas
+
+    if not finiteT:
+        return V0
+
+    # -------------------------------
+    # Finite-T corrections (Eq. 21)
+    # -------------------------------
+    if T is None or T <= 0.0:
+        raise ValueError("finiteT=True requires a positive temperature T (in GeV).")
+
+    # thermal arguments x = m/T with m_i(φ) = g_i * |φ|
+    absphi = np.abs(phi)
+    xW = (_gW*absphi) / T
+    xZ = (_gZ*absphi) / T
+    xt = (_gt*absphi) / T
+
+    # bosons positive, fermions negative (as in your ΔV expression)
+    DV_b = (T**4)/(2.0*np.pi**2) * (_nW*Jb(xW, approx="exact") + _nZ*Jb(xZ,approx="exact"))
+    DV_f = (T**4)/(2.0*np.pi**2) * (_nt*Jf(xt,approx="exact"))
+
+    DV_daisy = 0.0
+
+    if include_daisy:
+        # paper’s effective g^2 (dimensionless)
+        g2 = 4*(_MW**2+_MZ**2) /(3*(_VEW**2))
+
+        # build m_L^2
+        mL2_phi = 0.25 * g2 *(absphi**2)
+        mL2_T = mL2_phi +(11.0/6.0) * g2 *(T**2)
+
+        # guard tiny negatives from roundoff
+        mL_phi = np.sqrt(np.maximum(mL2_phi, 0.0))
+        mL_T = np.sqrt(np.maximum(mL2_T, 0.0))
+
+        # 3 longitudinal modes (2 W_L + 1 Z_L compressed into g^2)
+        DV_daisy = -(T/(12.0*np.pi)) * 3.0 * (mL_T**3 - mL_phi**3)
+
+    return V0 + DV_b + DV_f + DV_daisy
+
+def VT(phi):
+    return  V_paper(phi, finiteT=True, T=120 )
 
 # -----------------------------------------------------------------------------
 # Utilities
 # -----------------------------------------------------------------------------
-def make_inst(case: str = "thin", alpha: int = 2, phi_abs: float = 1.0, phi_meta: float =0.0) -> Tuple[SingleFieldInstanton, str]:
+def make_inst(case: str = "paper", alpha: int = 2, phi_abs: float = 1.0, phi_meta: float =0.0) -> Tuple[SingleFieldInstanton, str]:
     """
     Construct a SingleFieldInstanton with the standard vacua:
       phi_absMin = 1.0 (true/stable), phi_metaMin = 0.0 (false/metastable).
     """
     case = case.lower().strip()
-    if case == "thin":
-        V, label = V_thin, "thin-wall"
-    elif case == "thick":
-        V, label = V_thick, "thick-wall"
-    elif case == "mine":
-        V, label = V_mine, "my_potential"
+    if case == "paper":
+        V, label = VT, "Glaube Paper"
         phi_abs, phi_meta = phi_abs, phi_meta
     else:
         raise ValueError("Unknown case (use 'thin' 'thick' or mine).")
@@ -800,12 +891,103 @@ def run_all(case: str = "thin",
 # Script entry
 # -----------------------------------------------------------------------------
 if __name__ == "__main__":
-    # Thin-wall demo (set save_dir to a folder to save images)
-    run_all(case="thin", xguess=None, phitol=1e-5, thinCutoff=0.01, save_dir=None)
+    #run paper potential
+    run_all(case="paper", xguess=None, phitol=1e-5,thinCutoff=0.01,
+            phi_abs= _VEW, phi_meta =0.0, save_dir=None)
 
-    # Uncomment to also run thick-wall:
-    #run_all(case="thick", xguess=None, phitol=1e-5,thinCutoff=0.01, save_dir="assets/thick")
+def plot_paper_fig1_like(Cs=(-5,0.0, 4.14, 5), Lambda=1000.0, phi_max=300.0):
+    """
+    Reproduce a Fig.1-like comparison: normalized V(ϕ,0)-V(v,0) for several C at fixed Λ.
+    """
+    v = _VEW
+    ϕ_axis = np.linspace(0.0, phi_max, 1400)
 
-    # Uncomment to also run your potential
-    #run_all(case="mine", xguess=None, phitol=1e-5,thinCutoff=0.01,
-    #         phi_abs= 1.1833, phi_meta =0.0, save_dir=None)
+    plt.figure(figsize=(7.6, 4.8))
+    for C in Cs:
+        # Respect log domain: ϕ < Λ/√C for C>0
+        cutoff = (Lambda/np.sqrt(C))*0.995 if C > 0 else phi_max
+        ϕ = ϕ_axis[ϕ_axis <= cutoff]
+        Vn = V_paper(ϕ, C=C, Lambda=Lambda) #- V_paper(0, C=C, Lambda=Lambda)
+        ls = ":" if C == 0 else "-"
+        plt.plot(ϕ, Vn, ls=ls, lw=2.0, label=f"C = {C:g}")
+
+    plt.axvline(v, color="#888", lw=1.0, ls="--", label="ϕ = v")
+    plt.xlabel("ϕ  [GeV]"); plt.ylabel("V(ϕ,T=0) − V(0,T=0)  [GeV⁴]")
+    plt.title(f"Zero-T potential, Λ = {Lambda:.0f} GeV")
+    plt.grid(True, alpha=0.25)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+# 1) Plot the paper potential (Fig.1 style)
+#plot_paper_fig1_like(Cs=(-5, 0.0, 3, 4.14, 5), Lambda=1000.0)
+#plot_paper_fig1_like(Cs=(3,3), Lambda=1000.0)
+
+# -----------------------------------------------------------------------------
+# Example H (paper): V_paper(φ) with an inset zoom (e.g., C=3)
+# -----------------------------------------------------------------------------
+from mpl_toolkits.axes_grid1.inset_locator import  mark_inset
+
+def example_H_paper_potential_with_inset(C=3.0, Lambda=1000.0, save_dir: Optional[str] = None):
+    """
+    Plot V_paper(φ) shifted by V(0), with a main curve up to φ=600 GeV and
+    an inset zoom up to φ=300 GeV. Inset has only tick numbers (no axis labels).
+    """
+    # --- cap the domain to stay below the singularity t = C φ^2 / Λ^2 = 1 ---
+    eps = 0.97
+    if C > 0:
+        phi_cap = float(Lambda) / np.sqrt(max(C, 1e-12))  # φ_cap = Λ / √C
+        phi_safe = eps * phi_cap
+    else:
+        phi_safe = np.inf  # no branch point when C<=0
+
+    phi_max_main  = min(700.0, phi_safe)
+    phi_max_inset = min(300.0, phi_safe)
+
+    # guard against very small phi_safe
+    if phi_max_main <= 5.0:
+        print("[H] Warning: φ-domain severely limited by t → 1. "
+              f"(C={C}, Λ={Lambda}) Using φ_max_main={phi_max_main:.2f} GeV.")
+
+    # --- sample and shift by V(0) ---
+    φ_main  = np.linspace(0.0, phi_max_main, 2000)
+    V_main  = V_paper(φ_main, C=C, Lambda=Lambda)
+    V0      = V_paper(0.0,   C=C, Lambda=Lambda)
+    V_shift = V_main - V0
+
+    # --- main figure ---
+    fig, ax = plt.subplots(figsize=(7.8, 5.0))
+    ax.plot(φ_main, V_shift, lw=2.2, color="#1f77b4", label=r"$V(\phi)-V(0)$")
+    ax.axhline(0.0, color="#888", lw=1.0, ls="--", alpha=0.7)
+    ax.set_xlabel(r"$\phi\;[\mathrm{GeV}]$")
+    ax.set_ylabel(r"$V(\phi)-V(0)\;[\mathrm{GeV}^4]$")
+    ax.set_title(fr"Paper potential (shifted), $C={C}$, $\Lambda={Lambda:.0f}\,$GeV")
+    ax.grid(True, alpha=0.25)
+    ax.legend(loc="best")
+
+    # --- inset: zoom up to φ=300 GeV, no axis labels (ticks only) ---
+    axins = ax.inset_axes([0.05, 0.35, 0.45, 0.45])
+    #axins = inset_axes(ax, width="45%", height="45%", loc=3, borderpad=1.0)
+    # restrict to inset domain
+    mask_in = (φ_main <= phi_max_inset)
+    φ_in, V_in = φ_main[mask_in], V_shift[mask_in]
+
+    axins.plot(φ_in, V_in, lw=1.6, color="#1f77b4")
+    #auto y-lims with a small pad
+    y0, y1 = np.nanmin(V_in), np.nanmax(V_in)
+    pad = 0.05 * (y1 - y0 + 1e-30)
+    axins.set_xlim(0.0, phi_max_inset)
+    axins.set_ylim(y0 - pad, y1 + pad)
+    axins.grid(True, alpha=0.20)
+
+    # remove axis *labels* (keep tick numbers)
+    axins.set_xlabel(None); axins.set_ylabel(None)
+    axins.tick_params(labelsize=8)
+
+    # connector box
+    mark_inset(ax, axins, loc1=3, loc2=4, fc="none", ec="#666666", lw=1.0, alpha=0.85)
+
+    plt.show()
+    #savefig(fig, save_dir, f"H_paper_inset_C{C:g}_L{int(Lambda)}_VminusV0")
+
+#example_H_paper_potential_with_inset(C=3.0, Lambda=1000.0, save_dir=None)
