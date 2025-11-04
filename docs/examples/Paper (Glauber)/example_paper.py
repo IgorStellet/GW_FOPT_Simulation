@@ -91,10 +91,10 @@ def V_paper(phi: np.ndarray | float, C: float = 3.0, Lambda: float = 1000.0,
     # Use safe log for ϕ=0 (limit ϕ^4 log(ϕ^2) -> 0).
     with np.errstate(divide='ignore', invalid='ignore'):
         log_phi = np.where(phi != 0.0, np.log((phi**2)/(v**2)), 0.0)
-    common_bracket = (phi**4)*(log_phi - 1.5) + 2.0*(phi**2)/(v**2)
+    common_bracket = (phi**4)*(log_phi - 1.5) + 2.0*(phi**2)*(v**2)
     pref = 1/_64pi2
     V_loops = pref * (
-        _nW*_gW**4 + _nZ*_gZ**4 + _nt*_gt**4
+        _nW*(_gW**4) + _nZ*(_gZ**4) + _nt*(_gt**4)
     ) * common_bracket
 
     # Measure contribution, Eq. (3.4): t = C ϕ^2 / Λ^2, t0 = C v^2 / Λ^2
@@ -108,6 +108,7 @@ def V_paper(phi: np.ndarray | float, C: float = 3.0, Lambda: float = 1000.0,
     log_term = np.empty_like(t)
     log_term[valid]   = np.log(1.0 - t[valid])
     log_term[~valid]  = np.nan  # outside the domain, as in the paper’s discussion
+
 
     poly = ((1.0 - 2.0*t0) * t + 0.5 * t**2) / denom
     V_meas = - (Lambda**4)/_8pi2 * (log_term + poly)
@@ -165,7 +166,7 @@ def make_inst(case: str = "paper", alpha: int = 2, phi_abs: float = 1.0, phi_met
     """
     case = case.lower().strip()
     if case == "paper":
-        V, label = VT, "Glaube Paper"
+        V, label = VT, "Glauber_Paper_"
         phi_abs, phi_meta = phi_abs, phi_meta
     else:
         raise ValueError("Unknown case (use 'thin' 'thick' or mine).")
@@ -890,10 +891,10 @@ def run_all(case: str = "thin",
 # -----------------------------------------------------------------------------
 # Script entry
 # -----------------------------------------------------------------------------
-if __name__ == "__main__":
+#if __name__ == "__main__":
     #run paper potential
-    run_all(case="paper", xguess=None, phitol=1e-5,thinCutoff=0.01,
-            phi_abs= _VEW, phi_meta =0.0, save_dir=None)
+#    run_all(case="paper", xguess=50, phitol=1e-5,thinCutoff=0.0001,
+#            phi_abs= _VEW, phi_meta =0.0, save_dir=None)
 
 def plot_paper_fig1_like(Cs=(-5,0.0, 4.14, 5), Lambda=1000.0, phi_max=300.0):
     """
@@ -907,7 +908,7 @@ def plot_paper_fig1_like(Cs=(-5,0.0, 4.14, 5), Lambda=1000.0, phi_max=300.0):
         # Respect log domain: ϕ < Λ/√C for C>0
         cutoff = (Lambda/np.sqrt(C))*0.995 if C > 0 else phi_max
         ϕ = ϕ_axis[ϕ_axis <= cutoff]
-        Vn = V_paper(ϕ, C=C, Lambda=Lambda) #- V_paper(0, C=C, Lambda=Lambda)
+        Vn = V_paper(ϕ, C=C, Lambda=Lambda, finiteT=True, T=120) #- V_paper(0, C=C, Lambda=Lambda )
         ls = ":" if C == 0 else "-"
         plt.plot(ϕ, Vn, ls=ls, lw=2.0, label=f"C = {C:g}")
 
@@ -921,7 +922,7 @@ def plot_paper_fig1_like(Cs=(-5,0.0, 4.14, 5), Lambda=1000.0, phi_max=300.0):
 
 # 1) Plot the paper potential (Fig.1 style)
 #plot_paper_fig1_like(Cs=(-5, 0.0, 3, 4.14, 5), Lambda=1000.0)
-#plot_paper_fig1_like(Cs=(3,3), Lambda=1000.0)
+plot_paper_fig1_like(Cs=(3,3), Lambda=1000.0)
 
 # -----------------------------------------------------------------------------
 # Example H (paper): V_paper(φ) with an inset zoom (e.g., C=3)
@@ -941,6 +942,7 @@ def example_H_paper_potential_with_inset(C=3.0, Lambda=1000.0, save_dir: Optiona
     else:
         phi_safe = np.inf  # no branch point when C<=0
 
+    phi_safe=700
     phi_max_main  = min(700.0, phi_safe)
     phi_max_inset = min(300.0, phi_safe)
 
