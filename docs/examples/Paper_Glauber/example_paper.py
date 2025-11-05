@@ -3,19 +3,11 @@
 # -----------------------------------------------------------------------------
 # What this script provides
 # ------------------------
-# Seven cohesive examples (A..G) that take you from the potential geometry, to
-# initial conditions, to the final bounce profile and physically meaningful
-# diagnostics/visualizations. This is intended for users who prefer a “single
-# narrative” over per-function unit tests.
-#
-# You can switch between the "thin-wall" and "thick-wall" toy potentials, and
-# optionally save every figure to disk by passing save_dir="some/folder" | Or choose your on potential V(phi).
-#
-# Usage
-# -----
-#   python -m tests.tunneling1D.single_field.Complete_Showcase
-#
-# or import and call `run_all(case="thin", save_dir=None)` from your notebook.
+# Ten cohesive figures/examples (A..J) that take you from the potential geometry, to
+# initial conditions, to the final bounce profile and physically meaningful params
+# Reproducing also article potential: Cosmological phase transitions from the functional
+# measure (another example test ).
+
 # -----------------------------------------------------------------------------
 
 from __future__ import annotations
@@ -1111,13 +1103,13 @@ def run_all(case: str = "thin",
     example_G_action_and_beta(inst, profile, save_dir=save_dir)
 
     # H): multi-C Fig.1-like comparison (highlights C=0 and your default C)
-    example_H_fig1_multiC(Cs=(-5.0, 0.0, 3.0, 3.7, 4.14, 5.0), Lambda=1000, phi_max=300.0)
+    example_H_fig1_multiC(Cs=(-5.0, 0.0, 3.0, 3.7, 4.14, 5.0), Lambda=1000, phi_max=300.0, save_dir=save_dir)
 
     # I): paper-like potential with inset & real continuation (fig2)
     example_I_paper_potential_with_inset(C=3, Lambda=1000,save_dir=save_dir)
 
     # J): Temperature sweep of V(φ,T) at fixed C (Fig.1-but now per T)
-    example_J_T_scan(C=3.7, Lambda=1000.0, T_list=(60, 80.0, 90, 100.0, 120.0), phi_max=300.0, save_dir=None,
+    example_J_T_scan(C=3.7, Lambda=1000.0, T_list=(60, 80.0, 90, 100.0, 120.0), phi_max=300.0, save_dir=save_dir,
                      shift_ref="V0")
 
     # consolidated table
