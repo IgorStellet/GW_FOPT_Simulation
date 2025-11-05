@@ -23,10 +23,14 @@ import os
 import math
 from typing import Tuple, Optional, Callable
 import json, sys, io, contextlib
+from functools import partial
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+
 
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate, integrate
+
 
 # Import the modernized class
 from CosmoTransitions import SingleFieldInstanton
@@ -39,22 +43,28 @@ np.set_printoptions(precision=6, suppress=True)
 # Potentials used at the paper
 # -----------------------------------------------------------------------------
 
-# Masses and vev in GeV
+# --- Masses and vev in GeV ---
 _VEW = 246.0
 _MH  = 125.0
 _MW  = 80.36
 _MZ  = 91.19
 _MT  = 173.1
 
-# Degeneracies (bosons +, fermions -); couplings g_i = m_i / v
-_nW, _nZ, _nt = 6.0, 3.0, -12.0
+# --- Degeneracies (+bosons , -fermions ) ---
+_nW, _nZ, _nt = 6.0, 3.0, 12.0
+
+
+# --- Couplings g_i = m_i / v and Constants ---
+
 _gW, _gZ, _gt = _MW/_VEW, _MZ/_VEW, _MT/_VEW
 _64pi2 = 64.0 * np.pi**2
 _8pi2  = 8.0  * np.pi**2
 
 
 def V_paper(phi: np.ndarray | float, C: float = 3.0, Lambda: float = 1000.0,
-            finiteT: bool =False, T: float | None= None, include_daisy: bool= True) -> np.ndarray:
+            finiteT: bool =False, T: float | None= None,
+            include_daisy: bool= True,
+            real_cont: bool= False) -> np.ndarray:
     """
     Zero-temperature effective potential with modified functional measure.
     optional finite-temperature corrections (your Eq. 21).
@@ -88,13 +98,14 @@ def V_paper(phi: np.ndarray | float, C: float = 3.0, Lambda: float = 1000.0,
     V_tree = (_MH**2)/(8.0*v**2) * (phi**2 - v**2)**2
 
     # One-loop CW-like piece (W, Z, top); M_i(ϕ)=g_i ϕ and n_i as below.
+
     # Use safe log for ϕ=0 (limit ϕ^4 log(ϕ^2) -> 0).
     with np.errstate(divide='ignore', invalid='ignore'):
         log_phi = np.where(phi != 0.0, np.log((phi**2)/(v**2)), 0.0)
     common_bracket = (phi**4)*(log_phi - 1.5) + 2.0*(phi**2)*(v**2)
     pref = 1/_64pi2
     V_loops = pref * (
-        _nW*(_gW**4) + _nZ*(_gZ**4) + _nt*(_gt**4)
+        _nW*(_gW**4) + _nZ*(_gZ**4) - _nt*(_gt**4)
     ) * common_bracket
 
     # Measure contribution, Eq. (3.4): t = C ϕ^2 / Λ^2, t0 = C v^2 / Λ^2
@@ -104,17 +115,19 @@ def V_paper(phi: np.ndarray | float, C: float = 3.0, Lambda: float = 1000.0,
     denom = (one_minus_t0**2)
 
     # Guard the log for t -> 1 (ϕ -> Λ/√C): mask beyond the branch cut
-    valid = (t < 1.0) | (C <= 0.0)
-    log_term = np.empty_like(t)
-    log_term[valid]   = np.log(1.0 - t[valid])
-    log_term[~valid]  = np.nan  # outside the domain, as in the paper’s discussion
+    if real_cont:
+        log_term = np.log(np.abs(1.0-t))
+    else:
+        valid = (t < 1.0) | (C <= 0.0)
+        log_term = np.empty_like(t)
+        log_term[valid]   = np.log(1.0 - t[valid])
+        log_term[~valid]  = np.nan  # outside the domain, as in the paper’s discussion
 
 
     poly = ((1.0 - 2.0*t0) * t + 0.5 * t**2) / denom
     V_meas = - (Lambda**4)/_8pi2 * (log_term + poly)
 
     V0 = V_tree + V_loops + V_meas
-
     if not finiteT:
         return V0
 
@@ -122,7 +135,7 @@ def V_paper(phi: np.ndarray | float, C: float = 3.0, Lambda: float = 1000.0,
     # Finite-T corrections (Eq. 21)
     # -------------------------------
     if T is None or T <= 0.0:
-        raise ValueError("finiteT=True requires a positive temperature T (in GeV).")
+        raise ValueError("finiteT=True requires a positive temperature T>0 (in GeV).")
 
     # thermal arguments x = m/T with m_i(φ) = g_i * |φ|
     absphi = np.abs(phi)
@@ -135,7 +148,6 @@ def V_paper(phi: np.ndarray | float, C: float = 3.0, Lambda: float = 1000.0,
     DV_f = (T**4)/(2.0*np.pi**2) * (_nt*Jf(xt,approx="exact"))
 
     DV_daisy = 0.0
-
     if include_daisy:
         # paper’s effective g^2 (dimensionless)
         g2 = 4*(_MW**2+_MZ**2) /(3*(_VEW**2))
@@ -153,20 +165,21 @@ def V_paper(phi: np.ndarray | float, C: float = 3.0, Lambda: float = 1000.0,
 
     return V0 + DV_b + DV_f + DV_daisy
 
-def VT(phi):
-    return  V_paper(phi, finiteT=True, T=120 )
+def VT_factory(C=3.7, Lambda=1000.0, T=74.403076):
+    # Closure used by SingleFieldInstanton (phi-only signature)
+    return partial(V_paper, C=C, Lambda=Lambda, finiteT=True, T=T, real_cont=False)
 
 # -----------------------------------------------------------------------------
 # Utilities
 # -----------------------------------------------------------------------------
-def make_inst(case: str = "paper", alpha: int = 2, phi_abs: float = 1.0, phi_meta: float =0.0) -> Tuple[SingleFieldInstanton, str]:
+def make_inst(case: str = "paper", alpha: int = 2, phi_abs: float = _VEW, phi_meta: float =0.0) -> Tuple[SingleFieldInstanton, str]:
     """
     Construct a SingleFieldInstanton with the standard vacua:
       phi_absMin = 1.0 (true/stable), phi_metaMin = 0.0 (false/metastable).
     """
     case = case.lower().strip()
     if case == "paper":
-        V, label = VT, "Glauber_Paper_"
+        V, label = VT_factory(), "Glauber_Paper_"
         phi_abs, phi_meta = phi_abs, phi_meta
     else:
         raise ValueError("Unknown case (use 'thin' 'thick' or mine).")
@@ -190,6 +203,21 @@ def build_phi_grid(inst: SingleFieldInstanton, margin: float = 0.1, n: int = 800
     hi = max(inst.phi_metaMin, inst.phi_absMin)
     span = hi - lo
     return np.linspace(lo - margin*span, hi + margin*span, n)
+
+def _extract_params_from_V(V_callable):
+    """Best-effort extraction of {C, Lambda, T, finiteT} from functools.partial."""
+    C = Lambda = T = finiteT = None
+    try:
+        if isinstance(V_callable, partial):
+            kws = V_callable.keywords or {}
+            C       = kws.get("C", None)
+            Lambda  = kws.get("Lambda", None)
+            T       = kws.get("T", None)
+            finiteT = kws.get("finiteT", None)
+    except Exception:
+        pass
+    return C, Lambda, T, finiteT
+
 
 def savefig(fig: plt.Figure, save_dir: Optional[str], name: str):
     if save_dir:
@@ -659,8 +687,14 @@ def example_G_action_and_beta(inst: SingleFieldInstanton,
        - Print S_total and its breakdown (kin, pot, interior).
        - Print β_eff proxies.
        - Plot action *density* versus r and the *cumulative* action S(<r).
+       - Also print temperature T (if present in V) and S3/T.
+
     """
     br = inst.actionBreakdown(profile)
+
+    # Try to read (C, Λ, T) from the V partial used by this instanton
+    C, Lambda, T, finiteT = _extract_params_from_V(inst.V)
+    S_over_T = (float(br.S_total) / float(T)) if (T is not None and T > 0) else np.nan
 
     # --- prints ---
     print("\n[G] Action and β proxies")
@@ -669,6 +703,13 @@ def example_G_action_and_beta(inst: SingleFieldInstanton,
     print(f"   S_pot      = {br.S_pot:.6e}")
     print(f"   S_interior = {br.S_interior:.6e}")
     print(f"  (check) S_kin + S_pot + S_interior = {br.S_kin + br.S_pot + br.S_interior:.6e}")
+
+    if T is not None:
+        print(f"  T           = {T:.6g} GeV")
+        print(fr"  S3/T        = {S_over_T:.6e} (should be $\approx$140)")
+    else:
+        print("  T           = (not provided in V)")
+        print("  S3/T        = NaN (no T)")
 
     betas = {}
     for m in beta_methods:
@@ -720,6 +761,177 @@ def example_G_action_and_beta(inst: SingleFieldInstanton,
     plt.tight_layout(); plt.show()
     savefig(fig, save_dir, "G_action_density_and_cumulative")
 
+
+# -----------------------------------------------------------------------------
+# Example H
+# -----------------------------------------------------------------------------
+
+def example_H_fig1_multiC(Cs=( -5.0, 0.0, 3.0, 3.7, 4.14, 5.0 ),
+                          Lambda=1000.0, phi_max=300.0,
+                          save_dir: Optional[str] = None):
+    """
+    Fig.1-like comparison: plot [V(φ,0)-V(0,0)] for several C at fixed Λ.
+    Highlights C=0 and C=3.7. Draws V=0 line.
+    """
+    ϕ_axis = np.linspace(0.0, phi_max, 1400)
+    V0_by_C = {}
+
+    fig = plt.figure(figsize=(7.6, 4.8))
+    for C in Cs:
+        cutoff = (Lambda/np.sqrt(C))*0.995 if C > 0 else phi_max
+        ϕ = ϕ_axis[ϕ_axis <= cutoff]
+        V0 = V_paper(0.0, C=C, Lambda=Lambda, finiteT=False)
+        Vn = V_paper(ϕ,  C=C, Lambda=Lambda, finiteT=False) - V0
+        V0_by_C[C] = V0
+
+        style = dict(lw=2, zorder=3) if (C==0.0 or abs(C-3.7)<1e-12) else dict(lw=1.6, alpha=0.9, zorder=2)
+        ls = "--" if C==0.0 or C==4.14 else "-"
+        plt.plot(ϕ, Vn, ls=ls, label=f"C={C:g}", **style)
+
+    plt.axhline(0.0, color="#444", lw=1.0, ls="--", label="V=0")
+    plt.axvline(_VEW, color="#888", lw=1.0, ls=":", label="ϕ = v")
+    plt.xlabel("ϕ  [GeV]"); plt.ylabel("V(ϕ,T=0) − V(0,T=0)  [GeV⁴]")
+    plt.title(f"Zero-T potential, Λ = {Lambda:.0f} GeV (Fig.1-like)")
+    plt.grid(True, alpha=0.25)
+    plt.legend()
+    plt.tight_layout(); plt.show()
+    savefig(fig, save_dir, "H_fig1_multiC_T_0_potential")
+
+# -----------------------------------------------------------------------------
+# Example I
+# -----------------------------------------------------------------------------
+
+def example_I_paper_potential_with_inset(C=3, Lambda=1000.0,
+                                         save_dir: Optional[str] = None):
+    """
+    Plot V_paper(φ) - V(0) up to φ≈650 GeV, showing both sides of the log singularity
+    via real_cont=True (ln|1-t|). Inset: zoom up to φ=300 GeV, tick numbers only.
+    """
+    # Domain limits
+    phi_cap = (Lambda/np.sqrt(C)) if C > 0 else np.inf
+    phi_max_main  = min(650.0, np.inf if not np.isfinite(phi_cap) else 4*phi_cap)  # allow showing both sides
+    phi_max_inset = min(300.0, phi_max_main)
+
+    φ = np.linspace(0.0, phi_max_main, 4000)
+    V_main = V_paper(φ, C=C, Lambda=Lambda, finiteT=False, real_cont=True)
+    V0     = V_paper(0.0, C=C, Lambda=Lambda, finiteT=False, real_cont=True)
+    V_shift = V_main - V0
+
+    fig, ax = plt.subplots(figsize=(7.8, 5.0))
+    ax.plot(φ, V_shift, lw=2.2, label=rf"$C={C}$, $\Lambda={Lambda:.0f}$ GeV")
+    ax.axhline(0.0, color="#888", lw=1.0, ls="--", label="V=0")
+
+    if np.isfinite(phi_cap):
+        ax.axvline(phi_cap, color="#aa0000", lw=1.2, ls="--", label=r"$\phi_\star=\Lambda/\sqrt{C}$")
+
+    ax.set_xlim(0.0, phi_max_main)
+    ax.set_xlabel(r"$\phi$ [GeV]"); ax.set_ylabel(r"$V(\phi)-V(0)$ [GeV$^4$]")
+    ax.set_title("Paper potential (real-part continuation) — Fig.1 style")
+    ax.grid(True, alpha=0.25)
+    ax.legend(loc="best")
+
+    # Inset
+    axins = ax.inset_axes([0.06, 0.3, 0.42, 0.42])
+    mask = (φ <= phi_max_inset)
+    axins.plot(φ[mask], V_shift[mask], lw=1.6)
+    y0, y1 = np.nanmin(V_shift[mask]), np.nanmax(V_shift[mask])
+    pad = 0.05 * (y1 - y0 + 1e-30)
+    axins.set_xlim(0.0, phi_max_inset)
+    axins.set_ylim(y0 - pad, y1 + pad)
+    axins.grid(True, alpha=0.2)
+    axins.tick_params(labelsize=8)
+    mark_inset(ax, axins, loc1=3, loc2=4, fc="none", ec="#666", lw=1.0, alpha=0.85)
+
+    plt.tight_layout(); plt.show()
+    savefig(fig, save_dir, f"I_paper_inset_C{C:g}_L{int(Lambda)}")
+
+
+# -----------------------------------------------------------------------------
+# Example J
+# -----------------------------------------------------------------------------
+def example_J_T_scan(C: float = 3.7,
+                     Lambda: float = 1000.0,
+                     T_list = (60, 80.0, 90, 100.0, 120.0),
+                     phi_max: float = 300.0,
+                     save_dir: Optional[str] = None,
+                     shift_ref: str = "V0"):
+    """
+    Plot V(φ,T) − V_ref(T) for several temperatures at fixed C, where
+      V_ref(T) is either V(0,T)  (shift_ref='V0', Fig.1 style)
+                   or V(v,T)     (shift_ref='Vv', useful to see ΔV around v).
+    Also print a quick table with φ_true(T) (grid-min search) and ΔV_true−meta(T).
+
+    Notes
+    -----
+    * Keeps φ below the log branch at φ* = Λ/√C (no real-continuation) so your physics is untouched.
+    * Good for eyeballing where the two minima become nearly degenerate.
+    """
+    assert shift_ref in ("V0", "Vv"), "shift_ref must be 'V0' or 'Vv'."
+    v = _VEW
+    eps = 0.97
+    if C > 0:
+        phi_cap = float(Lambda) / np.sqrt(C)     # branch point
+        phi_max_eff = min(phi_max, eps*phi_cap)  # stay on physical side
+    else:
+        phi_cap = np.inf
+        phi_max_eff = phi_max
+
+    if phi_max_eff < 50.0:
+        print(f"[J] Warning: φ-domain limited to {phi_max_eff:.1f} GeV by the measure branch (C={C}, Λ={Lambda}).")
+
+    ϕ = np.linspace(0.0, phi_max_eff, 2200)
+
+    # --- helper: quick broken-minimum locator at this T (grid search) ---
+    def _phi_true_at_T(T: float) -> float:
+        grid = np.linspace(0.0, phi_max_eff, 3001)
+        Vg = V_paper(grid, C=C, Lambda=Lambda, finiteT=True, T=T)
+        idx = np.nanargmin(Vg)
+        return float(grid[idx])
+
+    # --- figure ---
+    fig, ax = plt.subplots(figsize=(7.8, 5.0))
+    colors = plt.cm.viridis(np.linspace(0.1, 0.9, len(T_list)))
+
+    print("\n[J] Quick temperature sweep diagnostics")
+    print("    T [GeV]   phi_true(T) [GeV]   V(phi_true,T)-V(0,T) [GeV^4]   V(v,T)-V(0,T) [GeV^4]")
+    print("    --------  -------------------  ------------------------------  ----------------------")
+
+    for T, col in zip(T_list, colors):
+        VϕT = V_paper(ϕ, C=C, Lambda=Lambda, finiteT=True, T=T)
+        V0T = float(V_paper(0.0, C=C, Lambda=Lambda, finiteT=True, T=T))
+        VvT = float(V_paper(v,    C=C, Lambda=Lambda, finiteT=True, T=T))
+
+        if shift_ref == "V0":
+            Vshift = VϕT - V0T
+        else:  # 'Vv'
+            Vshift = VϕT - VvT
+
+        lw, ls, z = (2.2, "-", 3) if T == max(T_list) or T == min(T_list) else (1.8, "-", 2)
+        ax.plot(ϕ, Vshift, color=col, lw=lw, ls=ls, label=f"T = {T:g} GeV", zorder=z)
+
+        # quick table line
+        phi_true_T = _phi_true_at_T(T)
+        V_true_T   = float(V_paper(phi_true_T, C=C, Lambda=Lambda, finiteT=True, T=T))
+        print(f"    {T:7.1f}  {phi_true_T:19.3f}  {V_true_T - V0T:30.3e}  {VvT - V0T:22.3e}")
+
+    # references
+    ax.axhline(0.0, color="#444", lw=1.0, ls="--", label="shift reference")
+    ax.axvline(v,   color="#888", lw=1.0, ls=":",  label="ϕ = v")
+    if np.isfinite(phi_cap):
+        ax.axvline(phi_cap, color="#aa0000", lw=1.0, ls="--", alpha=0.7, label=r"$\phi_\star=\Lambda/\sqrt{C}$")
+
+    ylabel = r"$V(\phi,T)-V(0,T)$" if shift_ref == "V0" else r"$V(\phi,T)-V(v,T)$"
+    ax.set_xlim(0.0, phi_max_eff)
+    ax.set_xlabel(r"$\phi$ [GeV]"); ax.set_ylabel(ylabel + r"  [GeV$^4$]")
+    ax.set_title(fr"Temperature sweep at $C={C}$, $\Lambda={Lambda:.0f}$ GeV")
+    ax.grid(True, alpha=0.25)
+    ax.legend(ncol=2, fontsize=9)
+    plt.tight_layout(); plt.show()
+
+    savefig(fig, save_dir, f"J_T_sweep_C{C:g}_L{int(Lambda)}_{shift_ref}")
+
+
+
 def gather_diagnostics(inst: SingleFieldInstanton, profile, label: str = "") -> dict:
     r0info = getattr(inst, "_profile_info", {}) or {}
     sinfo  = getattr(inst, "_scale_info", {}) or {}
@@ -733,6 +945,10 @@ def gather_diagnostics(inst: SingleFieldInstanton, profile, label: str = "") -> 
 
     # actions
     br = inst.actionBreakdown(profile)
+
+    # try reading parameters from V
+    C, Lambda, T, finiteT = _extract_params_from_V(inst.V)
+    S_over_T = (float(br.S_total) / float(T)) if (T is not None and T > 0) else np.nan
 
     # betas
     def _safe_beta(method):
@@ -756,6 +972,13 @@ def gather_diagnostics(inst: SingleFieldInstanton, profile, label: str = "") -> 
 
     return {
         "label": label,
+        # potential params (if available)
+        "C": (float(C) if C is not None else np.nan),
+        "Lambda_GeV": (float(Lambda) if Lambda is not None else np.nan),
+        "finiteT": bool(finiteT) if finiteT is not None else None,
+        "temperature_GeV": (float(T) if T is not None else np.nan),
+
+        # geometry
         "phi_metaMin": float(inst.phi_metaMin),
         "phi_absMin":  float(inst.phi_absMin),
         "phi_bar":     float(getattr(inst, "phi_bar", np.nan)),
@@ -764,6 +987,8 @@ def gather_diagnostics(inst: SingleFieldInstanton, profile, label: str = "") -> 
         "V(phi_true)": V_true,
         "V(phi_top)":  V_top,
         "DeltaV_true_minus_meta": dV_true_meta,
+
+        # r0 & scales
         "r0": float(r0info.get("r0", np.nan)),
         "phi0": float(r0info.get("phi0", np.nan)),
         "dphi0": float(r0info.get("dphi0", np.nan)),
@@ -771,10 +996,15 @@ def gather_diagnostics(inst: SingleFieldInstanton, profile, label: str = "") -> 
         "rscale_curv":  float(sinfo.get("rscale_curv",  np.nan)),
         "wall_r_hi": r_wall,
         "wall_thickness": thickness,
+
+        # actions
         "S_total": float(br.S_total),
         "S_kin":   float(br.S_kin),
         "S_pot":   float(br.S_pot),
         "S_interior": float(br.S_interior),
+        "S3_over_T": float(S_over_T),
+
+        # betas
         **betas,
     }
 
@@ -880,6 +1110,16 @@ def run_all(case: str = "thin",
     # G) Action and β proxies (print β; only action is plotted)
     example_G_action_and_beta(inst, profile, save_dir=save_dir)
 
+    # H): multi-C Fig.1-like comparison (highlights C=0 and your default C)
+    example_H_fig1_multiC(Cs=(-5.0, 0.0, 3.0, 3.7, 4.14, 5.0), Lambda=1000, phi_max=300.0)
+
+    # I): paper-like potential with inset & real continuation (fig2)
+    example_I_paper_potential_with_inset(C=3, Lambda=1000,save_dir=save_dir)
+
+    # J): Temperature sweep of V(φ,T) at fixed C (Fig.1-but now per T)
+    example_J_T_scan(C=3.7, Lambda=1000.0, T_list=(60, 80.0, 90, 100.0, 120.0), phi_max=300.0, save_dir=None,
+                     shift_ref="V0")
+
     # consolidated table
     di = gather_diagnostics(inst, profile, label=label)
     save_diagnostics_summary(di, save_dir, basename="diagnostics_summary", fmt = "json")
@@ -891,105 +1131,63 @@ def run_all(case: str = "thin",
 # -----------------------------------------------------------------------------
 # Script entry
 # -----------------------------------------------------------------------------
-#if __name__ == "__main__":
+if __name__ == "__main__":
     #run paper potential
-#    run_all(case="paper", xguess=50, phitol=1e-5,thinCutoff=0.0001,
-#            phi_abs= _VEW, phi_meta =0.0, save_dir=None)
+    run_all(case="paper", xguess=None, phitol=1e-5,thinCutoff=0.0001,
+            phi_abs= 236.7, phi_meta =0.0, save_dir="results")
 
-def plot_paper_fig1_like(Cs=(-5,0.0, 4.14, 5), Lambda=1000.0, phi_max=300.0):
+def find_phi_true_at_T(T: float, C: float = 3.7, Lambda: float = 1000.0,
+                       phi_max: float = 300.0) -> float:
+    """Quick grid-search of the broken-phase minimum at temperature T."""
+    grid = np.linspace(0, phi_max, 4001)
+    Vg = V_paper(grid, C=C, Lambda=Lambda, finiteT=True, T=T, real_cont=False)
+    idx = np.nanargmin(Vg)
+    print(grid[idx])
+    return float(grid[idx])
+
+def estimate_Tn(C: float = 3.7, Lambda: float = 1000.0,
+                T_hi: float = 90.00, T_lo: float = 60,
+                Scrit: float = 140.0, max_iter: int = 12) -> tuple[float, float]:
     """
-    Reproduce a Fig.1-like comparison: normalized V(ϕ,0)-V(v,0) for several C at fixed Λ.
+    Rough nucleation estimate by solving S3(T)/T = Scrit via bisection.
+    Returns (T_n, phi_true_at_Tn). Uses current module’s SingleFieldInstanton.
     """
-    v = _VEW
-    ϕ_axis = np.linspace(0.0, phi_max, 1400)
+    def S3_over_T(T):
+        phi_true_T = find_phi_true_at_T(T, C=C, Lambda=Lambda)
+        V_T = partial(V_paper, C=C, Lambda=Lambda, finiteT=True, T=T, real_cont=False)
+        inst = SingleFieldInstanton(phi_absMin=phi_true_T, phi_metaMin=0.0, V=V_T, alpha=2, phi_eps=1e-3)
+        prof = compute_profile(inst, xguess=None, phitol=1e-5, thinCutoff=0.01, npoints=600)
+        br = inst.actionBreakdown(prof)
+        print(float(br.S_total) / T)
+        return float(br.S_total) / T, phi_true_T
 
-    plt.figure(figsize=(7.6, 4.8))
-    for C in Cs:
-        # Respect log domain: ϕ < Λ/√C for C>0
-        cutoff = (Lambda/np.sqrt(C))*0.995 if C > 0 else phi_max
-        ϕ = ϕ_axis[ϕ_axis <= cutoff]
-        Vn = V_paper(ϕ, C=C, Lambda=Lambda, finiteT=True, T=120) #- V_paper(0, C=C, Lambda=Lambda )
-        ls = ":" if C == 0 else "-"
-        plt.plot(ϕ, Vn, ls=ls, lw=2.0, label=f"C = {C:g}")
+    # Expand bracket until we straddle Scrit
+    f_hi, phi_hi = S3_over_T(T_hi)
+    f_lo, phi_lo = S3_over_T(T_lo)
+    # If not bracketing, try to expand a bit
+    tries = 0
+    while not ((f_hi > Scrit and f_lo < Scrit) or (f_hi < Scrit and f_lo > Scrit)) and tries < 4:
+        T_hi += 3; T_lo -= 3
+        f_hi, phi_hi = S3_over_T(T_hi)
+        f_lo, phi_lo = S3_over_T(T_lo)
+        tries += 1
 
-    plt.axvline(v, color="#888", lw=1.0, ls="--", label="ϕ = v")
-    plt.xlabel("ϕ  [GeV]"); plt.ylabel("V(ϕ,T=0) − V(0,T=0)  [GeV⁴]")
-    plt.title(f"Zero-T potential, Λ = {Lambda:.0f} GeV")
-    plt.grid(True, alpha=0.25)
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
+    T_a, T_b = T_lo, T_hi
+    fa, _ = f_lo, phi_lo
+    fb, _ = f_hi, phi_hi
 
-# 1) Plot the paper potential (Fig.1 style)
-#plot_paper_fig1_like(Cs=(-5, 0.0, 3, 4.14, 5), Lambda=1000.0)
-plot_paper_fig1_like(Cs=(3,3), Lambda=1000.0)
+    for _ in range(max_iter):
+        T_m = 0.5*(T_a + T_b)
+        fm, phi_m = S3_over_T(T_m)
+        if (fa - Scrit)*(fm - Scrit) <= 0:
+            T_b, fb = T_m, fm
+        else:
+            T_a, fa = T_m, fm
 
-# -----------------------------------------------------------------------------
-# Example H (paper): V_paper(φ) with an inset zoom (e.g., C=3)
-# -----------------------------------------------------------------------------
-from mpl_toolkits.axes_grid1.inset_locator import  mark_inset
+    Tn = 0.5*(T_a + T_b)
+    _, phi_Tn = S3_over_T(Tn)
+    return Tn, phi_Tn
 
-def example_H_paper_potential_with_inset(C=3.0, Lambda=1000.0, save_dir: Optional[str] = None):
-    """
-    Plot V_paper(φ) shifted by V(0), with a main curve up to φ=600 GeV and
-    an inset zoom up to φ=300 GeV. Inset has only tick numbers (no axis labels).
-    """
-    # --- cap the domain to stay below the singularity t = C φ^2 / Λ^2 = 1 ---
-    eps = 0.97
-    if C > 0:
-        phi_cap = float(Lambda) / np.sqrt(max(C, 1e-12))  # φ_cap = Λ / √C
-        phi_safe = eps * phi_cap
-    else:
-        phi_safe = np.inf  # no branch point when C<=0
+#Tn, phi_true_Tn = estimate_Tn(C=3.7, Lambda=1000.0, T_hi=60, T_lo=90, Scrit=140)
+#print("Estimated T_n =", Tn, "GeV ; phi_true(T_n) =", phi_true_Tn, "GeV")
 
-    phi_safe=700
-    phi_max_main  = min(700.0, phi_safe)
-    phi_max_inset = min(300.0, phi_safe)
-
-    # guard against very small phi_safe
-    if phi_max_main <= 5.0:
-        print("[H] Warning: φ-domain severely limited by t → 1. "
-              f"(C={C}, Λ={Lambda}) Using φ_max_main={phi_max_main:.2f} GeV.")
-
-    # --- sample and shift by V(0) ---
-    φ_main  = np.linspace(0.0, phi_max_main, 2000)
-    V_main  = V_paper(φ_main, C=C, Lambda=Lambda)
-    V0      = V_paper(0.0,   C=C, Lambda=Lambda)
-    V_shift = V_main - V0
-
-    # --- main figure ---
-    fig, ax = plt.subplots(figsize=(7.8, 5.0))
-    ax.plot(φ_main, V_shift, lw=2.2, color="#1f77b4", label=r"$V(\phi)-V(0)$")
-    ax.axhline(0.0, color="#888", lw=1.0, ls="--", alpha=0.7)
-    ax.set_xlabel(r"$\phi\;[\mathrm{GeV}]$")
-    ax.set_ylabel(r"$V(\phi)-V(0)\;[\mathrm{GeV}^4]$")
-    ax.set_title(fr"Paper potential (shifted), $C={C}$, $\Lambda={Lambda:.0f}\,$GeV")
-    ax.grid(True, alpha=0.25)
-    ax.legend(loc="best")
-
-    # --- inset: zoom up to φ=300 GeV, no axis labels (ticks only) ---
-    axins = ax.inset_axes([0.05, 0.35, 0.45, 0.45])
-    #axins = inset_axes(ax, width="45%", height="45%", loc=3, borderpad=1.0)
-    # restrict to inset domain
-    mask_in = (φ_main <= phi_max_inset)
-    φ_in, V_in = φ_main[mask_in], V_shift[mask_in]
-
-    axins.plot(φ_in, V_in, lw=1.6, color="#1f77b4")
-    #auto y-lims with a small pad
-    y0, y1 = np.nanmin(V_in), np.nanmax(V_in)
-    pad = 0.05 * (y1 - y0 + 1e-30)
-    axins.set_xlim(0.0, phi_max_inset)
-    axins.set_ylim(y0 - pad, y1 + pad)
-    axins.grid(True, alpha=0.20)
-
-    # remove axis *labels* (keep tick numbers)
-    axins.set_xlabel(None); axins.set_ylabel(None)
-    axins.tick_params(labelsize=8)
-
-    # connector box
-    mark_inset(ax, axins, loc1=3, loc2=4, fc="none", ec="#666666", lw=1.0, alpha=0.85)
-
-    plt.show()
-    #savefig(fig, save_dir, f"H_paper_inset_C{C:g}_L{int(Lambda)}_VminusV0")
-
-#example_H_paper_potential_with_inset(C=3.0, Lambda=1000.0, save_dir=None)
