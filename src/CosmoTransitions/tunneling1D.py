@@ -26,7 +26,7 @@ Notes
   structure and numerics. Tests and docs are organized per functional block.
 """
 
-# --- Basic imports (extend here as we modernize) --------------------------------
+# --- Basic imports  ----------
 
 import numpy as np
 from collections import namedtuple
