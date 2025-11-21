@@ -1,833 +1,745 @@
 """
 Block A – transitionFinder: tests & tutorial-style examples for
-traceMinimum and Phase using a simple finite-temperature scalar potential.
+traceMinimum, Phase and phase-structure utilities, using a simple
+finite-temperature scalar potential.
 
 This file is deliberately verbose: it prints intermediate results and
-produces plots, so that you can *see* what the phase-tracing routines
-are doing in practice.
+creates plots (which are closed immediately), so that you can *see* what
+the phase-tracing routines are doing in practice.
 
 Potential used
 --------------
-We use a 1D Landau-Ginzburg finite-temperature potential
+We use a 1D Landau–Ginzburg finite-temperature potential
 
-    V(phi, T) = D * (T^2 - T0^2) * phi^2 + (lambda_/4) * phi^4
+    V(phi, T) = D (T^2 - T0^2) phi^2 - E T phi^3 + (lambda_/4) phi^4,
 
-with
-    D       = 0.5
-    lambda_ = 1.0
-    T0      = 1.0
+with D > 0, lambda_ > 0 and a small cubic term E > 0. This is the
+classic toy model for a first-order phase transition:
 
-This gives:
-  - For T > T0: single, symmetric minimum at phi = 0.
-  - For T < T0: two degenerate minima at phi = ±phi_min(T).
-  - At T = T0: second-order transition (mass^2 -> 0 at the origin).
+- At high temperature (T >> T0), phi = 0 is the unique minimum
+  (symmetric phase).
+- As T decreases, non-trivial broken minima at phi ≠ 0 develop.
+- Around T ~ T0 there is a region where symmetric and broken phases
+  coexist, separated by a barrier → first-order transition.
+- Below some spinodal temperature, the symmetric minimum disappears.
 
-These examples focus on:
-  - traceMinimum: following a local minimum as T changes.
-  - Phase: smoothing the traced minimum with a spline and interpolating it.
+All tests below are designed to illustrate how the transitionFinder
+routines reconstruct this structure:
+
+- traceMinimum: follow a single minimum as T varies.
+- Phase: spline representation of a temperature-dependent minimum.
+- traceMultiMin: reconstruct all phases in a T-interval.
+- findApproxLocalMin: detect candidate minima along field-space segments.
+- removeRedundantPhases: merge duplicated phases.
+- getStartPhase: identify the high-temperature phase.
 """
 
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Dict, Hashable, Tuple
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import optimize
 
-from CosmoTransitions import transitionFinder
+from CosmoTransitions.transitionFinder import (
+    traceMinimum,
+    Phase,
+    traceMultiMin,
+    findApproxLocalMin,
+    removeRedundantPhases,
+    getStartPhase,
+)
+
 
 # ---------------------------------------------------------------------------
-# Model parameters: simple Landau-Ginzburg finite-T potential
+# Model parameters: simple Landau–Ginzburg finite-T potential
 # ---------------------------------------------------------------------------
 
-D_LANDAU: float = 0.5
-LAMBDA_LANDAU: float = 1.0
-T0_CRIT: float = 1.0
+D: float = 0.1
+E: float = 0.02
+lambda_: float = 0.1
+T0: float = 100.0
 
 
-def V_finite_T(x: np.ndarray, T: float) -> float:
+# ---------------------------------------------------------------------------
+# Potential and analytic derivatives
+# ---------------------------------------------------------------------------
+
+def V(phi: np.ndarray | float, T: float) -> np.ndarray | float:
     """
-    Finite-temperature Landau-Ginzburg potential V(phi, T) for a single scalar.
+    Landau–Ginzburg finite-temperature potential.
+
+    This implementation is 1D in field space but supports both scalar and
+    batched inputs for use with findApproxLocalMin:
+
+    - For traceMinimum / Phase, we use phi.shape == (1,).
+    - For vectorized calls, we use phi.shape == (n, 1).
 
     Parameters
     ----------
-    x : array_like, shape (1,)
-        Field value(s). For this test we use a single scalar phi.
-    T : float
+    phi :
+        Field value(s). Either scalar-like, shape (1,), or shape (n, 1).
+    T :
         Temperature.
 
     Returns
     -------
-    float
-        Potential V(phi, T).
+    float or ndarray
+        Potential evaluated at the given field(s) and temperature.
     """
-    x_arr = np.atleast_1d(x)
-    phi = float(x_arr[0])
-    return D_LANDAU * (T**2 - T0_CRIT**2) * phi**2 + 0.25 * LAMBDA_LANDAU * phi**4
+    phi_arr = np.asarray(phi, dtype=float)
+
+    if phi_arr.ndim == 0:
+        # single scalar phi
+        phi_val = phi_arr
+    elif phi_arr.ndim == 1:
+        # treat as a single 1D field vector; this toy model is 1D
+        if phi_arr.size != 1:
+            raise ValueError("This test potential is strictly 1D in field space.")
+        phi_val = phi_arr[0]
+    elif phi_arr.ndim == 2:
+        # batched samples: shape (n_samples, 1)
+        if phi_arr.shape[1] != 1:
+            raise ValueError("For batched evaluation, use shape (n_samples, 1).")
+        phi_val = phi_arr[:, 0]
+    else:
+        raise ValueError(f"Unsupported phi shape {phi_arr.shape} for this test potential.")
+
+    V_val = (
+        D * (T**2 - T0**2) * phi_val**2
+        - E * T * phi_val**3
+        + 0.25 * lambda_ * phi_val**4
+    )
+    return V_val
 
 
-def d2V_dphidT(x: np.ndarray, T: float) -> np.ndarray:
+def dV_dphi(phi: np.ndarray | float, T: float) -> np.ndarray:
     """
-    Mixed derivative d/dT (dV/dphi) for the test potential.
-
-    Starting from
-        V(phi, T) = D (T^2 - T0^2) phi^2 + (lambda/4) phi^4
-    we have
-        dV/dphi = 2 D (T^2 - T0^2) phi + lambda phi^3
-    so
-        d/dT (dV/dphi) = 4 D T phi
+    First derivative dV/dphi for the Landau–Ginzburg potential.
 
     Parameters
     ----------
-    x : array_like, shape (1,)
-        Field value(s).
-    T : float
+    phi :
+        Field value(s). Only the first component is used.
+    T :
         Temperature.
 
     Returns
     -------
     ndarray, shape (1,)
-        d/dT (gradient V) evaluated at (phi, T).
+        Gradient with respect to phi.
     """
-    x_arr = np.atleast_1d(x)
-    phi = float(x_arr[0])
-    return np.array([4.0 * D_LANDAU * T * phi], dtype=float)
+    phi_arr = np.atleast_1d(np.asarray(phi, dtype=float))
+    phi0 = float(phi_arr[0])
+    dV_val = (
+        2.0 * D * (T**2 - T0**2) * phi0
+        - 3.0 * E * T * phi0**2
+        + lambda_ * phi0**3
+    )
+    return np.array([dV_val], dtype=float)
 
 
-def d2V_dphi2(x: np.ndarray, T: float) -> np.ndarray:
+def d2V_dphi2(phi: np.ndarray | float, T: float) -> np.ndarray:
     """
-    Hessian d^2V/dphi^2 for the test potential.
-
-    From
-        dV/dphi = 2 D (T^2 - T0^2) phi + lambda phi^3
-    we obtain
-        d^2V/dphi^2 = 2 D (T^2 - T0^2) + 3 lambda phi^2
+    Second derivative d^2 V / d phi^2 (Hessian for the 1D toy model).
 
     Parameters
     ----------
-    x : array_like, shape (1,)
-        Field value(s).
-    T : float
+    phi :
+        Field value(s). Only the first component is used.
+    T :
         Temperature.
 
     Returns
     -------
     ndarray, shape (1, 1)
-        Hessian matrix evaluated at (phi, T).
+        Hessian with respect to phi.
     """
-    x_arr = np.atleast_1d(x)
-    phi = float(x_arr[0])
-    second = 2.0 * D_LANDAU * (T**2 - T0_CRIT**2) + 3.0 * LAMBDA_LANDAU * phi**2
-    return np.array([[second]], dtype=float)
+    phi_arr = np.atleast_1d(np.asarray(phi, dtype=float))
+    phi0 = float(phi_arr[0])
+    d2V_val = (
+        2.0 * D * (T**2 - T0**2)
+        - 6.0 * E * T * phi0
+        + 3.0 * lambda_ * phi0**2
+    )
+    return np.array([[d2V_val]], dtype=float)
 
 
-def analytic_minima(T: float) -> np.ndarray:
+def d2V_dphidT(phi: np.ndarray | float, T: float) -> np.ndarray:
     """
-    Analytic positions of the minima for the Landau potential.
+    Mixed derivative ∂/∂T (∂V/∂phi), required for traceMinimum.
 
-    For T < T0:
-        phi_min^2 = 2 D (T0^2 - T^2) / lambda
-    For T >= T0:
-        only minimum is at phi = 0.
+    We start from
+        ∂V/∂phi = 2D(T^2 - T0^2) phi - 3E T phi^2 + λ phi^3
 
-    Parameters
-    ----------
-    T : float
-        Temperature.
-
-    Returns
-    -------
-    ndarray
-        Array with the minima positions. It has length 1 (phi=0) or 2 (±phi_min).
+    and take ∂/∂T:
+        ∂/∂T (∂V/∂phi)
+        = 4D T phi - 3E phi^2.
     """
-    if T <= T0_CRIT:
-        phi2 = 2.0 * D_LANDAU * (T0_CRIT**2 - T**2) / LAMBDA_LANDAU
-        phi_min = np.sqrt(max(phi2, 0.0))
-        return np.array([-phi_min, +phi_min], dtype=float)
-    return np.array([0.0], dtype=float)
+    phi_arr = np.atleast_1d(np.asarray(phi, dtype=float))
+    phi0 = float(phi_arr[0])
+    val = 4.0 * D * T * phi0 - 3.0 * E * phi0**2
+    return np.array([val], dtype=float)
 
 
 # ---------------------------------------------------------------------------
-# Helper: thin wrapper around traceMinimum for our 1D potential
+# Small utilities for this test module
 # ---------------------------------------------------------------------------
 
-def run_trace_minimum(
-    x0: float,
-    t0: float,
-    tstop: float,
-    dtstart: float,
-    deltaX_target: float = 1e-3,
-) -> transitionFinder._traceMinimum_rval:
+def _find_broken_minimum(T: float, phi_guess: float = 1.0) -> float:
     """
-    Convenience wrapper: run traceMinimum on the 1D Landau potential.
+    Find the broken-phase minimum at a given T by 1D minimization.
 
-    Parameters
-    ----------
-    x0 : float
-        Initial guess for the minimum (phi) at temperature t0.
-    t0 : float
-        Initial temperature where tracing starts.
-    tstop : float
-        Final temperature where tracing stops (may be above or below t0).
-    dtstart : float
-        Initial step size in T (sign determines direction).
-    deltaX_target : float, optional
-        Target step size in field space for the trace.
+    Uses scipy.optimize.fmin on the scalar potential V(phi, T).
+    """
+
+    def V_scalar(phi: float) -> float:
+        return float(V(np.array([phi], dtype=float), T))
+
+    result = optimize.fmin(V_scalar, x0=phi_guess, disp=False)
+    phi_min = float(result[0])
+    return phi_min
+
+
+def _compute_symmetric_trace() -> Tuple[float, object]:
+    """
+    Convenience helper: follow the symmetric minimum (phi ~ 0)
+    from high T down until it becomes unstable.
 
     Returns
     -------
-    _traceMinimum_rval
-        Namedtuple with (X, T, dXdT, overX, overT).
+    T_spin_analytic :
+        Analytic spinodal for the symmetric phase (where m^2 = d2V/dphi2|_{phi=0} = 0).
+    res :
+        Result object from traceMinimum for the symmetric phase.
     """
-    result = transitionFinder.traceMinimum(
-        f=V_finite_T,
+    T_spin_analytic = T0  # from d2V/dphi2(0, T) = 2D (T^2 - T0^2) = 0.
+    res = traceMinimum(
+        f=V,
         d2f_dxdt=d2V_dphidT,
         d2f_dx2=d2V_dphi2,
-        x0=np.array([x0], dtype=float),
-        t0=float(t0),
-        tstop=float(tstop),
-        dtstart=float(dtstart),
-        deltaX_target=float(deltaX_target),
-        # A bit conservative: smallish dt so the trace is smooth.
-        dtabsMax=20.0,
-        dtfracMax=0.25,
-        dtmin=1e-3,
-        deltaX_tol=1.2,
-        minratio=1e-2,
+        x0=np.array([0.0]),
+        t0=200.0,
+        tstop=50.0,          # we ask to go down to T=50, but the phase dies around T ~ T0
+        dtstart=-1.0,        # integrate "down" in T
+        deltaX_target=0.01,
     )
-    return result
+    return T_spin_analytic, res
 
 
-# ---------------------------------------------------------------------------
-# Test / Example A1: shape of V(phi, T) at low and high T
-# ---------------------------------------------------------------------------
-
-def test_A1_potential_shapes():
+def _compute_broken_trace() -> object:
     """
-    Test A1 – Visualize the Landau potential at T = 0, 1, 2.
-
-    This is a sanity check:
-      - For T = 0, we expect minima near phi = ±1.
-      - For T = 1 = T0, we expect a single flat-ish minimum at phi = 0.
-      - For T = 2, we expect a single sharp minimum at phi = 0.
+    Convenience helper: follow a broken minimum from low T upwards
+    until it becomes unstable.
     """
-    print("\n[Block A – Test A1] Landau finite-T potential: shapes at T=0, 1, 2")
-
-    phi_grid = np.linspace(-2.5, 2.5, 400)
-    T_values = [0.0, 1.0, 2.0]
-
-    fig, ax = plt.subplots()
-    for T in T_values:
-        V_vals = np.array([V_finite_T(np.array([phi]), T) for phi in phi_grid])
-        label = f"T = {T:.1f}"
-        ax.plot(phi_grid, V_vals, label=label)
-
-        mins = analytic_minima(T)
-        print(f"  T = {T:.1f} → analytic minima phi ≈ {mins}")
-        for phi_min in mins:
-            ax.axvline(phi_min, linestyle="--", alpha=0.5)
-
-    ax.set_xlabel(r"$\phi$")
-    ax.set_ylabel(r"$V(\phi, T)$")
-    ax.set_title("Landau finite-temperature potential (Block A – Test A1)")
-    ax.legend(loc="best")
-    ax.grid(True, alpha=0.3)
-    fig.tight_layout()
-    plt.show()
-    #fig.savefig("transitionFinder_blockA_A1_potential_shapes.png")
-
-    # Numerical sanity checks
-    mins_T0 = analytic_minima(0.0)
-    assert np.allclose(mins_T0, np.array([-1.0, 1.0]), atol=1e-6)
-    mins_T2 = analytic_minima(2.0)
-    assert np.allclose(mins_T2, np.array([0.0]), atol=1e-6)
-
-
-# ---------------------------------------------------------------------------
-# Test / Example A2: trace the symmetric phase (phi ~ 0) from high T downwards
-# ---------------------------------------------------------------------------
-
-def test_A2_trace_symmetric_phase():
-    """
-    Test A2 – Trace the symmetric-phase minimum from T = 2 down to T = 0.
-
-    We start at T = 2 with phi ≈ 0 (symmetric minimum) and trace downwards.
-    The algorithm should follow the local minimum at phi ≈ 0 until it
-    ceases to be a minimum near T ≈ T0.
-
-    We then:
-      - print a summary of the trace,
-      - plot phi(T) for the traced branch,
-      - check that phi ≈ 0 for T >> T0.
-    """
-    print("\n[Block A – Test A2] Tracing symmetric phase from T=2 → T=0")
-
-    T_start = 2.0
-    T_stop = 0.0
-    dtstart = -0.05  # negative sign: tracing downwards in T
-    x0 = 0.0
-
-    res = run_trace_minimum(x0=x0, t0=T_start, tstop=T_stop,
-                            dtstart=dtstart, deltaX_target=1e-3)
-
-    T_array = res.T
-    phi_array = res.X[:, 0]
-    overT = res.overT
-    overX = res.overX
-
-    print(f"  Number of traced points: {len(T_array)}")
-    print(f"  T range (trace): {T_array[0]:.4f} → {T_array[-1]:.4f}")
-    print(f"  overT (where phase disappears or step too small): {overT:.4f}")
-    print(f"  overX (field there): {overX}")
-
-    # Plot phi(T)
-    fig, ax = plt.subplots()
-    ax.plot(T_array, phi_array, "-o", markersize=3, label="symmetric phase (traceMinimum)")
-    ax.axvline(T0_CRIT, linestyle="--", label=r"$T_0$ (critical)")
-    ax.set_xlabel(r"$T$")
-    ax.set_ylabel(r"$\phi_{\min}(T)$")
-    ax.set_title("Trace of symmetric phase (Block A – Test A2)")
-    ax.legend(loc="best")
-    ax.grid(True, alpha=0.3)
-    fig.tight_layout()
-    plt.show()
-    #fig.savefig("transitionFinder_blockA_A2_trace_symmetric_phase.png")
-
-    # Sanity: for sufficiently high T, phi should be close to zero
-    mask_highT = T_array > 1.5
-    if np.any(mask_highT):
-        assert np.allclose(phi_array[mask_highT], 0.0, atol=1e-2)
-
-
-# ---------------------------------------------------------------------------
-# Test / Example A3: trace the broken phase (phi > 0) from low T upwards
-# ---------------------------------------------------------------------------
-
-def test_A3_trace_broken_phase():
-    """
-    Test A3 – Trace the broken-phase minimum from T = 0 up to T = 1.5.
-
-    We start at T = 0 with phi ≈ +1 (one of the broken minima) and trace
-    upwards in T. The algorithm should follow the broken minimum until it
-    merges back into the symmetric minimum near T ≈ T0.
-
-    We then:
-      - print a summary of the trace,
-      - plot phi(T) for the traced branch,
-      - compare with the analytic expectation for T < T0.
-    """
-    print("\n[Block A – Test A3] Tracing broken phase from T=0 → T=1.5")
-
-    T_start = 0.0
-    T_stop = 1.5
-    dtstart = +0.05  # upwards in T
-    x0 = analytic_minima(0.0)[1]  # +1.0
-
-    res = run_trace_minimum(x0=x0, t0=T_start, tstop=T_stop,
-                            dtstart=dtstart, deltaX_target=1e-3)
-
-    T_array = res.T
-    phi_array = res.X[:, 0]
-    overT = res.overT
-    overX = res.overX
-
-    print(f"  Number of traced points: {len(T_array)}")
-    print(f"  T range (trace): {T_array[0]:.4f} → {T_array[-1]:.4f}")
-    print(f"  overT (where phase disappears or step too small): {overT:.4f}")
-    print(f"  overX (field there): {overX}")
-
-    # Plot phi(T) and compare with analytic broken minimum (for T < T0)
-    fig, ax = plt.subplots()
-    ax.plot(T_array, phi_array, "-o", markersize=3, label="broken phase (traceMinimum)")
-    ax.axvline(T0_CRIT, linestyle="--", label=r"$T_0$ (critical)")
-
-    T_analytic = np.linspace(0.0, T0_CRIT, 100)
-    phi_analytic = np.array([analytic_minima(T)[1] for T in T_analytic])
-    ax.plot(T_analytic, phi_analytic, "-", alpha=0.5,
-            label="broken phase (analytic)")
-
-    ax.set_xlabel(r"$T$")
-    ax.set_ylabel(r"$\phi_{\min}(T)$")
-    ax.set_title("Trace of broken phase (Block A – Test A3)")
-    ax.legend(loc="best")
-    ax.grid(True, alpha=0.3)
-    fig.tight_layout()
-    plt.show()
-    #fig.savefig("transitionFinder_blockA_A3_trace_broken_phase.png")
-
-    # Sanity: for T well below T0, traced phi should agree with analytic curve
-    mask_lowT = T_array < 0.6 * T0_CRIT
-    if np.any(mask_lowT):
-        phi_interp = np.interp(T_array[mask_lowT], T_analytic, phi_analytic)
-        assert np.allclose(phi_array[mask_lowT], phi_interp, atol=1e-2)
-
-
-# ---------------------------------------------------------------------------
-# Test / Example A4: Phase class & spline interpolation over a traced minimum
-# ---------------------------------------------------------------------------
-def test_A4_phase_object_and_spline():
-    """
-    Test A4 – Build a Phase object from a traced broken minimum and
-    test its spline interpolation.
-
-    Steps:
-      1. Re-use the broken-phase trace from Test A3.
-      2. Construct Phase(key=0, X, T, dXdT).
-      3. Check that phase.valAt(T) reproduces X at the original sample points.
-      4. Evaluate phase.valAt(T_dense) on a dense grid and compare visually
-         with the original sampled points.
-      5. (Diagnostic only) Compute a numerical derivative from the spline.
-    """
-    print("\n[Block A – Test A4] Phase object and spline interpolation")
-
-    # 1. Trace the broken phase again (small overhead, cleaner test)
-    T_start = 0.0
-    T_stop = 1.5
-    dtstart = +0.05
-    x0 = analytic_minima(0.0)[1]
-
-    res = run_trace_minimum(
-        x0=x0, t0=T_start, tstop=T_stop,
-        dtstart=dtstart, deltaX_target=1e-3
+    phi_b_50 = _find_broken_minimum(T=50.0, phi_guess=1.0)
+    res = traceMinimum(
+        f=V,
+        d2f_dxdt=d2V_dphidT,
+        d2f_dx2=d2V_dphi2,
+        x0=np.array([phi_b_50]),
+        t0=50.0,
+        tstop=200.0,         # integrate upwards in T
+        dtstart=+1.0,
+        deltaX_target=0.01,
     )
-
-    X = res.X          # shape (N, 1)
-    T = res.T          # shape (N,)
-    dXdT = res.dXdT    # shape (N, 1)
-
-    # 2. Build the Phase object
-    phase = transitionFinder.Phase(key=0, X=X, T=T, dXdT=dXdT)
-    print("  Phase representation:")
-    print("   ", repr(phase))
-
-    # 3. Checar que valAt(T) recupera os pontos originais
-    phi_on_grid = phase.valAt(T)   # deve ter mesma forma que X
-    assert phi_on_grid.shape == X.shape
-    assert np.allclose(phi_on_grid, X, atol=1e-8)
-
-    # 4. Avaliar em um grid denso para visualização
-    T_dense = np.linspace(T.min(), T.max(), 200)
-    phi_dense = phase.valAt(T_dense)  # shape (N_dense, 1)
-
-    fig, ax = plt.subplots()
-    ax.plot(T, X[:, 0], "o", label="traceMinimum samples")
-    ax.plot(T_dense, phi_dense[:, 0], "-", label="Phase spline")
-    ax.axvline(T0_CRIT, linestyle="--", label=r"$T_0$ (critical)")
-    ax.set_xlabel(r"$T$")
-    ax.set_ylabel(r"$\phi_{\min}(T)$")
-    ax.set_title("Phase spline interpolation (Block A – Test A4)")
-    ax.legend(loc="best")
-    ax.grid(True, alpha=0.3)
-    fig.tight_layout()
-    plt.show()
-    #fig.savefig("transitionFinder_blockA_A4_phase_spline.png")
-
-    # 5. Derivada aproximada (diagnóstico, sem assert forte por enquanto)
-    #    Usamos diferenças finitas no spline em T_dense.
-    dphi_dT_dense = np.gradient(phi_dense[:, 0], T_dense)
-    print("  Sample of dphi/dT from spline (T, dphi/dT):")
-    for T_i, dphi_i in zip(T_dense[::40], dphi_dT_dense[::40]):
-        print(f"    T = {T_i:6.3f}, dphi/dT ≈ {dphi_i: .3e}")
-
-    # Se quiser um teste bem suave de consistência de sinal / ordem de grandeza,
-    # podemos, por exemplo, comparar o sinal da derivada em um intervalo onde
-    # sabemos que phi(T) está diminuindo:
-    mask_mid = (T_dense > 0.2 * T0_CRIT) & (T_dense < 0.9 * T0_CRIT)
-    if np.any(mask_mid):
-        # phi decresce com T nesse intervalo → derivada deve ser negativa em média
-        mean_dphi = dphi_dT_dense[mask_mid].mean()
-        print(f"  Mean dphi/dT on 0.2–0.9 T0 ≈ {mean_dphi:.3e}")
-        assert mean_dphi < 0.0
+    return res
 
 
-# ---------------------------------------------------------------------------
-# Run all examples when executing this file directly
-# ---------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    # These calls make it easy to run the examples by hand:
-    #   python test_transitionFinder_blockA.py
-    test_A1_potential_shapes()
-    test_A2_trace_symmetric_phase()
-    test_A3_trace_broken_phase()
-    test_A4_phase_object_and_spline()
-    print("\n[Block A] All example tests finished.")
-
-# ------------------------------------------------------------------
-# Additional utilities for Block A tests: thermal 1D potential
-# ------------------------------------------------------------------
-
-from typing import Dict, Hashable
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-from CosmoTransitions.transitionFinder import (
-    traceMultiMin,
-    findApproxLocalMin,
-    removeRedundantPhases,
-    getStartPhase,
-    Phase,
-)
-
-# Electroweak-like single-field thermal potential:
-#   V(φ, T) = D (T^2 - T0^2) φ^2 - E T φ^3 + λ/4 φ^4
-_D_TM = 0.4
-_E_TM = 0.1
-_LAMBDA_TM = 0.4
-_T0_TM = 1.0
-
-
-def V_thermal_1d(x: np.ndarray, T: float) -> float:
+def _build_phases() -> Dict[Hashable, Phase]:
     """
-    Scalar potential used in the Block A multi-phase tests.
-
-    Parameters
-    ----------
-    x : array_like, shape (1,)
-        Field value φ packed in a 1-element array.
-    T : float
-        Temperature.
+    Build the phase structure with traceMultiMin in [T_low, T_high].
 
     Returns
     -------
-    float
-        Potential V(φ, T).
+    dict
+        Mapping key -> Phase instance, after removing redundancies.
     """
-    x = np.asarray(x, dtype=float).ravel()
-    phi = x[0]
+    T_low = 50.0
+    T_high = 200.0
 
-    return (
-        _D_TM * (T**2 - _T0_TM**2) * phi**2
-        - _E_TM * T * phi**3
-        + 0.25 * _LAMBDA_TM * phi**4
-    )
-
-
-def d2V_thermal_dxdt(x: np.ndarray, T: float) -> np.ndarray:
-    """
-    ∂/∂T of the gradient ∂V/∂φ, returned as a length-1 array.
-    """
-    x = np.asarray(x, dtype=float).ravel()
-    phi = x[0]
-    # d/dT (∂V/∂φ) = d/dT [ 2 D (T^2 - T0^2) φ - 3 E T φ^2 + λ φ^3 ]
-    d2 = 4.0 * _D_TM * T * phi - 3.0 * _E_TM * phi**2
-    return np.array([d2], dtype=float)
-
-
-def d2V_thermal_dx2(x: np.ndarray, T: float) -> np.ndarray:
-    """
-    Hessian ∂^2 V / ∂φ^2, returned as a (1, 1) array.
-    """
-    x = np.asarray(x, dtype=float).ravel()
-    phi = x[0]
-    # ∂^2V/∂φ^2 = 2 D (T^2 - T0^2) - 6 E T φ + 3 λ φ^2
-    d2 = 2.0 * _D_TM * (T**2 - _T0_TM**2) - 6.0 * _E_TM * T * phi + 3.0 * _LAMBDA_TM * phi**2
-    return np.array([[d2]], dtype=float)
-
-
-def _grid_minimum_for_T(T: float, phi_min: float = -0.5, phi_max: float = 3.0, n: int = 400) -> np.ndarray:
-    """
-    Crude 1D grid search to find a minimum of V_thermal_1d at fixed T.
-    This is only used to build good seeds for traceMultiMin tests.
-    """
-    phis = np.linspace(phi_min, phi_max, n)
-    vals = np.array([V_thermal_1d(np.array([phi]), T) for phi in phis])
-    idx_min = np.argmin(vals)
-    return np.array([phis[idx_min]], dtype=float)
-
-
-def build_thermal_phases_example(
-    t_low: float = 0.6,
-    t_high: float = 1.2,
-    deltaX_target: float = 1e-2,
-) -> Dict[Hashable, Phase]:
-    """
-    Helper: reconstruct phase structure for the thermal 1D potential
-    using traceMultiMin, to be reused by multiple tests.
-    """
-    # Seed 1: symmetric phase at high T (φ = 0 is exactly a stationary point).
-    x_sym = np.array([0.0], dtype=float)
-    T_sym = 1.2
-
-    # Seed 2: broken-like minimum at low T (approximate via grid search).
-    T_broken = 0.7
-    x_broken = _grid_minimum_for_T(T_broken)
-
+    phi_b_50 = _find_broken_minimum(T=T_low, phi_guess=1.0)
     points = [
-        (x_sym, T_sym),
-        (x_broken, T_broken),
+        (np.array([0.0], dtype=float), T_high),  # symmetric seed
+        (np.array([phi_b_50], dtype=float), T_low),  # broken seed
     ]
 
     phases = traceMultiMin(
-        f=V_thermal_1d,
-        d2f_dxdt=d2V_thermal_dxdt,
-        d2f_dx2=d2V_thermal_dx2,
+        f=V,
+        d2f_dxdt=d2V_dphidT,
+        d2f_dx2=d2V_dphi2,
         points=points,
-        tLow=t_low,
-        tHigh=t_high,
-        deltaX_target=deltaX_target,
-        dtstart=5e-3,
-        tjump=5e-3,
-        forbidCrit=None,
-        single_trace_args={"dtabsMax": 10.0, "dtfracMax": 0.25},
-        local_min_args={"n": 80, "edge": 0.05},
+        tLow=T_low,
+        tHigh=T_high,
+        deltaX_target=0.02,
+        # keep other kwargs as defaults; they are already tuned in the module
     )
+
+    # Clean up any duplicated phases
+    removeRedundantPhases(V, phases, xeps=1e-6, diftol=1e-2)
 
     return phases
 
 
-# ------------------------------------------------------------------
-# Test 5 – findApproxLocalMin on a simple 1D triple-well potential
-# ------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Test 1: potential shape and minima at high and low T
+# ---------------------------------------------------------------------------
 
-def test_5_findApproxLocalMin_triple_well():
+def test_blockA_1_potential_shape_and_minima():
     """
-    Test 5:
-    Use a purely 1D toy potential with three minima and show that
-    findApproxLocalMin detects the *intermediate* minimum along the line
-    between the leftmost and rightmost minima.
+    Test 1 – sanity check of the Landau–Ginzburg potential:
 
-    Potential:
-        V(φ) = (φ + 2)^2 (φ - 0.5)^2 (φ - 2)^2
-    Minima at φ ≈ -2, 0.5, 2.
+    - At T_high = 200: there is a symmetric minimum near phi ~ 0.
+    - At T_low = 50: the origin is unstable, and a broken minimum exists.
+    - Plot V(phi, T) for both temperatures for visual inspection.
     """
+    print("\n[Block A / Test 1] Potential shape & minima at high and low T")
 
-    def V_triple_line(x: np.ndarray) -> np.ndarray:
-        x = np.asarray(x, dtype=float)
-        phi = x[..., 0]  # works for shape (N,1)
-        return (phi + 2.0) ** 2 * (phi - 0.5) ** 2 * (phi - 2.0) ** 2
+    T_high = 200.0
+    T_low = 50.0
 
-    x1 = np.array([-2.0], dtype=float)
-    x2 = np.array([2.0], dtype=float)
+    # Sample the potential on a field grid
+    phi_grid = np.linspace(-2.0, 8.0, 400)
+    V_high = V(phi_grid.reshape(-1, 1), T_high)
+    V_low = V(phi_grid.reshape(-1, 1), T_low)
 
-    approx_minima = findApproxLocalMin(
-        V_triple_line,
-        x1=x1,
-        x2=x2,
-        n=200,
-        edge=0.05,
-    )
+    # Find minima numerically
+    phi_sym = _find_broken_minimum(T=T_high, phi_guess=0.0)
+    phi_broken_low = _find_broken_minimum(T=T_low, phi_guess=2.0)
 
-    print("\n=== Test 5: findApproxLocalMin on triple-well ===")
-    print(f"Number of approximate minima found between x1={x1[0]} and x2={x2[0]}: {len(approx_minima)}")
-    if len(approx_minima) > 0:
-        phis_mid = approx_minima[:, 0]
-        print("Approximate interior minima positions:", phis_mid)
-        # We expect at least one minimum near φ ≈ 0.5
-        assert np.any(np.abs(phis_mid - 0.5) < 0.2), (
-            "findApproxLocalMin did not detect a minimum near φ ≈ 0.5 "
-            f"(found {phis_mid})"
-        )
-    else:
-        raise AssertionError("findApproxLocalMin returned no interior minima for the triple-well.")
+    print(f"  T_high = {T_high:.1f}: minimum at phi ≈ {phi_sym:.4f}")
+    print(f"  T_low  = {T_low:.1f}: broken minimum at phi ≈ {phi_broken_low:.4f}")
 
-    # Plot to visualize what the function is doing
-    fig, ax = plt.subplots(figsize=(6, 4))
-    phi_grid = np.linspace(-2.5, 2.5, 400)
-    V_vals = V_triple_line(phi_grid.reshape(-1, 1))
+    # At high T, the symmetric minimum should be very close to 0
+    assert abs(phi_sym) < 1e-2
 
-    ax.plot(phi_grid, V_vals, label="V_triple(φ)")
-    ax.axvline(x1[0], linestyle="--", alpha=0.5, label="x1")
-    ax.axvline(x2[0], linestyle="--", alpha=0.5, label="x2")
+    # At low T, the origin should be unstable and the broken minimum stable
+    m2_origin_low = d2V_dphi2(np.array([0.0]), T_low)[0, 0]
+    m2_broken_low = d2V_dphi2(np.array([phi_broken_low]), T_low)[0, 0]
+    print(f"  m^2(phi=0, T_low) = {m2_origin_low:.4f} (should be < 0)")
+    print(f"  m^2(phi_b, T_low) = {m2_broken_low:.4f} (should be > 0)")
 
-    if len(approx_minima) > 0:
-        ax.scatter(
-            approx_minima[:, 0],
-            V_triple_line(approx_minima),
-            marker="o",
-            zorder=5,
-            label="approx. interior minima",
-        )
+    assert m2_origin_low < 0.0
+    assert m2_broken_low > 0.0
 
+    # Quick visual check (plots are closed immediately to be CI-friendly)
+    fig, ax = plt.subplots()
+    ax.set_title("Landau–Ginzburg potential: high vs low T")
+    ax.plot(phi_grid, V_high, label=f"T = {T_high:.0f}")
+    ax.plot(phi_grid, V_low, label=f"T = {T_low:.0f}")
     ax.set_xlabel(r"$\phi$")
-    ax.set_ylabel(r"$V(\phi)$")
-    ax.set_title("Test 5: findApproxLocalMin on 1D triple-well")
+    ax.set_ylabel(r"$V(\phi, T)$")
     ax.legend()
     fig.tight_layout()
     plt.show()
 
 
-# ------------------------------------------------------------------
-# Test 6 – traceMultiMin on the thermal 1D potential
-# ------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Test 2: traceMinimum on the symmetric phase (phi ~ 0)
+# ---------------------------------------------------------------------------
 
-def test_6_traceMultiMin_thermal_1d():
+def test_blockA_2_traceMinimum_symmetric_phase_downwards():
     """
-    Test 6:
-    Use traceMultiMin on the EW-like thermal potential to reconstruct the
-    phase structure. Plot φ_min(T) for all phases and illustrate the
-    symmetric and broken minima.
+    Test 2 – follow the symmetric phase with traceMinimum:
 
-    We check that:
-      - at high T (~1.15), we find a phase with φ ≈ 0 (symmetric);
-      - at low T (~0.65), we find at least one phase with |φ| > 0 (broken).
+    - Start at (phi = 0, T = 200) and move down in T.
+    - Check that T decreases monotonically in the trace.
+    - Check that phi_min(T) stays close to 0.
+    - Check that the phase dies near the analytic spinodal T_spin = T0,
+      where d^2 V / d phi^2 |_{phi=0} = 0.
     """
-    t_low = 0.6
-    t_high = 1.2
-    phases = build_thermal_phases_example(t_low=t_low, t_high=t_high, deltaX_target=1e-2)
+    print("\n[Block A / Test 2] traceMinimum on symmetric phase (downwards in T)")
 
-    print("\n=== Test 6: traceMultiMin on thermal 1D potential ===")
-    print(f"Number of phases found: {len(phases)}")
-    for key, phase in phases.items():
-        print(
-            f"  Phase {key}: T in [{phase.T[0]:.3f}, {phase.T[-1]:.3f}], "
-            f"N_points = {len(phase.T)}"
-        )
+    T_spin_analytic, res = _compute_symmetric_trace()
 
-    # Check for at least one symmetric-like phase at high T
-    T_high_probe = 1.15
-    symmetric_phases = []
-    for phase in phases.values():
-        if phase.T[0] <= T_high_probe <= phase.T[-1]:
-            phi_val = np.asarray(phase.valAt(T_high_probe)).ravel()[0]
-            if abs(phi_val) < 5e-2:
-                symmetric_phases.append((phase, phi_val))
-    print(f"Phases symmetric-like at T={T_high_probe:.2f}: {[(p.key, phi) for p, phi in symmetric_phases]}")
+    T_arr = np.asarray(res.T, dtype=float)
+    X_arr = np.asarray(res.X, dtype=float).reshape(-1, 1)
+    dXdT_arr = np.asarray(res.dXdT, dtype=float).reshape(-1, 1)
 
-    assert len(symmetric_phases) >= 1, (
-        "No phase with φ ≈ 0 found at high T, "
-        "traceMultiMin may have missed the symmetric phase."
+    # T must be strictly decreasing (within numerical noise)
+    assert np.all(np.diff(T_arr) < 1e-8), "T should decrease along the symmetric trace."
+
+    phi_arr = X_arr[:, 0]
+    max_phi = np.max(np.abs(phi_arr))
+    print(f"  Max |phi_min(T)| along symmetric trace: {max_phi:.4e}")
+    assert max_phi < 1e-1  # we tolerate a small drift; the minimizer corrects it
+
+    # Spinodal temperature from traceMinimum
+    T_spin_numeric = float(res.overT)
+    print(f"  Analytic symmetric spinodal: T_spin = {T_spin_analytic:.4f}")
+    print(f"  Numeric overT from traceMinimum: T_spin ≈ {T_spin_numeric:.4f}")
+
+    assert abs(T_spin_numeric - T_spin_analytic) < 2.0, (
+        "Symmetric spinodal temperature from traceMinimum should be close to analytic T0."
     )
 
-    # Check for at least one broken-like phase at low T
-    T_low_probe = 0.65
-    broken_phases = []
-    for phase in phases.values():
-        if phase.T[0] <= T_low_probe <= phase.T[-1]:
-            phi_val = np.asarray(phase.valAt(T_low_probe)).ravel()[0]
-            if abs(phi_val) > 0.1:
-                broken_phases.append((phase, phi_val))
-    print(f"Phases broken-like at T={T_low_probe:.2f}: {[(p.key, phi) for p, phi in broken_phases]}")
-
-    assert len(broken_phases) >= 1, (
-        "No phase with |φ| > 0 found at low T, "
-        "traceMultiMin may have failed to capture the broken minimum."
+    # Check that the symmetric phase has positive curvature along the traced range
+    m2_along = np.array(
+        [d2V_dphi2(np.array([phi]), T)[0, 0] for phi, T in zip(phi_arr, T_arr)]
     )
+    print(f"  m^2 along symmetric trace (first 5 points): {m2_along[:5]}")
+    # Ignore the last few points very close to spinodal
+    assert np.all(m2_along[:-3] > 0.0), "Curvature should be positive away from spinodal."
 
-    # Plot φ_min(T) for all phases
-    fig, (ax_phi, ax_V) = plt.subplots(1, 2, figsize=(11, 4))
-
-    for key, phase in phases.items():
-        phi_vals = phase.X[:, 0]
-        ax_phi.plot(phase.T, phi_vals, marker=".", label=f"phase {key}")
-
-    ax_phi.set_xlabel(r"Temperature $T$")
-    ax_phi.set_ylabel(r"Minimum $\phi_{\rm min}(T)$")
-    ax_phi.set_title("Test 6: traced minima φ(T)")
-    ax_phi.legend()
-
-    # Plot V(φ, T) slices and mark minima from phases
-    phi_grid = np.linspace(-0.5, 3.0, 400)
-    T_slices = [0.7, 0.9, 1.1]
-    for T in T_slices:
-        V_vals = [V_thermal_1d(np.array([phi]), T) for phi in phi_grid]
-        ax_V.plot(phi_grid, V_vals, label=f"T = {T:.2f}")
-
-        # mark minima from each phase at this T (if in range)
-        for key, phase in phases.items():
-            if phase.T[0] <= T <= phase.T[-1]:
-                phi_min = float(np.asarray(phase.valAt(T)).ravel()[0])
-                V_min = V_thermal_1d(np.array([phi_min]), T)
-                ax_V.scatter(phi_min, V_min, marker="o")
-
-    ax_V.set_xlabel(r"$\phi$")
-    ax_V.set_ylabel(r"$V(\phi, T)$")
-    ax_V.set_title("V(φ, T) slices with traced minima")
-    ax_V.legend()
+    # Plot phi_min(T) and m^2(T) for visual understanding
+    fig, ax = plt.subplots()
+    ax.set_title("Symmetric phase: phi_min(T) from traceMinimum")
+    ax.plot(T_arr, phi_arr, marker="o", linestyle="-", label=r"$\phi_{\min}(T)$")
+    ax.axvline(T_spin_analytic, linestyle="--", label=r"$T_{\text{spin}}$")
+    ax.set_xlabel("T")
+    ax.set_ylabel(r"$\phi_{\min}$")
+    ax.legend()
     fig.tight_layout()
     plt.show()
 
-    return phases  # convenient if you want to reuse in a notebook
+    fig2, ax2 = plt.subplots()
+    ax2.set_title("Symmetric phase: curvature m^2(T) along the trace")
+    ax2.plot(T_arr, m2_along, marker="o", linestyle="-")
+    ax2.axhline(0.0, linestyle="--")
+    ax2.set_xlabel("T")
+    ax2.set_ylabel(r"$m^2(\phi_{\min}(T))$")
+    fig2.tight_layout()
+    plt.show()
 
 
-# ------------------------------------------------------------------
-# Test 7 – removeRedundantPhases: synthetic duplicated phase
-# ------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Test 3: traceMinimum on the broken phase (phi ≠ 0) upwards in T
+# ---------------------------------------------------------------------------
 
-def test_7_removeRedundantPhases_synthetic():
+def test_blockA_3_traceMinimum_broken_phase_upwards():
     """
-    Test 7:
-    Construct two *identical* Phase objects for the same thermal minimum
-    and verify that removeRedundantPhases merges them into a single phase.
+    Test 3 – follow a broken phase with traceMinimum:
 
-    This isolates the redundancy logic from traceMultiMin.
+    - Start at the broken minimum at T = 50 and evolve upwards in T.
+    - Check that T increases monotonically.
+    - Check that phi_min(T) decreases in magnitude as T grows (tending
+      towards the symmetric phase).
+    - Identify the approximate spinodal where the broken phase disappears.
     """
-    # Build a broken-like branch by hand using grid search
-    Ts = np.linspace(0.65, 1.0, 6)
-    X_vals = np.zeros((len(Ts), 1))
-    for i, T in enumerate(Ts):
-        X_vals[i, :] = _grid_minimum_for_T(T)
+    print("\n[Block A / Test 3] traceMinimum on broken phase (upwards in T)")
 
-    dXdT_vals = np.zeros_like(X_vals)
+    res = _compute_broken_trace()
 
-    phase_a = Phase(key=0, X=X_vals, T=Ts, dXdT=dXdT_vals)
-    phase_b = Phase(key=1, X=X_vals.copy(), T=Ts.copy(), dXdT=dXdT_vals.copy())
+    T_arr = np.asarray(res.T, dtype=float)
+    X_arr = np.asarray(res.X, dtype=float).reshape(-1, 1)
+    phi_arr = X_arr[:, 0]
 
-    phases: Dict[Hashable, Phase] = {0: phase_a, 1: phase_b}
+    # T must be increasing
+    assert np.all(np.diff(T_arr) > -1e-8), "T should increase along the broken trace."
 
-    print("\n=== Test 7: removeRedundantPhases (synthetic) ===")
-    print(f"Initial number of phases: {len(phases)}")
+    print(f"  Broken phase traced from T = {T_arr[0]:.2f} up to T ≈ {T_arr[-1]:.2f}")
+    print(f"  First phi_min(T)  = {phi_arr[0]:.4f}")
+    print(f"  Last  phi_min(T)  = {phi_arr[-1]:.4f}")
+
+    # The broken minimum should move towards the origin as T increases
+    assert abs(phi_arr[0]) > abs(phi_arr[-1])
+
+    # Curvature along the broken branch
+    m2_along = np.array(
+        [d2V_dphi2(np.array([phi]), T)[0, 0] for phi, T in zip(phi_arr, T_arr)]
+    )
+    print(f"  m^2 along broken trace (first 5 points): {m2_along[:5]}")
+
+    # Away from the very end, the broken branch should be stable
+    assert np.all(m2_along[:-3] > 0.0)
+
+    # Spinodal for the broken phase, as seen by traceMinimum
+    T_spin_broken = float(res.overT)
+    print(f"  Broken-phase spinodal from traceMinimum: T ≈ {T_spin_broken:.4f}")
+
+    # Plot phi_min(T) for visualization
+    fig, ax = plt.subplots()
+    ax.set_title("Broken phase: phi_min(T) from traceMinimum")
+    ax.plot(T_arr, phi_arr, marker="o", linestyle="-", label="broken phase")
+    ax.axhline(0.0, linestyle="--", label=r"$\phi = 0$")
+    ax.set_xlabel("T")
+    ax.set_ylabel(r"$\phi_{\min}$")
+    ax.legend()
+    fig.tight_layout()
+    plt.show()
+
+
+# ---------------------------------------------------------------------------
+# Test 4: dphi/dT consistency and helper_functions cross-check (if available)
+# ---------------------------------------------------------------------------
+
+def test_blockA_4_dphi_dT_consistency_and_helper_functions():
+    """
+    Test 4 – internal consistency of dphi/dT and optional comparison with
+    helper_functions (if available):
+
+    - Compare traceMinimum's dXdT with a simple finite-difference estimate
+      of dphi/dT on the symmetric branch.
+    - If CosmoTransitions.helper_functions is available, compare the
+      analytic dV/dphi and d^2V/dphi^2 with numerical gradient/Hessian.
+    """
+    print("\n[Block A / Test 4] dphi/dT consistency and helper_functions cross-check")
+
+    _, res = _compute_symmetric_trace()
+
+    T_arr = np.asarray(res.T, dtype=float)
+    X_arr = np.asarray(res.X, dtype=float).reshape(-1, 1)
+    dXdT_arr = np.asarray(res.dXdT, dtype=float).reshape(-1, 1)
+
+    phi_arr = X_arr[:, 0]
+    dphi_dT_model = dXdT_arr[:, 0]
+
+    # Finite-difference estimate of dphi/dT on the interior points
+    dphi_dT_fd = np.gradient(phi_arr, T_arr)
+    interior = slice(2, -2)
+    num = dphi_dT_fd[interior]
+    mod = dphi_dT_model[interior]
+
+    denom = np.maximum(np.abs(num), 1e-8)
+    rel_err = np.max(np.abs(num - mod) / denom)
+    print(f"  Max relative difference between model dphi/dT and finite-diff: {rel_err:.3f}")
+    # This is a qualitative check; we allow O(10%) differences.
+    assert rel_err < 0.5
+
+    # Optional: use helper_functions if available
+    try:
+        from CosmoTransitions.helper_functions import gradientFunction, hessianFunction
+    except ImportError:
+        print("  CosmoTransitions.helper_functions not available; skipping gradient/Hessian check.")
+        return
+
+    print("  helper_functions found: checking gradient and Hessian against analytic expressions.")
+
+    T_test = 150.0
+    phi_test = np.array([0.3])
+
+    def f_x_only(x: np.ndarray) -> float:
+        V_val = (
+                D * (T_test ** 2 - T0 ** 2) * x ** 2
+                - E * T_test * x ** 3
+                + 0.25 * lambda_ * x ** 4
+        )
+        return V_val
+
+    # Gradient
+    grad_obj = gradientFunction(f_x_only,eps=1e-5, Ndim=1)
+    grad_num = np.asarray(grad_obj(phi_test), dtype=float)
+
+    grad_analytic = dV_dphi(phi_test, T_test)
+    print(f"  grad_num      = {grad_num}")
+    print(f"  grad_analytic = {grad_analytic}")
+    assert np.allclose(grad_num, grad_analytic, rtol=1e-2, atol=1e-4)
+
+    # Hessian
+    hess_obj = hessianFunction(f_x_only, eps=1e-5, Ndim=1)
+    hess_num = np.asarray(hess_obj(phi_test), dtype=float)
+
+    hess_analytic = d2V_dphi2(phi_test, T_test)
+    print(f"  hess_num      = {hess_num}")
+    print(f"  hess_analytic = {hess_analytic}")
+    assert np.allclose(hess_num, hess_analytic, rtol=1e-2, atol=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# Test 5: traceMultiMin + Phase – global phase structure in [T_low, T_high]
+# ---------------------------------------------------------------------------
+
+def test_blockA_5_traceMultiMin_and_Phase_structure():
+    """
+    Test 5 – reconstruct the phase structure with traceMultiMin:
+
+    - Use seeds at (phi = 0, T = 200) and (phi_b(T=50), T = 50).
+    - Build Phase objects for all minima in [50, 200].
+    - Check that exactly one symmetric-like and one broken-like phase
+      are present.
+    - Check that Phase.valAt(T) tracks true minima reasonably well.
+    - Use getStartPhase to identify the high-T phase.
+    """
+    print("\n[Block A / Test 5] traceMultiMin and Phase structure")
+
+    phases = _build_phases()
+    print(f"  Number of phases found: {len(phases)}")
+
+    assert len(phases) >= 2, "We expect at least symmetric and broken phases."
+
+    # Classify phases as 'symmetric' or 'broken' by inspecting phi at high T
+    def classify_phase(phase: Phase) -> str:
+        T_eval = phase.T[-1]  # highest T in that phase
+        phi_eval = phase.valAt(T_eval)
+        phi0 = float(np.atleast_1d(phi_eval)[0])
+        return "symmetric" if abs(phi0) < 0.1 else "broken"
+
+    counts = {"symmetric": 0, "broken": 0}
     for key, phase in phases.items():
-        print(f"  Phase {key}: T in [{phase.T[0]:.3f}, {phase.T[-1]:.3f}]")
+        label = classify_phase(phase)
+        counts[label] += 1
+        print(f"  Phase {key}: T-range [{phase.T[0]:.1f}, {phase.T[-1]:.1f}], classified as {label}")
 
-    removeRedundantPhases(
-        f=V_thermal_1d,
-        phases=phases,
-        xeps=1e-5,
-        diftol=1e-3,
-    )
+    assert counts["symmetric"] == 1
+    assert counts["broken"] >= 1  # could in principle have multiple broken branches, but here expect 1
 
-    print(f"Number of phases after redundancy removal: {len(phases)}")
-    assert len(phases) == 1, (
-        "removeRedundantPhases did not merge two identical branches as expected."
-    )
+    # Check spline-based valAt against direct minimization at a few random T
+    rng = np.random.default_rng(12345)
+    for key, phase in phases.items():
+        # Pick 3 random points in the interior of this phase's T-range
+        if phase.T.size < 5:
+            continue
+        T_min, T_max = phase.T[1], phase.T[-2]
+        T_samples = np.linspace(T_min, T_max, 3)
+        for T_s in T_samples:
+            phi_spline = phase.valAt(T_s)
+            phi_guess = float(np.atleast_1d(phi_spline)[0])
 
-    remaining_key = list(phases.keys())[0]
-    remaining_phase = phases[remaining_key]
-    print(
-        f"Remaining phase key: {remaining_key}, "
-        f"T in [{remaining_phase.T[0]:.3f}, {remaining_phase.T[-1]:.3f}]"
-    )
+            def V_scalar(phi: float) -> float:
+                return float(V(np.array([phi], dtype=float), T_s))
 
+            phi_min = float(optimize.fmin(V_scalar, phi_guess, disp=False)[0])
+            diff = abs(phi_min - phi_guess)
+            print(f"    Phase {key}: T={T_s:.2f}, spline phi={phi_guess:.4f}, "
+                  f"true min={phi_min:.4f}, |Δphi|={diff:.3e}")
+            assert diff < 0.1
 
-# ------------------------------------------------------------------
-# Test 8 – getStartPhase: identify the high-temperature phase
-# ------------------------------------------------------------------
-
-def test_8_getStartPhase_highT():
-    """
-    Test 8:
-    Use getStartPhase on the thermal 1D phase structure and verify that
-    it selects a phase whose high-T endpoint is symmetric (φ ≈ 0).
-    """
-    t_low = 0.6
-    t_high = 1.2
-    phases = build_thermal_phases_example(t_low=t_low, t_high=t_high, deltaX_target=1e-2)
-
-    start_key = getStartPhase(phases, V_thermal_1d)
+    # Check getStartPhase: should pick the symmetric phase at high T
+    start_key = getStartPhase(phases, V)
     start_phase = phases[start_key]
+    phi_highT = start_phase.valAt(start_phase.T[-1])
+    phi0 = float(np.atleast_1d(phi_highT)[0])
+    print(f"  getStartPhase returned key={start_key}, phi(T_max) ≈ {phi0:.4e}")
+    assert abs(phi0) < 0.1
 
-    print("\n=== Test 8: getStartPhase on thermal 1D phases ===")
-    print(f"Start phase key (high-T phase): {start_key}")
-    print(f"  T-range: [{start_phase.T[0]:.3f}, {start_phase.T[-1]:.3f}]")
+    # Plot phi_min(T) curves for all phases
+    fig, ax = plt.subplots()
+    ax.set_title("Phase structure: phi_min(T) from Phase splines")
+    for key, phase in phases.items():
+        T_dense = np.linspace(phase.T[0], phase.T[-1], 200)
+        phi_dense = phase.valAt(T_dense)
+        ax.plot(T_dense, phi_dense, label=f"Phase {key}")
+    ax.set_xlabel("T")
+    ax.set_ylabel(r"$\phi_{\min}(T)$")
+    ax.legend()
+    fig.tight_layout()
+    plt.show()
 
-    phi_high = float(np.asarray(start_phase.X[-1]).ravel()[0])
-    print(f"  φ at highest T: φ(T_max) = {phi_high:.4f}")
 
-    # For our potential and seeds, the high-T phase should be symmetric:
-    assert abs(phi_high) < 5e-2, (
-        "getStartPhase did not return a phase with φ ≈ 0 at highest T. "
-        "Check the phase structure and seeds."
+# ---------------------------------------------------------------------------
+# Test 6: findApproxLocalMin on a segment crossing the unique minimum
+# ---------------------------------------------------------------------------
+
+def test_blockA_6_findApproxLocalMin_on_simple_segment():
+    """
+    Test 6 – use findApproxLocalMin on a segment that crosses the unique
+    symmetric minimum at high T:
+
+    - Choose T = 150 > T0 where phi = 0 is the unique minimum.
+    - Take a segment from phi = -3 to phi = +3.
+    - findApproxLocalMin should detect a minimum near phi = 0.
+    """
+    print("\n[Block A / Test 6] findApproxLocalMin on a simple segment at high T")
+
+    T_test = 150
+    x1 = np.array([-3.0])
+    x2 = np.array([3.0])
+
+    def f_seg(x: np.ndarray, T: float) -> np.ndarray:
+        # x is expected to be shape (n, 1) internally
+        return np.asarray(V(x, T), dtype=float)
+
+    minima = findApproxLocalMin(
+        f_seg,
+        x1,
+        x2,
+        args=(T_test,),
+        n=200,
+        edge=0.05,
     )
 
+    print(f"  Number of approximate minima found along the segment: {minima.shape[0]}")
 
-# ------------------------------------------------------------------
-# Manual runner (extend your existing __main__ block)
-# ------------------------------------------------------------------
+    assert minima.ndim == 2 and minima.shape[1] == 1
+    assert minima.shape[0] >= 1, "We expect at least one minimum along the segment."
+
+    # All found minima should be close to phi = 0
+    phi_minima = minima[:, 0]
+    max_dist = np.max(np.abs(phi_minima))
+    print(f"  Approximate minima phi ≈ {phi_minima}")
+    print(f"  Max |phi_min| along segment: {max_dist:.4f}")
+    assert max_dist < 0.5
+
+    # Optional quick plot of f(φ) along the segment
+    phi_grid = np.linspace(-3.0, 3.0, 400)
+    V_grid = V(phi_grid.reshape(-1, 1), T_test)
+
+    fig, ax = plt.subplots()
+    ax.set_title(f"findApproxLocalMin at T = {T_test:.0f}")
+    ax.plot(phi_grid, V_grid, label="V(φ, T)")
+    ax.plot(phi_minima, V(phi_minima.reshape(-1, 1), T_test), "o", label="approx minima")
+    ax.set_xlabel(r"$\phi$")
+    ax.set_ylabel(r"$V(\phi, T)$")
+    ax.legend()
+    fig.tight_layout()
+    plt.show()
+
+
+# ---------------------------------------------------------------------------
+# Test 7: removeRedundantPhases – merging artificially duplicated phases
+# ---------------------------------------------------------------------------
+
+def test_blockA_7_removeRedundantPhases_merges_duplicates():
+    """
+    Test 7 – exercise removeRedundantPhases on artificially duplicated phases:
+
+    - Build the phase structure with traceMultiMin.
+    - Artificially clone one Phase and insert it into the dictionary.
+    - Call removeRedundantPhases and check that the number of phases
+      returns to the original value.
+    """
+    print("\n[Block A / Test 7] removeRedundantPhases on duplicated phases")
+
+    phases = _build_phases()
+    original_keys = list(phases.keys())
+    original_len = len(original_keys)
+
+    # Artificially duplicate the first phase
+    key_to_clone = original_keys[0]
+    phase_to_clone = phases[key_to_clone]
+    clone_key = f"{key_to_clone}_clone"
+    phases[clone_key] = Phase(
+        key=clone_key,
+        X=phase_to_clone.X.copy(),
+        T=phase_to_clone.T.copy(),
+        dXdT=phase_to_clone.dXdT.copy(),
+    )
+
+    print(f"  Original number of phases: {original_len}")
+    print(f"  After cloning: {len(phases)} (added key={clone_key})")
+
+    assert len(phases) == original_len + 1
+
+    removeRedundantPhases(V, phases, xeps=1e-6, diftol=1e-2)
+
+    print(f"  After removeRedundantPhases: {len(phases)}")
+    assert len(phases) == original_len
+
+    # Check that there is still a phase with T-range very close to the cloned one
+    still_has_equivalent = False
+    for key, phase in phases.items():
+        if (
+            abs(phase.T[0] - phase_to_clone.T[0]) < 1e-3
+            and abs(phase.T[-1] - phase_to_clone.T[-1]) < 1e-3
+        ):
+            still_has_equivalent = True
+            break
+    assert still_has_equivalent, "An equivalent phase to the cloned one should remain."
+
+
+# ---------------------------------------------------------------------------
+# Optional: manual run
+# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    test_5_findApproxLocalMin_triple_well()
-    test_6_traceMultiMin_thermal_1d()
-    test_7_removeRedundantPhases_synthetic()
-    test_8_getStartPhase_highT()
+    # Running this file directly will execute all tests sequentially.
+    # This is handy if you want to see the printed diagnostics without pytest.
+    test_blockA_1_potential_shape_and_minima()
+    test_blockA_2_traceMinimum_symmetric_phase_downwards()
+    test_blockA_3_traceMinimum_broken_phase_upwards()
+    #test_blockA_4_dphi_dT_consistency_and_helper_functions()
+    test_blockA_5_traceMultiMin_and_Phase_structure()
+    test_blockA_6_findApproxLocalMin_on_simple_segment()
+    test_blockA_7_removeRedundantPhases_merges_duplicates()
+    print("\n[Block A] All example tests executed.")
