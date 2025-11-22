@@ -1021,3 +1021,549 @@ V(\phi, T) = \lambda \phi^4 - E,T,\phi^3 + D,(T^2 - T_0^2),\phi^2,
 $$
 
 and show explicitly how the functions in Block A reconstruct the phase structure and prepare the ground for tunneling and gravitational-wave calculations.
+
+---
+
+## Block B – Tunneling core: instantons and nucleation temperature
+
+In this block the focus changes:
+in Block A we *only* built the **phase diagram as a function of $T$** – which phases exist, where they start/end, and how the minima move in field space.
+
+Block B answers the really crucial physics question:
+
+> Given a metastable phase (false vacuum) and other, more stable phases,
+> **when** does the Universe actually make the transition via tunneling?
+> And **which** bounce (instanton) dominates this nucleation?
+
+The pipeline is:
+
+1. Read the phase diagram (`Phase` object + `phases` dictionary from Block A).
+2. At each temperature $T$, look at which phases are energetically accessible with $V_\text{low}(T) < V_\text{high}(T)$.
+3. For each candidate, try to solve the bounce (via `pathDeformation.fullTunneling`).
+4. Choose the **bounce with the smallest action** $S(T)$.
+5. Search for the $T$ at which the nucleation condition is satisfied (by default $S(T)/T \simeq 140$).
+
+From the numerical point of view, Block B provides:
+
+* a clean backend for the bounce `_solve_bounce`,
+* a “scanner in $T$” `_tunnelFromPhaseAtT`,
+* helper functions to find the maximum $T_\text{crit}$ where the phase still makes sense,
+* and the high-level function `tunnelFromPhase`, which directly returns the instanton and $T_\text{nuc}$.
+
+What follows is a function-by-function description.
+
+---
+
+### 1. `_solve_bounce`: unified backend for the instanton
+
+```text
+def _solve_bounce(
+    x_high: np.ndarray,
+    x_low: np.ndarray,
+    V_fixed: Callable[[np.ndarray], float],
+    dV_fixed: Callable[[np.ndarray], np.ndarray],
+    T: float,
+    fullTunneling_params: Optional[Mapping[str, Any]] = None,
+) -> Tuple[Optional[Any], float, int]:
+    ...
+```
+
+**Numerical goal**
+
+Given:
+
+* a metastable minimum (“false vacuum”) at `x_high`,
+* a stable minimum at `x_low`,
+* a fixed-temperature potential $V_\text{fixed}(x) = V(x, T)$,
+* and its gradient $dV_\text{fixed}(x) = \nabla_x V(x, T)$,
+
+this function calls `pathDeformation.fullTunneling` to:
+
+* find the bounce $\phi_b(r)$ that connects $x_\text{high} \to x_\text{low}$,
+* extract the Euclidean action $S$,
+* classify the type of transition.
+
+All of this is encapsulated in a single place, with standardized error handling.
+
+**Treatment of edge cases**
+
+`pathDeformation.fullTunneling` can raise `tunneling1D.PotentialError` with standard messages:
+
+* `"no barrier"`
+  → there is no barrier between the minima
+  → **not a first-order transition** (or second-order limit)
+  → `trantype = 0`, `action = 0.0`.
+
+* `"stable, not metastable"`
+  → the “false vacuum” is actually stable (no metastable well)
+  → there is no relevant bounce
+  → `trantype = 0`, `action = +∞`.
+
+Any other message is propagated as an unexpected error (this is important: we do **not** hide genuine numerical problems).
+
+**Output**
+
+* `instanton`:
+
+  * the object returned by `fullTunneling` if a bounce is found;
+  * `None` in the `"no barrier"` or `"stable, not metastable"` cases.
+
+* `action`:
+
+  * $S$ if `trantype = 1`,
+  * `0.0` or `np.inf` in special cases.
+
+* `trantype`:
+
+  * `1` → first-order transition with bounce,
+  * `0` → no bounce (second order, stable, etc.).
+
+**Physical interpretation**
+
+`_solve_bounce` is the “engine” that turns a snapshot of the potential at a given temperature $T$ into a physical object:
+
+* radial profile $\phi_b(r)$,
+* action $S_3(T)$ (or $S_4$, depending on the backend implementation),
+* type of transition (first order or not).
+
+Everything else in Block B is essentially organization around repeated calls to `_solve_bounce` for different temperatures and phase pairs.
+
+---
+
+### 2. `_tunnelFromPhaseAtT`: scan all possible transitions at a given $T$
+
+```text
+def _tunnelFromPhaseAtT(
+    T,
+    phases,
+    start_phase,
+    V,
+    dV,
+    phitol,
+    overlapAngle,
+    nuclCriterion,
+    fullTunneling_params,
+    verbose,
+    outdict,
+) -> float:
+    ...
+```
+
+This function is the **“$S(T)$ wrapper”**: it receives a temperature $T$ and returns
+
+$$
+nuclCriterion\bigl( S_\text{min}(T), T \bigr),
+$$
+
+where $S_\text{min}(T)$ is the smallest action among all possible transitions from `start_phase` to any other phase with $V_\text{low}(T) < V_\text{high}(T)$.
+
+It also **fills the cache** `outdict[T]` with the best transition found.
+
+#### 2.1. Input and cache
+
+* `T` may come as a scalar or array (because of `optimize.fmin`):
+
+  * the function always converts it to a scalar `T_val`.
+
+* If `T_val` is already in `outdict`, it means we have already computed the best transition at that $T$:
+
+  * it is enough to return `nuclCriterion(outdict[T_val]["action"], T_val)`.
+
+This is important for efficiency: `brentq` and `fmin` will call `_tunnelFromPhaseAtT` many times with the same $T$, and solving the bounce is expensive.
+
+#### 2.2. Finding minima at fixed $T$
+
+It defines a precise 1D minimizer:
+
+```text
+def fmin_min(x0):
+    xmin = optimize.fmin(V, x0, args=(T_val,), xtol=phitol, ftol=np.inf, disp=False)
+    return np.asarray(xmin, dtype=float)
+```
+
+* First, it refines the minimum of the initial phase:
+
+  ```text
+  x0_guess = start_phase.valAt(T_val)
+  x0 = fmin_min(x0_guess)
+  V0 = V(x0, T_val)
+  ```
+
+* Then it scans all other phases and looks for candidates:
+
+  ```text
+  for key, phase in phases.items():
+      if key == start_phase.key:
+          continue
+      # phase must exist at T
+      if phase.T[0] > T_val or phase.T[-1] < T_val:
+          continue
+
+      x1_guess = phase.valAt(T_val)
+      x1 = fmin_min(x1_guess)
+      V1 = V(x1, T_val)
+      if V1 >= V0:
+          continue  # only care if V_low < V_high
+      tunnel_list.append({ ... })
+  ```
+
+**Physics:**
+this step builds the list of possible transitions
+
+$$
+\text{high phase} \to \text{low phase}
+$$
+
+in which the “low” phase has smaller free energy at temperature $T$.
+
+#### 2.3. `overlapAngle`: pruning strongly aligned targets
+
+If `overlapAngle > 0`, we introduce a geometric criterion:
+
+* For each pair of candidates $(i, j)$:
+
+  * define the vectors
+
+    $$
+    \Delta x_i = x_i - x_0,\quad
+    \Delta x_j = x_j - x_0
+    $$
+
+  * compute the angle between them:
+
+    $$
+    \cos\theta_{ij}
+    = \frac{ \Delta x_i \cdot \Delta x_j }
+    { \lvert\Delta x_i\rvert, \lvert\Delta x_j\rvert }.
+    $$
+
+* If $\theta_{ij}$ is smaller than `overlapAngle` (in degrees), that is,
+
+  ```text
+  dotij >= sqrt(xi2 * xj2) * cos_overlap
+  ```
+
+  then the two transitions are essentially “in the same direction” in field space.
+
+* We keep only the one closer (in norm) to the false vacuum and discard the other.
+
+**Physics:**
+this avoids spending time solving very similar bounces that, in practice, have almost identical actions, keeping only the **shortest** direction in field space (the most promising for having smaller action).
+
+If you want to study **all** directions, just use `overlapAngle=0.0` in the high-level call.
+
+#### 2.4. Solving bounces and choosing the smallest $S$
+
+It defines $T$-fixed wrappers:
+
+```text
+def V_fixed(x): return V(x, T_val)
+def dV_fixed(x): return dV(x, T_val)
+```
+
+Then, for each candidate in `tunnel_list`:
+
+* prints information if `verbose=True`,
+
+* calls `_solve_bounce(...)`,
+
+* fills:
+
+  * `tdict["instanton"]`,
+  * `tdict["action"]`,
+  * `tdict["trantype"]`,
+
+* updates `lowest_action` and `lowest_tdict` if the action is smaller.
+
+In the end:
+
+* it stores `lowest_tdict` in `outdict[T_val]`,
+* it returns `nuclCriterion(lowest_action, T_val)`.
+
+**Physics:**
+for each $T$, you construct the envelope
+
+$$
+S_\text{min}(T)
+= \min_{\text{target phases}}
+S_{\text{bounce}, \text{high phase} \to \text{low phase}}(T),
+$$
+
+which is what enters the nucleation condition.
+
+---
+
+### 3. `_potentialDiffForPhase`: who is energetically preferred?
+
+```text
+def _potentialDiffForPhase(
+    T: float,
+    start_phase: Phase,
+    other_phases: Sequence[Phase],
+    V: Callable[[np.ndarray, float], float],
+) -> float:
+    ...
+```
+
+This function is simple but conceptually important. It answers:
+
+> At a given temperature $T$, what is the smallest free-energy difference
+> between any other phase and `start_phase`?
+
+More precisely:
+
+* it computes $V_0 = V(x_\text{start}(T), T)$,
+
+* for each other phase $i$:
+
+  * computes $V_i = V(x_i(T), T)$,
+  * evaluates $V_i - V_0$,
+
+* and returns the **minimum** over all phases:
+
+$$
+\Delta V_\text{min}(T)
+= \min_i \bigl[ V_i(T) - V_0(T) \bigr].
+$$
+
+**Interpretation**
+
+* If $\Delta V_\text{min}(T) > 0$:
+  the potential of `start_phase` is lower than that of any other phase → it is *energetically preferred* (stable) at that $T$.
+
+* If $\Delta V_\text{min}(T) < 0$:
+  there exists some other phase with $V < V_0$ → `start_phase` is *energetically disfavored* (unstable) at that $T$.
+
+This sign is what `_maxTCritForPhase` uses to locate critical temperatures where `start_phase` ceases to be preferred.
+
+---
+
+### 4. `_maxTCritForPhase`: maximum critical $T$ for the initial phase
+
+```text
+def _maxTCritForPhase(
+    phases: Mapping[Hashable, Phase],
+    start_phase: Phase,
+    V: Callable[[np.ndarray, float], float],
+    Ttol: float,
+) -> float:
+    ...
+```
+
+**Physical question**
+
+For the phase `start_phase`, what is the **largest temperature** $T_\text{crit}$ such that there exists another phase degenerate in free energy?
+
+$$
+V_\text{start}(T_\text{crit}) \approx V_\text{other}(T_\text{crit}).
+$$
+
+This temperature is relevant to delimit the range in which the false vacuum still makes sense as a metastable minimum.
+
+**Numerical steps**
+
+1. It builds the list `other_phases` with all phases different from `start_phase`.
+
+2. It defines the relevant $T$ bounds:
+
+   * `Tmin` = largest initial $T$ among the other phases;
+   * `Tmax` = smallest final $T$ among the other phases;
+   * then it intersects with $[T_\text{start,min}, T_\text{start,max}]$.
+
+3. It evaluates:
+
+   ```text
+   DV_Tmin = _potentialDiffForPhase(Tmin, start_phase, other_phases, V)
+   DV_Tmax = _potentialDiffForPhase(Tmax, start_phase, other_phases, V)
+   ```
+
+   * If `DV_Tmin >= 0`: at `Tmin` the `start_phase` is already stable (lower than the others) → it returns `Tmin`.
+   * If `DV_Tmax <= 0`: at `Tmax` it is already unstable (some other phase has smaller $V$) → it returns `Tmax`.
+
+4. Otherwise, the signs of $\Delta V$ at `Tmin` and `Tmax` are opposite:
+
+   * it uses `optimize.brentq` on `_potentialDiffForPhase` to find the zero:
+
+     $$
+     \Delta V_\text{min}(T_\text{crit}) = 0.
+     $$
+
+   * it returns this `Tcrit` with tolerance `Ttol`.
+
+**Use inside Block B**
+
+`tunnelFromPhase` uses `_maxTCritForPhase` when the initial search in $T$ does not directly find a nucleation solution:
+
+* it restricts `Tmax` to this `Tmax_crit` to avoid searching for nucleation in a region where the minimum has already ceased to be physically meaningful (the phase has stopped being a local minimum).
+
+---
+
+### 5. `tunnelFromPhase`: high-level interface for $T_n$ and the instanton
+
+```text
+def tunnelFromPhase(
+    phases,
+    start_phase,
+    V,
+    dV,
+    Tmax,
+    Ttol=1e-3,
+    maxiter=100,
+    phitol=1e-8,
+    overlapAngle=45.0,
+    nuclCriterion=lambda S, T: S/(T + 1e-100) - 140.0,
+    verbose=True,
+    fullTunneling_params=None,
+) -> Optional[Dict[str, Any]]:
+    ...
+```
+
+This is the function you will call “in practice” when you want to:
+
+* **find $T_n$** (the nucleation temperature) for the transition starting from `start_phase`,
+* **obtain the dominant bounce** in the form of the `instanton` object.
+
+#### 5.1. Main inputs
+
+* `phases`: `{key → Phase}` dictionary from Block A.
+
+* `start_phase`: `Phase` object representing the initial metastable phase.
+
+* `V`, `dV`: potential and gradient, $V(x, T)$ and $dV(x, T)$.
+
+* `Tmax`: maximum $T$ allowed for nucleation (you choose the range of interest).
+
+* `Ttol`: tolerance in $T$ for locating the zero of `nuclCriterion`.
+
+* `phitol`: tolerance used in 1D minimizations in field space (to find minima).
+
+* `overlapAngle`: parameter used to prune nearly redundant directions in field space (passed to `_tunnelFromPhaseAtT`).
+
+* `nuclCriterion(S, T)`:
+
+  * default: $S/T - 140$ (a standard choice in cosmological FOPTs),
+  * the routine seeks a $T$ such that `nuclCriterion(...) = 0`.
+
+* `fullTunneling_params`: extra kwargs for `pathDeformation.fullTunneling`.
+
+#### 5.2. Range in $T$
+
+First, it defines the effective interval:
+
+* `Tmin = start_phase.T[0]`,
+* `T_highest_other` = largest final $T$ among all phases,
+* `Tmax_eff = min(Tmax, T_highest_other)`.
+
+It checks whether `Tmax_eff >= Tmin`; otherwise, the search does not make numerical sense.
+
+#### 5.3. Two-step strategy
+
+The function tries, in order:
+
+1. **Direct root-finding with `brentq`**:
+
+   * it defines $f(T) = _tunnelFromPhaseAtT(T, ...)$,
+
+   * it tries to find a zero of $f$ between `Tmin` and `Tmax_eff`:
+
+     ```text
+     Tnuc = brentq(f, Tmin, Tmax_eff, ...)
+     ```
+
+   * if this works, we are done: `Tnuc` is found directly.
+
+2. If `brentq` fails with the typical error
+   `"f(a) and f(b) must have different signs"`:
+
+   * it means that $nuclCriterion(S(T), T)$ has the same sign over the whole interval:
+
+     * either it never crosses zero,
+     * or it does cross, but the endpoints do not show that clearly.
+
+   Then the function switches to a more careful mode:
+
+   * it ensures that the endpoints `Tmin` and `Tmax_eff` have been computed (via `_tunnelFromPhaseAtT`) and cached in `outdict`;
+
+   * it checks:
+
+     * whether $nuclCriterion(S(T_\text{max,eff}), T_\text{max,eff}) > 0$ (tunneling too suppressed at high $T$);
+     * and whether $nuclCriterion(S(T_\text{min}), T_\text{min}) < 0$ (strong tunneling at low $T$).
+
+   * if such a sign change exists, it restricts the maximum temperature to a `Tmax_crit` obtained from `_maxTCritForPhase` (the region where the phase is still physically meaningful).
+
+   * it then performs a **minimization in $T$** using `optimize.fmin` on `_tunnelFromPhaseAtT`, with a `callback`:
+
+     * as soon as the function enters a region with $nuclCriterion \le 0$, the callback raises a `StopIteration(T)`, containing an estimate of the $T$ where this happens.
+
+   * once this `Tmin_opt` is obtained, it checks whether at that point $nuclCriterion$ is indeed $\le 0$; if it is still $> 0$, the function concludes that there is no efficient nucleation → it returns `None`.
+
+   * if there is a genuine crossing, it performs a second `brentq` in a narrower interval $(T_\text{min,opt}, T_\text{max,crit})$ to better locate the zero.
+
+   * otherwise (for example, if $nuclCriterion$ never becomes $< 0$ even at `Tmin`), it concludes that the transition **does not nucleate** in the given interval → it returns `None`.
+
+If, on the other hand, the nucleation condition is already satisfied at `Tmax_eff` (i.e. $nuclCriterion \le 0$ there), the function simply defines:
+
+* `Tnuc = Tmax_eff`: nucleation “happens immediately” at the upper bound of the range.
+
+#### 5.4. Output
+
+After determining `Tnuc`:
+
+* it ensures that `outdict[Tnuc]` has been filled by `_tunnelFromPhaseAtT`,
+* it takes `rdict = outdict[Tnuc]`.
+
+If `rdict["trantype"] > 0` (first-order transition with bounce), it returns the dictionary:
+
+* `Tnuc` : nucleation temperature;
+* `low_vev`, `high_vev` : low- and high-$T$ minima;
+* `low_phase`, `high_phase` : keys of the phases involved;
+* `action` : instanton action;
+* `instanton` : object returned by `fullTunneling`;
+* `trantype` : `1` for first-order transition.
+
+If `trantype` is `0` (no bounce – second-order case or stable), it returns `None`.
+
+**Physical interpretation**
+
+$T_n$ is the temperature at which, according to the chosen criterion (typically $S(T)/T \simeq 140$), the nucleation probability per Hubble volume becomes relevant.
+
+In terms of cosmological history:
+
+* above $T_n$, the Universe remains trapped in the metastable phase (unless there is a second-order transition);
+* close to $T_n$, bubbles of the true phase appear efficiently;
+* the returned instanton is the solution that dominates this nucleation.
+
+---
+
+### 6. Closing Block B: integrated view
+
+With Blocks A and B together, the full conceptual flow for a first-order phase transition is:
+
+1. **Build the phase diagram in $T$**:
+
+   * use `traceMultiMin` and `Phase` to find all phases;
+   * clean redundancies with `removeRedundantPhases`;
+   * choose the high-$T$ phase with `getStartPhase`.
+
+2. **Choose a metastable phase of interest** (`start_phase`).
+
+3. **Run the tunneling core**:
+
+   * for each $T$, `_tunnelFromPhaseAtT` builds all possible bounces starting from `start_phase` → $S_\text{min}(T)$;
+   * `_maxTCritForPhase` helps determine up to which temperature it makes sense to demand metastability;
+   * `tunnelFromPhase` combines everything, applies the nucleation criterion, and returns $T_n$ and the dominant instanton.
+
+4. **From $T_n$ and the instanton**, other blocks (or user scripts) can:
+
+   * reconstruct $S(T)/T$ as a function of $T$;
+   * determine $T_c$ (the critical temperature where the phases become degenerate);
+   * extract cosmological parameters such as $\alpha$ and $\beta/H$;
+   * compute gravitational-wave spectra.
+
+In the next test files, we will implement concrete examples using the same one-component Landau–Ginzburg potential, to visualize:
+
+* how `tunnelFromPhase` selects the correct target phase,
+* how $S(T)/T$ crosses $140$,
+* and how this connects to the phase diagram built in Block A.
+
+---

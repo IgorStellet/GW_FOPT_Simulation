@@ -28,7 +28,7 @@ tracing routines remain fully vector-valued.
 
 
 from typing import NamedTuple
-from typing import Callable, Dict, Hashable, Mapping, MutableMapping, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Hashable, Mapping, MutableMapping, Optional, Sequence, Tuple, Union
 
 
 
@@ -1160,3 +1160,617 @@ def getStartPhase(
 
     assert start_phase is not None and start_phase in phases
     return start_phase
+
+# ---------------------------------------------------------------------------
+# Block B – tunneling core: bounce solving and nucleation temperature
+# ---------------------------------------------------------------------------
+
+
+def _solve_bounce(
+    x_high: np.ndarray,
+    x_low: np.ndarray,
+    V_fixed: Callable[[np.ndarray], float],
+    dV_fixed: Callable[[np.ndarray], np.ndarray],
+    T: float,
+    fullTunneling_params: Optional[Mapping[str, Any]] = None,
+) -> Tuple[Optional[Any], float, int]:
+    """
+    Unified backend to compute a bounce between two minima at fixed temperature T.
+
+    Parameters
+    ----------
+    x_high : array_like
+        Field value(s) of the metastable (false) vacuum.
+    x_low : array_like
+        Field value(s) of the more stable (true) vacuum.
+    V_fixed : callable
+        Potential at fixed T, V_fi~xed(x) = V(x, T).
+    dV_fixed : callable
+        Gradient at fixed T, dV_fixed(x) = dV(x, T).
+    T : float
+        Temperature (passed only for bookkeeping / callbacks).
+    fullTunneling_params : dict, optional
+        Extra keyword arguments forwarded to the underlying backend
+        (pathDeformation if available).
+
+    Returns
+    -------
+    instanton : object or None
+        Backend-dependent object describing the instanton, or None if the
+        transition is effectively second order or absent.
+    action : float
+        Euclidean action S. May be 0.0 (no barrier) or +inf (stable).
+    trantype : int
+        1 for first-order (bounce found), 0 otherwise.
+    """
+    x_high = np.atleast_1d(np.asarray(x_high, dtype=float))
+    x_low = np.atleast_1d(np.asarray(x_low, dtype=float))
+
+    if x_high.shape != x_low.shape:
+        raise ValueError(
+            "_solve_bounce: x_high and x_low must have the same shape; "
+            f"got {x_high.shape} vs {x_low.shape}."
+        )
+
+    ndim = x_high.size
+    if fullTunneling_params is None:
+        fullTunneling_params = {}
+
+    # ------------------------------------------------------------------
+    # 1) Preferred backend: pathDeformation (multi-field capable)
+    # ------------------------------------------------------------------
+    try:
+        from . import pathDeformation as _pd  # type: ignore[import]
+        has_path_deformation = True
+    except Exception:
+        has_path_deformation = False
+
+    if has_path_deformation:
+        # Keep legacy behaviour: pathDeformation.fullTunneling([x_low, x_high], ...)
+        try:
+            tobj = _pd.fullTunneling(
+                [x_low, x_high],
+                V_fixed,
+                dV_fixed,
+                callback_data=T,
+                **fullTunneling_params,
+            )
+            action = float(tobj.action)
+            return tobj, action, 1
+        except Exception as err:
+            # Interpret tunneling-related PotentialError; re-raise others.
+            try:
+                from . import tunneling1D as _t1d  # type: ignore[import]
+                PotentialError = _t1d.PotentialError
+            except Exception:
+                PotentialError = Exception  # best-effort fallback
+
+            if isinstance(err, PotentialError):
+                reason = err.args[1] if len(err.args) > 1 else None
+                if reason == "no barrier":
+                    return None, 0.0, 0
+                if reason == "stable, not metastable":
+                    return None, np.inf, 0
+            # Not a recognised PotentialError → propagate
+            raise
+
+    # ------------------------------------------------------------------
+    # 2) Fallback backend: tunneling1D.SingleFieldInstanton (1D only)
+    # ------------------------------------------------------------------
+    from . import tunneling1D as _t1d  # type: ignore[import]
+
+    if ndim != 1:
+        raise RuntimeError(
+            "_solve_bounce: pathDeformation is unavailable but field dimension "
+            f"is {ndim} > 1. The tunneling1D backend only supports single-field "
+            "potentials."
+        )
+
+    phi_meta = float(x_high[0])
+    phi_abs = float(x_low[0])
+
+    def V1D(phi: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+        """1D wrapper around V_fixed(x) with x ∈ R."""
+        phi_arr = np.asarray(phi, dtype=float)
+        if phi_arr.ndim == 0:
+            return float(V_fixed(np.array([phi_arr], dtype=float)))
+        flat = phi_arr.ravel()
+        vals = [V_fixed(np.array([v], dtype=float)) for v in flat]
+        return np.asarray(vals, dtype=float).reshape(phi_arr.shape)
+
+    try:
+        inst = _t1d.SingleFieldInstanton(
+            phi_absMin=phi_abs,
+            phi_metaMin=phi_meta,
+            V=V1D,
+        )
+        profile = inst.findProfile()
+        action = inst.findAction(profile)
+        return inst, float(action), 1
+    except _t1d.PotentialError as err:
+        reason = err.args[1] if len(err.args) > 1 else None
+        if reason == "no barrier":
+            return None, 0.0, 0
+        if reason == "stable, not metastable":
+            return None, np.inf, 0
+        # Unexpected tunneling error → propagate
+        raise
+
+def _tunnelFromPhaseAtT(
+    T: Union[float, np.ndarray],
+    phases: Mapping[Hashable, "Phase"],
+    start_phase: "Phase",
+    V: Callable[[np.ndarray, float], float],
+    dV: Callable[[np.ndarray, float], np.ndarray],
+    phitol: float,
+    overlapAngle: float,
+    nuclCriterion: Callable[[float, float], float],
+    fullTunneling_params: Optional[Mapping[str, Any]],
+    verbose: bool,
+    outdict: MutableMapping[float, Dict[str, Any]],
+) -> float:
+    """
+    Internal helper: evaluate the nucleation criterion at temperature ``T``.
+
+    This function:
+    1. Finds all energetically allowed target minima (phases with lower
+       free energy than ``start_phase`` at ``T``).
+    2. Optionally prunes targets that point in nearly the same direction
+       in field space (``overlapAngle``).
+    3. For each remaining candidate, attempts to solve the bounce using
+       :func:`_solve_bounce`.
+    4. Caches the best (lowest action) transition in ``outdict[T]``.
+    5. Returns ``nuclCriterion(S_min, T)`` for the lowest-action solution.
+
+    It is designed to be used as a 1D scalar function in root-finding
+    (`scipy.optimize.brentq`) and minimization (`scipy.optimize.fmin`).
+
+    Parameters
+    ----------
+    T : float or array_like
+        Temperature at which the tunneling is evaluated. If an array is
+        passed (as `optimize.fmin` does), only the first element is used.
+    phases : mapping
+        Mapping from phase key to :class:`Phase`. Typically the output of
+        :func:`traceMultiMin`.
+    start_phase : Phase
+        Metastable phase from which tunneling is attempted.
+    V, dV : callable
+        Potential and its gradient, with signatures
+        ``V(x, T) -> float`` and ``dV(x, T) -> ndarray``.
+    phitol : float
+        Tolerance used in the 1D minimizations for locating minima at
+        fixed T.
+    overlapAngle : float
+        Maximum angle (in degrees) allowed between directions in field
+        space towards different target phases. If two targets are closer
+        than this angle, only the closer one (in field space) is kept.
+        Set to zero to keep all targets.
+    nuclCriterion : callable
+        Function of the action and temperature, ``nuclCriterion(S, T)``.
+        Should return 0 at the desired nucleation condition, >0 for
+        insufficient tunneling, <0 for too fast tunneling.
+    fullTunneling_params : mapping or None
+        Extra keyword arguments passed down to :func:`pathDeformation.fullTunneling`.
+    verbose : bool
+        If True, prints information about each tunneling attempt.
+    outdict : dict-like
+        Mutable mapping used as a cache. For each temperature ``T``,
+        stores the best transition dictionary under key ``T``. The
+        dictionary has keys ``'Tnuc'``, ``'low_vev'``, ``'high_vev'``,
+        ``'low_phase'``, ``'high_phase'``, ``'action'``, ``'instanton'``,
+        and ``'trantype'``.
+
+    Returns
+    -------
+    float
+        The value of ``nuclCriterion(S_min, T)`` for the lowest-action
+        tunneling solution at that temperature. If no acceptable target
+        phases exist or no bounce is found, this will typically be
+        positive (e.g. ``+∞`` in terms of action).
+    """
+    T_arr = np.asarray(T, dtype=float)
+    T_val = float(T_arr.ravel()[0])
+
+    # Cache check
+    if T_val in outdict:
+        best = outdict[T_val]
+        return float(nuclCriterion(float(best["action"]), T_val))
+
+    # Local 1D minimizer at fixed T
+    def fmin_min(x0: np.ndarray) -> np.ndarray:
+        x0 = np.asarray(x0, dtype=float)
+        xmin = optimize.fmin(
+            V,
+            x0,
+            args=(T_val,),
+            xtol=phitol,
+            ftol=np.inf,
+            disp=False,
+        )
+        return np.asarray(xmin, dtype=float)
+
+    # High-T (metastable) minimum
+    x0_guess = start_phase.valAt(T_val)
+    x0 = fmin_min(x0_guess)
+    V0 = float(V(x0, T_val))
+
+    # Collect candidate low-T minima (target phases)
+    tunnel_list: list[Dict[str, Any]] = []
+    for key, phase in phases.items():
+        if key == start_phase.key:
+            continue
+        # Only consider phases that exist at this T
+        if phase.T[0] > T_val or phase.T[-1] < T_val:
+            continue
+        x1_guess = phase.valAt(T_val)
+        x1 = fmin_min(x1_guess)
+        V1 = float(V(x1, T_val))
+        # Require target phase to be energetically lower
+        if V1 >= V0:
+            continue
+        tdict: Dict[str, Any] = dict(
+            low_vev=x1,
+            high_vev=x0,
+            Tnuc=T_val,
+            low_phase=phase.key,
+            high_phase=start_phase.key,
+        )
+        tunnel_list.append(tdict)
+
+    # Optional pruning of nearly overlapping target directions
+    if overlapAngle > 0.0 and len(tunnel_list) > 1:
+        cos_overlap = float(np.cos(np.deg2rad(overlapAngle)))
+        excluded_indices: list[int] = []
+        for i in range(1, len(tunnel_list)):
+            for j in range(i):
+                xi = np.asarray(tunnel_list[i]["low_vev"], dtype=float)
+                xj = np.asarray(tunnel_list[j]["low_vev"], dtype=float)
+                dx_i = xi - x0
+                dx_j = xj - x0
+                xi2 = float(np.dot(dx_i, dx_i))
+                xj2 = float(np.dot(dx_j, dx_j))
+                if xi2 == 0.0 or xj2 == 0.0:
+                    # Degenerate direction; skip overlap test.
+                    continue
+                dotij = float(np.dot(dx_j, dx_i))
+                if dotij >= (xi2 * xj2) ** 0.5 * cos_overlap:
+                    # Directions are too aligned; keep the shorter vector.
+                    excluded_indices.append(i if xi2 > xj2 else j)
+        for idx in sorted(set(excluded_indices), reverse=True):
+            del tunnel_list[idx]
+
+    # Wrap V and dV for fixed T
+    def V_fixed(x: np.ndarray, T=T_val, V=V) -> float:
+        return float(V(np.asarray(x, dtype=float), T))
+
+    def dV_fixed(x: np.ndarray, T=T_val, dV=dV) -> np.ndarray:
+        return np.asarray(dV(np.asarray(x, dtype=float), T), dtype=float)
+
+    # Try tunneling for each candidate and keep the one with lowest action
+    lowest_action = float("inf")
+    lowest_tdict: Dict[str, Any] = dict(action=float("inf"), trantype=0)
+
+    for tdict in tunnel_list:
+        x1 = tdict["low_vev"]
+        if verbose:
+            print(
+                "Tunneling from phase %s to phase %s at T=%0.7g"
+                % (tdict["high_phase"], tdict["low_phase"], T_val)
+            )
+            print("  high_vev =", tdict["high_vev"])
+            print("  low_vev  =", tdict["low_vev"])
+
+        instanton, action, trantype = _solve_bounce(
+            x_high=x0,
+            x_low=x1,
+            V_fixed=V_fixed,
+            dV_fixed=dV_fixed,
+            T=T_val,
+            fullTunneling_params=fullTunneling_params,
+        )
+
+        tdict["instanton"] = instanton
+        tdict["action"] = action
+        tdict["trantype"] = trantype
+
+        if action <= lowest_action:
+            lowest_action = action
+            lowest_tdict = tdict
+
+    # Cache result (even if no acceptable tunneling was found)
+    outdict[T_val] = lowest_tdict
+    return float(nuclCriterion(lowest_action, T_val))
+
+
+def _potentialDiffForPhase(
+    T: float,
+    start_phase: "Phase",
+    other_phases: Sequence["Phase"],
+    V: Callable[[np.ndarray, float], float],
+) -> float:
+    """
+    Maximum free-energy difference between `start_phase` and other phases.
+
+    Parameters
+    ----------
+    T : float
+        Temperature at which the comparison is made.
+    start_phase : Phase
+        Reference phase.
+    other_phases : sequence of Phase
+        Other phases to compare against.
+    V : callable
+        Potential function ``V(x, T) -> float``.
+
+    Returns
+    -------
+    float
+        The minimum value of ``V(other) - V(start_phase)`` over all
+        `other_phases`. Hence:
+        - If the return value is positive, `start_phase` is energetically
+          preferred at that T (locally stable).
+        - If the return value is negative, some other phase is preferred
+          (start_phase unstable).
+    """
+    T_val = float(T)
+    x0 = np.asarray(start_phase.valAt(T_val), dtype=float)
+    V0 = float(V(x0, T_val))
+
+    delta_V = float("inf")
+    for phase in other_phases:
+        x1 = np.asarray(phase.valAt(T_val), dtype=float)
+        V1 = float(V(x1, T_val))
+        diff = V1 - V0
+        if diff < delta_V:
+            delta_V = diff
+    return delta_V
+
+
+def _maxTCritForPhase(
+    phases: Mapping[Hashable, "Phase"],
+    start_phase: "Phase",
+    V: Callable[[np.ndarray, float], float],
+    Ttol: float,
+) -> float:
+    """
+    Find the maximum temperature at which `start_phase` is degenerate with
+    one of the other phases.
+
+    In practice this finds a temperature `Tcrit` where `start_phase` and
+    some other phase have the same free energy (within the given tolerance).
+
+    Parameters
+    ----------
+    phases : mapping
+        All phases returned by :func:`traceMultiMin`.
+    start_phase : Phase
+        Phase for which we want the maximum critical temperature.
+    V : callable
+        Potential function ``V(x, T) -> float``.
+    Ttol : float
+        Tolerance passed to `scipy.optimize.brentq`.
+
+    Returns
+    -------
+    float
+        Maximum critical temperature at which `start_phase` is degenerate
+        with another phase. If there are no other phases, returns the
+        lowest temperature of `start_phase`.
+    """
+    other_phases = [phase for phase in phases.values() if phase.key != start_phase.key]
+    if not other_phases:
+        # No other phases: nothing to be degenerate with.
+        return float(start_phase.T[0])
+
+    Tmin = min(phase.T[0] for phase in other_phases)
+    Tmax = max(phase.T[-1] for phase in other_phases)
+    Tmin = max(Tmin, start_phase.T[0])
+    Tmax = min(Tmax, start_phase.T[-1])
+    Tmin = float(Tmin)
+    Tmax = float(Tmax)
+
+    DV_Tmin = _potentialDiffForPhase(Tmin, start_phase, other_phases, V)
+    DV_Tmax = _potentialDiffForPhase(Tmax, start_phase, other_phases, V)
+
+    if DV_Tmin >= 0.0:
+        # start_phase is stable at Tmin.
+        return Tmin
+    if DV_Tmax <= 0.0:
+        # start_phase is already unstable at Tmax.
+        return Tmax
+
+    root = optimize.brentq(
+        _potentialDiffForPhase,
+        Tmin,
+        Tmax,
+        args=(start_phase, other_phases, V),
+        xtol=Ttol,
+        maxiter=200,
+        disp=False,
+    )
+    return float(root)
+
+
+def tunnelFromPhase(
+    phases: Mapping[Hashable, "Phase"],
+    start_phase: "Phase",
+    V: Callable[[np.ndarray, float], float],
+    dV: Callable[[np.ndarray, float], np.ndarray],
+    Tmax: float,
+    Ttol: float = 1e-3,
+    maxiter: int = 100,
+    phitol: float = 1e-8,
+    overlapAngle: float = 45.0,
+    nuclCriterion: Callable[[float, float], float] = lambda S, T: S / (T + 1e-100) - 140.0,
+    verbose: bool = True,
+    fullTunneling_params: Optional[Mapping[str, Any]] = None,
+) -> Optional[Dict[str, Any]]:
+    """
+    Find the instanton and nucleation temperature for tunneling from a
+    metastable phase.
+
+    Parameters
+    ----------
+    phases : mapping
+        Output from :func:`traceMultiMin`. Keys are arbitrary hashables,
+        values are :class:`Phase` objects.
+    start_phase : Phase
+        Metastable phase from which tunneling occurs.
+    V, dV : callable
+        Potential and gradient, with signatures
+        ``V(x, T) -> float`` and ``dV(x, T) -> ndarray``.
+    Tmax : float
+        Highest temperature at which to search for a nucleation solution.
+        The effective upper bound will be min(`Tmax`, highest T among all
+        phases).
+    Ttol : float, optional
+        Absolute tolerance on T for the root-finding step that locates
+        the nucleation temperature.
+    maxiter : int, optional
+        Maximum number of function evaluations in the root find / minimization.
+    phitol : float, optional
+        Tolerance used in the local minimizations for locating minima at
+        fixed T.
+    overlapAngle : float, optional
+        Angle (in degrees) used to prune nearly overlapping target phases
+        (see `_tunnelFromPhaseAtT`). Set to zero to disable pruning.
+    nuclCriterion : callable, optional
+        Nucleation criterion function. It should satisfy:
+
+        * ``nuclCriterion(S, T) > 0`` for too small tunneling rate,
+        * ``nuclCriterion(S, T) < 0`` for too large tunneling rate,
+        * ``nuclCriterion(S, T) = 0`` at the desired nucleation condition.
+
+        The default corresponds to the classic condition ``S(T)/T ≈ 140``.
+    verbose : bool, optional
+        If True, prints information about each tunneling attempt.
+    fullTunneling_params : mapping or None, optional
+        Extra keyword arguments forwarded to
+        :func:`pathDeformation.fullTunneling`.
+
+    Returns
+    -------
+    dict or None
+        A dictionary describing the tunneling solution at the nucleation
+        temperature, or None if no tunneling solution is found. For a
+        first-order transition, the dictionary contains:
+
+        - ``'Tnuc'``: nucleation temperature.
+        - ``'low_vev'``, ``'high_vev'``: field values of low-T (true)
+          and high-T (false) minima.
+        - ``'low_phase'``, ``'high_phase'``: keys of the corresponding
+          phases.
+        - ``'action'``: Euclidean action of the instanton.
+        - ``'instanton'``: object returned by
+          :func:`pathDeformation.fullTunneling`.
+        - ``'trantype'``: 1 for first-order transitions.
+
+        For transitions that turn out to be second-order or for which no
+        suitable bounce is found, returns None.
+    """
+    # Copy tunneling params to avoid mutating caller's dict
+    params: Dict[str, Any] = {}
+    if fullTunneling_params is not None:
+        params.update(fullTunneling_params)
+
+    outdict: Dict[float, Dict[str, Any]] = {}
+    args = (
+        phases,
+        start_phase,
+        V,
+        dV,
+        phitol,
+        overlapAngle,
+        nuclCriterion,
+        params,
+        verbose,
+        outdict,
+    )
+
+    Tmin = float(start_phase.T[0])
+    T_highest_other = Tmin
+    for phase in phases.values():
+        T_highest_other = max(T_highest_other, float(phase.T[-1]))
+
+    Tmax_eff = min(float(Tmax), T_highest_other)
+    if Tmax_eff < Tmin:
+        raise ValueError(
+            f"Tmax ({Tmax_eff}) is smaller than Tmin ({Tmin}); "
+            "cannot search for tunneling in this range."
+        )
+
+    # First attempt: directly bracket and find a root of nuclCriterion(S(T), T)
+    try:
+        Tnuc = float(
+            optimize.brentq(_tunnelFromPhaseAtT,Tmin, Tmax_eff, args=args, xtol=Ttol,
+                maxiter=maxiter, disp=False,) )
+    except ValueError as err:
+        # Only handle the "same sign" case; re-raise everything else.
+        if str(err) != "f(a) and f(b) must have different signs":
+            raise
+
+        # Ensure endpoints have been evaluated and cached.
+        _tunnelFromPhaseAtT(Tmax_eff, *args)
+        _tunnelFromPhaseAtT(Tmin, *args)
+
+        # If even at Tmax the nucleation criterion is > 0, tunneling is too
+        # suppressed by Tmax; check whether there is any chance at low T.
+        if nuclCriterion(outdict[Tmax_eff]["action"], Tmax_eff) > 0.0:
+            if nuclCriterion(outdict[Tmin]["action"], Tmin) < 0.0:
+                # Tunneling *may* be possible somewhere in (Tmin, Tmax_eff).
+                # Narrow the search to the region where the false vacuum is
+                # at least metastable (up to the last critical temperature).
+                Tmax_crit = _maxTCritForPhase(phases, start_phase, V, Ttol)
+
+                def abort_fmin(
+                    T_arr: np.ndarray,
+                    outdict: Dict[float, Dict[str, Any]] = outdict,
+                    nc: Callable[[float, float], float] = nuclCriterion,
+                ) -> None:
+                    T_val = float(np.asarray(T_arr, dtype=float).ravel()[0])
+                    if T_val in outdict and nc(outdict[T_val]["action"], T_val) <= 0.0:
+                        # As soon as we cross nuclCriterion <= 0, stop the minimization
+                        raise StopIteration(T_val)
+
+                try:
+                    Tmin_opt = float(
+                        optimize.fmin(
+                            _tunnelFromPhaseAtT,
+                            0.5 * (Tmin + Tmax_crit),
+                            args=args,
+                            xtol=Ttol * 10.0,
+                            ftol=1.0,
+                            maxiter=maxiter,
+                            disp=0,
+                            callback=abort_fmin,
+                        )[0]
+                    )
+                except StopIteration as stop_err:
+                    Tmin_opt = float(stop_err.args[0])
+
+                # Check if at Tmin_opt the criterion is still too positive;
+                # if yes, no tunneling solution.
+                if nuclCriterion(outdict[Tmin_opt]["action"], Tmin_opt) > 0.0:
+                    return None
+
+                # Final bracketing between Tmin_opt and Tmax_crit
+                Tnuc = float(
+                    optimize.brentq( _tunnelFromPhaseAtT, Tmin_opt, Tmax_crit, args=args, xtol=Ttol, maxiter=maxiter,
+                    disp=False, ))
+            else:
+                # Even at Tmin the nucleation criterion is not negative:
+                # tunneling never becomes efficient in [Tmin, Tmax_eff].
+                return None
+        else:
+            # Tunneling is already efficient at Tmax_eff: nucleation happens
+            # "right away" at the upper end of the range.
+            Tnuc = Tmax_eff
+
+    # Extract the best transition at Tnuc
+    if Tnuc not in outdict:
+        # Ensure the cache is filled at Tnuc
+        _tunnelFromPhaseAtT(Tnuc, *args)
+
+    rdict = outdict[Tnuc]
+    return rdict if rdict.get("trantype", 0) > 0 else None

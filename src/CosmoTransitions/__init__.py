@@ -16,6 +16,7 @@ from .finiteT import  (_asarray, _is_scalar, _apply_elementwise,
 from .tunneling1D import (PotentialError, SingleFieldInstanton)
 
 from .transitionFinder import (traceMinimum, _traceMinimum_rval, Phase, traceMultiMin, findApproxLocalMin, removeRedundantPhases,
-                               _removeRedundantPhase, getStartPhase)
+                               _removeRedundantPhase, getStartPhase, _solve_bounce, _tunnelFromPhaseAtT, _potentialDiffForPhase,
+                               _maxTCritForPhase, tunnelFromPhase)
 
 __version__ = "0.1.0"

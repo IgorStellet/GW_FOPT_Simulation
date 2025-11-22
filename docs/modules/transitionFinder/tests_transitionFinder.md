@@ -268,3 +268,350 @@ Behaviour:
 If you want to see the full test script of this block go to [tests/transitionFInder](/tests/transitionFinder/Lot_A.py)
 
 ---
+
+---
+
+## Block B – Tunneling core: bounce solutions and nucleation
+
+In Block A we *only* described **where** the phases lie along $T$.
+Block B goes one level deeper: given this phase panorama, what does the theory
+*do* with it? **It tunnels.**
+
+Here we test exactly that:
+
+* how to identify the critical temperature at which two phases become
+  degenerate;
+* how to solve the 1D *bounce* corresponding to a false → true tunnel;
+* how to stitch everything into a high-level function that provides the
+  **nucleation temperature** with the standard criterion
+  $S_3(T_n)/T_n \simeq 140$.
+
+All tests still use the same Landau–Ginzburg potential from Block A,
+so that we can connect directly:
+
+> *“This phase curve I saw in Block A is the same one that is now
+> nucleating a bubble with some action at $T_n$.”*
+
+---
+
+### Test B1 – Critical temperature and free-energy differences
+
+**Script:** `test_blockB_1_potential_diff_and_Tcrit`
+
+**Physical goal**
+
+Given a `start_phase` (here, the symmetric high-temperature phase),
+we want to identify the temperature at which **some** other phase becomes
+energetically degenerate with it:
+
+$$
+\Delta V(T) \equiv V_\text{other}(T) - V_\text{start}(T) = 0.
+$$
+
+This point defines a **critical temperature** for that phase — the boundary
+where it ceases to be the most favorable in free energy.
+
+**What the test does**
+
+1. Builds the phases with `traceMultiMin` (as in Block A) and identifies the
+   high-$T$ phase with `getStartPhase`.
+2. Uses `_maxTCritForPhase` to find the temperature $T_\text{crit}$
+   at which the `start_phase` ties with some competing phase.
+3. Evaluates `_potentialDiffForPhase(T, start_phase, other_phases, V)` at
+   $T_\text{crit}$ to check that $\Delta V(T_\text{crit}) \approx 0$.
+4. Scans an interval in $T$ and plots $\Delta V(T)$, marking the point
+   where it crosses zero.
+
+**Interpretation**
+
+* For $T > T_\text{crit}$ we expect $\Delta V(T) > 0$:
+  the starting phase is still energetically preferred.
+* For $T < T_\text{crit}$ some other minimum is deeper:
+  the starting phase becomes metastable or unstable.
+* The test numerically ensures that:
+
+  ```text
+  DV(Tcrit) = V(other) - V(start) ≈ 0
+   Critical temperature T_c  ≈ 102.0621
+  ΔV(T_c) = V(other) - V(start) ≈ 3.5406e-01 (should be ~ 0)
+  ```
+
+  within the specified tolerance.
+
+**Expected plot**
+
+* Horizontal: $T$
+* Vertical: $\Delta V(T) = V_\text{other} - V_\text{start}$.
+* A smooth curve $\Delta V(T)$ crossing the zero axis.
+* A horizontal line at $\Delta V = 0$.
+* A vertical line at $T = T_\text{crit}$.
+
+Visually, you are seeing the moment when the two phases “tie” in
+free energy.
+
+**Placeholder for figure**
+
+![Test B1 – Free-energy difference and T\_crit](assets/Lot_B_1.png)
+
+---
+
+### Test B2 – `_solve_bounce` in a 1D metastable configuration
+
+**Script:** `test_blockB_2_solve_bounce_single_field_example`
+
+**Physical goal**
+
+Before using the full nucleation machinery, we want to look closely at the
+**numerical core**: given a false vacuum and a true vacuum in 1D,
+does the backend `_solve_bounce` actually find a bounce with finite action?
+
+More concretely, we look for a $T$ such that:
+
+* $\phi = 0$ is still a **local minimum** (metastable),
+* there exists a deeper minimum at $\phi = \phi_\text{true} > 0$,
+* the two are separated by a barrier.
+
+This is the classic scenario for a **first-order tunnel**.
+
+**What the test does**
+
+1. Scans $T$ values slightly above $T_0$ until it finds:
+
+   * $m^2(\phi=0,T) > 0$ (positive curvature → local minimum),
+   * an analytic minimum $\phi_\text{true} > 0$ with
+     $V(\phi_\text{true},T) < V(0,T)$.
+
+2. Defines:
+
+   * `x_high = [0.0]` as the false vacuum,
+   * `x_low = [phi_true]` as the true vacuum.
+
+3. Builds scalar wrappers:
+
+   ```text
+   def V_fixed(x): return V(x, T_test)
+   def dV_fixed(x): return dV_dphi(x, T_test)
+   ```
+
+4. Calls `_solve_bounce(...)`, which internally:
+
+   * tries to use `pathDeformation` if available,
+   * otherwise falls back to `tunneling1D.SingleFieldInstanton` in the 1D direction.
+
+5. Checks that:
+
+   * `trantype == 1` (first-order transition),
+   * the returned `action` is finite and positive,
+   * a valid `instanton` object is returned.
+
+6. Plots the potential at $T_\text{test}$ with both minima highlighted.
+
+**Interpretation**
+
+* If `trantype = 1` and `action > 0`:
+
+  * the backend successfully solved the bounce equation with the correct
+    boundary conditions,
+  * the result is consistent with the physical interpretation of a
+    false → true tunnel.
+
+* This is the local check that **SingleFieldInstanton is really delivering
+  a physical solution** for the test potential.
+
+**Expected plot**
+
+* Horizontal: $\phi$ (region between $0$ and slightly above
+  $\phi_\text{true}$).
+* Vertical: $V(\phi, T_\text{test})$.
+* Curve: $V(\phi, T_\text{test})$.
+* Vertical lines marking:
+
+  * $\phi = 0$: false vacuum,
+  * $\phi = \phi_\text{true}$: true vacuum.
+
+This plot lets you see the “landscape” in which the bounce lives: two
+basins separated by a little hill (the barrier).
+
+**Placeholder for figure**
+
+![Test B2 – Potential at T\_test with false and true minima](assets/Lot_B_2.png)
+
+**Space for important prints**
+
+Importants Terminal output:
+
+```text
+  Chosen T_test = 100.2000
+  V(false, T_test) at phi=0         = 0.0000e+00
+  V(true,  T_test) at phi=58.7571 = -9.4718e+04
+  m^2(phi=0, T_test) = 8.0080e+00 (> 0 ⇒ metastable origin)
+  _solve_bounce returned trantype = 1
+  Bounce action S3(T_test)        ≈ 2.9944e+01
+  instanton object type           = <class 'CosmoTransitions.tunneling1D.SingleFieldInstanton'>
+```
+
+to reinforce that the scenario is genuinely metastable with a nontrivial bounce.
+
+---
+
+### Test B3 – `tunnelFromPhase` and the nucleation temperature $T_n$
+
+**Script:** `test_blockB_3_tunnelFromPhase_default_criterion`
+
+**Physical goal**
+
+Now we use the high-level tool `tunnelFromPhase` to:
+
+* take the phase panorama from Block A,
+
+* search in $T$ for possible bounces between the symmetric and broken phases,
+
+* apply a nucleation criterion of the form
+
+  $$
+  \text{nuclCriterion}(S_3(T), T)
+  = \frac{S_3(T)}{T} - 140 \approx 0,
+  $$
+
+* and identify the **nucleation temperature** $T_n$.
+
+In other words: here we see the passage
+“**metastable phase + bounce → cosmological phase transition**”.
+
+**What the test does**
+
+1. Reconstructs the phases with `_build_phases()` and uses `getStartPhase` to
+   take the high-$T$ symmetric phase as `start_phase`.
+
+2. Calls `tunnelFromPhase(...)` with:
+
+   * `V`, `dV_dphi`,
+   * `Tmax ≃ 200`,
+   * `overlapAngle = 45°` (pruning of nearly collinear directions in field
+     space),
+   * explicit nucleation criterion $S_3/T - 140$.
+
+3. `tunnelFromPhase` internally:
+
+   * scans temperatures between the lower bound of the phase and `Tmax`
+     looking for bounce solutions via `_tunnelFromPhaseAtT`,
+   * at each $T$, uses `_solve_bounce` (which in turn uses `pathDeformation`
+     or `SingleFieldInstanton`),
+   * stores in a dictionary `outdict[T]` the best (lowest-action) bounce
+     found.
+
+4. If it finds a first-order transition (`trantype == 1`):
+
+   * it returns a dictionary with:
+
+     * `Tnuc`,
+     * `low_vev`, `high_vev`,
+     * `low_phase`, `high_phase`,
+     * `action` (i.e. $S_3(T_n)$),
+     * `instanton` (object from the bounce routine).
+
+5. The test then:
+
+   * prints $T_n$, $S_3(T_n)$ and $S_3(T_n)/T_n$,
+   * checks that `trantype == 1`,
+   * verifies that $S_3/T$ is **close** to $140$ (it need not be millimetric),
+   * compares $T_n$ with $T_\text{crit}$ from Test B1, requiring
+     $T_n \lesssim T_\text{crit}$
+     (moderate supercooling, as expected in a first-order transition),
+   * checks that, at $T_n$, the “low” phase indeed has smaller free energy
+     than the “high” one.
+
+6. For visual intuition, it plots the potential at $T = T_n$ with both
+   minima marked.
+
+**Interpretation**
+
+* `tunnelFromPhase` is the “glue” between:
+
+  * **phase vs. $T$ information** (Block A),
+  * **bounce solving** (SingleFieldInstanton / pathDeformation),
+  * **cosmological nucleation criterion** (here, $S_3/T \sim 140$).
+
+* The test shows that:
+
+  * the code finds a $T$ where the bounce is efficient enough to satisfy
+    the criterion;
+  * this temperature is indeed *below* the critical degeneracy temperature;
+  * at $T_n$, the “low” minimum is physically the true one (smaller
+    free energy).
+
+**Expected plot**
+
+* Horizontal: $\phi$ in the neighborhood of both minima at $T_n$.
+* Vertical: $V(\phi, T_n)$.
+* Curve: $V(\phi, T_n)$.
+* Vertical lines marking:
+
+  * `high_vev` (false vacuum),
+  * `low_vev` (true vacuum).
+
+This is the analogue of Test B2, but now at the “special” temperature $T_n$
+defined by the nucleation criterion instead of an arbitrary $T$.
+
+**Placeholder for figure**
+
+![Test B3 – Potential at T\_n with false and true minima](assets/Lot_B_3.png)
+
+**Space for important prints**
+
+It is worth recording something like:
+
+```text
+ --- tunnelFromPhase result ---
+  T_nuc              ≈ 101.8969
+  S3(T_nuc)          ≈ 14191.6326
+  S3(T_nuc) / T_nuc  ≈ 139.2744
+  low_phase key      = 0
+  high_phase key     = 1
+  trantype           = 1 (1 = first order)
+  S3/T - 140 ≈ -0.726
+  Critical temperature T_crit ≈ 102.0621
+  We expect T_nuc < T_crit for a supercooled first-order transition.
+  V(false, T_nuc) at phi=-0.0000 = 1.2320e-35
+  V(true,  T_nuc) at phi=43.5502  = -5.7643e+03
+
+```
+
+to illustrate numerically:
+
+* how close $S_3/T$ is to $140$,
+* how far below $T_\text{crit}$ the $T_n$ sits,
+* and that the “low” phase is indeed the energetically favored one.
+
+---
+
+### Demo – Alternative nucleation criterion (pedagogical example)
+
+**Functions:** `ew_like_nuclCriterion`, `demo_blockB_alternative_nucleation_criterion`
+
+Besides the tests, the file includes a **non-pytest demo** that shows how to
+replace the standard nucleation criterion with another one, for example:
+
+$$
+\frac{S_3(T)}{T} = 4 \ln\left(\frac{M_\text{eff}}{T}\right)
+$$
+
+with some arbitrary scale $M_\text{eff}$. The goal here is **not** to be
+realistic for the toy model, but rather to:
+
+* show the signature that `nuclCriterion(S,T)` must have;
+* illustrate how the choice of criterion can shift $T_n$.
+
+The function `demo_blockB_alternative_nucleation_criterion()`:
+
+1. calls `tunnelFromPhase` with the standard criterion $S/T - 140$;
+2. calls it again with `ew_like_nuclCriterion`;
+3. prints both $T_n$ values and both $S_3/T$ values, allowing a comparison.
+
+This demo is useful as a *template* for plugging in your favorite nucleation
+criterion without touching the main code.
+
+---
+
+If you want to see the full script for these tests (Block B), see [tests/transitionFinder](/tests/transitionFinder/Lot_B.py)
+
