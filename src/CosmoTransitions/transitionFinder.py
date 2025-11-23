@@ -28,7 +28,7 @@ tracing routines remain fully vector-valued.
 
 
 from typing import NamedTuple
-from typing import Any, Callable, Dict, Hashable, Mapping, MutableMapping, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Hashable, Mapping, MutableMapping, Optional, Sequence, Tuple, Union, List
 
 
 
@@ -1774,3 +1774,463 @@ def tunnelFromPhase(
 
     rdict = outdict[Tnuc]
     return rdict if rdict.get("trantype", 0) > 0 else None
+
+
+# ---------------------------------------------------------------------------
+# Block C – Transition history: from phase structure to full thermal history
+# ---------------------------------------------------------------------------
+
+def secondOrderTrans(high_phase, low_phase, Tstr: str = "Tnuc") -> Dict[str, Any]:
+    """
+    Assemble a dictionary describing a **second-order** phase transition.
+
+    This is a lightweight helper used by :func:`findAllTransitions` and
+    :func:`findCriticalTemperatures` when the transition proceeds without a
+    tunneling barrier (no bounce / instanton).
+
+    Parameters
+    ----------
+    high_phase : Phase
+        Phase from which the system transitions as temperature decreases
+        (the high-T branch in the history).
+    low_phase : Phase
+        Phase to which the system transitions as temperature decreases
+        (the low-T branch).
+    Tstr : str, optional
+        Key name under which the characteristic temperature is stored in
+        the returned dictionary. For nucleation histories this is usually
+        ``"Tnuc"``, while for purely critical-temperature scans it is
+        convenient to use ``"Tcrit"``.
+
+    Returns
+    -------
+    dict
+        A transition dictionary with the following keys:
+
+        - ``Tstr`` (e.g. ``"Tnuc"`` or ``"Tcrit"``) :
+          characteristic temperature, here taken as the simple midpoint
+
+          .. math::
+              T = \\tfrac{1}{2} (T^{\\text{high}}_{\\max} + T^{\\text{low}}_{\\max}).
+
+        - ``low_vev``, ``high_vev`` :
+          VEVs of the fields at the transition. For genuinely second-order
+          transitions these coincide, so we take the first point of
+          ``high_phase.X`` as representative.
+
+        - ``low_phase``, ``high_phase`` :
+          Keys identifying the low-T and high-T phases, respectively.
+
+        - ``action`` :
+          Set to ``0.0`` for second-order transitions (no tunneling action).
+
+        - ``instanton`` :
+          Always ``None`` here (no bounce solution).
+
+        - ``trantype`` :
+          Integer flag ``2`` to indicate a second-order transition.
+    """
+    T_high = float(high_phase.T[0])
+    T_low  = float(low_phase.T[-1])
+    Tchar  = 0.5 * (T_high + T_low)
+
+    rdict: Dict[str, Any] = {
+        Tstr: Tchar,
+        "low_vev": high_phase.X[0],
+        "high_vev": high_phase.X[0],
+        "low_phase": low_phase.key,
+        "high_phase": high_phase.key,
+        "action": 0.0,
+        "instanton": None,
+        "trantype": 2,
+    }
+    return rdict
+
+
+def findAllTransitions(
+    phases: Mapping[Hashable, "Phase"],
+    V: Callable[[np.ndarray, float], float],
+    dV: Callable[[np.ndarray, float], np.ndarray],
+    tunnelFromPhase_args: Dict[str, Any] = {},
+) -> List[Dict[str, Any]]:
+    """
+    Build the **full phase transition history** starting from the high-T phase.
+
+    This function iteratively applies :func:`tunnelFromPhase` (Block B) and
+    :func:`secondOrderTrans` (above) to reconstruct a single **cooling path**
+
+    .. math::
+        \\text{Phase}_{\\text{high}} \\to \\text{Phase}_1 \\to \\text{Phase}_2 \\to \\dots
+
+    in order of decreasing temperature.
+
+    At each step it tries, in order:
+
+    1. A **first-order** transition out of the current phase via
+       :func:`tunnelFromPhase`. If successful, the returned transition
+       dictionary is appended with ``trantype = 1`` and the algorithm
+       continues from the resulting low-T phase at the corresponding
+       nucleation temperature ``Tnuc``.
+    2. If no first-order path is found but the current phase has entries
+       in ``phase.low_trans``, it picks the first such target that still
+       exists in the phase dictionary and constructs a **second-order**
+       transition via :func:`secondOrderTrans`.
+    3. If neither route is available, the history terminates.
+
+    Notes
+    -----
+    - Only *one* outgoing transition per phase is kept. If there are
+      multiple degenerate possibilities (e.g. due to symmetries), only
+      the first compatible one is used.
+    - The input mapping ``phases`` is **not** mutated; a shallow working
+      copy is created internally and pruned as transitions are traversed.
+
+    Parameters
+    ----------
+    phases : mapping
+        Output from :func:`traceMultiMin`. Keys are arbitrary hashables,
+        values are :class:`Phase` instances.
+    V : callable
+        Potential function with signature ``V(x, T) -> float``.
+    dV : callable
+        Gradient of the potential, ``dV(x, T) -> ndarray``.
+    tunnelFromPhase_args : dict, optional
+        Extra keyword arguments forwarded verbatim to
+        :func:`tunnelFromPhase`, e.g.
+
+        - ``Ttol``, ``maxiter``,
+        - ``phitol``, ``overlapAngle``,
+        - ``nuclCriterion``, ``verbose``,
+        - ``fullTunneling_params``.
+
+    Returns
+    -------
+    list of dict
+        A list of transition dictionaries in **descending temperature**
+        order along the chosen thermal history. Each entry is either:
+
+        - a first-order transition dictionary as returned by
+          :func:`tunnelFromPhase` (with ``trantype = 1``), or
+        - a second-order transition dictionary from
+          :func:`secondOrderTrans` (with ``trantype = 2``).
+    """
+    if not phases:
+        return []
+
+    # Working copy to avoid mutating the caller's mapping
+    phases_work: Dict[Hashable, Phase] = dict(phases)
+
+    # Identify the high-T starting phase
+    start_key = getStartPhase(phases_work, V)
+    start_phase = phases_work[start_key]
+    Tmax = float(start_phase.T[-1])
+
+    # Defensive copy of tunneling kwargs (do not mutate caller's dict)
+    tf_args: Dict[str, Any] = dict(tunnelFromPhase_args)
+
+    transitions: List[Dict[str, Any]] = []
+
+    while start_phase is not None:
+        # Once we've "left" a phase, we do not consider tunneling back into it.
+        phases_work.pop(start_phase.key, None)
+
+        # Try first-order tunneling from this phase
+        trans = tunnelFromPhase(
+            phases_work,
+            start_phase,
+            V,
+            dV,
+            Tmax,
+            **tf_args,
+        )
+
+        if trans is None:
+            # No first-order transition; try any second-order links encoded
+            # in low_trans.
+            low_targets = getattr(start_phase, "low_trans", []) or []
+
+            if not low_targets:
+                # No lower phases attached → end of the thermal history
+                start_phase = None
+                break
+
+            # Pick the first candidate that is still present
+            low_key: Optional[Hashable] = None
+            for key in low_targets:
+                if key in phases_work:
+                    low_key = key
+                    break
+
+            if low_key is None:
+                # All listed descendants have already been consumed in
+                # previous steps; nothing left to transition to.
+                start_phase = None
+                break
+
+            low_phase = phases_work[low_key]
+            transitions.append(secondOrderTrans(start_phase, low_phase))
+            start_phase = low_phase
+            Tmax = float(low_phase.T[-1])
+        else:
+            # Genuine first-order transition found
+            transitions.append(trans)
+            low_key = trans["low_phase"]
+
+            if low_key not in phases_work:
+                # In well-formed histories this should not happen, but we
+                # fail gracefully rather than raising.
+                start_phase = None
+                break
+
+            start_phase = phases_work[low_key]
+            Tmax = float(trans["Tnuc"])
+
+    return transitions
+
+
+def findCriticalTemperatures(
+    phases: Mapping[Hashable, "Phase"],
+    V: Callable[[np.ndarray, float], float],
+    start_high: bool = False,
+) -> List[Dict[str, Any]]:
+    """
+    Find all temperatures ``Tcrit`` where any two phases are **degenerate**.
+
+    For each ordered pair of phases (phase1 → phase2) with overlapping
+    temperature ranges, this routine:
+
+    1. Constructs the free-energy difference
+
+       .. math::
+           \\Delta V(T) = V_1(T) - V_2(T)
+                         = V(\\phi_1(T), T) - V(\\phi_2(T), T),
+
+       where :math:`\\phi_i(T) = \\text{phase}_i.\\text{valAt}(T)`.
+
+    2. Checks the signs of :math:`\\Delta V` at the ends of the overlap
+       interval. If there is a sign change, a critical temperature exists
+       between them.
+    3. Uses :func:`scipy.optimize.brentq` to locate the root ``Tcrit``.
+    4. Assembles a transition dictionary with
+
+       - ``Tcrit`` ,
+       - VEVs ``high_vev``, ``low_vev``,
+       - phase keys ``high_phase``, ``low_phase``,
+       - ``trantype = 1`` (first-order) by construction.
+
+    If two phases have **no overlap** in T but there is a second-order link
+    (``phase2.key in phase1.low_trans``), a synthetic second-order
+    transition is added via :func:`secondOrderTrans` with ``Tstr="Tcrit"``.
+
+    Parameters
+    ----------
+    phases : mapping
+        Output from :func:`traceMultiMin`. Keys are identifiers, values
+        are :class:`Phase` instances.
+    V : callable
+        Potential function ``V(x, T) -> float``.
+    start_high : bool, optional
+        If False (default), return *all* critical temperatures between
+        any pair of phases, sorted in decreasing ``Tcrit``. If True,
+        one would like to keep only those that can be reached starting
+        from the high-T phase; this mode is currently **not implemented**
+        and will raise :class:`NotImplementedError`.
+
+    Returns
+    -------
+    list of dict
+        A list of transition dictionaries. For first-order degeneracies,
+        entries have keys:
+
+        - ``"Tcrit"``,
+        - ``"high_vev"``, ``"low_vev"``,
+        - ``"high_phase"``, ``"low_phase"``,
+        - ``"trantype" = 1``.
+
+        For purely second-order degeneracies (no overlap in T but a
+        ``low_trans`` link), entries are generated by
+        :func:`secondOrderTrans` with ``Tstr="Tcrit"`` and ``trantype = 2``.
+    """
+    transitions: List[Dict[str, Any]] = []
+
+    for i_key, phase1 in phases.items():
+        for j_key, phase2 in phases.items():
+            if i_key == j_key:
+                continue
+
+            # Overlap in temperature range
+            tmin = max(float(phase1.T[0]), float(phase2.T[0]))
+            tmax = min(float(phase1.T[-1]), float(phase2.T[-1]))
+
+            if tmin >= tmax:
+                # No overlap → possible second-order transition if the
+                # phase-graph encodes phase2 as a descendant of phase1.
+                if getattr(phase1, "low_trans", None) and phase2.key in phase1.low_trans:
+                    transitions.append(secondOrderTrans(phase1, phase2, "Tcrit"))
+                continue
+
+            def DV(T: float) -> float:
+                # Free-energy difference between the two branches
+                phi1 = phase1.valAt(T)
+                phi2 = phase2.valAt(T)
+                return float(V(phi1, T) - V(phi2, T))
+
+            DV_tmin = DV(tmin)
+            DV_tmax = DV(tmax)
+
+            # For a meaningful Tcrit with phase1 as the *higher* branch,
+            # we require:
+            #   DV(tmin) >= 0   and   DV(tmax) <= 0,
+            # so that there is a sign change somewhere in [tmin, tmax].
+            if DV_tmin < 0.0:
+                # phase1 already lower at the cold end: no crossing in the
+                # direction phase1 → phase2
+                continue
+            if DV_tmax > 0.0:
+                # phase1 still higher even at the hot end: no degeneracy
+                continue
+
+            Tcrit = float(optimize.brentq(DV, tmin, tmax, disp=False))
+
+            tdict: Dict[str, Any] = {
+                "Tcrit": Tcrit,
+                "high_vev": phase1.valAt(Tcrit),
+                "high_phase": phase1.key,
+                "low_vev": phase2.valAt(Tcrit),
+                "low_phase": phase2.key,
+                "trantype": 1,
+            }
+            transitions.append(tdict)
+
+    if not start_high:
+        # Sort in decreasing Tcrit (hottest critical transitions first)
+        return sorted(transitions, key=lambda x: float(x["Tcrit"]), reverse=True)
+
+    # Placeholder for a future refinement that would prune to a single
+    # high-T–reachable history; for now we keep the original behaviour.
+    _ = getStartPhase(phases, V)
+    raise NotImplementedError("start_high=True not yet supported")
+
+
+def addCritTempsForFullTransitions(
+    phases: Mapping[Hashable, "Phase"],
+    crit_trans: Sequence[Dict[str, Any]],
+    full_trans: Sequence[Dict[str, Any]],
+) -> None:
+    """
+    Attach critical-temperature information to a list of **supercooled**
+    transitions.
+
+    This routine takes:
+
+    - ``crit_trans`` : a list of degeneracy transitions (from
+      :func:`findCriticalTemperatures`), typically labelled by ``"Tcrit"``.
+    - ``full_trans`` : a list of nucleation transitions (from
+      :func:`findAllTransitions` / :func:`tunnelFromPhase`), typically
+      labelled by ``"Tnuc"``.
+
+    For each element ``tdict`` in ``full_trans`` it tries to identify the
+    **corresponding** critical-temperature transition:
+
+    - It builds, for each phase, a list of "parents" in the critical-
+      temperature graph, by walking from **low T to high T** along the
+      high→low edges in ``crit_trans``.
+    - For a given nucleation transition with phases
+      ``high_phase`` → ``low_phase``, it compares the ancestry chains of
+      both and prunes out common parents.
+    - It then searches ``crit_trans`` (from low T to high T) for the
+      first transition whose phases are compatible with the pruned
+      ancestry chains and whose ``Tcrit`` is **not below** ``Tnuc``.
+    - If found, it stores this dictionary under the key
+      ``tdict["crit_trans"]``. Otherwise, it sets
+      ``tdict["crit_trans"] = None``.
+
+    Parameters
+    ----------
+    phases : mapping
+        Phase mapping used to interpret the graph structure.
+    crit_trans : sequence of dict
+        Critical-temperature transitions, typically the output of
+        :func:`findCriticalTemperatures`, assumed to be sorted in
+        decreasing ``Tcrit``.
+    full_trans : sequence of dict
+        Full (supercooled) transitions, typically the output of
+        :func:`findAllTransitions`. Each dict is **modified in place**
+        by adding a ``"crit_trans"`` key.
+
+    Returns
+    -------
+    None
+        The function operates by side-effect on the entries of
+        ``full_trans``.
+    """
+    # ------------------------------------------------------------------
+    # 1. Build ancestry lists ("parents") for each phase in the critical
+    #    transition graph, scanning from low T to high T.
+    # ------------------------------------------------------------------
+    parents_dict: Dict[Hashable, List[Hashable]] = {}
+
+    # We interpret crit_trans[::-1] as running from low to high T.
+    crit_low_to_high = list(crit_trans)[::-1]
+
+    for key in phases.keys():
+        parents: List[Hashable] = [key]
+        for tcdict in crit_low_to_high:
+            high = tcdict["high_phase"]
+            low = tcdict["low_phase"]
+            if low in parents and high not in parents:
+                parents.append(high)
+        parents_dict[key] = parents
+
+    # ------------------------------------------------------------------
+    # 2. For each full (supercooled) transition, find the matching
+    #    critical transition and attach it.
+    # ------------------------------------------------------------------
+    for tdict in full_trans:
+        low_phase_key = tdict["low_phase"]
+        high_phase_key = tdict["high_phase"]
+
+        low_parents = list(parents_dict.get(low_phase_key, []))
+        high_parents = list(parents_dict.get(high_phase_key, []))
+
+        # Identify common ancestors in the critical graph. We then prune
+        # them out so that we focus on the "differential" part of the
+        # ancestry between the two phases.
+        common_parents = set(low_parents).intersection(high_parents)
+
+        for p in common_parents:
+            # Remove p and anything *above* it in the low_parents chain
+            try:
+                k_low = low_parents.index(p)
+                low_parents = low_parents[:k_low]
+            except ValueError:
+                pass
+
+            # Remove anything *below* p in the high_parents chain, but
+            # keep p itself at the top.
+            try:
+                k_high = high_parents.index(p)
+                high_parents = high_parents[: k_high + 1]
+            except ValueError:
+                pass
+
+        # Now search critical transitions from low T to high T, matching
+        # both ancestry and the requirement Tcrit >= Tnuc.
+        Tnuc = float(tdict["Tnuc"])
+        attached: Optional[Dict[str, Any]] = None
+
+        for tcdict in crit_low_to_high:
+            Tcrit = float(tcdict["Tcrit"])
+            if Tcrit < Tnuc:
+                # Critical point lies below the nucleation temperature:
+                # not the right match for this supercooled transition.
+                continue
+
+            if (
+                tcdict["low_phase"] in low_parents
+                and tcdict["high_phase"] in high_parents
+            ):
+                attached = tcdict
+                break
+
+        tdict["crit_trans"] = attached

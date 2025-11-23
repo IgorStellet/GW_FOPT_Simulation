@@ -1567,3 +1567,307 @@ In the next test files, we will implement concrete examples using the same one-c
 * and how this connects to the phase diagram built in Block A.
 
 ---
+
+## Block C – Transition history (`secondOrderTrans`, `findAllTransitions`, `findCriticalTemperatures`, `addCritTempsForFullTransitions`)
+
+Block C takes everything built in Blocks A and B
+
+* **phases** traced in temperature (`Phase`, `traceMultiMin`, `getStartPhase`);
+* **bounce solutions** and **nucleation temperatures** (`tunnelFromPhase`);
+
+and turns it into something you actually want as a cosmologist:
+
+> A **coherent thermal history** of the Universe:
+> which phase is realized at which temperature, when first-order vs second-order transitions happen, and how far the system supercools before tunneling.
+
+Conceptually:
+
+* Block A: *“What are the minima as a function of T?”*
+* Block B: *“Given two minima, when and how do we tunnel between them?”*
+* **Block C**: *“Chaining everything together, what is the full sequence of transitions as the Universe cools?”*
+
+Below we describe each Block C function (how it works, what it returns, and what it means physically) in the same style as the previous blocks. 
+
+---
+
+### 1. `secondOrderTrans` – encoding second-order transitions
+
+**Role:**
+`secondOrderTrans(high_phase, low_phase, Tstr="Tnuc")` is a small helper that builds a **transition dictionary** for cases where the transition is **second order** (no barrier, no bounce).
+
+In the language of Block A:
+
+* Both `high_phase` and `low_phase` are `Phase` objects.
+* The **graph structure** (via `low_trans`) tells us that, as T goes down, the system can slide continuously from `high_phase` into `low_phase`.
+
+**Code behavior**
+
+* It constructs a dictionary with keys:
+
+  * `Tstr` (usually `"Tnuc"` or `"Tcrit"`),
+  * `high_phase`, `low_phase`,
+  * `high_vev`, `low_vev`,
+  * `action`, `instanton`, `trantype`.
+* For a second-order transition we use:
+
+  * `action = 0.0`,
+  * `instanton = None`,
+  * `trantype = 2`,
+  * `high_vev` and `low_vev` set to the same field value (the first point of `high_phase.X`), reflecting that the VEV is *continuous* across the transition.
+
+Physically, this is a **continuous symmetry restoration/breaking**:
+
+* No barrier → no instanton,
+* Correlation length diverges at the critical point,
+* Thermal fluctuations, not quantum tunneling, control the dynamics.
+
+
+---
+
+### 2. `findAllTransitions` – building a full thermal history
+
+**Role:**
+`findAllTransitions(phases, V, dV, tunnelFromPhase_args=...)` takes the phase structure (Block A) and the tunneling machinery (Block B), and constructs a **single cooling path**:
+
+$$
+\text{Phase}_\text{high} ;\rightarrow; \text{Phase}_1 ;\rightarrow; \text{Phase}_2 ;\rightarrow; \dots
+$$
+
+ordered from **high temperature to low temperature**.
+
+**High-level algorithm**
+
+1. **Start at high T**
+
+   * Use `getStartPhase(phases, V)` to identify the dominant high-T phase (usually symmetric, φ ≈ 0).
+   * Set `Tmax` to the highest T where this phase is defined.
+
+2. **Iterative step from a given `start_phase`**
+
+   1. Remove `start_phase` from the working map (we won’t tunnel *into* it again).
+
+   2. Call `tunnelFromPhase(phases_work, start_phase, V, dV, Tmax, **tunnelFromPhase_args)`:
+
+      * If a **first-order** transition is found, `tunnelFromPhase` returns a dict with:
+
+        * `Tnuc`, `low_phase`, `high_phase`, `low_vev`, `high_vev`,
+        * `instanton`, `action`, `trantype = 1`.
+      * If **no** first-order solution exists, it returns `None`.
+
+   3. **If first-order succeeded:**
+
+      * Append the returned dict to the `transitions` list.
+      * Set `start_phase = phases_work[low_phase]`.
+      * Update `Tmax = Tnuc` (we only look for *later* transitions).
+
+   4. **If first-order failed:**
+
+      * Look at `start_phase.low_trans` (if present) – these are “downstream” phases that can be reached continuously (second order).
+      * If at least one of them is still in `phases_work`, pick the first and build a second-order transition via `secondOrderTrans(start_phase, low_phase)`.
+      * Append that dict to `transitions`, update `start_phase = low_phase`, and set `Tmax` to the top of the new phase’s T-range.
+      * If there are no valid `low_trans` targets, the history stops.
+
+**Outputs**
+
+The function returns a **list of transition dictionaries**, each of which looks like:
+
+* First-order:
+
+  * `{"Tnuc", "low_vev", "high_vev", "low_phase", "high_phase", "action", "instanton", "trantype=1"}`
+* Second-order:
+
+  * Same keys but with `action=0.0`, `instanton=None`, `trantype=2`.
+
+They are automatically ordered from **hottest to coldest** along a single, consistent path in phase space.
+
+**Physical interpretation on the toy model**
+
+In the Landau–Ginzburg model used in Blocks A and B:
+
+* At high T: we start in the symmetric phase (φ ≈ 0).
+* As T drops:
+
+  * `findAllTransitions` should find a **first-order** transition from the symmetric to the broken phase, with:
+
+    * A `Tnuc` slightly **below** the critical temperature (supercooling),
+    * Non-zero `action` and a `trantype=1`.
+* If additional broken phases existed (multi-step symmetry breaking), they would appear as further entries, either first-order or second-order, depending on the barrier structure.
+
+
+---
+
+### 3. `findCriticalTemperatures` – scanning for degeneracies `Tcrit`
+
+**Role:**
+`findCriticalTemperatures(phases, V, start_high=False)` decouples the *geometric* information about **phase degeneracies** from the dynamical tunneling story.
+
+For every ordered pair of phases `(phase1 → phase2)` with overlapping temperature ranges, it asks:
+
+> “Is there a temperature `Tcrit` where
+> `V(φ₁(Tcrit), Tcrit) = V(φ₂(Tcrit), Tcrit)`?”
+
+If yes, `Tcrit` is a **critical temperature** where the two branches are degenerate in free energy.
+
+**Code behavior**
+
+1. For each pair `(i, j)`:
+
+   * Identify the overlap interval in T:
+
+     $$
+     [t_{\min}, t_{\max}] =
+     [\max(T_i^{\min}, T_j^{\min}), \min(T_i^{\max}, T_j^{\max})].
+     $$
+
+2. If there is **no overlap** (`tmin >= tmax`):
+
+   * Check for a second-order link via `phase2.key in phase1.low_trans`.
+   * If such a link exists, construct a second-order transition using
+     `secondOrderTrans(phase1, phase2, "Tcrit")`.
+
+3. If there **is** overlap:
+
+   * Define:
+
+     $$
+     \Delta V(T) = V(\phi_1(T), T) - V(\phi_2(T), T),
+     $$
+
+     with `φ1 = phase1.valAt(T)` and `φ2 = phase2.valAt(T)`.
+
+   * Evaluate `DV(tmin)` and `DV(tmax)`.
+
+   * Require:
+
+     * `DV(tmin) >= 0` and `DV(tmax) <= 0`, so that `phase1` is higher
+       at one end and lower at the other → sign change.
+
+   * If the sign change exists, use `optimize.brentq` to find `Tcrit` in `[tmin, tmax]`.
+
+   * Build a transition dict:
+
+     ```text
+     {
+       "Tcrit": Tcrit,
+       "high_vev": phase1.valAt(Tcrit),
+       "high_phase": phase1.key,
+       "low_vev": phase2.valAt(Tcrit),
+       "low_phase": phase2.key,
+       "trantype": 1,
+     }
+     ```
+
+4. After looping over all pairs, sort the list in **decreasing `Tcrit`**.
+
+**Physics: `Tcrit` vs `Tnuc`**
+
+* For a **first-order** transition, `Tcrit` is the temperature where two minima become **degenerate**.
+
+* But nucleation actually happens at a lower `Tnuc` where:
+
+  $$
+  \frac{S_3(T)}{T} \approx 140
+  $$
+
+  (or whatever criterion you use in `tunnelFromPhase`).
+
+* The difference `Tcrit − Tnuc` is a direct measure of **supercooling**.
+
+For a purely **second-order** transition:
+
+* The minima coalesce at `Tcrit`, there is **no barrier**, and we typically have `Tnuc ≈ Tcrit` and `trantype=2`.
+
+---
+
+### 4. `addCritTempsForFullTransitions` – matching `Tnuc` with `Tcrit`
+
+**Role:**
+`addCritTempsForFullTransitions(phases, crit_trans, full_trans)` glues together:
+
+* the **dynamical** information from supercooled transitions (`full_trans`, typically output from `findAllTransitions`), and
+* the **static** degeneracy information from `findCriticalTemperatures` (`crit_trans`).
+
+For each nucleation transition with a given `Tnuc`, it tries to find the “corresponding” `Tcrit` along the graph of phases, and attaches that dictionary under the key `"crit_trans"`.
+
+**Why this is useful**
+
+In any realistic model you often want to quote both:
+
+* the **critical temperature** (thermodynamic degeneracy),
+* the **nucleation temperature** (kinetic onset of the transition),
+
+for each step in the cosmological history. Knowing both is essential for:
+
+* estimating latent heat and strength of the transition,
+* computing gravitational-wave spectra (supercooling directly affects the signal),
+* comparing with analytic expectations.
+
+**How the matching works (logic overview)**
+
+1. **Build “parent” chains in the critical graph**
+
+   * For each phase `i` in `phases`, we construct a list `parents_dict[i]`:
+
+     ```text
+     parents = [i, ...]
+     ```
+
+     by scanning `crit_trans` from low T to high T and, whenever we see a critical transition `high → low` with `low` already in `parents`, we append `high`.
+
+   * Intuitively: these chains encode **ancestry along critical transitions** when moving from low T → high T.
+
+2. **For each nucleation transition `tdict` in `full_trans`:**
+
+   * Extract `low_phase` and `high_phase`.
+   * Get ancestry lists:
+
+     * `low_parents = parents_dict[low_phase]`,
+     * `high_parents = parents_dict[high_phase]`.
+   * Find the set of **common parents** between these chains and carefully prune them:
+
+     * Remove common ancestors from the tail of `low_parents`,
+     * Trim the tail of `high_parents` so that they share only the relevant high-T part.
+   * This focuses our search on the segment of the phase graph that actually distinguishes the two phases associated with this nucleation event.
+
+3. **Scan `crit_trans` (from low T to high T):**
+
+   * For each candidate `tcdict` in `crit_trans`:
+
+     * Skip if `Tcrit < Tnuc` (we only accept degeneracies above or at the nucleation temperature).
+
+     * Check whether:
+
+       ```text
+       tcdict["low_phase"]  in low_parents
+       tcdict["high_phase"] in high_parents
+       ```
+
+     * The first such match is taken to be the **critical counterpart** of the nucleation transition.
+
+   * Attach this dict as:
+
+     ```text
+     tdict["crit_trans"] = tcdict
+     ```
+
+   * If no match is found, set:
+
+     ```text
+     tdict["crit_trans"] = None
+     ```
+
+---
+
+If you want to see the full Block C implementation, look at the `transitionFinder` module in the same file where Blocks A and B live. Block C is the “glue layer” that:
+
+* takes the **phase structure** from Block A,
+* the **bounce physics** from Block B,
+* and turns them into a **human-readable thermal history** with:
+
+  * which phases appear,
+  * at which temperatures they become degenerate,
+  * at which temperatures they actually nucleate,
+  * and whether each step is first- or second-order.
+
+---
+

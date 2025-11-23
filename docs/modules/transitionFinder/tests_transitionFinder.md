@@ -615,3 +615,352 @@ criterion without touching the main code.
 
 If you want to see the full script for these tests (Block B), see [tests/transitionFinder](/tests/transitionFinder/Lot_B.py)
 
+---
+
+## Block C – Transition history: from phase structure to cosmic history
+
+Block C takes everything we built in Blocks A and B and pushes it one step further:
+
+* From **phase structure** (`Phase` objects, traced minima),
+* Plus **tunneling information** (bounce actions and nucleation temperatures),
+* To a **full thermal history**: a sequence of phase transitions as the Universe cools.
+
+The central routines are:
+
+* `secondOrderTrans` – convenience wrapper for second-order transitions.
+* `findAllTransitions` – builds the *actual* transition history using bounces.
+* `findCriticalTemperatures` – finds all degeneracy temperatures `Tcrit`.
+* `addCritTempsForFullTransitions` – matches `Tcrit` to `Tnuc` to quantify supercooling.
+
+All tests in this block still use the same 1D Landau–Ginzburg potential as Blocks A and B.
+
+---
+
+### Test 0 – `secondOrderTrans`: dictionary layout and conventions
+
+**Script:** `test_blockC_0_secondOrderTrans_basic_structure`
+
+**What it does**
+
+* Builds the phase structure using `traceMultiMin` (symmetric + broken branches).
+
+* Picks two phases and constructs a “second-order transition” dictionary by calling:
+
+  ```text
+  tdict = secondOrderTrans(high_phase, low_phase, Tstr="Tnuc")
+  ```
+
+* Checks that:
+
+  * The dictionary contains the expected keys: `Tnuc`, `high_vev`, `low_vev`,
+    `high_phase`, `low_phase`, `action`, `instanton`, `trantype`.
+  * `trantype == 2` (second order).
+  * `action == 0.0` and `instanton is None` (no barrier, no bounce).
+  * `Tnuc` is defined as the *midpoint* between the end of the high-T branch
+    and the start of the low-T branch:
+    $$
+    T_\text{nuc} = \tfrac12\bigl(T_\text{high}(T_0) + T_\text{low}(T_\text{end})\bigr).
+    $$
+  * `high_vev` and `low_vev` coincide with the high-T phase vev at its upper end.
+
+**Physical intuition**
+
+For a strictly second-order transition, there is no tunneling and no action; the order parameter changes continuously and the “critical temperature” is where the curvature changes sign. `secondOrderTrans` encodes this in a simple dictionary so that second-order steps can live in the same pipeline as first-order (bounce-driven) transitions.
+
+**Placeholder for output**
+
+```text
+
+[Block C / Test 0] secondOrderTrans: basic structure and fields
+Tracing phase starting at x = [138.38962553], T = 50.0
+  Tracing minimum up in T
+Tracing phase starting at x = [1.35525272e-19], T = 102.47832031250125
+  Tracing minimum down in T
+  Tracing minimum up in T
+  Constructed second-order transition dictionary:
+          Tnuc : 125.0
+       low_vev : [138.38962553]
+      high_vev : [138.38962553]
+     low_phase : 1
+    high_phase : 0
+        action : 0.0
+     instanton : None
+      trantype : 2
+
+```
+
+---
+
+### Test 1 – `findAllTransitions`: full thermal history with nucleation
+
+**Script:** `test_blockC_1_findAllTransitions_full_history`
+
+**What it does**
+
+* Rebuilds the phase structure (`Phase` objects) with `traceMultiMin`.
+
+* Uses `getStartPhase(phases, V)` to identify the **high-temperature phase**.
+
+* Calls
+
+  ```text
+  transitions = findAllTransitions(phases, V, dV_dphi, tunnelFromPhase_args=...)
+  ```
+
+  which internally:
+
+  1. Starts from the high-T phase.
+  2. Attempts tunneling via `tunnelFromPhase` to all lower-energy phases.
+  3. Chooses the **lowest-action** transition and moves to that phase.
+  4. Repeats from the new phase, stepping down in temperature, until no further
+     transitions occur.
+  5. Falls back to `secondOrderTrans` if there is a continuous (second-order) branch.
+
+* Prints a compact table:
+
+  * `idx` – index in the history (0 = earliest, highest T).
+  * `Tnuc` – nucleation temperature.
+  * `type` – `1` (first order, tunneling) or `2` (second order).
+  * `high_phase → low_phase` – phase labels.
+  * `S(Tnuc)` – bounce action at nucleation.
+
+* Checks that:
+
+  * There is at least one transition.
+  * `Tnuc` is **non-increasing** along the history (Universe cools).
+  * Phase keys in the table are valid entries of the `phases` dictionary.
+
+**Expected plot**
+
+**Phase structure with nucleation markers**
+
+* Horizontal axis: `T`.
+
+* Vertical axis: $\phi_{\min}(T)$ for each `Phase`.
+
+* For each phase:
+
+  * A smooth curve $\phi_{\min}(T)$ from the spline representation.
+
+* For each transition in `transitions`:
+
+  * A vertical line at `Tnuc`.
+  * A circle marker at `(Tnuc, high_vev)`.
+  * A square marker at `(Tnuc, low_vev)`.
+
+**What to look for**
+
+* At high T, the symmetric phase ($\phi \approx 0$) is occupied.
+* As T decreases, at some `Tnuc` the code jumps from the symmetric branch
+  to the broken branch (or to another low-T phase).
+* The printed `S(Tnuc)` values tell you whether nucleation happens close to the
+  “canonical” criterion (e.g. `S/T ≈ 140`) or at a different strength,
+  depending on the chosen `nuclCriterion`.
+
+**Placeholder for figure**
+
+![Test C1 – Phase structure and nucleation temperatures Tnuc](assets/Lot_C_1.png)
+
+---
+
+### Test 2 – `findCriticalTemperatures`: degeneracy temperatures `Tcrit`
+
+**Script:** `test_blockC_2_findCriticalTemperatures_degeneracies`
+
+**What it does**
+
+* Reuses the same `phases` dictionary.
+
+* Calls
+
+  ```text
+  crit_trans = findCriticalTemperatures(phases, V, start_high=False)
+  ```
+
+  which:
+
+  * Loops over all ordered pairs of phases `(phase1, phase2)` with overlapping
+    temperature ranges.
+  * For each pair, defines
+    $$
+    \Delta V(T) = V(\phi_1(T), T) - V(\phi_2(T), T),
+    $$
+    where $\phi_i(T) = \text{phase}_i.\text{valAt}(T)$.
+  * Uses a 1D root finder (`brentq`) to find `Tcrit` such that
+    $\Delta V(Tcrit) = 0$ whenever the sign of $\Delta V$ changes across the overlap.
+  * Assembles a dictionary
+
+    ```text
+    {
+      "Tcrit": Tcrit,
+      "high_vev": phase1.valAt(Tcrit),
+      "low_vev" : phase2.valAt(Tcrit),
+      "high_phase": phase1.key,
+      "low_phase" : phase2.key,
+      "trantype": 1,
+    }
+    ```
+
+* Prints a summary table:
+
+  * `Tcrit`, `trantype`, `high_phase → low_phase`,
+  * and the free-energy difference
+    $$
+    \Delta V = V(\phi_\text{high}, T_\text{crit}) - V(\phi_\text{low}, T_\text{crit}),
+    $$
+    which should be numerically close to zero.
+
+* Asserts that for each first-order entry `abs(ΔV) < 1e-3` (degeneracy).
+
+**Physical interpretation**
+
+`findCriticalTemperatures` ignores *dynamics* and nucleation rates. It simply asks:
+
+> *For which temperatures do two phases have identical free energy?*
+
+This is the equilibrium notion of a first-order transition line `Tcrit`, which
+is then compared with the actual **nucleation temperature** `Tnuc` in Test 3.
+
+**Expected plot**
+
+**Phase structure with `Tcrit` markers**
+
+* Same background curves $\phi_{\min}(T)$ for each `Phase`.
+* For each critical transition dictionary in `crit_trans`:
+
+  * A vertical dashed line at `Tcrit`.
+
+This plot is the purely thermodynamic “phase diagram in T”: the vertical lines
+show where phases swap their free-energy ordering.
+
+**Placeholder for figure**
+
+![Test C2 – Phase structure and critical temperatures Tcrit](assets/Lot_C_2.png)
+
+---
+
+### Test 3 – `addCritTempsForFullTransitions`: matching `Tcrit` and `Tnuc`
+
+**Script:** `test_blockC_3_addCritTemps_match_Tcrit_and_Tnuc`
+
+**What it does**
+
+* Rebuilds `phases`.
+
+* Computes:
+
+  * `full_trans` = `findAllTransitions(...)`
+    → *actual* transition history with nucleation temperatures `Tnuc`.
+  * `crit_trans` = `findCriticalTemperatures(...)`
+    → thermodynamic degeneracy temperatures `Tcrit`.
+
+* Calls
+
+  ```text
+  addCritTempsForFullTransitions(phases, crit_trans, full_trans)
+  ```
+
+  which:
+
+  * Analyses the *ancestry* of phases (`parents_dict`) in terms of sequences of
+    critical transitions.
+  * For each full transition (nucleation step) in `full_trans`, searches for a
+    compatible critical transition in `crit_trans` (matching high/low branches
+    up to common parents).
+  * Attaches the best match as `tdict["crit_trans"]` (or `None` if no match).
+
+* Prints a detailed table:
+
+  * For each full transition:
+
+    * `type` (`trantype`),
+    * `Tcrit` (if found),
+    * `Tnuc`,
+    * `ΔT = Tcrit − Tnuc`,
+    * phase labels `high_phase → low_phase`.
+
+* For first-order transitions with a matched `Tcrit`, checks that `Tcrit >= Tnuc`
+  (you cannot nucleate *before* degeneracy).
+
+**Physical interpretation**
+
+This test quantifies **supercooling** in a clean way:
+
+* `Tcrit` – the temperature at which phases are thermodynamically degenerate.
+* `Tnuc`  – the temperature at which bubbles actually nucleate efficiently.
+* `ΔT = Tcrit − Tnuc` – how far below the equilibrium transition temperature
+  the Universe cools before tunneling kicks in.
+
+In strongly first-order transitions, `ΔT` can be substantial, which is precisely
+what controls the strength of the phase transition and many gravitational-wave
+signatures.
+
+**Expected plot**
+
+**Phase structure with both `Tcrit` and `Tnuc`**
+
+* Background: $\phi_{\min}(T)$ curves for all phases.
+
+* From `crit_trans`:
+
+  * Vertical dashed lines at each `Tcrit`.
+
+* From `full_trans`:
+
+  * Vertical solid lines at each `Tnuc`.
+  * Circle and square markers for `high_vev` and `low_vev` at `Tnuc`.
+
+**What to look for**
+
+* For each first-order transition:
+
+  * a dashed line at `Tcrit`,
+  * a solid line (with markers) at `Tnuc`,
+  * with `Tnuc` at or below `Tcrit` (supercooling or equality).
+
+* The size of `ΔT` gives you an immediate, visually intuitive measure of how
+  strong the supercooling is in this toy model.
+
+**Placeholder for figure**
+
+![Test C3 – Phase structure, Tcrit, Tnuc and supercooling ΔT](assets/Lot_C_3.png)
+
+```text
+
+[Block C / Test 2] findCriticalTemperatures – phase degeneracies
+Tracing phase starting at x = [138.38962553], T = 50.0
+  Tracing minimum up in T
+Tracing phase starting at x = [1.35525272e-19], T = 102.47832031250125
+  Tracing minimum down in T
+  Tracing minimum up in T
+  Number of critical-temperature transitions found: 1
+
+  Summary of critical transitions (sorted by decreasing Tcrit):
+    idx |  Tcrit   | type | high_phase -> low_phase | ΔV(high-low)
+    ----+----------+------+-------------------------+--------------
+      0 |  102.062 |  1   | 1 ->        0 |    3.347e-10
+
+[Block C / Test 3] addCritTempsForFullTransitions – matching Tcrit and Tnuc
+Tracing phase starting at x = [138.38962553], T = 50.0
+  Tracing minimum up in T
+Tracing phase starting at x = [1.35525272e-19], T = 102.47832031250125
+  Tracing minimum down in T
+  Tracing minimum up in T
+  Number of full transitions: 1
+  Number of critical transitions: 1
+
+  Matching Tcrit and Tnuc for each full transition:
+    idx |  type |  Tcrit   |  Tnuc    |  ΔT=Tcrit-Tnuc | high_phase -> low_phase
+    ----+-------+----------+----------+----------------+------------------------
+      0 |  1    |  102.062 |  101.895 |          0.167 | 1 -> 0
+
+[Block C] All example tests executed.
+```
+
+---
+
+If you want to see the full Block C test script, including all prints and plots, see
+[`tests/transitionFinder/Lot_C.py`](/tests/transitionFinder/Lot_C.py).
+
+
+---
