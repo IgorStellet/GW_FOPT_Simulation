@@ -509,32 +509,88 @@ def test_blockA_4_dphi_dT_consistency_and_helper_functions():
     T_test = 150.0
     phi_test = np.array([0.3])
 
-    def f_x_only(x: np.ndarray) -> float:
+    # ------------------------------------------------------------------
+    # Wrappers adapted to gradientFunction / hessianFunction calling pattern
+    # for Ndim = 1.
+    #
+    # gradientFunction calls f(X) with X of shape (..., order, Ndim, Ndim)
+    # and expects f(X) to return shape (..., order, Ndim).
+    #
+    # hessianFunction calls f(X) with X of shape (..., m2, Ndim)
+    # and expects f(X) to return shape (..., m2).
+    # ------------------------------------------------------------------
+
+    def f_x_for_grad(X: np.ndarray) -> np.ndarray:
+        """
+        Scalar potential V(phi) viewed as f(X) for gradientFunction.
+
+        X is expected to have shape (..., order, 1, 1) when called from
+        gradientFunction with Ndim = 1. We extract the physical scalar
+        phi along the diagonal [ :, 0, 0 ] and return V with shape
+        (..., order, 1).
+        """
+        X = np.asarray(X, dtype=float)
+        if X.ndim >= 3:
+            # gradientFunction pattern: (..., order, 1, 1)
+            phi = X[..., :, 0, 0]  # (..., order)
+            V_val = (
+                D * (T_test**2 - T0**2) * phi**2
+                - E * T_test * phi**3
+                + 0.25 * lambda_ * phi**4
+            )
+            # gradientFunction expects an extra Ndim axis at the end
+            return V_val[..., None]  # (..., order, 1)
+        else:
+            # Fallback: treat last axis as Ndim=1
+            phi = X[..., 0]
+            V_val = (
+                D * (T_test**2 - T0**2) * phi**2
+                - E * T_test * phi**3
+                + 0.25 * lambda_ * phi**4
+            )
+            return V_val
+
+    def f_x_for_hess(X: np.ndarray) -> np.ndarray:
+        """
+        Same scalar potential, but in the format expected by hessianFunction.
+
+        hessianFunction calls f(X) with X of shape (..., m2, 1) when Ndim = 1,
+        and expects f(X) to return shape (..., m2).
+        """
+        X = np.asarray(X, dtype=float)
+        if X.ndim >= 2:
+            # hessianFunction pattern: (..., m2, 1)
+            phi = X[..., :, 0]  # (..., m2)
+        else:
+            phi = X
         V_val = (
-                D * (T_test ** 2 - T0 ** 2) * x ** 2
-                - E * T_test * x ** 3
-                + 0.25 * lambda_ * x ** 4
+            D * (T_test**2 - T0**2) * phi**2
+            - E * T_test * phi**3
+            + 0.25 * lambda_ * phi**4
         )
-        return V_val
+        return V_val  # (..., m2)
 
-    # Gradient
-    grad_obj = gradientFunction(f_x_only,eps=1e-5, Ndim=1)
+    # -----------------
+    # Gradient check
+    # -----------------
+    grad_obj = gradientFunction(f_x_for_grad, eps=1e-5, Ndim=1)
     grad_num = np.asarray(grad_obj(phi_test), dtype=float)
-
     grad_analytic = dV_dphi(phi_test, T_test)
+
     print(f"  grad_num      = {grad_num}")
     print(f"  grad_analytic = {grad_analytic}")
     assert np.allclose(grad_num, grad_analytic, rtol=1e-2, atol=1e-4)
 
-    # Hessian
-    hess_obj = hessianFunction(f_x_only, eps=1e-5, Ndim=1)
+    # -----------------
+    # Hessian check
+    # -----------------
+    hess_obj = hessianFunction(f_x_for_hess, eps=1e-5, Ndim=1)
     hess_num = np.asarray(hess_obj(phi_test), dtype=float)
-
     hess_analytic = d2V_dphi2(phi_test, T_test)
+
     print(f"  hess_num      = {hess_num}")
     print(f"  hess_analytic = {hess_analytic}")
     assert np.allclose(hess_num, hess_analytic, rtol=1e-2, atol=1e-4)
-
 
 # ---------------------------------------------------------------------------
 # Test 5: traceMultiMin + Phase – global phase structure in [T_low, T_high]
@@ -738,7 +794,7 @@ if __name__ == "__main__":
     test_blockA_1_potential_shape_and_minima()
     test_blockA_2_traceMinimum_symmetric_phase_downwards()
     test_blockA_3_traceMinimum_broken_phase_upwards()
-    #test_blockA_4_dphi_dT_consistency_and_helper_functions()
+    test_blockA_4_dphi_dT_consistency_and_helper_functions()
     test_blockA_5_traceMultiMin_and_Phase_structure()
     test_blockA_6_findApproxLocalMin_on_simple_segment()
     test_blockA_7_removeRedundantPhases_merges_duplicates()
