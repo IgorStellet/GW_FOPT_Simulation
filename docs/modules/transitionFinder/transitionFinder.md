@@ -1871,3 +1871,383 @@ If you want to see the full Block C implementation, look at the `transitionFinde
 
 ---
 
+## Block D – Observables: from tunneling data to physical diagnostics
+
+Block D takes the **microscopic information** from Blocks A–C,
+
+* phase structure (`Phase`, `findAllTransitions`, `findCriticalTemperatures`);
+* tunneling data and actions (`tunnelFromPhase`, `tunneling1D.SingleFieldInstanton`);
+
+and turns it into the **macroscopic quantities** we actually quote in cosmology and GW phenomenology:
+
+* strength of the transition:
+  $\displaystyle \alpha = \frac{\Delta \rho}{\rho_{\rm rad}}$;
+* geometry–based proxy for the timescale:
+  $\beta_{\rm eff}$ and $\beta_{\rm eff}/H_*$;
+* latent heat, free-energy difference, supercooling, etc.
+
+The idea is: once you have a list of transitions (from Block C), you call the Block D helpers to attach a small dictionary `obs` to each transition, collecting all these derived quantities in one place.
+
+---
+
+### D.1 Local helpers – ∂V/∂T and Hubble in radiation domination
+
+#### `_partial_dVdT`
+
+This is an **internal finite-difference helper** that estimates the *partial* derivative
+$\partial V / \partial T$ at fixed field value $x$:
+
+```text
+_partial_dVdT(V, x, T, h_rel=1e-3, h_abs=1e-3) → float
+```
+
+Internally it uses a symmetric difference:
+
+$$
+\left.\frac{\partial V}{\partial T}\right|_{x}
+\approx \frac{
+V(x, T + \Delta T) - V(x, T - \Delta T)
+}{2,\Delta T},
+$$
+
+with
+$\Delta T = \max(h_\text{abs}, h_\text{rel},\max(|T|, 1))$.
+
+**Usage notes**
+
+* You normally **don’t** call `_partial_dVdT` directly.
+  It is used automatically by `thermalObservablesForTransition` when you do *not* provide an analytic `dVdT`.
+* It assumes that `V(x, T)` is smooth enough in $T$ that a small step is safe.
+
+---
+
+#### `hubble_rad`
+
+```text
+hubble_rad(T, g_star=106.75, M_pl=1.2209e19) → float
+```
+
+This is a convenience wrapper for the standard **radiation-dominated Hubble rate**:
+
+$$
+H(T) \simeq 1.66\sqrt{g_*}\frac{T^{2}}{M_{\rm pl}}
+$$
+
+in natural units ($c = \hbar = k_B = 1$).
+
+* `g_star` is $g_*$, the effective number of relativistic degrees of freedom.
+* `M_pl` is the (non-reduced) Planck mass.
+
+This function is used to convert geometric proxies (like $\beta_{\rm eff}$) into a **dimensionless** $\beta_{\rm eff}/H_*$ evaluated at a characteristic temperature $T_*$ (e.g. the nucleation temperature).
+
+---
+
+### D.2 `thermalObservablesForTransition` – observables for a single transition
+
+#### Purpose
+
+```text
+thermalObservablesForTransition(
+    tdict,
+    V,
+    *,
+    dVdT=None,
+    T_key="Tnuc",
+    g_star=106.75,
+    T_eps_rel=1e-3,
+    T_eps_abs=1e-3,
+    beta_from_geometry=True,
+    beta_geom_method="rscale",
+    M_pl=1.2209e19,
+) → dict
+```
+
+Given:
+
+* one **transition dictionary** (from `tunnelFromPhase` / `findAllTransitions`); and
+* the underlying potential $V(x, T)$;
+
+this function returns a **new dictionary of thermodynamic observables** at a chosen temperature $T_*$. By default $T_*$ is the nucleation temperature `Tnuc`, but you can also evaluate at `Tcrit` or any other temperature key present in the transition dictionary.
+
+---
+
+#### Inputs and assumptions
+
+`tdict` is assumed to contain at least:
+
+* `Tnuc` or another temperature under the name `T_key`
+  → evaluation temperature $T_* = $ `tdict[T_key]`;
+* `high_vev`, `low_vev`
+  → field values $x_{\rm high}$, $x_{\rm low}$ of the high-T and low-T phases;
+* `high_phase`, `low_phase`
+  → identifiers for the two phases;
+* `action`
+  → Euclidean action $S(T_*)$;
+* `instanton` (optional)
+  → backend-dependent object (e.g. `SingleFieldInstanton`) to estimate $\beta_{\rm eff}$.
+
+If `tdict` also has a nested `crit_trans` dictionary with a `Tcrit` entry, the function also computes the **supercooling** $\Delta T = T_{\rm crit} - T_*$.
+
+`V(x, T)` is interpreted as a **free-energy density** (finite-temperature effective potential).
+
+---
+
+#### Step 1 – Choose the evaluation temperature (T_*)
+
+* `T_key` tells the function which temperature key in `tdict` to use.
+  Typical choices are:
+
+  * `"Tnuc"` → nucleation temperature;
+  * `"Tcrit"` → critical temperature.
+
+We define:
+
+$$
+T_* \equiv \texttt{float}(tdict[T_key]) ; > 0.
+$$
+
+If `tdict["crit_trans"]["Tcrit"]` exists, we also set:
+
+$$
+T_{\rm crit} = \text{that value}, \qquad
+\Delta T = T_{\rm crit} - T_*.
+$$
+
+If not – or if anything is missing – both `Tcrit` and `DeltaT` are set to `NaN`.
+
+---
+
+#### Step 2 – Free-energy difference ΔV
+
+At fixed $T_*$ we evaluate the potential at the two minima:
+
+$$
+V_{\rm high} = V(x_{\rm high}, T_*), \qquad
+V_{\rm low} = V(x_{\rm low}, T_*).
+$$
+
+and define the **free-energy difference**:
+
+$$
+\Delta V \equiv V_{\rm high} - V_{\rm low}.
+$$
+
+This is stored as `deltaV`. A **positive** $\Delta V$ means the low-T phase has *lower* free energy, so the transition releases vacuum energy when going high → low.
+
+---
+
+#### Step 3 – Energy densities and latent heat
+
+We need the **energy density** of each phase. For a thermal effective potential treated as a free-energy density, a standard identification is
+
+$$
+\rho(\phi, T) = V(\phi, T) - T\left(\frac{\partial V}{\partial T}\right)_{\phi},
+$$
+
+with the derivative taken **at fixed field**.
+
+* If you provide `dVdT(x, T)`, it is used directly.
+* Otherwise, the code uses `_partial_dVdT` to build a finite-difference estimate.
+
+Then:
+
+$$
+\begin{aligned}
+\rho_{\rm high} &= V_{\rm high} - T_* \left. \frac{\partial V}{\partial T} \right|*{x*{\rm high}}, \\
+\rho_{\rm low} &= V_{\rm low}  - T_* \left. \frac{\partial V}{\partial T} \right|*{x*{\rm low}}.
+\end{aligned}
+$$
+
+The **latent heat** (or energy-density jump) is defined as
+
+$$
+\Delta \rho \equiv \rho_{\rm high} - \rho_{\rm low}.
+$$
+
+This is the amount of energy released when the system tunnels from the high-T phase to the low-T phase. It is stored both as:
+
+* `delta_rho` and
+* `latent_heat` (alias).
+
+---
+
+#### Step 4 – Radiation energy density and strength α
+
+The relativistic plasma at temperature $T_*$ has energy density
+
+$$
+\rho_{\rm rad} = \frac{\pi^2}{30}g_*T_*^4,
+$$
+
+with `g_star ≡ g_*` (typically $\sim 100$).
+
+The **strength parameter** is then
+
+$$
+\alpha \equiv \frac{\Delta \rho}{\rho_{\rm rad}}.
+$$
+
+In the output dictionary this appears as:
+
+* `rho_rad` – radiation energy density at $T_*$;
+* `alpha_strength` – the ratio $\alpha$.
+
+Physically:
+
+* small $\alpha$ → **weak** transition, small released energy compared to the thermal bath;
+* large $\alpha$ → **strong** transition, potentially strong GW source.
+
+---
+
+#### Step 5 – Action and (S/T)
+
+From `tdict["action"]` we read $S(T_*)$ and compute
+
+$$
+\frac{S(T_*)}{T_*},
+$$
+
+stored as `S` and `S_over_T`.
+
+This is where the classic **nucleation criterion** $S(T_n)/T_n \simeq 140$ is meant to hold if `T_key = "Tnuc"` and the default root condition from Block B is used.
+
+---
+
+#### Step 6 – Geometric β proxies (β_eff and β_eff / H*)
+
+The true cosmological $\beta$ is
+
+$$
+\beta \equiv -\left.\frac{d}{dt}\frac{S_3(T)}{T}\right|_{t*},
+$$
+
+which requires the full **temperature dependence** of the action. That is beyond the scope of this module.
+
+Instead, Block D provides a **local geometric proxy** based on the instanton:
+
+* If `tdict["instanton"]` is a `SingleFieldInstanton` (or similar) with methods:
+
+  * `findProfile()` and
+  * `betaEff(profile, method=...)`,
+* and `beta_from_geometry=True`,
+
+then:
+
+1. Build the profile via `instanton.findProfile()`.
+2. Call `instanton.betaEff(profile, method=beta_geom_method)` to get a characteristic inverse length scale $\beta_{\rm eff}$.
+3. Convert to **dimensionless** $\beta_{\rm eff}/H_*$ using
+
+   $$
+   H_* = H(T_*) = \texttt{hubble_rad}(T_* , g_* , M_{\rm pl}).
+   $$
+
+These are stored as:
+
+* `beta_eff` – geometric proxy for β (same units as inverse radius),
+* `beta_over_H_eff` – $\beta_{\rm eff} / H_*$,
+* `beta_method` – string describing how β was obtained (e.g. `"geometry:rscale"`).
+
+If anything fails (no instanton, missing methods, etc.), these fields are set to `NaN` and `beta_method="none"` (or `"geometry:...:failed"`).
+
+---
+
+#### Output structure
+
+`thermalObservablesForTransition` returns a dictionary with keys:
+
+* **Temperatures / reference:**
+
+  * `T_star` – evaluation temperature $T_*$.
+  * `T_ref_key` – which key was used (e.g. `"Tnuc"` or `"Tcrit"`).
+  * `Tcrit` – critical temperature if present, else `NaN`.
+  * `DeltaT` – `Tcrit - T_star` (supercooling), else `NaN`.
+
+* **Action:**
+
+  * `S` – Euclidean action at $T_*$.
+  * `S_over_T` – $S(T_*)/T_*$.
+
+* **Potential and energy densities:**
+
+  * `deltaV` – $\Delta V = V_{\rm high} - V_{\rm low}$.
+  * `rho_high`, `rho_low` – energy densities of high- and low-T phases.
+  * `delta_rho`, `latent_heat` – $\Delta \rho = \rho_{\rm high} - \rho_{\rm low}$.
+  * `rho_rad` – radiation energy density at $T_*$.
+
+* **Strength:**
+
+  * `alpha_strength` – $\alpha = \Delta \rho / \rho_{\rm rad}$.
+
+* **β proxies:**
+
+  * `beta_eff` – geometric proxy for β (inverse length).
+  * `beta_over_H_eff` – $\beta_{\rm eff} / H_*$.
+  * `beta_method` – description of the method used or `"none"`.
+
+---
+
+### D.3 `addObservablesToTransitions` – decorate a whole transition history
+
+#### Purpose
+
+```text
+addObservablesToTransitions(
+    transitions,
+    V,
+    *,
+    dVdT=None,
+    T_key="Tnuc",
+    g_star=106.75,
+    T_eps_rel=1e-3,
+    T_eps_abs=1e-3,
+    beta_from_geometry=True,
+    beta_geom_method="rscale",
+    M_pl=1.2209e19,
+) → None
+```
+
+This is a **high-level convenience wrapper**:
+
+* Takes the full list of transitions produced by `findAllTransitions` (Block C).
+* For each transition dictionary `tdict` in `transitions`, it calls
+  `thermalObservablesForTransition(...)`.
+* Stores the result **in-place** under the key `"obs"`:
+
+  ```text
+  tdict["obs"] = thermalObservablesForTransition(...)
+  ```
+
+After this call, your transition history can be inspected as:
+
+```text
+for i, t in enumerate(transitions):
+    obs = t["obs"]
+    print(f"Transition #{i}: T* = {obs['T_star']:.2f}, "
+          f"alpha = {obs['alpha_strength']:.3e}, "
+          f"beta/H = {obs['beta_over_H_eff']:.2e}")
+```
+
+---
+
+#### Example layout for summary tables
+
+A nice way to present results (either in notebooks or in the docs) is a **summary table** with one row per transition and columns:
+
+* `T_star`, `Tcrit`, `DeltaT`;
+* `S_over_T`, `alpha_strength`;
+* `beta_over_H_eff`, `beta_method`.
+
+You can build it from the list `transitions` after calling `addObservablesToTransitions` and then export or plot as you like.
+
+---
+
+If you want to see how these observables are attached to the full thermal history, check the code near **Block C** (`findAllTransitions`, `addCritTempsForFullTransitions`) and then the **Block D** functions `thermalObservablesForTransition` and `addObservablesToTransitions` in the implementation file. Together, they take you from:
+
+> *“What transitions happen when?”*
+
+to
+
+> *“How strong are they, and what β/H should I use for GW forecasts?”*
+
+
+---

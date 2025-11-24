@@ -31,7 +31,6 @@ from typing import NamedTuple
 from typing import Any, Callable, Dict, Hashable, Mapping, MutableMapping, Optional, Sequence, Tuple, Union, List
 
 
-
 import logging
 
 import numpy as np
@@ -2234,3 +2233,371 @@ def addCritTempsForFullTransitions(
                 break
 
         tdict["crit_trans"] = attached
+
+
+# ---------------------------------------------------------------------------
+# Block D – Observables: thermodynamic and GW–friendly diagnostics
+# ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Small utilities
+# ---------------------------------------------------------------------------
+
+def _partial_dVdT(
+    V: Callable[[np.ndarray, float], float],
+    x: np.ndarray,
+    T: float,
+    *,
+    h_rel: float = 1e-3,
+    h_abs: float = 1e-3,
+) -> float:
+    """
+    Finite-difference estimate of the *partial* derivative ∂V/∂T at fixed field x.
+
+    Parameters
+    ----------
+    V : callable
+        Potential V(x, T) returning a scalar free-energy density.
+    x : ndarray
+        Field value (same shape used elsewhere, typically (N,) or (1,)).
+    T : float
+        Temperature at which to evaluate ∂V/∂T.
+    h_rel : float, optional
+        Relative step size in temperature (fraction of max(|T|, 1)).
+    h_abs : float, optional
+        Absolute minimum step in T.
+
+    Returns
+    -------
+    float
+        Finite-difference estimate of ∂V/∂T at fixed x.
+    """
+    T = float(T)
+    x_arr = np.asarray(x, dtype=float)
+    dT = max(h_abs, h_rel * max(abs(T), 1.0))
+
+    Vp = float(V(x_arr, T + dT))
+    Vm = float(V(x_arr, T - dT))
+    return (Vp - Vm) / (2.0 * dT)
+
+
+def hubble_rad(
+    T: float,
+    *,
+    g_star: float = 106.75,
+    M_pl: float = 1.2209e19,
+) -> float:
+    r"""
+    Hubble rate in a radiation-dominated Universe, in natural units.
+
+    Uses the standard approximation
+
+        H(T) ≃ 1.66 * sqrt(g_*) * T^2 / M_pl,
+
+    where g_* is the effective number of relativistic degrees of freedom.
+
+    Parameters
+    ----------
+    T : float
+        Temperature at which to evaluate H(T).
+    g_star : float, optional
+        Effective number of relativistic degrees of freedom g_*.
+    M_pl : float, optional
+        (Non-reduced) Planck mass, default 1.2209e19 GeV.
+
+    Returns
+    -------
+    float
+        H(T) in the same units as T^2 / M_pl (typically GeV).
+    """
+    T = float(T)
+    return 1.66 * np.sqrt(float(g_star)) * T * T / float(M_pl)
+
+
+# ---------------------------------------------------------------------------
+# Core observable builder for a single transition
+# ---------------------------------------------------------------------------
+
+def thermalObservablesForTransition(
+    tdict: Mapping[str, Any],
+    V: Callable[[np.ndarray, float], float],
+    *,
+    dVdT: Optional[Callable[[np.ndarray, float], float]] = None,
+    T_key: str = "Tnuc",
+    g_star: float = 106.75,
+    T_eps_rel: float = 1e-3,
+    T_eps_abs: float = 1e-3,
+    beta_from_geometry: bool = True,
+    beta_geom_method: str = "rscale",
+    M_pl: float = 1.2209e19,
+) -> Dict[str, Any]:
+    r"""
+    Compute thermodynamic observables for a single phase transition.
+
+    This function takes a transition dictionary (as returned by
+    :func:`tunnelFromPhase` or :func:`findAllTransitions`) and the underlying
+    potential :math:`V(x, T)` and returns a dictionary with quantities such as
+
+    - :math:`S(T_*)` and :math:`S(T_*)/T_*`,
+    - free-energy difference :math:`\Delta V`,
+    - energy-density difference :math:`\Delta \rho` (latent heat),
+    - strength parameter :math:`\alpha \equiv \Delta \rho / \rho_{\rm rad}`,
+    - approximate :math:`\beta/H_*` from instanton geometry when available.
+
+    Parameters
+    ----------
+    tdict : mapping
+        Transition dictionary. Must contain at least:
+
+        - ``Tnuc`` or another temperature key given by ``T_key``.
+        - ``high_vev``, ``low_vev``: field values of high-T and low-T phases.
+        - ``high_phase``, ``low_phase``: phase identifiers.
+        - ``action``: Euclidean action S(T_*).
+        - ``instanton``: backend-dependent instanton object (may be None).
+
+        If ``tdict`` also contains a key ``"crit_trans"`` with a nested
+        dictionary that has a ``"Tcrit"`` entry, this is used to compute
+        the supercooling :math:`\Delta T = T_{\rm crit} - T_*`.
+    V : callable
+        Potential ``V(x, T) -> float``.
+    dVdT : callable, optional
+        Partial derivative ∂V/∂T at fixed x, with signature
+        ``dVdT(x, T) -> float``. If omitted, a finite-difference estimate
+        is used via :func:`_partial_dVdT`.
+    T_key : {"Tnuc", "Tcrit", ...}, optional
+        Name of the temperature key in ``tdict`` to be used as the evaluation
+        temperature :math:`T_*`. Typically "Tnuc" (default) or "Tcrit".
+    g_star : float, optional
+        Effective number of relativistic degrees of freedom g_* at T_*.
+    T_eps_rel, T_eps_abs : float, optional
+        Relative and absolute scales for the finite-difference step in T
+        used when `dVdT` is not provided.
+    beta_from_geometry : bool, optional
+        If True, attempt to use geometric information from the instanton
+        to estimate a length-scale :math:`\beta_{\rm eff}` via the method
+        :meth:`tunneling1D.SingleFieldInstanton.betaEff`. If not available,
+        the corresponding entries are set to NaN.
+    beta_geom_method : {"rscale", "curvature", "wall"}, optional
+        Method passed to ``instanton.betaEff(profile, method=...)`` when
+        geometry-based beta is requested.
+    M_pl : float, optional
+        Planck mass used to convert :math:`\beta_{\rm eff}` into
+        :math:`\beta/H_*` via :func:`hubble_rad`.
+
+    Returns
+    -------
+    dict
+        Dictionary with the following fields (keys):
+
+        - ``"T_star"`` : float – the temperature used for evaluation (T_*).
+        - ``"T_ref_key"`` : str – the key used ("Tnuc", "Tcrit", ...).
+        - ``"Tcrit"`` : float or NaN – critical temperature if available.
+        - ``"DeltaT"`` : float or NaN – Tcrit − T_*, supercooling measure.
+        - ``"S"`` : float – Euclidean action S(T_*).
+        - ``"S_over_T"`` : float – S(T_*) / T_*.
+        - ``"deltaV"`` : float – free-energy difference
+          :math:`\Delta V = V_{\rm high} - V_{\rm low}` at T_*.
+        - ``"rho_high"`` : float – energy density of the high-T phase,
+          :math:`\rho_{\rm high} = V_{\rm high} - T_* (\partial V/\partial T)_{\rm high}`.
+        - ``"rho_low"`` : float – same for low-T phase.
+        - ``"delta_rho"`` : float – energy-density difference
+          :math:`\Delta \rho = \rho_{\rm high} - \rho_{\rm low}` (latent heat).
+        - ``"latent_heat"`` : float – alias for ``delta_rho``.
+        - ``"rho_rad"`` : float – radiation energy density
+          :math:`\rho_{\rm rad} = (\pi^2/30) g_* T_*^4`.
+        - ``"alpha_strength"`` : float – transition strength parameter
+          :math:`\alpha = \Delta \rho / \rho_{\rm rad}`.
+        - ``"beta_eff"`` : float – geometric proxy for β (inverse length),
+          or NaN if not available.
+        - ``"beta_over_H_eff"`` : float – :math:`\beta_{\rm eff} / H(T_*)` or NaN.
+        - ``"beta_method"`` : str – description of how β was obtained.
+
+    Notes
+    -----
+    * The potential :math:`V(\phi, T)` is interpreted as a *free-energy density*.
+      For each phase,
+
+      .. math::
+
+          \rho(\phi, T) = V(\phi, T) - T \left( \frac{\partial V}{\partial T} \right)_\phi
+
+      is used as the energy density (no total derivative along the phase
+      trajectory; the derivative is taken at fixed field value).
+
+    * ``delta_rho`` is defined as :math:`\rho_{\rm high} - \rho_{\rm low}`:
+      a positive value corresponds to *released* vacuum energy when the
+      system tunnels from the high-T to the low-T phase.
+    """
+    # ------------------------------------------------------------
+    # 1) Choose evaluation temperature T_star
+    # ------------------------------------------------------------
+    if T_key not in tdict:
+        raise KeyError(
+            f"thermalObservablesForTransition: T_key='{T_key}' not found in transition dict."
+        )
+
+    T_star = float(tdict[T_key])
+    if T_star <= 0.0:
+        raise ValueError(
+            f"thermalObservablesForTransition: T_star={T_star:.6g} must be positive."
+        )
+
+    # Optional critical temperature for supercooling
+    Tcrit = np.nan
+    if "crit_trans" in tdict and tdict["crit_trans"] is not None:
+        ct = tdict["crit_trans"]
+        if isinstance(ct, Mapping) and "Tcrit" in ct:
+            Tcrit = float(ct["Tcrit"])
+
+    DeltaT = Tcrit - T_star if np.isfinite(Tcrit) else np.nan
+
+    # ------------------------------------------------------------
+    # 2) Extract minima and potential values at T_star
+    # ------------------------------------------------------------
+    x_high = np.asarray(tdict["high_vev"], dtype=float)
+    x_low = np.asarray(tdict["low_vev"], dtype=float)
+
+    V_high = float(V(x_high, T_star))
+    V_low = float(V(x_low, T_star))
+
+    # Free-energy difference: high minus low (energy released when going high → low)
+    deltaV = V_high - V_low
+
+    # ------------------------------------------------------------
+    # 3) Partial derivatives ∂V/∂T at fixed field values
+    # ------------------------------------------------------------
+    if dVdT is not None:
+        dVdT_high = float(dVdT(x_high, T_star))
+        dVdT_low = float(dVdT(x_low, T_star))
+    else:
+        dVdT_high = _partial_dVdT(V, x_high, T_star, h_rel=T_eps_rel, h_abs=T_eps_abs)
+        dVdT_low = _partial_dVdT(V, x_low, T_star, h_rel=T_eps_rel, h_abs=T_eps_abs)
+
+    # Energy densities: rho = V - T * (∂V/∂T)_φ
+    rho_high = V_high - T_star * dVdT_high
+    rho_low = V_low - T_star * dVdT_low
+
+    # Latent heat / energy density difference (released energy)
+    delta_rho = rho_high - rho_low
+
+    # Radiation bath energy density
+    rho_rad = (np.pi**2 / 30.0) * float(g_star) * (T_star**4)
+
+    # Strength parameter α = Δρ / ρ_rad
+    alpha_strength = delta_rho / rho_rad if rho_rad != 0.0 else np.nan
+
+    # ------------------------------------------------------------
+    # 4) Action and S/T
+    # ------------------------------------------------------------
+    S = float(tdict.get("action", np.nan))
+    S_over_T = S / T_star if T_star != 0.0 else np.nan
+
+    # ------------------------------------------------------------
+    # 5) Geometric β proxies (SingleFieldInstanton if available)
+    # ------------------------------------------------------------
+    beta_eff = np.nan
+    beta_over_H_eff = np.nan
+    beta_method_used = "none"
+
+    if beta_from_geometry:
+        inst = tdict.get("instanton", None)
+        if inst is not None and hasattr(inst, "findProfile") and hasattr(inst, "betaEff"):
+            try:
+                profile = inst.findProfile()
+                beta_eff_val = float(inst.betaEff(profile, method=str(beta_geom_method)))
+                if np.isfinite(beta_eff_val) and beta_eff_val > 0.0:
+                    H_star = hubble_rad(T_star, g_star=g_star, M_pl=M_pl)
+                    beta_eff = beta_eff_val
+                    beta_over_H_eff = beta_eff_val / H_star if H_star > 0.0 else np.nan
+                    beta_method_used = f"geometry:{beta_geom_method}"
+            except Exception:
+                # If anything goes wrong, fall back to NaN but keep code robust.
+                beta_eff = np.nan
+                beta_over_H_eff = np.nan
+                beta_method_used = f"geometry:{beta_geom_method}:failed"
+
+    # ------------------------------------------------------------
+    # 6) Assemble observables dictionary
+    # ------------------------------------------------------------
+    obs = dict(
+        T_star=T_star,
+        T_ref_key=str(T_key),
+        Tcrit=Tcrit,
+        DeltaT=DeltaT,
+        S=S,
+        S_over_T=S_over_T,
+        deltaV=deltaV,
+        rho_high=rho_high,
+        rho_low=rho_low,
+        delta_rho=delta_rho,
+        latent_heat=delta_rho,
+        rho_rad=rho_rad,
+        alpha_strength=alpha_strength,
+        beta_eff=beta_eff,
+        beta_over_H_eff=beta_over_H_eff,
+        beta_method=beta_method_used,
+    )
+    return obs
+
+
+# ---------------------------------------------------------------------------
+# Helper: attach observables to an entire transition history
+# ---------------------------------------------------------------------------
+
+def addObservablesToTransitions(
+    transitions: Sequence[Dict[str, Any]],
+    V: Callable[[np.ndarray, float], float],
+    *,
+    dVdT: Optional[Callable[[np.ndarray, float], float]] = None,
+    T_key: str = "Tnuc",
+    g_star: float = 106.75,
+    T_eps_rel: float = 1e-3,
+    T_eps_abs: float = 1e-3,
+    beta_from_geometry: bool = True,
+    beta_geom_method: str = "rscale",
+    M_pl: float = 1.2209e19,
+) -> None:
+    """
+    Enrich a list of transition dictionaries with thermodynamic observables.
+
+    For each transition dictionary in `transitions`, this function calls
+    :func:`thermalObservablesForTransition` and stores the resulting
+    observables under the key ``"obs"`` in-place.
+
+    Parameters
+    ----------
+    transitions : sequence of dict
+        List as returned by :func:`findAllTransitions`. Each element is
+        modified in-place to include an ``"obs"`` entry.
+    V : callable
+        Potential ``V(x, T) -> float``.
+    dVdT : callable, optional
+        Partial derivative ∂V/∂T at fixed x. If omitted, a finite-difference
+        estimate is used.
+    T_key : str, optional
+        Temperature key to use as T_* (typically "Tnuc").
+    g_star : float, optional
+        Effective number of relativistic degrees of freedom at the transition.
+    T_eps_rel, T_eps_abs : float, optional
+        Relative/absolute step sizes for T finite differences when dVdT is None.
+    beta_from_geometry : bool, optional
+        If True, attempt to estimate β/H from the instanton geometry.
+    beta_geom_method : {"rscale", "curvature", "wall"}, optional
+        Method passed to ``instanton.betaEff``.
+    M_pl : float, optional
+        Planck mass used in :func:`hubble_rad`.
+    """
+    for tdict in transitions:
+        tdict["obs"] = thermalObservablesForTransition(
+            tdict,
+            V,
+            dVdT=dVdT,
+            T_key=T_key,
+            g_star=g_star,
+            T_eps_rel=T_eps_rel,
+            T_eps_abs=T_eps_abs,
+            beta_from_geometry=beta_from_geometry,
+            beta_geom_method=beta_geom_method,
+            M_pl=M_pl,
+        )
