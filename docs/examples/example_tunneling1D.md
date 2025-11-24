@@ -1,5 +1,3 @@
-from src.CosmoTransitions import SingleFieldInstanton
-
 # Tunneling 1D - All that you need to know
 
 This page aims to teach you only what's necessary for someone to use and call the functions that
