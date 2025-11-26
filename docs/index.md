@@ -44,6 +44,11 @@ The main explanation of the codes used and all images can be found in the [examp
   - Single Field functions: [modules/tunneling1D/single_field](modules/tunneling1D/single_field.md)
   - Tests of SF functions: [modules/tunneling1D/tests_single_field](modules/tunneling1D/tests_single_field.md)
 
+### transitionFinder Functions
+  - Transition Finder Complete: [modules/transitionFinder/](modules/transitionFinder/transitionFinder.md)
+  - Tests of TF functions: [modules/transitionFinder/tests_](modules/transitionFinder/tests_transitionFinder.md)
+
+
 ---
 
 ## Install (dev) & Quick Start

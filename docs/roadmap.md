@@ -44,11 +44,11 @@ gantt
     
     section Phase 2: Tunneling 1D Module
     Modify/tests Tunneling1D.py     :done,2025-10-07, 12d
-    Examples Tunneling1D.py         :active,2025-10-20, 3d
+    Examples Tunneling1D.py         :done,2025-10-20, 3d
     
     section Phase 3: Transtions Finder Module
-    Modify/tests transitionFinder.py :2025-10-24, 12d      
-    Examples transitionFinder        :2025-11-06, 3d
+    Modify/tests transitionFinder.py :done,2025-10-24, 12d      
+    Examples transitionFinder        :done,2025-11-06, 3d
     
     section Phase 4: Generic Potential Module
     Modify/tests generic_potential.py  :2025-11-10, 12d
@@ -76,13 +76,13 @@ gantt
   - [x] Validate isolated functions with simple analytic examples  
   - [x] exercise error paths and validations
 
-- [ ] **Phase 2**: Tunneling 1D Core Module 
+- [x] **Phase 2**: Tunneling 1D Core Module 
   - [x] Refactor `tunneling1D.py` 
-  -  Examples modernized `tunneling1D.py` 
+  - [x] Examples modernized `tunneling1D.py` 
 
-- [ ] **Phase 3**: Transtions Finder Core Module 
-  - Refactor `transtionFinder.py` 
-  - Test modernized `transtionFinder.py`
+- [x] **Phase 3**: Transtions Finder Core Module 
+  - [x] Refactor `transtionFinder.py` 
+  - [x] Test modernized `transtionFinder.py`
 
 - [ ] **Phase 4**: Generic Potential Core Module  
   - Refactor `generic_potential.py` 

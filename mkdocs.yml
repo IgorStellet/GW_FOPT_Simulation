@@ -43,6 +43,7 @@ nav:
   - Architecture: architecture.md
   - Examples (Core modules):
       - Tunneling 1D full example: examples/example_tunneling1D.md
+      - Transition Finder full example: examples/example_transitionFinder.md
   - Modules:
     - Helper Functions:
         - Miscellaneous Functions: modules/helper_functions/Miscellaneous_functions.md
@@ -59,6 +60,7 @@ nav:
         - Tests of SF functions: modules/tunneling1D/tests_single_field.md
     - Transition Finder:
         - Transition Functions: modules/transitionFinder/transitionFinder.md
+        - Tests of TF functions: modules/transitionFinder/tests_transitionFinder.md
     - Generic Potential:
         - Potential Functions: modules/generic_potential/generic_potential.md
 docs_dir: docs
