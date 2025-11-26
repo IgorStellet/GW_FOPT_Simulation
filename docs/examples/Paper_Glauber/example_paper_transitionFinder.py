@@ -2540,12 +2540,12 @@ if __name__ == "__main__":
         nuclCriterion=None,
         Tn_Ttol= 1e-3,
         Tn_maxiter= 80,
-        save_dir=f"results_C_{C}.",        # "results"
+        save_dir=f"results_C_{C}",        # "results"
     )
 
 
 """"
-C_list = [3.65, 3.75, 3.85]
+C_list = [3.65, 3.75, 3.83]
 
 for C in C_list:
     run_all(
@@ -2565,6 +2565,6 @@ for C in C_list:
         nuclCriterion=None,
         Tn_Ttol= 1e-3,
         Tn_maxiter= 100,
-        save_dir=f"results_C_{C}.",        # "results"
+        save_dir=f"results_C_{C}",        # "results"
     )
 """

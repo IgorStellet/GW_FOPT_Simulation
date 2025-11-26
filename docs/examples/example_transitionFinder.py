@@ -33,7 +33,7 @@ to multi-field models.
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, Hashable, List, Mapping, MutableMapping, Sequence, Tuple
+from typing import Any, Dict, Hashable, List, Mapping, MutableMapping, Sequence, Tuple, Optional
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -58,14 +58,14 @@ T_LOW: float = 0.0
 T_HIGH: float = 200.0
 
 # Field range for plotting / crude scans
-PHI_MIN: float = -5.0
-PHI_MAX: float = 5.0
-N_PHI: int = 801
+PHI_MIN: float = -5
+PHI_MAX: float = 5
+N_PHI: int = 1000
 
 # traceMultiMin / traceMinimum controls
 DELTA_X_TARGET: float = 0.05     # Target step in field space
-DTSTART_FRAC: float = 1e-3       # dtstart as a fraction of (T_HIGH - T_LOW)
-TJUMP_FRAC: float = 1e-3         # temperature jump between successive traces
+DTSTART_FRAC: float = 1e-4       # dtstart as a fraction of (T_HIGH - T_LOW)
+TJUMP_FRAC: float = 1e-4         # temperature jump between successive traces
 
 # Nucleation criterion: classic S(T) / T ≈ 140
 TARGET_S_OVER_T: float = 140.0
@@ -544,7 +544,9 @@ def example_B_transition_temperatures(
     Example B:
       - Extract spinodal, critical and nucleation temperatures.
       - Print them in a small table.
-      - Plot V(φ, T) at those special temperatures.
+      - Plot V(φ, T) at those special temperatures (4 panels: spinodal-high,
+        critical, nucleation, spinodal-low), with an adaptive φ-range that
+        covers the relevant minima for each T.
     """
     del crit_transitions  # only used indirectly via main_trans["crit_trans"]
 
@@ -597,34 +599,113 @@ def example_B_transition_temperatures(
     print(f"  Action at nucleation: S(Tn) = {S:9.3f}")
     print(f"  S(Tn) / Tn           : {S_over_T:9.3f}  (target = {TARGET_S_OVER_T:.1f})")
 
-    # Collect temperatures at which to plot V(φ, T)
-    T_plot_list: List[float] = [T_spin_high, Tn, T_spin_low]
-    T_labels: List[str] = [r"$T_{\mathrm{spin}}^{\mathrm{high}}$",
-                           r"$T_{\mathrm{nuc}}$",
-                           r"$T_{\mathrm{spin}}^{\mathrm{low}}$"]
-    if Tc is not None:
-        # Insert Tc between spinodal and Tn if it lies in between
-        T_plot_list.insert(1, Tc)
-        T_labels.insert(1, r"$T_{\mathrm{crit}}$")
+    # ------------------------------------------------------------------
+    # Four panels: one for each characteristic temperature
+    # ------------------------------------------------------------------
+    T_items: List[Tuple[Optional[float], str, str]] = [
+        (T_spin_high, r"$T_{\mathrm{spin}}^{\mathrm{high}}$", "High-phase spinodal"),
+        (Tc,          r"$T_{\mathrm{crit}}$",                "Critical (degenerate)"),
+        (Tn,          r"$T_{\mathrm{nuc}}$",                 "Nucleation"),
+        (T_spin_low,  r"$T_{\mathrm{spin}}^{\mathrm{low}}$", "Low-phase spinodal"),
+    ]
 
-    phi_grid = np.linspace(PHI_MIN, PHI_MAX, N_PHI)
+    fig, axes = plt.subplots(2, 2, figsize=(10.0, 8.0), sharex=False, sharey=False)
+    axes_flat = axes.ravel()
 
-    fig, ax = plt.subplots(figsize=(6.5, 4.5))
-    for Tval, label in zip(T_plot_list, T_labels):
+    for ax, (Tval, label_tex, desc) in zip(axes_flat, T_items):
+        if Tval is None:
+            # No critical temperature: keep the panel but show a message
+            ax.axis("off")
+            ax.text(
+                0.5,
+                0.5,
+                f"{desc}\n(no {label_tex} for this transition)",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+            )
+            continue
+
+        # --------------------------------------------------------------
+        # Determine which phases exist at this T and where their minima are
+        # --------------------------------------------------------------
+        phis_for_range: List[float] = []
+
+        T_hp_min = float(high_phase.T[0])
+        T_hp_max = float(high_phase.T[-1])
+        phi_high: float | None = None
+        V_high: float | None = None
+        if T_hp_min <= Tval <= T_hp_max:
+            phi_high = float(high_phase.valAt(Tval)[0])
+            V_high = float(V(phi_high, Tval))
+            phis_for_range.append(phi_high)
+
+        T_lp_min = float(low_phase.T[0])
+        T_lp_max = float(low_phase.T[-1])
+        phi_low: float | None = None
+        V_low: float | None = None
+        if T_lp_min <= Tval <= T_lp_max:
+            phi_low = float(low_phase.valAt(Tval)[0])
+            V_low = float(V(phi_low, Tval))
+            phis_for_range.append(phi_low)
+
+        # --------------------------------------------------------------
+        # Build an adaptive φ-range that covers all relevant minima
+        # --------------------------------------------------------------
+        if phis_for_range:
+            phi_min = min(phis_for_range)
+            phi_max = max(phis_for_range)
+            span = max(1e-6, phi_max - phi_min)
+
+            # Margin: 30% of the span, but at least 0.5 in absolute units
+            margin = max(0.5, 0.3 * span)
+
+            # If both minima coincide (e.g. second-order or at the appearance
+            # of a new phase), still give a symmetric window around them.
+            if span < 1e-6:
+                center = phi_min
+                margin = max(margin, 0.5 * max(1.0, abs(center)))
+                phi_left = center - margin
+                phi_right = center + margin
+            else:
+                phi_left = phi_min - margin
+                phi_right = phi_max + margin
+        else:
+            # Fallback: no minima from these two phases at this T
+            # (very unlikely in this example, but be robust).
+            phi_left = PHI_MIN
+            phi_right = PHI_MAX
+
+        phi_grid = np.linspace(phi_left, phi_right, N_PHI)
         V_vals = np.asarray(V(phi_grid, Tval), dtype=float)
-        ax.plot(phi_grid, V_vals, label=f"{label} = {Tval:.3f}")
 
-    # Mark the high- and low-phase minima at Tn
-    phi_high_Tn = float(high_phase.valAt(Tn)[0])
-    phi_low_Tn = float(low_phase.valAt(Tn)[0])
-    ax.scatter([phi_high_Tn], [V(phi_high_Tn, Tn)], marker="o", label="high-phase minimum at Tn")
-    ax.scatter([phi_low_Tn], [V(phi_low_Tn, Tn)], marker="s", label="low-phase minimum at Tn")
+        # --------------------------------------------------------------
+        # Plot potential and mark minima (when defined)
+        # --------------------------------------------------------------
+        ax.plot(phi_grid, V_vals)
 
-    ax.set_xlabel(r"$\phi$")
-    ax.set_ylabel(r"$V(\phi, T)$")
-    ax.set_title("Potential at spinodal, critical and nucleation temperatures")
-    ax.legend(loc="best", fontsize=8)
-    ax.grid(True, alpha=0.3)
+        if phi_high is not None and V_high is not None:
+            ax.scatter([phi_high], [V_high], marker="o", s=30, label="high-phase min")
+
+        if phi_low is not None and V_low is not None:
+            ax.scatter([phi_low], [V_low], marker="s", s=30, label="low-phase min")
+
+        ax.set_title(f"{desc}\n{label_tex} = {Tval:.3f}", fontsize=10)
+        ax.grid(True, alpha=0.3)
+
+        handles, labels = ax.get_legend_handles_labels()
+        if handles:
+            ax.legend(fontsize=7, loc="best")
+
+        ax.set_xlabel(r"$\phi$")
+        ax.set_ylabel(r"$V(\phi, T)$")
+
+    fig.suptitle(
+        "Example B – Potential at spinodal, critical and nucleation temperatures",
+        fontsize=12,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
+
     plt.show()
     _save_figure(fig, "B", case)
 
@@ -642,7 +723,9 @@ def example_C_minima_evolution(
     Example C:
       - Show φ_min(T) for each Phase.
       - Show the curvature m²(T) = ∂²V/∂φ² evaluated at the minima.
-      - Highlight Tspin, Tcrit and Tn when available.
+      - Highlight T_spin, T_crit and T_n when available.
+      - First figure: φ_min(T) and m²(T) stacked in a single panel.
+      - Second figure: m²(T) only, zoomed around the spinodal region.
     """
     print("\n" + "-" * 79)
     print("Example C – Evolution of minima and curvature with temperature")
@@ -650,111 +733,200 @@ def example_C_minima_evolution(
 
     main_trans, high_phase, low_phase = _extract_main_transition(phases, full_transitions)
 
-    # Gather landmark temperatures if possible
-    Tn = None
-    Tc = None
-    T_spin_high = None
-    T_spin_low = None
+    # ------------------------------------------------------------------
+    # Landmark temperatures (if a main first-order transition exists)
+    # ------------------------------------------------------------------
+    Tn: float | None = None
+    Tc: float | None = None
+    T_spin_high: float | None = None
+    T_spin_low: float | None = None
+
     if main_trans is not None and high_phase is not None and low_phase is not None:
         Tn = float(main_trans["Tnuc"])
-        T_spin_high = float(high_phase.T[0])
-        T_spin_low = float(low_phase.T[-1])
+        T_spin_high = float(high_phase.T[0])   # lowest T where high-T phase still exists
+        T_spin_low = float(low_phase.T[-1])    # highest T where low-T phase first appears
         if main_trans.get("crit_trans") is not None:
             Tc = float(main_trans["crit_trans"]["Tcrit"])
 
-    # --- φ_min(T) for all phases --------------------------------------------
-    fig1, ax1 = plt.subplots(figsize=(6.5, 4.5))
+    # ------------------------------------------------------------------
+    # Precompute φ_min(T) and m²(T) for all phases once
+    # ------------------------------------------------------------------
+    phase_data: Dict[Hashable, Dict[str, np.ndarray]] = {}
 
     for key, phase in phases.items():
         T_vals = np.asarray(phase.T, dtype=float)
         phi_vals = np.asarray(phase.X[:, 0], dtype=float)
-        ax1.plot(T_vals, phi_vals, marker=".", linestyle="-", label=f"Phase {key!r}")
+        m2_vals = np.array(
+            [d2V_dphi2(phi, T) for phi, T in zip(phi_vals, T_vals)],
+            dtype=float,
+        )
+        phase_data[key] = {"T": T_vals, "phi": phi_vals, "m2": m2_vals}
+
+    # ==================================================================
+    # Figure 1: φ_min(T) and m²(T) in a single stacked figure
+    # ==================================================================
+    fig1, (ax_phi, ax_m2) = plt.subplots(
+        2, 1, figsize=(6.5, 7.0), sharex=True
+    )
+
+    # --- Top: φ_min(T) -------------------------------------------------
+    for key, pdata in phase_data.items():
+        ax_phi.plot(
+            pdata["T"],
+            pdata["phi"],
+            marker=".",
+            linestyle="-",
+            label=f"Phase {key!r}",
+        )
 
     if T_spin_high is not None:
-        ax1.axvline(T_spin_high, linestyle="--", alpha=0.4, label="T_spin (high)")
+        ax_phi.axvline(
+            T_spin_high,
+            linestyle="--",
+            alpha=0.4,
+            label=r"$T_{\mathrm{spin}}^{\mathrm{high}}$",
+        )
     if Tc is not None:
-        ax1.axvline(Tc, linestyle=":", alpha=0.6, label="T_crit")
+        ax_phi.axvline(
+            Tc,
+            linestyle=":",
+            alpha=0.6,
+            label=r"$T_{\mathrm{crit}}$",
+        )
     if Tn is not None:
-        ax1.axvline(Tn, linestyle="-.", alpha=0.6, label="T_nuc")
+        ax_phi.axvline(
+            Tn,
+            linestyle="-.",
+            alpha=0.6,
+            label=r"$T_{\mathrm{nuc}}$",
+        )
     if T_spin_low is not None:
-        ax1.axvline(T_spin_low, linestyle="--", alpha=0.4, label="T_spin (low)")
+        ax_phi.axvline(
+            T_spin_low,
+            linestyle="--",
+            alpha=0.4,
+            label=r"$T_{\mathrm{spin}}^{\mathrm{low}}$",
+        )
 
-    ax1.set_xlabel(r"Temperature $T$")
-    ax1.set_ylabel(r"$\phi_{\mathrm{min}}(T)$")
-    ax1.set_title("Evolution of the minima with temperature")
-    ax1.grid(True, alpha=0.3)
-    ax1.legend(loc="best", fontsize=8)
+    ax_phi.set_ylabel(r"$\phi_{\mathrm{min}}(T)$")
+    ax_phi.set_title("Evolution of the minima with temperature")
+    ax_phi.grid(True, alpha=0.3)
+    ax_phi.legend(loc="best", fontsize=8)
+
+    # --- Bottom: m²(T) -------------------------------------------------
+    for key, pdata in phase_data.items():
+        ax_m2.plot(
+            pdata["T"],
+            pdata["m2"],
+            marker=".",
+            linestyle="-",
+            label=f"Phase {key!r}",
+        )
+
+    ax_m2.axhline(0.0, color="k", linewidth=1.0)
+
+    if T_spin_high is not None:
+        ax_m2.axvline(
+            T_spin_high,
+            linestyle="--",
+            alpha=0.4,
+            label=r"$T_{\mathrm{spin}}^{\mathrm{high}}$",
+        )
+    if Tc is not None:
+        ax_m2.axvline(
+            Tc,
+            linestyle=":",
+            alpha=0.6,
+            label=r"$T_{\mathrm{crit}}$",
+        )
+    if Tn is not None:
+        ax_m2.axvline(
+            Tn,
+            linestyle="-.",
+            alpha=0.6,
+            label=r"$T_{\mathrm{nuc}}$",
+        )
+    if T_spin_low is not None:
+        ax_m2.axvline(
+            T_spin_low,
+            linestyle="--",
+            alpha=0.4,
+            label=r"$T_{\mathrm{spin}}^{\mathrm{low}}$",
+        )
+
+    ax_m2.set_xlabel(r"Temperature $T$")
+    ax_m2.set_ylabel(r"$m^2(T) = \partial^2 V / \partial \phi^2$")
+    ax_m2.set_title("Curvature at the minima (spinodal points where $m^2 \to 0$)")
+    ax_m2.grid(True, alpha=0.3)
+    ax_m2.legend(loc="best", fontsize=8)
+
+    fig1.tight_layout()
     plt.show()
     _save_figure(fig1, "C_phi", case)
 
-    # --- Curvature m²(T) = ∂²V/∂φ² at each minimum --------------------------
-    fig2, ax2 = plt.subplots(figsize=(6.5, 4.5))
+    # ==================================================================
+    # Figure 2: m²(T) zoomed around the spinodal region
+    # ==================================================================
+    fig2, ax_zoom = plt.subplots(figsize=(6.5, 4.5))
 
-    for key, phase in phases.items():
-        T_vals = np.asarray(phase.T, dtype=float)
-        phi_vals = np.asarray(phase.X[:, 0], dtype=float)
-        m2_vals = np.array([d2V_dphi2(phi, T) for phi, T in zip(phi_vals, T_vals)], dtype=float)
-        ax2.plot(T_vals, m2_vals, marker=".", linestyle="-", label=f"Phase {key!r}")
+    for key, pdata in phase_data.items():
+        ax_zoom.plot(
+            pdata["T"],
+            pdata["m2"],
+            marker=".",
+            linestyle="-",
+            label=f"Phase {key!r}",
+        )
 
-    ax2.axhline(0.0, color="k", linewidth=1.0)
+    ax_zoom.axhline(0.0, color="k", linewidth=1.0)
+
+    # Vertical markers again (they help to orient in the zoomed window)
     if T_spin_high is not None:
-        ax2.axvline(T_spin_high, linestyle="--", alpha=0.4, label="T_spin (high)")
+        ax_zoom.axvline(
+            T_spin_high,
+            linestyle="--",
+            alpha=0.4,
+            label=r"$T_{\mathrm{spin}}^{\mathrm{high}}$",
+        )
     if Tc is not None:
-        ax2.axvline(Tc, linestyle=":", alpha=0.6, label="T_crit")
+        ax_zoom.axvline(
+            Tc,
+            linestyle=":",
+            alpha=0.6,
+            label=r"$T_{\mathrm{crit}}$",
+        )
     if Tn is not None:
-        ax2.axvline(Tn, linestyle="-.", alpha=0.6, label="T_nuc")
+        ax_zoom.axvline(
+            Tn,
+            linestyle="-.",
+            alpha=0.6,
+            label=r"$T_{\mathrm{nuc}}$",
+        )
     if T_spin_low is not None:
-        ax2.axvline(T_spin_low, linestyle="--", alpha=0.4, label="T_spin (low)")
+        ax_zoom.axvline(
+            T_spin_low,
+            linestyle="--",
+            alpha=0.4,
+            label=r"$T_{\mathrm{spin}}^{\mathrm{low}}$",
+        )
 
-    ax2.set_xlabel(r"Temperature $T$")
-    ax2.set_ylabel(r"$m^2(T) = \partial^2 V / \partial \phi^2$")
-    ax2.set_title("Curvature at the minima (spinodal points where m² → 0)")
-    ax2.grid(True, alpha=0.3)
-    ax2.legend(loc="best", fontsize=8)
+    # Decide zoom window: from T_spin_high to T_spin_low, with a bit of margin
+    if (T_spin_high is not None) and (T_spin_low is not None):
+        T_low = min(T_spin_high, T_spin_low)
+        T_high = max(T_spin_high, T_spin_low)
+        span = max(1e-6, T_high - T_low)
+        margin = 0.1 * span  # "a bit more" than the spinodal interval
+        ax_zoom.set_xlim(T_low - margin, T_high + margin)
+
+    ax_zoom.set_xlabel(r"Temperature $T$")
+    ax_zoom.set_ylabel(r"$m^2(T) = \partial^2 V / \partial \phi^2$")
+    ax_zoom.set_title("Curvature at the minima – zoom on the spinodal region")
+    ax_zoom.grid(True, alpha=0.3)
+    ax_zoom.legend(loc="best", fontsize=8)
+
+    fig2.tight_layout()
     plt.show()
     _save_figure(fig2, "C_m2", case)
-
-
-# -----------------------------------------------------------------------------
-# Example D – Suggestions for further experiments
-# -----------------------------------------------------------------------------
-
-def example_D_further_ideas() -> None:
-    """
-    Example D:
-      Pedagogical suggestions for how to extend this showcase with
-      additional physically interesting experiments.
-    """
-    print("\n" + "-" * 79)
-    print("Example D – Further numerical and physical experiments")
-    print("-" * 79)
-
-    print(
-        "Here are some ideas for extensions you can implement directly in this\n"
-        "example file (or in your own scripts) using the same transitionFinder\n"
-        "infrastructure:\n"
-    )
-    print("  1. Change the nucleation criterion:")
-    print("       - Replace TARGET_S_OVER_T = 140 by another threshold.")
-    print("       - Or implement a more sophisticated nuclCriterion(S, T) that")
-    print("         accounts for percolation or a finite Hubble rate.\n")
-    print("  2. Scan over model parameters (D, E, lambda, T0):")
-    print("       - For each point in parameter space, recompute Tc, Tn, and")
-    print("         T_spin and build contour plots in the (D, E) plane.")
-    print("       - Identify regions with strong first-order transitions.\n")
-    print("  3. Compare with a second-order benchmark:")
-    print("       - Set E = 0 so that the cubic term vanishes.")
-    print("       - Repeat the analysis and observe how the first-order")
-    print("         characteristics (bounce, Tn) disappear, leaving only")
-    print("         a continuous second-order transition at T ≈ T0.\n")
-    print("  4. Add a second scalar field:")
-    print("       - Promote phi to a 2-component vector and generalize V.")
-    print("       - The same transitionFinder interface works, but tunneling")
-    print("         will use pathDeformation instead of the 1D backend.\n")
-    print("  5. Connect to gravitational-wave predictions:")
-    print("       - Use the extracted Tn and latent heat to estimate GW spectra.")
-    print("       - This provides a full pipeline from V(φ, T) to a potentially")
-    print("         observable stochastic gravitational-wave background.\n")
 
 
 # -----------------------------------------------------------------------------
@@ -842,7 +1014,8 @@ def print_final_summary(summary: Dict[str, Any]) -> None:
               f"{tdict['high_phase']} → {tdict['low_phase']}")
         print(f"    Tnuc        = {tdict['Tnuc']:9.4f}")
         if tdict["Tcrit"] is not None:
-            print(f"    Tcrit       = {tdict["Tcrit"]:9.4f}")
+            Tcrit = "Tcrit"
+            print(f"    Tcrit       = {tdict[Tcrit]:9.4f}")
         else:
             print("    Tcrit       =       n/a")
         print(f"    S(Tn)       = {tdict['S_Tn']:9.4f}")
@@ -878,7 +1051,6 @@ def run_all(case_label: str = MODEL_LABEL) -> Dict[str, Any]:
     example_A_potential_snapshots(case_label)
     example_B_transition_temperatures(phases, crit_transitions, full_transitions, case_label)
     example_C_minima_evolution(phases, full_transitions, case_label)
-    example_D_further_ideas()
 
     summary = collect_summary(phases, full_transitions)
     print_final_summary(summary)
