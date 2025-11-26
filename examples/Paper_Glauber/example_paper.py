@@ -1,0 +1,1185 @@
+# -----------------------------------------------------------------------------
+# Complete, end-to-end demo for SingleFieldInstanton
+# -----------------------------------------------------------------------------
+# What this script provides
+# ------------------------
+# Ten cohesive figures/examples (A..J) that take you from the potential geometry, to
+# initial conditions, to the final bounce profile and physically meaningful params
+# Reproducing also article potential: Cosmological phase transitions from the functional
+# measure (another example test ).
+
+# -----------------------------------------------------------------------------
+
+from __future__ import annotations
+import os
+import math
+from typing import Tuple, Optional, Callable
+import json, sys, io, contextlib
+from functools import partial
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import interpolate, integrate
+
+
+# Import the modernized class
+from CosmoTransitions import SingleFieldInstanton
+from CosmoTransitions import deriv14
+from CosmoTransitions import Jb, Jf
+
+np.set_printoptions(precision=6, suppress=True)
+
+# -----------------------------------------------------------------------------
+# Potentials used at the paper
+# -----------------------------------------------------------------------------
+
+# --- Masses and vev in GeV ---
+_VEW = 246.0
+_MH  = 125.0
+_MW  = 80.36
+_MZ  = 91.19
+_MT  = 173.1
+
+# --- Degeneracies (+bosons , -fermions ) ---
+_nW, _nZ, _nt = 6.0, 3.0, 12.0
+
+
+# --- Couplings g_i = m_i / v and Constants ---
+
+_gW, _gZ, _gt = _MW/_VEW, _MZ/_VEW, _MT/_VEW
+_64pi2 = 64.0 * np.pi**2
+_8pi2  = 8.0  * np.pi**2
+
+
+def V_paper(phi: np.ndarray | float, C: float = 3.0, Lambda: float = 1000.0,
+            finiteT: bool =False, T: float | None= None,
+            include_daisy: bool= True,
+            real_cont: bool= False) -> np.ndarray:
+    """
+    Zero-temperature effective potential with modified functional measure.
+    optional finite-temperature corrections (your Eq. 21).
+
+    Parameters
+    ----------
+    phi : array_like
+        Higgs radial field ϕ (GeV).
+    C : float
+        Measure-deformation parameter (C=0 recovers SM one-loop).
+    Lambda : float
+        Sensitivity scale of the modified measure (GeV).
+
+    Notes
+    -----
+    * Zero-T one-loop piece matches your correction: φ^4 * (ln(φ^2/v^2) - 3/2) only.
+    * Thermal integrals use your finiteT module: FT.Jb(x), FT.Jf(x) with x = m/T.
+    * Daisy term: simplified EW longitudinal resummation consistent with the paper’s
+      shorthand '3 m_L^3' → 2×W_L + 1×Z_L.
+
+    Returns
+    -------
+    V : ndarray
+        V(ϕ, 0) in GeV^4. We choose the renormalization conditions at ϕ=v
+        exactly as in the paper.
+    """
+    phi = np.asarray(phi, dtype=float)
+    v   = _VEW
+
+    # Tree
+    V_tree = (_MH**2)/(8.0*v**2) * (phi**2 - v**2)**2
+
+    # One-loop CW-like piece (W, Z, top); M_i(ϕ)=g_i ϕ and n_i as below.
+
+    # Use safe log for ϕ=0 (limit ϕ^4 log(ϕ^2) -> 0).
+    with np.errstate(divide='ignore', invalid='ignore'):
+        log_phi = np.where(phi != 0.0, np.log((phi**2)/(v**2)), 0.0)
+    common_bracket = (phi**4)*(log_phi - 1.5) + 2.0*(phi**2)*(v**2)
+    pref = 1/_64pi2
+    V_loops = pref * (
+        _nW*(_gW**4) + _nZ*(_gZ**4) - _nt*(_gt**4)
+    ) * common_bracket
+
+    # Measure contribution, Eq. (3.4): t = C ϕ^2 / Λ^2, t0 = C v^2 / Λ^2
+    t  = C * (phi**2) / (Lambda**2)
+    t0 = C * (v**2)   / (Lambda**2)
+    one_minus_t0 = 1.0 - t0
+    denom = (one_minus_t0**2)
+
+    # Guard the log for t -> 1 (ϕ -> Λ/√C): mask beyond the branch cut
+    if real_cont:
+        log_term = np.log(np.abs(1.0-t))
+    else:
+        valid = (t < 1.0) | (C <= 0.0)
+        log_term = np.empty_like(t)
+        log_term[valid]   = np.log(1.0 - t[valid])
+        log_term[~valid]  = np.nan  # outside the domain, as in the paper’s discussion
+
+
+    poly = ((1.0 - 2.0*t0) * t + 0.5 * t**2) / denom
+    V_meas = - (Lambda**4)/_8pi2 * (log_term + poly)
+
+    V0 = V_tree + V_loops + V_meas
+    if not finiteT:
+        return V0
+
+    # -------------------------------
+    # Finite-T corrections (Eq. 21)
+    # -------------------------------
+    if T is None or T <= 0.0:
+        raise ValueError("finiteT=True requires a positive temperature T>0 (in GeV).")
+
+    # thermal arguments x = m/T with m_i(φ) = g_i * |φ|
+    absphi = np.abs(phi)
+    xW = (_gW*absphi) / T
+    xZ = (_gZ*absphi) / T
+    xt = (_gt*absphi) / T
+
+    # bosons positive, fermions negative (as in your ΔV expression)
+    DV_b = (T**4)/(2.0*np.pi**2) * (_nW*Jb(xW, approx="exact") + _nZ*Jb(xZ,approx="exact"))
+    DV_f = (T**4)/(2.0*np.pi**2) * (_nt*Jf(xt,approx="exact"))
+
+    DV_daisy = 0.0
+    if include_daisy:
+        # paper’s effective g^2 (dimensionless)
+        g2 = 4*(_MW**2+_MZ**2) /(3*(_VEW**2))
+
+        # build m_L^2
+        mL2_phi = 0.25 * g2 *(absphi**2)
+        mL2_T = mL2_phi +(11.0/6.0) * g2 *(T**2)
+
+        # guard tiny negatives from roundoff
+        mL_phi = np.sqrt(np.maximum(mL2_phi, 0.0))
+        mL_T = np.sqrt(np.maximum(mL2_T, 0.0))
+
+        # 3 longitudinal modes (2 W_L + 1 Z_L compressed into g^2)
+        DV_daisy = -(T/(12.0*np.pi)) * 3.0 * (mL_T**3 - mL_phi**3)
+
+    return V0 + DV_b + DV_f + DV_daisy
+
+def VT_factory(C=3.7, Lambda=1000.0, T=74.403076):
+    # Closure used by SingleFieldInstanton (phi-only signature)
+    return partial(V_paper, C=C, Lambda=Lambda, finiteT=True, T=T, real_cont=False)
+
+# -----------------------------------------------------------------------------
+# Utilities
+# -----------------------------------------------------------------------------
+def make_inst(case: str = "paper", alpha: int = 2, phi_abs: float = _VEW, phi_meta: float =0.0) -> Tuple[SingleFieldInstanton, str]:
+    """
+    Construct a SingleFieldInstanton with the standard vacua:
+      phi_absMin = 1.0 (true/stable), phi_metaMin = 0.0 (false/metastable).
+    """
+    case = case.lower().strip()
+    if case == "paper":
+        V, label = VT_factory(), "Glauber_Paper_"
+        phi_abs, phi_meta = phi_abs, phi_meta
+    else:
+        raise ValueError("Unknown case (use 'thin' 'thick' or mine).")
+    inst = SingleFieldInstanton(
+        phi_absMin= phi_abs,
+        phi_metaMin=phi_meta,
+        V=V,
+        alpha=alpha,
+        phi_eps=1e-3,
+    )
+    return inst, label
+
+def ensure_dir(path: Optional[str]) -> Optional[str]:
+    if not path:
+        return None
+    os.makedirs(path, exist_ok=True)
+    return path
+
+def build_phi_grid(inst: SingleFieldInstanton, margin: float = 0.1, n: int = 800):
+    lo = min(inst.phi_metaMin, inst.phi_absMin)
+    hi = max(inst.phi_metaMin, inst.phi_absMin)
+    span = hi - lo
+    return np.linspace(lo - margin*span, hi + margin*span, n)
+
+def _extract_params_from_V(V_callable):
+    """Best-effort extraction of {C, Lambda, T, finiteT} from functools.partial."""
+    C = Lambda = T = finiteT = None
+    try:
+        if isinstance(V_callable, partial):
+            kws = V_callable.keywords or {}
+            C       = kws.get("C", None)
+            Lambda  = kws.get("Lambda", None)
+            T       = kws.get("T", None)
+            finiteT = kws.get("finiteT", None)
+    except Exception:
+        pass
+    return C, Lambda, T, finiteT
+
+
+def savefig(fig: plt.Figure, save_dir: Optional[str], name: str):
+    if save_dir:
+        fig.savefig(os.path.join(save_dir, f"{name}.png"), dpi=160, bbox_inches="tight")
+
+@contextlib.contextmanager
+def tee_stdout(save_dir: Optional[str], filename: str = "showcase_log.txt"):
+    """
+    If save_dir is provided, duplicate all `print` output to save_dir/filename.
+    Otherwise, behave as a no-op.
+    """
+    if not save_dir:
+        yield
+        return
+    os.makedirs(save_dir, exist_ok=True)
+
+    class _Tee(io.TextIOBase):
+        def __init__(self, *streams): self.streams = streams
+        def write(self, s):
+            for st in self.streams: st.write(s); st.flush()
+        def flush(self):
+            for st in self.streams: st.flush()
+
+    log_path = os.path.join(save_dir, filename)
+    with open(log_path, "w", encoding="utf-8") as f, \
+         contextlib.redirect_stdout(_Tee(sys.stdout, f)):
+        yield
+
+
+# -----------------------------------------------------------------------------
+# Example A
+# -----------------------------------------------------------------------------
+def example_A_potential_geometry(inst: SingleFieldInstanton,
+                                 profile,
+                                 save_dir: Optional[str] = None):
+    """
+    A) Plot V(φ) with markers at phi_meta, phi_abs(true), phi_bar, phi_top.
+       Also plot the *inverted* potential -V(φ) with vertical markers and a
+       single red dot at φ0 = profile.Phi[0].
+       Print rscale (cubic & curvature) and ΔV diagnostics.
+    """
+    r0info = getattr(inst, "_profile_info", None) or {}
+    r0 = r0info.get("r0", np.nan)
+    phi0 = r0info.get("phi0", np.nan)
+
+
+    sinfo = getattr(inst, "_scale_info", {}) or {}
+    rscale_cubic = sinfo.get("rscale_cubic", np.nan)
+    rscale_curv  = sinfo.get("rscale_curv", np.inf)
+    phi_top = sinfo.get("phi_top", None)
+
+    # Values & deltas
+    V_meta = inst.V(inst.phi_metaMin)
+    V_abs  = inst.V(inst.phi_absMin)
+    V_top  = inst.V(phi_top)
+    dV_true_meta = V_abs - V_meta
+    dV_top = sinfo.get("V_top_minus_Vmeta", None)
+
+    # Console summary
+    print("\n[A] Potential geometry & scales")
+    print(f"  phi_meta = {inst.phi_metaMin:.9f}, V(phi_meta) = {V_meta:.9e}")
+    print(f"  phi_abs  = {inst.phi_absMin:.9f}, V(phi_abs)  = {V_abs :.9e}")
+    print(f"  phi_bar  = {inst.phi_bar:.9f}, V(phi_bar)  = {inst.V(inst.phi_bar):.9e}")
+    print(f"  phi_top  = {phi_top:.9f}, V(phi_top)  = {V_top :.9e}")
+    print(f"  phi_0    = {phi0:.9f}, V(phi_0)    = {inst.V(phi0):.9e}, r0 = {r0:.6e}")
+    print(f"  ΔV_true-meta = {dV_true_meta:.9e}")
+    print(f"  ΔV_top -meta = {dV_top:.9e}")
+    print(f"  rscale_cubic = {rscale_cubic:.9e}")
+    if math.isfinite(rscale_curv):
+        print(f"  rscale_curv  = {rscale_curv :.9e}   (from |V''(phi_top)|)")
+    else:
+        print( "  rscale_curv  = ∞ (flat top)")
+
+    # Colors
+    c_meta, c_abs, c_bar, c_top, c_0 = "#d62728", "#2ca02c", "#d62728", "#ff7f0e", "#e377c2"
+
+    # azul: #1f77b4
+    # laranja: #ff7f0e
+
+    # Left: V(φ) with markers
+    phi_grid = build_phi_grid(inst, margin=0.10, n=900)
+    V_grid = inst.V(phi_grid)
+
+    fig1, ax1 = plt.subplots(figsize=(7.8, 4.5))
+    ax1.plot(phi_grid, V_grid, lw=2.2, color="#444444", label="V(φ)")
+    ax1.scatter([inst.phi_metaMin], [V_meta], color=c_meta, s=40, label="φ_meta")
+    ax1.scatter([inst.phi_absMin ], [V_abs ], color=c_abs , s=40, label="φ_true")
+    ax1.scatter([inst.phi_bar    ], [inst.V(inst.phi_bar)], color=c_bar, s=40, label="φ_bar")
+    ax1.scatter([phi_top         ], [V_top], color=c_top, s=40, label="φ_top")
+
+    # Horizontal line at V(phi_meta); vertical lines at the markers
+    ax1.axhline(V_meta, lw=1.0, ls="--", color=c_meta, alpha=0.8)
+    for x, col in [(inst.phi_metaMin, c_meta), (inst.phi_absMin, c_abs),
+                   (inst.phi_bar, c_bar), (phi_top, c_top)]:
+        ax1.axvline(x, lw=1.0, ls=":", color=col, alpha=0.9)
+
+    ax1.set_xlabel("φ"); ax1.set_ylabel("V(φ)")
+    ax1.set_title("Potential with barrier markers")
+    ax1.grid(True, alpha=0.3)
+    ax1.legend(loc="best", ncol=2)
+    plt.tight_layout()
+    savefig(fig1, save_dir, "A1_V_with_markers")
+
+    # Right: -V(φ) with vertical lines and a red dot at φ0
+    fig2, ax2 = plt.subplots(figsize=(7.8, 4.5))
+    ax2.plot(phi_grid, -V_grid, lw=2.2, color="#444444", label="-V(φ)")
+    for x, col in [(inst.phi_metaMin, c_meta), (inst.phi_absMin, c_abs),
+                   (inst.phi_bar, c_bar), (phi_top, c_top)]:
+        ax2.axvline(x, lw=1.0, ls=":", color=col, alpha=0.9)
+
+    # φ0 marker + arrow towards downhill direction in V(φ)
+    V0 = inst.V(phi0)
+    dV0 = inst.dV(phi0)
+    span = (max(inst.phi_absMin, inst.phi_metaMin) - min(inst.phi_absMin, inst.phi_metaMin))
+    dphi_arrow = 0.06 * span * (np.sign(dV0) if dV0 != 0 else -1.0)  # move opposite to +∂V
+    phi1 = np.clip(phi0 + dphi_arrow, phi_grid.min(), phi_grid.max())
+    V1   = inst.V(phi1)
+    ax2.scatter([phi0], [-V0], color=c_0, s=48, zorder=5, label="φ0")
+    ax2.annotate(
+        "", xy=(phi1, -V1), xytext=(phi0, -V0),
+        arrowprops=dict(arrowstyle="-|>", lw=2.0, color=c_0)
+    )
+
+    ax2.scatter([inst.phi_metaMin], [-V_meta], color=c_meta, s=40, label="φ_meta")
+    ax2.scatter([inst.phi_absMin ], [-V_abs ], color=c_abs , s=40, label="φ_true")
+    ax2.scatter([inst.phi_bar    ], [-inst.V(inst.phi_bar)], color=c_bar, s=40, label="φ_bar")
+    ax2.scatter([phi_top         ], [-V_top], color=c_top, s=40, label="φ_top")
+    ax2.set_xlabel("φ"); ax2.set_ylabel("-V(φ)")
+    ax2.set_title("Inverted potential with φ0")
+    ax2.grid(True, alpha=0.3)
+    ax2.legend(loc="best", ncol=2)
+    plt.tight_layout()
+    plt.show()
+    savefig(fig2, save_dir, "A2_inverted_with_phi0")
+
+# -----------------------------------------------------------------------------
+# Example B
+# -----------------------------------------------------------------------------
+def example_B_local_quadratic_at_phi0(inst: SingleFieldInstanton,
+                                      profile,
+                                      save_dir: Optional[str] = None):
+    """
+    B) Print initial choice (r0, φ0, φ'(r0), V(φ0)) and overlay the potential
+       with its quadratic Taylor expansion around φ0.
+    """
+    r0info = getattr(inst, "_profile_info", None) or {}
+    r0 = r0info.get("r0", np.nan)
+    phi0 = r0info.get("phi0", np.nan)
+    dphi0 = r0info.get("dphi0", np.nan)
+
+    V0   = inst.V(phi0)
+    dV0  = inst.dV(phi0)
+    d2V0 = inst.d2V(phi0)
+
+    print("\n[B] Initial local data at r0")
+    print(f"  r0      = {r0:.9e}")
+    print(f"  φ(r0)   = {phi0:.9f}")
+    print(f"  φ'(r0)  = {dphi0:.9e}  (should be ~ 0 by regularity)")
+    print(f"  V(φ0)   = {V0:.9e}")
+    print(f"  dV(φ0)  = {dV0:.9e}")
+    print(f"  d2V(φ0) = {d2V0:.9e}")
+
+    # ---- Small-r expansion point at (near) the origin ----
+    r = np.asarray(profile.R)
+    # Take φ0 at the first stored radius (interior already filled → r[0] ≈ 0)
+    phi0 = float(profile.Phi[0])
+    dV0  = inst.dV(phi0)
+    d2V0 = inst.d2V(phi0)
+
+    # Choose a small-r window: min(0.2*rscale, 0.5*Rmax)
+    sinfo = getattr(inst, "_scale_info", {}) or {}
+    rscale_cubic = sinfo.get("rscale_cubic", np.nan)
+    rscale_curv  = sinfo.get("rscale_curv",  np.nan)
+    rscale = rscale_cubic if np.isfinite(rscale_cubic) else rscale_curv
+    Rmax   = float(r[-1])
+    rmax_small = 0.2 * rscale if np.isfinite(rscale) else 0.05 * Rmax
+    rmax_small = max(10.0 * (r[1] - r[0]), min(rmax_small, 0.5 * Rmax))  # robust lower/upper bounds
+
+    r_small = np.linspace(0.0, rmax_small, 220)
+    phi_small  = np.empty_like(r_small)
+    dphi_small = np.empty_like(r_small)
+
+    # Evaluate exact small-r solution around φ0 at r≈0
+    for i, ri in enumerate(r_small):
+        sol = inst.exactSolution(ri, phi0, dV0, d2V0)   # <- assumes exactSolution exists
+        phi_small[i], dphi_small[i] = float(sol.phi), float(sol.dphi)
+    print(np.max(dphi_small))
+    # ---- Plot: φ(r)−φ0 and φ′(r) ----
+    fig = plt.figure(figsize=(8.0,4.6))
+    plt.plot(r_small, phi_small - phi0, label=r"$\phi(r)-\phi_0$")
+    plt.plot(r_small, dphi_small,       label=r"$\phi'(r)$")
+    plt.title(r"Near $r\!\approx\!0$ — exact small-$r$ solution")
+    plt.xlabel("r"); plt.ylabel("value")
+    plt.grid(True, alpha=0.3); plt.legend(loc="best")
+    plt.tight_layout(); plt.show()
+    savefig(fig, save_dir, "B_small_r_phi_and_dphi_from_exactSolution")
+
+
+
+# -----------------------------------------------------------------------------
+# Example C
+# -----------------------------------------------------------------------------
+def example_C_inverted_path(inst: SingleFieldInstanton,
+                            profile,
+                            save_dir: Optional[str] = None):
+    """
+    C) Inverted potential -V(φ) with a highlighted path from φ0 to φ_meta.
+       Add three arrows (start/middle/end) to emphasize the trajectory direction.
+       Right side points unchanged.
+    """
+    r0info = getattr(inst, "_profile_info", None) or {}
+    phi0 = r0info.get("phi0", np.nan)
+
+
+    phi_grid = build_phi_grid(inst, margin=0.12, n=1200)
+    V_grid = inst.V(phi_grid)
+
+    sinfo = getattr(inst, "_scale_info", {}) or {}
+    phi_top = sinfo.get("phi_top", None)
+    V_meta = inst.V(inst.phi_metaMin)
+    V_abs  = inst.V(inst.phi_absMin)
+    V_top  = inst.V(phi_top)
+
+    # LEFT: -V with a magenta path from φ0 to φ_meta + direction arrows
+    fig1, ax1 = plt.subplots(figsize=(7.8, 4.5))
+    ax1.plot(phi_grid, -V_grid, lw=2.2, color="#1f5fb4", label="-V(φ)")
+
+    # path segment
+    ph_a, ph_b = sorted([phi0, inst.phi_metaMin])
+    mask = (phi_grid >= ph_a) & (phi_grid <= ph_b)
+    ax1.plot(phi_grid[mask], -V_grid[mask], lw=3.0, color="#e377c2", label="path φ0→φ_meta")
+    ax1.scatter([phi0], [-inst.V(phi0)], color="#2ca02c", s=50, label="φ0")
+
+    # three arrowheads along the path
+    span = (max(inst.phi_absMin, inst.phi_metaMin) - min(inst.phi_absMin, inst.phi_metaMin))
+    direction = np.sign(inst.phi_metaMin - phi0)  # +1 if moving to larger φ, else -1
+    steps = np.linspace(phi0, (inst.phi_metaMin+phi_top)/2, 3)
+    dphi = 0.04 * span * direction
+    for ph in steps:
+        p0 = (ph, -inst.V(ph))
+        p1_phi = np.clip(ph + dphi, phi_grid.min(), phi_grid.max())
+        p1 = (p1_phi, -inst.V(p1_phi))
+        ax1.annotate("", xy=p1, xytext=p0,
+                     arrowprops=dict(arrowstyle="-|>", lw=2.0, color="#2ca02c"))
+
+    # reference markers
+    ax1.scatter([inst.phi_metaMin], [-V_meta], color="black", s=40, label="φ_meta")
+    ax1.scatter([inst.phi_absMin ], [-V_abs ], color="black", s=40, label="φ_true")
+    ax1.scatter([inst.phi_bar    ], [-inst.V(inst.phi_bar)], color="black", s=40, label="φ_bar")
+    ax1.scatter([phi_top         ], [-V_top], color="black", s=40, label="φ_top")
+
+    ax1.set_xlabel("φ"); ax1.set_ylabel("-V(φ)")
+    ax1.set_title("Inverted potential: trajectory with start/middle/end arrows")
+    ax1.grid(True, alpha=0.3)
+    ax1.legend(loc="best")
+    plt.tight_layout()
+    plt.show()
+    savefig(fig1, save_dir, "C_inverted_path_with_arrows")
+
+
+# -----------------------------------------------------------------------------
+# Example D
+# -----------------------------------------------------------------------------
+def example_D_phi_of_r(inst: SingleFieldInstanton,
+                       profile,
+                       save_dir: Optional[str] = None):
+    """
+    D) Plot φ(r) highlighting the starting point (r0, φ0); shade the interior
+       region r ∈ [0, r0] to distinguish bubble interior vs exterior.
+    """
+    r = np.asarray(profile.R); phi = np.asarray(profile.Phi)
+    r0info = getattr(inst, "_profile_info", None) or {}
+    r0 = r0info.get("r0", np.nan)
+    phi0 = r0info.get("phi0", np.nan)
+
+    fig, ax = plt.subplots(figsize=(8.0, 4.8))
+
+    # plot de r_0 founded
+    ax.scatter([r0], [phi0], color="#e377c2", s=50, zorder=5, label="(r0, φ0)")
+
+    # Shade the interior (0..r0)
+    ax.axvspan(0.0, r0, color="#2ca02c", alpha=0.10, label="interior (shaded)")
+
+    ax.plot(r, phi, lw=2.2, color="#444444", label="φ(r)")
+    ax.axhline(inst.phi_metaMin, ls="--", lw=1.0, color="#d62728", label="φ_meta")
+    ax.axhline(inst.phi_absMin , ls="--", lw=1.0, color="#2ca02c", label="φ_true")
+    ax.set_xlabel("r"); ax.set_ylabel("φ(r)")
+    ax.set_title("Bounce profile in radius")
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc="best", ncol=2)
+    plt.tight_layout()
+    plt.show()
+    savefig(fig, save_dir, "D_phi_of_r")
+
+# -----------------------------------------------------------------------------
+# Example E
+# -----------------------------------------------------------------------------
+def example_E_spherical_maps(inst: SingleFieldInstanton,
+                             profile,
+                             save_dir: Optional[str] = None):
+    """
+    E) Visualize the spherical profile φ(r) in 2D and 3D at t=0.
+       - Cartesian slice (x,y) colored by φ(√(x^2+y^2)), colorbar labeled with φ_true / φ_meta.
+       - A small radial tick at r = rscale to indicate the interior/exterior separation scale.
+       - 3D surface of φ(x,y) at t=0.
+    """
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 (needed for 3D projection)
+
+    r = np.asarray(profile.R); phi = np.asarray(profile.Phi); dphi = np.asarray(profile.dPhi)
+
+    # Interpolant φ(r) with sensible fill outside the tabulated range
+    chs = interpolate.CubicHermiteSpline(
+        r, phi, dphi, extrapolate=True)
+
+    # Helper that clamps outside to the correct vacua
+    def phi_of_r(Rad):
+        Rad = np.asarray(Rad, dtype=float)
+        val = chs(np.clip(Rad, r[0], r[-1]))
+        # fill interior (r<r[0]) with φ(r[0]) and exterior (r>r[-1]) with φ_meta
+        val = np.where(Rad < r[0],  phi[0], val)
+        val = np.where(Rad > r[-1], inst.phi_metaMin, val)
+        return val
+
+    # rscale: pick cubic if finite, else curvature
+    sinfo = getattr(inst, "_scale_info", {}) or {}
+    rscale_cubic = sinfo.get("rscale_cubic", np.nan)
+    rscale_curv  = sinfo.get("rscale_curv", np.inf)
+    rscale = rscale_curv if np.isfinite(rscale_curv) else rscale_cubic
+
+    # --- wall location near the false-vacuum side ---
+    ws = inst.wallDiagnostics(profile, frac=(0.1, 0.9))  # r_lo ~ true side; r_hi ~ false side
+    r_wall = float(ws.r_hi)
+    thickness = float(ws.thickness)
+
+    print("\n[E] t=0 visualization")
+    print(f"  rscale ≈ {rscale:.6e}   (expected interior–exterior separation scale)")
+    print(f"  thichness = {thickness:.3e} (thickness found by wall status)")
+    print("  This is the instantaneous t=0 slice of the nucleated bubble.")
+
+
+
+    # Cartesian slice
+    Rmax = float(r[-1])
+    pad  = 0.10 * Rmax
+    Nx = Ny = 400
+    x = np.linspace(-Rmax-pad, Rmax+pad, Nx)
+    y = np.linspace(-Rmax-pad, Rmax+pad, Ny)
+    X, Y = np.meshgrid(x, y, indexing="xy")
+    RAD = np.hypot(X, Y)
+    PHI = phi_of_r(RAD)
+
+    vmin = min(inst.phi_metaMin, inst.phi_absMin)
+    vmax = max(inst.phi_metaMin, inst.phi_absMin)
+
+    fig1, ax1 = plt.subplots(figsize=(6.6, 6.0))
+    im = ax1.imshow(PHI, origin="lower", extent=[x.min(), x.max(), y.min(), y.max()],
+                    vmin=vmin, vmax=vmax, cmap="viridis", interpolation="nearest")
+    ax1.set_aspect("equal")
+    ax1.set_xlabel("x"); ax1.set_ylabel("y")
+    ax1.set_title(r"Bounce profile at t=z=0 (Cartesian slice: $\phi(\rho))$ ")
+    cb = plt.colorbar(im, ax=ax1, pad=0.02)
+    cb.set_label(fr"$\phi$  (φ_true={inst.phi_absMin:.2f} ;  φ_meta={inst.phi_metaMin:.2f})")
+
+    # small radial "bar"  to indicate rscale
+    if np.isfinite(r_wall):
+        ax1.plot([0.0, 0.0], [r_wall-rscale, r_wall], color="w", lw=2.0, solid_capstyle="butt")
+        ax1.text(0, r_wall+0.5*rscale, "thickness", color="w", ha="center", va="bottom", fontsize=9)
+                        #+0.1*(r.max()-r.min())
+    plt.tight_layout()
+    plt.show()
+    savefig(fig1, save_dir, "E1_cartesian_slice_with_rscale")
+
+    # --- 3D surface at t=0 ---
+    fig2 = plt.figure(figsize=(7.2, 6.0))
+    ax2 = fig2.add_subplot(111, projection="3d")
+    # Downsample for 3D performance if needed
+    step = max(1, int(Nx/220))
+    ax2.plot_surface(X[::step, ::step], Y[::step, ::step], PHI[::step, ::step],
+                     linewidth=0, antialiased=True, cmap="viridis")
+    ax2.set_xlabel("x"); ax2.set_ylabel("y"); ax2.set_zlabel(r"\phi")
+    ax2.set_title(r"3D view of \phi(x,y) at t=z=0")
+    plt.tight_layout()
+    plt.show()
+    savefig(fig2, save_dir, "E2_surface3D_t0")
+
+
+# -----------------------------------------------------------------------------
+# Example F
+# -----------------------------------------------------------------------------
+def example_F_ode_terms(inst: SingleFieldInstanton,
+                        profile,
+                        save_dir: Optional[str] = None):
+    """
+    F) Plot the contributions to the ODE:
+         φ''(r)           (acceleration)
+         (α/r) φ'(r)      (friction)
+         V'(φ(r))         (force)
+       and also overlay V(φ(r)) for reference (secondary axis).
+    """
+    r = np.asarray(profile.R); phi = np.asarray(profile.Phi); dphi = np.asarray(profile.dPhi)
+
+    phi0 = phi[0]
+
+    # Second derivative φ'' via centered finite difference (with end corrections)
+    d2phi = deriv14(dphi,r)
+
+    friction = inst.alpha * dphi / np.maximum(r, 1e-30)  # (α/r) φ'
+    force = inst.dV(phi)                                  # V'(φ)
+
+    # --- potential levels and drop ---
+    V_meta = float(inst.V(inst.phi_metaMin))
+    V_0 = float(inst.V(phi0))
+    dV_drop = V_0 - V_meta
+
+    print("\n[F] False → True vacuum potential drop")
+    print(f"  V_0 = {V_0:.3e}")
+    print(f"  V_meta = {V_meta:.3e}")
+    print(f"  ΔV = V_0 - V_meta = {dV_drop:.3e}   (|ΔV| = {abs(dV_drop):.3e})")
+
+    # Plot ODE terms vs r
+    fig, ax = plt.subplots(figsize=(8.8, 5.0))
+    ax.plot(r, d2phi, lw=2.0, label="φ''(r)")
+    ax.plot(r, friction, lw=2.0, label="(α/r) φ'(r)")
+    ax.plot(r, force, lw=2.0, label="V'(φ(r))")
+    ax.axhline(0.0, color="k", lw=0.8, alpha=0.5)
+
+    # Second y-axis for V(φ(r))
+    ax2 = ax.twinx()
+    ax2.plot(r, inst.V(phi), lw=1.8, ls="--", color="#444444", label="V(φ(r))")
+    ax.set_xlabel("r")
+    ax.set_ylabel("ODE terms")
+    ax2.set_ylabel("V(φ(r))")
+    ax.set_title("ODE term decomposition along the profile")
+    ax.grid(True, alpha=0.3)
+
+    # --- place ΔV bar at the wall (false-vacuum side) ---
+    ws = inst.wallDiagnostics(profile, frac=(0.1, 0.9))
+    r_mark = (3*float(ws.r_hi) +r[-1])/4  # center of the wall
+    y0, y1 = (V_0, V_meta)
+    y_lo, y_hi = (min(y0, y1), max(y0, y1))
+    ax2.vlines(r_mark, y_lo, y_hi, color="tab:purple", lw=3.0, alpha=0.9)
+    ax2.scatter([r_mark, r_mark], [y0, y1], s=18, color="tab:purple", zorder=5)
+    # annotate ΔV next to the bar
+    xpad = 0.02 * (r[-1] - r[0])
+    ax2.text(r_mark + xpad, 0.5*(y_lo + y_hi),
+             f"ΔV = {dV_drop:.1e}",
+             color="tab:purple", va="center", ha="left",
+             bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.6))
+
+    # Build a unified legend
+    lines1, labels1 = ax.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax.legend(lines1+lines2, labels1+labels2, loc="best", ncol=2)
+    plt.tight_layout()
+    plt.show()
+    savefig(fig, save_dir, "F_ode_terms_and_potential")
+
+# -----------------------------------------------------------------------------
+# Example G
+# -----------------------------------------------------------------------------
+def example_G_action_and_beta(inst: SingleFieldInstanton,
+                              profile,
+                              save_dir: Optional[str] = None,
+                              beta_methods=("rscale", "curvature", "wall")):
+    """
+    G) Action diagnostics:
+       - Print S_total and its breakdown (kin, pot, interior).
+       - Print β_eff proxies.
+       - Plot action *density* versus r and the *cumulative* action S(<r).
+       - Also print temperature T (if present in V) and S3/T.
+
+    """
+    br = inst.actionBreakdown(profile)
+
+    # Try to read (C, Λ, T) from the V partial used by this instanton
+    C, Lambda, T, finiteT = _extract_params_from_V(inst.V)
+    S_over_T = (float(br.S_total) / float(T)) if (T is not None and T > 0) else np.nan
+
+    # --- prints ---
+    print("\n[G] Action and β proxies")
+    print(f"  S_total     = {br.S_total:.6e}")
+    print(f"   S_kin      = {br.S_kin:.6e}")
+    print(f"   S_pot      = {br.S_pot:.6e}")
+    print(f"   S_interior = {br.S_interior:.6e}")
+    print(f"  (check) S_kin + S_pot + S_interior = {br.S_kin + br.S_pot + br.S_interior:.6e}")
+
+    if T is not None:
+        print(f"  T           = {T:.6g} GeV")
+        print(fr"  S3/T        = {S_over_T:.6e} (should be $\approx$140)")
+    else:
+        print("  T           = (not provided in V)")
+        print("  S3/T        = NaN (no T)")
+
+    betas = {}
+    for m in beta_methods:
+        try:
+            betas[m] = float(inst.betaEff(profile, method=m))
+        except Exception:
+            betas[m] = np.nan
+        print(f"  beta_{m:9s}= {betas[m]:.6e}")
+
+    # --- data for plots ---
+    r = np.asarray(br.r)
+    dens_kin = np.asarray(br.density["kin"])
+    dens_pot = np.asarray(br.density["pot"])
+    dens_tot = np.asarray(br.density["tot"])
+
+    # cumulative action: S(<r) = S_interior + ∫_r0^r (dens_tot) dr
+    S_line_cum = integrate.cumulative_trapezoid(dens_tot, r, initial=0.0)
+    S_cum = S_line_cum + br.S_interior
+
+    # --- figure: densities + cumulative action ---
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.4, 4.8), sharex=False)
+
+    # left: densities
+    ax1.plot(r, dens_kin, lw=1.9, label="kinetic density")
+    ax1.plot(r, dens_pot, lw=1.9, ls="--", label="potential density")
+    ax1.plot(r, dens_tot, lw=2.2, label="total density", alpha=0.9)
+    ax1.axhline(0.0, color="k", lw=0.8, alpha=0.5)
+    ax1.set_xlabel("r"); ax1.set_ylabel("action density")
+    ax1.set_title("Action density vs r")
+    ax1.grid(True, alpha=0.3)
+    ax1.legend(loc="best")
+
+    # right: cumulative action
+    ax2.plot(r, S_cum, lw=2.2, color="#1f77b4",
+             label=r"$S(<r)=S_{\mathrm{int}}+\int \mathrm{dens}_{\mathrm{tot}}\,dr$")
+    ax2.axhline(br.S_total, color="#ff7f0e", lw=1.6, ls="--",
+                label=f"S_total = {br.S_total:.3e}")
+    ax2.scatter([r[-1]], [br.S_total], color="#ff7f0e", zorder=5)
+    # opcional: marcar r0
+    r0 = float(r[0])
+    ax2.axvline(r0, color="#888", lw=1.0, ls=":", alpha=0.8)
+    ax2.text(r0, ax2.get_ylim()[0], " r0", va="bottom", ha="left", color="#666")
+
+    ax2.set_xlabel("r"); ax2.set_ylabel("action")
+    ax2.set_title("Cumulative action")
+    ax2.grid(True, alpha=0.3)
+    ax2.legend(loc="best")
+
+    plt.tight_layout(); plt.show()
+    savefig(fig, save_dir, "G_action_density_and_cumulative")
+
+
+# -----------------------------------------------------------------------------
+# Example H
+# -----------------------------------------------------------------------------
+
+def example_H_fig1_multiC(Cs=( -5.0, 0.0, 3.0, 3.7, 4.14, 5.0 ),
+                          Lambda=1000.0, phi_max=300.0,
+                          save_dir: Optional[str] = None):
+    """
+    Fig.1-like comparison: plot [V(φ,0)-V(0,0)] for several C at fixed Λ.
+    Highlights C=0 and C=3.7. Draws V=0 line.
+    """
+    ϕ_axis = np.linspace(0.0, phi_max, 1400)
+    V0_by_C = {}
+
+    fig = plt.figure(figsize=(7.6, 4.8))
+    for C in Cs:
+        cutoff = (Lambda/np.sqrt(C))*0.995 if C > 0 else phi_max
+        ϕ = ϕ_axis[ϕ_axis <= cutoff]
+        V0 = V_paper(0.0, C=C, Lambda=Lambda, finiteT=False)
+        Vn = V_paper(ϕ,  C=C, Lambda=Lambda, finiteT=False) - V0
+        V0_by_C[C] = V0
+
+        style = dict(lw=2, zorder=3) if (C==0.0 or abs(C-3.7)<1e-12) else dict(lw=1.6, alpha=0.9, zorder=2)
+        ls = "--" if C==0.0 or C==4.14 else "-"
+        plt.plot(ϕ, Vn, ls=ls, label=f"C={C:g}", **style)
+
+    plt.axhline(0.0, color="#444", lw=1.0, ls="--", label="V=0")
+    plt.axvline(_VEW, color="#888", lw=1.0, ls=":", label="ϕ = v")
+    plt.xlabel("ϕ  [GeV]"); plt.ylabel("V(ϕ,T=0) − V(0,T=0)  [GeV⁴]")
+    plt.title(f"Zero-T potential, Λ = {Lambda:.0f} GeV (Fig.1-like)")
+    plt.grid(True, alpha=0.25)
+    plt.legend()
+    plt.tight_layout(); plt.show()
+    savefig(fig, save_dir, "H_fig1_multiC_T_0_potential")
+
+# -----------------------------------------------------------------------------
+# Example I
+# -----------------------------------------------------------------------------
+
+def example_I_paper_potential_with_inset(C=3, Lambda=1000.0,
+                                         save_dir: Optional[str] = None):
+    """
+    Plot V_paper(φ) - V(0) up to φ≈650 GeV, showing both sides of the log singularity
+    via real_cont=True (ln|1-t|). Inset: zoom up to φ=300 GeV, tick numbers only.
+    """
+    # Domain limits
+    phi_cap = (Lambda/np.sqrt(C)) if C > 0 else np.inf
+    phi_max_main  = min(650.0, np.inf if not np.isfinite(phi_cap) else 4*phi_cap)  # allow showing both sides
+    phi_max_inset = min(300.0, phi_max_main)
+
+    φ = np.linspace(0.0, phi_max_main, 4000)
+    V_main = V_paper(φ, C=C, Lambda=Lambda, finiteT=False, real_cont=True)
+    V0     = V_paper(0.0, C=C, Lambda=Lambda, finiteT=False, real_cont=True)
+    V_shift = V_main - V0
+
+    fig, ax = plt.subplots(figsize=(7.8, 5.0))
+    ax.plot(φ, V_shift, lw=2.2, label=rf"$C={C}$, $\Lambda={Lambda:.0f}$ GeV")
+    ax.axhline(0.0, color="#888", lw=1.0, ls="--", label="V=0")
+
+    if np.isfinite(phi_cap):
+        ax.axvline(phi_cap, color="#aa0000", lw=1.2, ls="--", label=r"$\phi_\star=\Lambda/\sqrt{C}$")
+
+    ax.set_xlim(0.0, phi_max_main)
+    ax.set_xlabel(r"$\phi$ [GeV]"); ax.set_ylabel(r"$V(\phi)-V(0)$ [GeV$^4$]")
+    ax.set_title("Paper potential (real-part continuation) — Fig.1 style")
+    ax.grid(True, alpha=0.25)
+    ax.legend(loc="best")
+
+    # Inset
+    axins = ax.inset_axes([0.06, 0.3, 0.42, 0.42])
+    mask = (φ <= phi_max_inset)
+    axins.plot(φ[mask], V_shift[mask], lw=1.6)
+    y0, y1 = np.nanmin(V_shift[mask]), np.nanmax(V_shift[mask])
+    pad = 0.05 * (y1 - y0 + 1e-30)
+    axins.set_xlim(0.0, phi_max_inset)
+    axins.set_ylim(y0 - pad, y1 + pad)
+    axins.grid(True, alpha=0.2)
+    axins.tick_params(labelsize=8)
+    mark_inset(ax, axins, loc1=3, loc2=4, fc="none", ec="#666", lw=1.0, alpha=0.85)
+
+    plt.tight_layout(); plt.show()
+    savefig(fig, save_dir, f"I_paper_inset_C{C:g}_L{int(Lambda)}")
+
+
+# -----------------------------------------------------------------------------
+# Example J
+# -----------------------------------------------------------------------------
+def example_J_T_scan(C: float = 3.7,
+                     Lambda: float = 1000.0,
+                     T_list = (60, 80.0, 90, 100.0, 120.0),
+                     phi_max: float = 300.0,
+                     save_dir: Optional[str] = None,
+                     shift_ref: str = "V0"):
+    """
+    Plot V(φ,T) − V_ref(T) for several temperatures at fixed C, where
+      V_ref(T) is either V(0,T)  (shift_ref='V0', Fig.1 style)
+                   or V(v,T)     (shift_ref='Vv', useful to see ΔV around v).
+    Also print a quick table with φ_true(T) (grid-min search) and ΔV_true−meta(T).
+
+    Notes
+    -----
+    * Keeps φ below the log branch at φ* = Λ/√C (no real-continuation) so your physics is untouched.
+    * Good for eyeballing where the two minima become nearly degenerate.
+    """
+    assert shift_ref in ("V0", "Vv"), "shift_ref must be 'V0' or 'Vv'."
+    v = _VEW
+    eps = 0.97
+    if C > 0:
+        phi_cap = float(Lambda) / np.sqrt(C)     # branch point
+        phi_max_eff = min(phi_max, eps*phi_cap)  # stay on physical side
+    else:
+        phi_cap = np.inf
+        phi_max_eff = phi_max
+
+    if phi_max_eff < 50.0:
+        print(f"[J] Warning: φ-domain limited to {phi_max_eff:.1f} GeV by the measure branch (C={C}, Λ={Lambda}).")
+
+    ϕ = np.linspace(0.0, phi_max_eff, 2200)
+
+    # --- helper: quick broken-minimum locator at this T (grid search) ---
+    def _phi_true_at_T(T: float) -> float:
+        grid = np.linspace(0.0, phi_max_eff, 3001)
+        Vg = V_paper(grid, C=C, Lambda=Lambda, finiteT=True, T=T)
+        idx = np.nanargmin(Vg)
+        return float(grid[idx])
+
+    # --- figure ---
+    fig, ax = plt.subplots(figsize=(7.8, 5.0))
+    colors = plt.cm.viridis(np.linspace(0.1, 0.9, len(T_list)))
+
+    print("\n[J] Quick temperature sweep diagnostics")
+    print("    T [GeV]   phi_true(T) [GeV]   V(phi_true,T)-V(0,T) [GeV^4]   V(v,T)-V(0,T) [GeV^4]")
+    print("    --------  -------------------  ------------------------------  ----------------------")
+
+    for T, col in zip(T_list, colors):
+        VϕT = V_paper(ϕ, C=C, Lambda=Lambda, finiteT=True, T=T)
+        V0T = float(V_paper(0.0, C=C, Lambda=Lambda, finiteT=True, T=T))
+        VvT = float(V_paper(v,    C=C, Lambda=Lambda, finiteT=True, T=T))
+
+        if shift_ref == "V0":
+            Vshift = VϕT - V0T
+        else:  # 'Vv'
+            Vshift = VϕT - VvT
+
+        lw, ls, z = (2.2, "-", 3) if T == max(T_list) or T == min(T_list) else (1.8, "-", 2)
+        ax.plot(ϕ, Vshift, color=col, lw=lw, ls=ls, label=f"T = {T:g} GeV", zorder=z)
+
+        # quick table line
+        phi_true_T = _phi_true_at_T(T)
+        V_true_T   = float(V_paper(phi_true_T, C=C, Lambda=Lambda, finiteT=True, T=T))
+        print(f"    {T:7.1f}  {phi_true_T:19.3f}  {V_true_T - V0T:30.3e}  {VvT - V0T:22.3e}")
+
+    # references
+    ax.axhline(0.0, color="#444", lw=1.0, ls="--", label="shift reference")
+    ax.axvline(v,   color="#888", lw=1.0, ls=":",  label="ϕ = v")
+    if np.isfinite(phi_cap):
+        ax.axvline(phi_cap, color="#aa0000", lw=1.0, ls="--", alpha=0.7, label=r"$\phi_\star=\Lambda/\sqrt{C}$")
+
+    ylabel = r"$V(\phi,T)-V(0,T)$" if shift_ref == "V0" else r"$V(\phi,T)-V(v,T)$"
+    ax.set_xlim(0.0, phi_max_eff)
+    ax.set_xlabel(r"$\phi$ [GeV]"); ax.set_ylabel(ylabel + r"  [GeV$^4$]")
+    ax.set_title(fr"Temperature sweep at $C={C}$, $\Lambda={Lambda:.0f}$ GeV")
+    ax.grid(True, alpha=0.25)
+    ax.legend(ncol=2, fontsize=9)
+    plt.tight_layout(); plt.show()
+
+    savefig(fig, save_dir, f"J_T_sweep_C{C:g}_L{int(Lambda)}_{shift_ref}")
+
+
+
+def gather_diagnostics(inst: SingleFieldInstanton, profile, label: str = "") -> dict:
+    r0info = getattr(inst, "_profile_info", {}) or {}
+    sinfo  = getattr(inst, "_scale_info", {}) or {}
+
+    # basic geometry
+    V_meta = float(inst.V(inst.phi_metaMin))
+    V_true = float(inst.V(inst.phi_absMin))
+    dV_true_meta = V_true - V_meta
+    phi_top = float(sinfo.get("phi_top", np.nan))
+    V_top  = float(inst.V(phi_top)) if np.isfinite(phi_top) else np.nan
+
+    # actions
+    br = inst.actionBreakdown(profile)
+
+    # try reading parameters from V
+    C, Lambda, T, finiteT = _extract_params_from_V(inst.V)
+    S_over_T = (float(br.S_total) / float(T)) if (T is not None and T > 0) else np.nan
+
+    # betas
+    def _safe_beta(method):
+        try:
+            return float(inst.betaEff(profile, method=method))
+        except Exception:
+            return np.nan
+
+    betas = {
+        "beta_rscale":   _safe_beta("rscale"),
+        "beta_curvature":_safe_beta("curvature"),
+        "beta_wall":     _safe_beta("wall"),
+    }
+
+    # wall
+    try:
+        ws = inst.wallDiagnostics(profile, frac=(0.1, 0.9))
+        r_wall = float(ws.r_hi); thickness = float(ws.thickness)
+    except Exception:
+        r_wall, thickness = np.nan, np.nan
+
+    return {
+        "label": label,
+        # potential params (if available)
+        "C": (float(C) if C is not None else np.nan),
+        "Lambda_GeV": (float(Lambda) if Lambda is not None else np.nan),
+        "finiteT": bool(finiteT) if finiteT is not None else None,
+        "temperature_GeV": (float(T) if T is not None else np.nan),
+
+        # geometry
+        "phi_metaMin": float(inst.phi_metaMin),
+        "phi_absMin":  float(inst.phi_absMin),
+        "phi_bar":     float(getattr(inst, "phi_bar", np.nan)),
+        "phi_top":     phi_top,
+        "V(phi_meta)": V_meta,
+        "V(phi_true)": V_true,
+        "V(phi_top)":  V_top,
+        "DeltaV_true_minus_meta": dV_true_meta,
+
+        # r0 & scales
+        "r0": float(r0info.get("r0", np.nan)),
+        "phi0": float(r0info.get("phi0", np.nan)),
+        "dphi0": float(r0info.get("dphi0", np.nan)),
+        "rscale_cubic": float(sinfo.get("rscale_cubic", np.nan)),
+        "rscale_curv":  float(sinfo.get("rscale_curv",  np.nan)),
+        "wall_r_hi": r_wall,
+        "wall_thickness": thickness,
+
+        # actions
+        "S_total": float(br.S_total),
+        "S_kin":   float(br.S_kin),
+        "S_pot":   float(br.S_pot),
+        "S_interior": float(br.S_interior),
+        "S3_over_T": float(S_over_T),
+
+        # betas
+        **betas,
+    }
+
+def save_diagnostics_summary(
+    di: dict,
+    save_dir: Optional[str],
+    basename: str = "diagnostics_summary",
+    fmt: str = "json",   # choose: "json" | "csv" | "txt"
+):
+    if not save_dir:
+        return
+    os.makedirs(save_dir, exist_ok=True)
+    fmt = fmt.lower()
+    path = os.path.join(save_dir, f"{basename}.{fmt}")
+
+    if fmt == "json":
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(di, f, indent=2)
+    elif fmt == "csv":
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("key,value\n")
+            for k, v in di.items():
+                f.write(f"{k},{v}\n")
+    elif fmt == "txt":
+        pad = max(len(k) for k in di.keys())
+        with open(path, "w", encoding="utf-8") as f:
+            for k, v in di.items():
+                f.write(f"{k.ljust(pad)} : {v}\n")
+    else:
+        raise ValueError("fmt must be one of: 'json', 'csv', 'txt'")
+
+
+
+# -----------------------------------------------------------------------------
+# Orchestration
+# -----------------------------------------------------------------------------
+def compute_profile(inst: SingleFieldInstanton,
+                    xguess: Optional[float] = None,
+                    phitol: float = 1e-5,
+                    thinCutoff: float = 0.01,
+                    npoints: int = 600,
+                    max_interior_pts =  None,
+                    _MAX_ITERS=200
+                    ) -> object:
+    """
+    Run the overshoot/undershoot solver to obtain the profile.
+    Returns the profile namedtuple (R, Phi, dPhi, Rerr).
+    """
+    profile = inst.findProfile(
+        xguess=xguess, xtol=1e-4, phitol=phitol,
+        thinCutoff=thinCutoff, npoints=npoints,
+        rmin=1e-4, rmax=1e4, max_interior_pts=max_interior_pts,
+        _MAX_ITERS= _MAX_ITERS
+    )
+    return profile
+
+def run_all(case: str = "thin",
+            xguess: Optional[float] = None,
+            phitol: float = 1e-5,
+            save_dir: Optional[str] = None,
+            phi_abs: float = 1.0,
+            phi_meta: float =0.0,
+            thinCutoff= 0.01):
+    """
+    Execute all examples A..F in sequence for the chosen case ("thin", "thick" or "mine").
+
+    Parameters
+    ----------
+    case : {"thin","thick", "mine"}
+        Which benchmark potential to use.
+    xguess : float or None
+        Optional initial guess for the internal shooting parameter used by findProfile.
+    phitol : float
+        Fractional tolerance for integration in findProfile (smaller = tighter).
+    save_dir : str or None
+        If provided, figures are saved under this folder.
+    """
+    save_dir = ensure_dir(save_dir)
+    inst, label = make_inst(case, phi_abs = phi_abs, phi_meta =phi_meta)
+    print(f"=== Running complete showcase on: {label} potential ===")
+
+    # Solve once and reuse the profile for all examples
+    profile = compute_profile(inst, xguess=xguess, phitol=phitol, npoints=800, thinCutoff=thinCutoff)
+
+    # A) Potential geometry & inverted view with φ0
+    example_A_potential_geometry(inst, profile, save_dir=save_dir)
+
+    # B) Local quadratic at φ0
+    example_B_local_quadratic_at_phi0(inst, profile, save_dir=save_dir)
+
+    # C) Inverted potential with path, and V(φ) with points
+    example_C_inverted_path(inst, profile, save_dir=save_dir)
+
+    # D) φ(r) with interior shading and markers
+    example_D_phi_of_r(inst, profile, save_dir=save_dir)
+
+    # E) 2D spherical visualizations (Cartesian & polar)
+    example_E_spherical_maps(inst, profile, save_dir=save_dir)
+
+    # F) ODE terms decomposition along the profile
+    example_F_ode_terms(inst, profile, save_dir=save_dir)
+
+    # G) Action and β proxies (print β; only action is plotted)
+    example_G_action_and_beta(inst, profile, save_dir=save_dir)
+
+    # H): multi-C Fig.1-like comparison (highlights C=0 and your default C)
+    example_H_fig1_multiC(Cs=(-5.0, 0.0, 3.0, 3.7, 4.14, 5.0), Lambda=1000, phi_max=300.0, save_dir=save_dir)
+
+    # I): paper-like potential with inset & real continuation (fig2)
+    example_I_paper_potential_with_inset(C=3, Lambda=1000,save_dir=save_dir)
+
+    # J): Temperature sweep of V(φ,T) at fixed C (Fig.1-but now per T)
+    example_J_T_scan(C=3.7, Lambda=1000.0, T_list=(60, 80.0, 90, 100.0, 120.0), phi_max=300.0, save_dir=save_dir,
+                     shift_ref="V0")
+
+    # consolidated table
+    di = gather_diagnostics(inst, profile, label=label)
+    save_diagnostics_summary(di, save_dir, basename="diagnostics_summary", fmt = "json")
+
+    print("=== Showcase complete. ===")
+    if save_dir:
+        print(f"Figures saved under: {os.path.abspath(save_dir)}")
+
+# -----------------------------------------------------------------------------
+# Script entry
+# -----------------------------------------------------------------------------
+if __name__ == "__main__":
+    #run paper potential
+    run_all(case="paper", xguess=None, phitol=1e-5,thinCutoff=0.0001,
+            phi_abs= 236.7, phi_meta =0.0, save_dir="results")
+
+def find_phi_true_at_T(T: float, C: float = 3.7, Lambda: float = 1000.0,
+                       phi_max: float = 300.0) -> float:
+    """Quick grid-search of the broken-phase minimum at temperature T."""
+    grid = np.linspace(0, phi_max, 4001)
+    Vg = V_paper(grid, C=C, Lambda=Lambda, finiteT=True, T=T, real_cont=False)
+    idx = np.nanargmin(Vg)
+    print(grid[idx])
+    return float(grid[idx])
+
+def estimate_Tn(C: float = 3.7, Lambda: float = 1000.0,
+                T_hi: float = 90.00, T_lo: float = 60,
+                Scrit: float = 140.0, max_iter: int = 12) -> tuple[float, float]:
+    """
+    Rough nucleation estimate by solving S3(T)/T = Scrit via bisection.
+    Returns (T_n, phi_true_at_Tn). Uses current module’s SingleFieldInstanton.
+    """
+    def S3_over_T(T):
+        phi_true_T = find_phi_true_at_T(T, C=C, Lambda=Lambda)
+        V_T = partial(V_paper, C=C, Lambda=Lambda, finiteT=True, T=T, real_cont=False)
+        inst = SingleFieldInstanton(phi_absMin=phi_true_T, phi_metaMin=0.0, V=V_T, alpha=2, phi_eps=1e-3)
+        prof = compute_profile(inst, xguess=None, phitol=1e-5, thinCutoff=0.01, npoints=600)
+        br = inst.actionBreakdown(prof)
+        print(float(br.S_total) / T)
+        return float(br.S_total) / T, phi_true_T
+
+    # Expand bracket until we straddle Scrit
+    f_hi, phi_hi = S3_over_T(T_hi)
+    f_lo, phi_lo = S3_over_T(T_lo)
+    # If not bracketing, try to expand a bit
+    tries = 0
+    while not ((f_hi > Scrit and f_lo < Scrit) or (f_hi < Scrit and f_lo > Scrit)) and tries < 4:
+        T_hi += 3; T_lo -= 3
+        f_hi, phi_hi = S3_over_T(T_hi)
+        f_lo, phi_lo = S3_over_T(T_lo)
+        tries += 1
+
+    T_a, T_b = T_lo, T_hi
+    fa, _ = f_lo, phi_lo
+    fb, _ = f_hi, phi_hi
+
+    for _ in range(max_iter):
+        T_m = 0.5*(T_a + T_b)
+        fm, phi_m = S3_over_T(T_m)
+        if (fa - Scrit)*(fm - Scrit) <= 0:
+            T_b, fb = T_m, fm
+        else:
+            T_a, fa = T_m, fm
+
+    Tn = 0.5*(T_a + T_b)
+    _, phi_Tn = S3_over_T(Tn)
+    return Tn, phi_Tn
+
+#Tn, phi_true_Tn = estimate_Tn(C=3.7, Lambda=1000.0, T_hi=60, T_lo=90, Scrit=140)
+#print("Estimated T_n =", Tn, "GeV ; phi_true(T_n) =", phi_true_Tn, "GeV")
+

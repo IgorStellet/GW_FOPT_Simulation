@@ -1,0 +1,2619 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../transitionFinder/">
+      
+      
+        <link rel="next" href="../../generic_potential/generic_potential/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Tests of TF functions - CosmoTransitions (modernized)</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tests-transition-finder" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-header__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosmoTransitions (modernized)
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Tests of TF functions
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-nav__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CosmoTransitions (modernized)
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap & Flowchart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples (Core modules)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples (Core modules)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_tunneling1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling 1D full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_1" id="__nav_5_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helper Functions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Helper Functions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Miscellaneous_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Miscellaneous Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Numerical_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Integration Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Numerical_derivatives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Derivatives Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/interpolation_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interpolation Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Finite Temperature (One loop corrections)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Finite Temperature (One loop corrections)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Exact_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Spline_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spline Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Approx_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Approx Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Short_Hand_Jb%26Jf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Short Hand for All Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling (1D)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tunneling (1D)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tunneling1D/single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Field functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tunneling1D/tests_single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of SF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Transition Finder
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of TF functions
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of TF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#block-a-landauginzburg-toy-model-and-phase-tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block A – Landau–Ginzburg toy model and phase tracing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Block A – Landau–Ginzburg toy model and phase tracing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-1-potential-shape-and-minima-at-high-and-low-temperature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 1 – Potential shape and minima at high and low temperature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-2-traceminimum-on-the-symmetric-phase-descending-in-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 2 – traceMinimum on the symmetric phase (descending in T)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-3-traceminimum-on-the-broken-phase-ascending-in-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 3 – traceMinimum on the broken phase (ascending in T)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-5-tracemultimin-and-phase-global-phase-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 5 – traceMultiMin and Phase: global phase structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-6-findapproxlocalmin-on-a-simple-segment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 6 – findApproxLocalMin on a simple segment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#block-b-tunneling-core-bounce-solutions-and-nucleation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block B – Tunneling core: bounce solutions and nucleation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Block B – Tunneling core: bounce solutions and nucleation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-b1-critical-temperature-and-free-energy-differences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test B1 – Critical temperature and free-energy differences
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-b2-_solve_bounce-in-a-1d-metastable-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test B2 – _solve_bounce in a 1D metastable configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-b3-tunnelfromphase-and-the-nucleation-temperature-t_n" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test B3 – tunnelFromPhase and the nucleation temperature \(T_n\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#demo-alternative-nucleation-criterion-pedagogical-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Demo – Alternative nucleation criterion (pedagogical example)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#block-c-transition-history-from-phase-structure-to-cosmic-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block C – Transition history: from phase structure to cosmic history
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Block C – Transition history: from phase structure to cosmic history">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-0-secondordertrans-dictionary-layout-and-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 0 – secondOrderTrans: dictionary layout and conventions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-1-findalltransitions-full-thermal-history-with-nucleation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 1 – findAllTransitions: full thermal history with nucleation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-2-findcriticaltemperatures-degeneracy-temperatures-tcrit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 2 – findCriticalTemperatures: degeneracy temperatures Tcrit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-3-addcrittempsforfulltransitions-matching-tcrit-and-tnuc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 3 – addCritTempsForFullTransitions: matching Tcrit and Tnuc
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generic Potential
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Generic Potential
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generic_potential/generic_potential/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Potential Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#block-a-landauginzburg-toy-model-and-phase-tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block A – Landau–Ginzburg toy model and phase tracing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Block A – Landau–Ginzburg toy model and phase tracing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-1-potential-shape-and-minima-at-high-and-low-temperature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 1 – Potential shape and minima at high and low temperature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-2-traceminimum-on-the-symmetric-phase-descending-in-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 2 – traceMinimum on the symmetric phase (descending in T)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-3-traceminimum-on-the-broken-phase-ascending-in-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 3 – traceMinimum on the broken phase (ascending in T)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-5-tracemultimin-and-phase-global-phase-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 5 – traceMultiMin and Phase: global phase structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-6-findapproxlocalmin-on-a-simple-segment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 6 – findApproxLocalMin on a simple segment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#block-b-tunneling-core-bounce-solutions-and-nucleation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block B – Tunneling core: bounce solutions and nucleation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Block B – Tunneling core: bounce solutions and nucleation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-b1-critical-temperature-and-free-energy-differences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test B1 – Critical temperature and free-energy differences
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-b2-_solve_bounce-in-a-1d-metastable-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test B2 – _solve_bounce in a 1D metastable configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-b3-tunnelfromphase-and-the-nucleation-temperature-t_n" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test B3 – tunnelFromPhase and the nucleation temperature \(T_n\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#demo-alternative-nucleation-criterion-pedagogical-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Demo – Alternative nucleation criterion (pedagogical example)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#block-c-transition-history-from-phase-structure-to-cosmic-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block C – Transition history: from phase structure to cosmic history
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Block C – Transition history: from phase structure to cosmic history">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-0-secondordertrans-dictionary-layout-and-conventions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 0 – secondOrderTrans: dictionary layout and conventions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-1-findalltransitions-full-thermal-history-with-nucleation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 1 – findAllTransitions: full thermal history with nucleation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-2-findcriticaltemperatures-degeneracy-temperatures-tcrit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 2 – findCriticalTemperatures: degeneracy temperatures Tcrit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-3-addcrittempsforfulltransitions-matching-tcrit-and-tnuc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 3 – addCritTempsForFullTransitions: matching Tcrit and Tnuc
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="tests-transition-finder">tests Transition Finder<a class="headerlink" href="#tests-transition-finder" title="Permanent link">&para;</a></h1>
+<p>This document summarizes the tutorial-style tests for the <code>transitionFinder</code>
+module, focusing on the <strong>visual outputs</strong> (plots) and the physical intuition
+behind them.</p>
+<p>The goal is that, by reading this file and looking at the figures, a user can
+understand what the Block A primitives (<code>traceMinimum</code>, <code>Phase</code>, <code>traceMultiMin</code>,
+<code>findApproxLocalMin</code>, <code>removeRedundantPhases</code>, <code>getStartPhase</code>) are doing in a
+concrete, finite-temperature scalar-field model.</p>
+<hr />
+<h2 id="block-a-landauginzburg-toy-model-and-phase-tracing">Block A – Landau–Ginzburg toy model and phase tracing<a class="headerlink" href="#block-a-landauginzburg-toy-model-and-phase-tracing" title="Permanent link">&para;</a></h2>
+<p>All tests in Block A use the same 1D finite-temperature potential</p>
+<div class="arithmatex">\[
+V(\phi, T) = D (T^2 - T_0^2)\phi^2 - ET\phi^3 + \frac{\lambda}{4}\phi^4
+\]</div>
+<p>with <span class="arithmatex">\(D &gt; 0\)</span>, <span class="arithmatex">\(\lambda &gt; 0\)</span>, and a small cubic term <span class="arithmatex">\(E &gt; 0\)</span>.
+This is the standard Landau–Ginzburg toy model for a first-order phase
+transition:</p>
+<ul>
+<li>At high temperature, there is a unique minimum at <span class="arithmatex">\(\phi = 0\)</span> (symmetric phase).</li>
+<li>At lower temperature, non-trivial minima at <span class="arithmatex">\(\phi \neq 0\)</span> appear
+  (broken phase).</li>
+<li>In an intermediate range, symmetric and broken phases coexist, separated by a barrier.</li>
+<li>Below a spinodal temperature, the symmetric minimum disappears.</li>
+</ul>
+<p>The tests are organized to show how Block A routines reconstruct this structure.</p>
+<hr />
+<h3 id="test-1-potential-shape-and-minima-at-high-and-low-temperature">Test 1 – Potential shape and minima at high and low temperature<a class="headerlink" href="#test-1-potential-shape-and-minima-at-high-and-low-temperature" title="Permanent link">&para;</a></h3>
+<p><strong>Script:</strong> <code>test_blockA_1_potential_shape_and_minima</code></p>
+<p><strong>What it does</strong></p>
+<ul>
+<li>Evaluates <span class="arithmatex">\(V(\phi, T)\)</span> on a grid in <span class="arithmatex">\(\phi\)</span> for two temperatures:</li>
+<li><span class="arithmatex">\(T_\text{high} = 200\)</span> (well above <span class="arithmatex">\(T_0\)</span>),</li>
+<li><span class="arithmatex">\(T_\text{low} = 50\)</span> (well below <span class="arithmatex">\(T_0\)</span>).</li>
+<li>Finds numerically:</li>
+<li>the minimum near <span class="arithmatex">\(\phi \simeq 0\)</span> at high T,</li>
+<li>the broken minimum at low T.</li>
+<li>Checks the curvature <span class="arithmatex">\(m^2 = d^2V/d\phi^2\)</span> at these points to verify stability.</li>
+</ul>
+<p><strong>Expected plot</strong></p>
+<p>A single figure with two curves:</p>
+<ul>
+<li>Horizontal axis: <span class="arithmatex">\(\phi\)</span>.</li>
+<li>Vertical axis: <span class="arithmatex">\(V(\phi, T)\)</span>.</li>
+<li>Curves:</li>
+<li><span class="arithmatex">\(V(\phi, T_\text{high})\)</span>: single well at <span class="arithmatex">\(\phi \approx 0\)</span>.</li>
+<li><span class="arithmatex">\(V(\phi, T_\text{low})\)</span>: double-well structure with a deeper minimum at <span class="arithmatex">\(\phi \neq 0\)</span>.</li>
+</ul>
+<p><strong>What to look for</strong></p>
+<ul>
+<li>At <strong>high T</strong>:</li>
+<li>the curve has a single minimum at (or extremely close to) <span class="arithmatex">\(\phi = 0\)</span>.</li>
+<li>At <strong>low T</strong>:</li>
+<li>the origin becomes unstable (local maximum or shallow region),</li>
+<li>a new <strong>broken minimum</strong> appears at <span class="arithmatex">\(\phi &gt; 0\)</span>.</li>
+</ul>
+<p><strong>Placeholder for figure</strong></p>
+<p><img alt="Test 1 – V(φ, T_high) vs V(φ, T_low)" src="../assets/Lot_A_1.png" /></p>
+<hr />
+<h3 id="test-2-traceminimum-on-the-symmetric-phase-descending-in-t">Test 2 – <code>traceMinimum</code> on the symmetric phase (descending in T)<a class="headerlink" href="#test-2-traceminimum-on-the-symmetric-phase-descending-in-t" title="Permanent link">&para;</a></h3>
+<p><strong>Script:</strong> <code>test_blockA_2_traceMinimum_symmetric_phase_downwards</code></p>
+<p><strong>What it does</strong></p>
+<ul>
+<li>
+<p>Starts from the symmetric minimum:</p>
+</li>
+<li>
+<p>initial condition: <span class="arithmatex">\(\phi = 0\)</span> at (T = 200).</p>
+</li>
+<li>Uses <code>traceMinimum</code> to follow this minimum <strong>downwards in temperature</strong> until it
+  becomes unstable.</li>
+<li>
+<p>Records:</p>
+</li>
+<li>
+<p>the temperature grid <code>T</code>,</p>
+</li>
+<li>the traced minimum <span class="arithmatex">\(\phi_{\min}(T)\)</span>,</li>
+<li>the curvature <span class="arithmatex">\(m^2(T) = \frac{d^2V}{d\phi^2}|_{\phi_{\min}(T)}\)</span>.</li>
+<li>Compares the numerically extracted spinodal temperature <code>res.overT</code> with the
+  analytic spinodal (for the symmetric phase) at <span class="arithmatex">\(T_\text{spin} = T_0\)</span>.</li>
+</ul>
+<p><strong>Expected plots</strong></p>
+<ol>
+<li>
+<p><strong>Symmetric branch <span class="arithmatex">\(\phi_{\min}(T)\)</span></strong></p>
+</li>
+<li>
+<p>Horizontal axis: (T).</p>
+</li>
+<li>Vertical axis: <span class="arithmatex">\(\phi_{\min}(T)\)</span>.</li>
+<li>Markers along the traced points from <code>traceMinimum</code>.</li>
+<li>Vertical dashed line at <span class="arithmatex">\(T = T_0\)</span> (analytic spinodal).</li>
+</ol>
+<p>Behaviour:</p>
+<ul>
+<li><span class="arithmatex">\(\phi_{\min}(T)\)</span> should stay very close to 0 at all temperatures where
+     the symmetric minimum exists.</li>
+<li>
+<p>Near <span class="arithmatex">\(T \approx T_0\)</span>, the branch ends (spinodal).</p>
+</li>
+<li>
+<p><strong>Curvature <span class="arithmatex">\(m^2(T)\)</span> along the symmetric trace</strong></p>
+</li>
+<li>
+<p>Horizontal axis: (T).</p>
+</li>
+<li>Vertical axis: <span class="arithmatex">\(m^2(T) = d^2V/d\phi^2|_{\phi_{\min}(T)}\)</span>.</li>
+<li>A horizontal line at <span class="arithmatex">\(m^2 = 0\)</span> indicating the stability threshold.</li>
+</ul>
+<p>Behaviour:</p>
+<ul>
+<li>For <span class="arithmatex">\(T \gg T_0\)</span>, <span class="arithmatex">\(m^2 &gt; 0\)</span>: the symmetric minimum is stable.</li>
+<li>As <span class="arithmatex">\(T \to T_0\)</span>, <span class="arithmatex">\(m^2 \to 0\)</span>.</li>
+<li>This signals the <strong>spinodal point</strong> where the symmetric phase loses stability.</li>
+</ul>
+<p><strong>Placeholders for figures</strong></p>
+<p><img alt="Test 2 – Symmetric phase: φ_min(T) from traceMinimum" src="../assets/Lot_A_2.png" /></p>
+<p><img alt="Test 2 – Symmetric phase: m²(T) along the traced branch" src="../assets/Lot_A_3.png" /></p>
+<hr />
+<h3 id="test-3-traceminimum-on-the-broken-phase-ascending-in-t">Test 3 – <code>traceMinimum</code> on the broken phase (ascending in T)<a class="headerlink" href="#test-3-traceminimum-on-the-broken-phase-ascending-in-t" title="Permanent link">&para;</a></h3>
+<p><strong>Script:</strong> <code>test_blockA_3_traceMinimum_broken_phase_upwards</code></p>
+<p><strong>What it does</strong></p>
+<ul>
+<li>
+<p>First finds a broken minimum at low temperature:</p>
+</li>
+<li>
+<p><span class="arithmatex">\(\phi_b(T=50)\)</span> via a 1D minimization.</p>
+</li>
+<li>Uses <code>traceMinimum</code> starting from <span class="arithmatex">\(\phi_b(50)\)</span> at (T = 50), and follows this
+  broken minimum <strong>upwards in temperature</strong>.</li>
+<li>Records the branch until the broken phase disappears or becomes unstable.</li>
+<li>Computes the curvature <span class="arithmatex">\(m^2(T)\)</span> along the broken branch.</li>
+</ul>
+<p><strong>Expected plot</strong></p>
+<ol>
+<li>
+<p><strong>Broken branch <span class="arithmatex">\(\phi_{\min}(T)\)</span></strong></p>
+</li>
+<li>
+<p>Horizontal axis: (T).</p>
+</li>
+<li>Vertical axis: <span class="arithmatex">\(\phi_{\min}(T)\)</span> for the broken phase.</li>
+<li>A horizontal line at <span class="arithmatex">\(\phi = 0\)</span>.</li>
+</ol>
+<p>Behaviour:</p>
+<ul>
+<li>At low T, <span class="arithmatex">\(\phi_{\min}(T)\)</span> is significantly away from 0
+     (spontaneous symmetry breaking).</li>
+<li>As T increases, <span class="arithmatex">\(|\phi_{\min}(T)|\)</span> decreases, tending towards 0 as you
+     approach the region where the symmetric phase dominates.</li>
+<li>The branch ends near the broken-phase spinodal temperature <code>res.overT</code>.</li>
+</ul>
+<p><strong>Placeholder for figure</strong></p>
+<p><img alt="Test 3 – Broken phase: φ_min(T) from traceMinimum" src="../assets/Lot_A_4.png" /></p>
+<hr />
+<h3 id="test-5-tracemultimin-and-phase-global-phase-structure">Test 5 – <code>traceMultiMin</code> and <code>Phase</code>: global phase structure<a class="headerlink" href="#test-5-tracemultimin-and-phase-global-phase-structure" title="Permanent link">&para;</a></h3>
+<p><strong>Script:</strong> <code>test_blockA_5_traceMultiMin_and_Phase_structure</code></p>
+<p><strong>What it does</strong></p>
+<ul>
+<li>
+<p>Builds the phase structure in the interval <span class="arithmatex">\(T \in [50, 200]\)</span> using:</p>
+</li>
+<li>
+<p>seeds at <span class="arithmatex">\((\phi = 0, T = 200)\)</span> (symmetric),</p>
+</li>
+<li>
+<p>and <span class="arithmatex">\((\phi_b(T=50), T = 50)\)</span> (broken).</p>
+</li>
+<li>
+<p>Runs <code>traceMultiMin</code> to trace all minima that arise from these seeds, and
+  then <code>removeRedundantPhases</code> to clean up duplicates.</p>
+</li>
+<li>
+<p>Constructs <code>Phase</code> objects for each branch and checks that:</p>
+</li>
+<li>
+<p>there is exactly one symmetric-like phase (with <span class="arithmatex">\(\phi \approx 0\)</span> at high T),</p>
+</li>
+<li>
+<p>at least one broken-like phase.</p>
+</li>
+<li>
+<p>Uses <code>getStartPhase</code> to identify the high-temperature phase.</p>
+</li>
+<li>
+<p>For each <code>Phase</code>, compares the spline-based <code>valAt(T)</code> with a direct
+  minimization of <span class="arithmatex">\(V(\phi, T)\)</span> at a few T values (sanity check).</p>
+</li>
+</ul>
+<p><strong>Expected plot</strong></p>
+<p><strong>Phase structure: <span class="arithmatex">\(\phi_{\min}(T)\)</span> from <code>Phase</code> splines</strong></p>
+<ul>
+<li>Horizontal axis: (T).</li>
+<li>Vertical axis: <span class="arithmatex">\(\phi_{\min}(T)\)</span>.</li>
+<li>One curve per <code>Phase</code> object, plotted as a function of T over its domain.</li>
+</ul>
+<p>Behaviour:</p>
+<ul>
+<li>
+<p>A <strong>symmetric</strong> branch:</p>
+</li>
+<li>
+<p>stays near <span class="arithmatex">\(\phi \approx 0\)</span> over a wide range of temperatures,</p>
+</li>
+<li>is present at the highest T.</li>
+<li>
+<p>A <strong>broken</strong> branch:</p>
+</li>
+<li>
+<p>exists at lower T with <span class="arithmatex">\(\phi \neq 0\)</span>,</p>
+</li>
+<li>bends towards <span class="arithmatex">\(\phi \to 0\)</span> as T increases,</li>
+<li>terminates at its own spinodal.</li>
+</ul>
+<p>This plot is the closest thing to a “phase diagram in T” in Block A: it shows how
+each phase’s vacuum expectation value evolves with temperature.</p>
+<p><strong>Placeholder for figure</strong></p>
+<p><img alt="Test 5 – Phase structure: φ_min(T) for all Phase branches" src="../assets/Lot_A_5.png" /></p>
+<hr />
+<h3 id="test-6-findapproxlocalmin-on-a-simple-segment">Test 6 – <code>findApproxLocalMin</code> on a simple segment<a class="headerlink" href="#test-6-findapproxlocalmin-on-a-simple-segment" title="Permanent link">&para;</a></h3>
+<p><strong>Script:</strong> <code>test_blockA_6_findApproxLocalMin_on_simple_segment</code></p>
+<p><strong>What it does</strong></p>
+<ul>
+<li>
+<p>Focuses on a fixed temperature <span class="arithmatex">\(T = 150 &gt; T_0\)</span>, where the potential has a
+  <strong>unique</strong> minimum at <span class="arithmatex">\(\phi = 0\)</span>.</p>
+</li>
+<li>
+<p>Considers a straight segment in field space:</p>
+</li>
+</ul>
+<div class="arithmatex">\[\phi \in [-3, +3]\]</div>
+<p>and calls <code>findApproxLocalMin</code> along this segment.</p>
+<ul>
+<li><code>findApproxLocalMin</code> samples the segment, looks for discrete local minima in
+  <span class="arithmatex">\(V(\phi, T)\)</span>, and returns approximate positions of minima between the
+  segment endpoints.</li>
+</ul>
+<p><strong>Expected plot</strong></p>
+<p><strong>Potential along the segment and found approximate minima</strong></p>
+<ul>
+<li>Horizontal axis: <span class="arithmatex">\(\phi\)</span>.</li>
+<li>Vertical axis: <span class="arithmatex">\(V(\phi, T)\)</span> for fixed (T = 150).</li>
+<li>Curve: <span class="arithmatex">\(V(\phi, 150)\)</span> over <span class="arithmatex">\(\phi \in [-3, 3]\)</span>.</li>
+<li>Markers: positions returned by <code>findApproxLocalMin</code> (approximate minima).</li>
+</ul>
+<p>Behaviour:</p>
+<ul>
+<li>The curve should be a single well centred at <span class="arithmatex">\(\phi = 0\)</span>.</li>
+<li><code>findApproxLocalMin</code> should identify minima very close to <span class="arithmatex">\(\phi = 0\)</span>.</li>
+<li>If it finds more than one minimum, they should cluster around the origin,
+  reflecting the discrete sampling.</li>
+</ul>
+<p><strong>Placeholder for figure</strong></p>
+<p><img alt="Test 6 – findApproxLocalMin along a segment at T=150" src="../assets/Lot_A_6.png" /></p>
+<p>If you want to see the full test script of this block go to <a href="/tests/transitionFinder/Lot_A.py">tests/transitionFInder</a></p>
+<hr />
+<h2 id="block-b-tunneling-core-bounce-solutions-and-nucleation">Block B – Tunneling core: bounce solutions and nucleation<a class="headerlink" href="#block-b-tunneling-core-bounce-solutions-and-nucleation" title="Permanent link">&para;</a></h2>
+<p>In Block A we <em>only</em> described <strong>where</strong> the phases lie along <span class="arithmatex">\(T\)</span>.
+Block B goes one level deeper: given this phase panorama, what does the theory
+<em>do</em> with it? <strong>It tunnels.</strong></p>
+<p>Here we test exactly that:</p>
+<ul>
+<li>how to identify the critical temperature at which two phases become
+  degenerate;</li>
+<li>how to solve the 1D <em>bounce</em> corresponding to a false → true tunnel;</li>
+<li>how to stitch everything into a high-level function that provides the
+  <strong>nucleation temperature</strong> with the standard criterion
+  <span class="arithmatex">\(S_3(T_n)/T_n \simeq 140\)</span>.</li>
+</ul>
+<p>All tests still use the same Landau–Ginzburg potential from Block A,
+so that we can connect directly:</p>
+<blockquote>
+<p><em>“This phase curve I saw in Block A is the same one that is now
+nucleating a bubble with some action at <span class="arithmatex">\(T_n\)</span>.”</em></p>
+</blockquote>
+<hr />
+<h3 id="test-b1-critical-temperature-and-free-energy-differences">Test B1 – Critical temperature and free-energy differences<a class="headerlink" href="#test-b1-critical-temperature-and-free-energy-differences" title="Permanent link">&para;</a></h3>
+<p><strong>Script:</strong> <code>test_blockB_1_potential_diff_and_Tcrit</code></p>
+<p><strong>Physical goal</strong></p>
+<p>Given a <code>start_phase</code> (here, the symmetric high-temperature phase),
+we want to identify the temperature at which <strong>some</strong> other phase becomes
+energetically degenerate with it:</p>
+<div class="arithmatex">\[
+\Delta V(T) \equiv V_\text{other}(T) - V_\text{start}(T) = 0.
+\]</div>
+<p>This point defines a <strong>critical temperature</strong> for that phase — the boundary
+where it ceases to be the most favorable in free energy.</p>
+<p><strong>What the test does</strong></p>
+<ol>
+<li>Builds the phases with <code>traceMultiMin</code> (as in Block A) and identifies the
+   high-<span class="arithmatex">\(T\)</span> phase with <code>getStartPhase</code>.</li>
+<li>Uses <code>_maxTCritForPhase</code> to find the temperature <span class="arithmatex">\(T_\text{crit}\)</span>
+   at which the <code>start_phase</code> ties with some competing phase.</li>
+<li>Evaluates <code>_potentialDiffForPhase(T, start_phase, other_phases, V)</code> at
+   <span class="arithmatex">\(T_\text{crit}\)</span> to check that <span class="arithmatex">\(\Delta V(T_\text{crit}) \approx 0\)</span>.</li>
+<li>Scans an interval in <span class="arithmatex">\(T\)</span> and plots <span class="arithmatex">\(\Delta V(T)\)</span>, marking the point
+   where it crosses zero.</li>
+</ol>
+<p><strong>Interpretation</strong></p>
+<ul>
+<li>For <span class="arithmatex">\(T &gt; T_\text{crit}\)</span> we expect <span class="arithmatex">\(\Delta V(T) &gt; 0\)</span>:
+  the starting phase is still energetically preferred.</li>
+<li>For <span class="arithmatex">\(T &lt; T_\text{crit}\)</span> some other minimum is deeper:
+  the starting phase becomes metastable or unstable.</li>
+<li>The test numerically ensures that:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>DV(Tcrit) = V(other) - V(start) ≈ 0
+ Critical temperature T_c  ≈ 102.0621
+ΔV(T_c) = V(other) - V(start) ≈ 3.5406e-01 (should be ~ 0)
+</code></pre></div>
+<p>within the specified tolerance.</p>
+<p><strong>Expected plot</strong></p>
+<ul>
+<li>Horizontal: <span class="arithmatex">\(T\)</span></li>
+<li>Vertical: <span class="arithmatex">\(\Delta V(T) = V_\text{other} - V_\text{start}\)</span>.</li>
+<li>A smooth curve <span class="arithmatex">\(\Delta V(T)\)</span> crossing the zero axis.</li>
+<li>A horizontal line at <span class="arithmatex">\(\Delta V = 0\)</span>.</li>
+<li>A vertical line at <span class="arithmatex">\(T = T_\text{crit}\)</span>.</li>
+</ul>
+<p>Visually, you are seeing the moment when the two phases “tie” in
+free energy.</p>
+<p><strong>Placeholder for figure</strong></p>
+<p><img alt="Test B1 – Free-energy difference and T_crit" src="../assets/Lot_B_1.png" /></p>
+<hr />
+<h3 id="test-b2-_solve_bounce-in-a-1d-metastable-configuration">Test B2 – <code>_solve_bounce</code> in a 1D metastable configuration<a class="headerlink" href="#test-b2-_solve_bounce-in-a-1d-metastable-configuration" title="Permanent link">&para;</a></h3>
+<p><strong>Script:</strong> <code>test_blockB_2_solve_bounce_single_field_example</code></p>
+<p><strong>Physical goal</strong></p>
+<p>Before using the full nucleation machinery, we want to look closely at the
+<strong>numerical core</strong>: given a false vacuum and a true vacuum in 1D,
+does the backend <code>_solve_bounce</code> actually find a bounce with finite action?</p>
+<p>More concretely, we look for a <span class="arithmatex">\(T\)</span> such that:</p>
+<ul>
+<li><span class="arithmatex">\(\phi = 0\)</span> is still a <strong>local minimum</strong> (metastable),</li>
+<li>there exists a deeper minimum at <span class="arithmatex">\(\phi = \phi_\text{true} &gt; 0\)</span>,</li>
+<li>the two are separated by a barrier.</li>
+</ul>
+<p>This is the classic scenario for a <strong>first-order tunnel</strong>.</p>
+<p><strong>What the test does</strong></p>
+<ol>
+<li>
+<p>Scans <span class="arithmatex">\(T\)</span> values slightly above <span class="arithmatex">\(T_0\)</span> until it finds:</p>
+</li>
+<li>
+<p><span class="arithmatex">\(m^2(\phi=0,T) &gt; 0\)</span> (positive curvature → local minimum),</p>
+</li>
+<li>
+<p>an analytic minimum <span class="arithmatex">\(\phi_\text{true} &gt; 0\)</span> with
+     <span class="arithmatex">\(V(\phi_\text{true},T) &lt; V(0,T)\)</span>.</p>
+</li>
+<li>
+<p>Defines:</p>
+</li>
+<li>
+<p><code>x_high = [0.0]</code> as the false vacuum,</p>
+</li>
+<li>
+<p><code>x_low = [phi_true]</code> as the true vacuum.</p>
+</li>
+<li>
+<p>Builds scalar wrappers:</p>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><code>def V_fixed(x): return V(x, T_test)
+def dV_fixed(x): return dV_dphi(x, T_test)
+</code></pre></div>
+<ol>
+<li>
+<p>Calls <code>_solve_bounce(...)</code>, which internally:</p>
+</li>
+<li>
+<p>tries to use <code>pathDeformation</code> if available,</p>
+</li>
+<li>
+<p>otherwise falls back to <code>tunneling1D.SingleFieldInstanton</code> in the 1D direction.</p>
+</li>
+<li>
+<p>Checks that:</p>
+</li>
+<li>
+<p><code>trantype == 1</code> (first-order transition),</p>
+</li>
+<li>the returned <code>action</code> is finite and positive,</li>
+<li>
+<p>a valid <code>instanton</code> object is returned.</p>
+</li>
+<li>
+<p>Plots the potential at <span class="arithmatex">\(T_\text{test}\)</span> with both minima highlighted.</p>
+</li>
+</ol>
+<p><strong>Interpretation</strong></p>
+<ul>
+<li>
+<p>If <code>trantype = 1</code> and <code>action &gt; 0</code>:</p>
+</li>
+<li>
+<p>the backend successfully solved the bounce equation with the correct
+    boundary conditions,</p>
+</li>
+<li>
+<p>the result is consistent with the physical interpretation of a
+    false → true tunnel.</p>
+</li>
+<li>
+<p>This is the local check that <strong>SingleFieldInstanton is really delivering
+  a physical solution</strong> for the test potential.</p>
+</li>
+</ul>
+<p><strong>Expected plot</strong></p>
+<ul>
+<li>Horizontal: <span class="arithmatex">\(\phi\)</span> (region between <span class="arithmatex">\(0\)</span> and slightly above
+  <span class="arithmatex">\(\phi_\text{true}\)</span>).</li>
+<li>Vertical: <span class="arithmatex">\(V(\phi, T_\text{test})\)</span>.</li>
+<li>Curve: <span class="arithmatex">\(V(\phi, T_\text{test})\)</span>.</li>
+<li>
+<p>Vertical lines marking:</p>
+</li>
+<li>
+<p><span class="arithmatex">\(\phi = 0\)</span>: false vacuum,</p>
+</li>
+<li><span class="arithmatex">\(\phi = \phi_\text{true}\)</span>: true vacuum.</li>
+</ul>
+<p>This plot lets you see the “landscape” in which the bounce lives: two
+basins separated by a little hill (the barrier).</p>
+<p><strong>Placeholder for figure</strong></p>
+<p><img alt="Test B2 – Potential at T_test with false and true minima" src="../assets/Lot_B_2.png" /></p>
+<p><strong>Space for important prints</strong></p>
+<p>Importants Terminal output:</p>
+<div class="highlight"><pre><span></span><code>  Chosen T_test = 100.2000
+  V(false, T_test) at phi=0         = 0.0000e+00
+  V(true,  T_test) at phi=58.7571 = -9.4718e+04
+  m^2(phi=0, T_test) = 8.0080e+00 (&gt; 0 ⇒ metastable origin)
+  _solve_bounce returned trantype = 1
+  Bounce action S3(T_test)        ≈ 2.9944e+01
+  instanton object type           = &lt;class &#39;CosmoTransitions.tunneling1D.SingleFieldInstanton&#39;&gt;
+</code></pre></div>
+<p>to reinforce that the scenario is genuinely metastable with a nontrivial bounce.</p>
+<hr />
+<h3 id="test-b3-tunnelfromphase-and-the-nucleation-temperature-t_n">Test B3 – <code>tunnelFromPhase</code> and the nucleation temperature <span class="arithmatex">\(T_n\)</span><a class="headerlink" href="#test-b3-tunnelfromphase-and-the-nucleation-temperature-t_n" title="Permanent link">&para;</a></h3>
+<p><strong>Script:</strong> <code>test_blockB_3_tunnelFromPhase_default_criterion</code></p>
+<p><strong>Physical goal</strong></p>
+<p>Now we use the high-level tool <code>tunnelFromPhase</code> to:</p>
+<ul>
+<li>
+<p>take the phase panorama from Block A,</p>
+</li>
+<li>
+<p>search in <span class="arithmatex">\(T\)</span> for possible bounces between the symmetric and broken phases,</p>
+</li>
+<li>
+<p>apply a nucleation criterion of the form</p>
+</li>
+</ul>
+<div class="arithmatex">\[\text{nuclCriterion}(S_3(T), T)= \frac{S_3(T)}{T} - 140 \approx 0\]</div>
+<ul>
+<li>and identify the <strong>nucleation temperature</strong> <span class="arithmatex">\(T_n\)</span>.</li>
+</ul>
+<p>In other words: here we see the passage
+“<strong>metastable phase + bounce → cosmological phase transition</strong>”.</p>
+<p><strong>What the test does</strong></p>
+<ol>
+<li>
+<p>Reconstructs the phases with <code>_build_phases()</code> and uses <code>getStartPhase</code> to
+   take the high-<span class="arithmatex">\(T\)</span> symmetric phase as <code>start_phase</code>.</p>
+</li>
+<li>
+<p>Calls <code>tunnelFromPhase(...)</code> with:</p>
+</li>
+<li>
+<p><code>V</code>, <code>dV_dphi</code>,</p>
+</li>
+<li><code>Tmax ≃ 200</code>,</li>
+<li><code>overlapAngle = 45°</code> (pruning of nearly collinear directions in field
+     space),</li>
+<li>
+<p>explicit nucleation criterion <span class="arithmatex">\(S_3/T - 140\)</span>.</p>
+</li>
+<li>
+<p><code>tunnelFromPhase</code> internally:</p>
+</li>
+<li>
+<p>scans temperatures between the lower bound of the phase and <code>Tmax</code>
+     looking for bounce solutions via <code>_tunnelFromPhaseAtT</code>,</p>
+</li>
+<li>at each <span class="arithmatex">\(T\)</span>, uses <code>_solve_bounce</code> (which in turn uses <code>pathDeformation</code>
+     or <code>SingleFieldInstanton</code>),</li>
+<li>
+<p>stores in a dictionary <code>outdict[T]</code> the best (lowest-action) bounce
+     found.</p>
+</li>
+<li>
+<p>If it finds a first-order transition (<code>trantype == 1</code>):</p>
+</li>
+<li>
+<p>it returns a dictionary with:</p>
+<ul>
+<li><code>Tnuc</code>,</li>
+<li><code>low_vev</code>, <code>high_vev</code>,</li>
+<li><code>low_phase</code>, <code>high_phase</code>,</li>
+<li><code>action</code> (i.e. <span class="arithmatex">\(S_3(T_n)\)</span>),</li>
+<li><code>instanton</code> (object from the bounce routine).</li>
+</ul>
+</li>
+<li>
+<p>The test then:</p>
+</li>
+<li>
+<p>prints <span class="arithmatex">\(T_n\)</span>, <span class="arithmatex">\(S_3(T_n)\)</span> and <span class="arithmatex">\(S_3(T_n)/T_n\)</span>,</p>
+</li>
+<li>checks that <code>trantype == 1</code>,</li>
+<li>verifies that <span class="arithmatex">\(S_3/T\)</span> is <strong>close</strong> to <span class="arithmatex">\(140\)</span> (it need not be millimetric),</li>
+<li>compares <span class="arithmatex">\(T_n\)</span> with <span class="arithmatex">\(T_\text{crit}\)</span> from Test B1, requiring
+     <span class="arithmatex">\(T_n \lesssim T_\text{crit}\)</span>
+     (moderate supercooling, as expected in a first-order transition),</li>
+<li>
+<p>checks that, at <span class="arithmatex">\(T_n\)</span>, the “low” phase indeed has smaller free energy
+     than the “high” one.</p>
+</li>
+<li>
+<p>For visual intuition, it plots the potential at <span class="arithmatex">\(T = T_n\)</span> with both
+   minima marked.</p>
+</li>
+</ol>
+<p><strong>Interpretation</strong></p>
+<ul>
+<li>
+<p><code>tunnelFromPhase</code> is the “glue” between:</p>
+</li>
+<li>
+<p><strong>phase vs. <span class="arithmatex">\(T\)</span> information</strong> (Block A),</p>
+</li>
+<li><strong>bounce solving</strong> (SingleFieldInstanton / pathDeformation),</li>
+<li>
+<p><strong>cosmological nucleation criterion</strong> (here, <span class="arithmatex">\(S_3/T \sim 140\)</span>).</p>
+</li>
+<li>
+<p>The test shows that:</p>
+</li>
+<li>
+<p>the code finds a <span class="arithmatex">\(T\)</span> where the bounce is efficient enough to satisfy
+    the criterion;</p>
+</li>
+<li>this temperature is indeed <em>below</em> the critical degeneracy temperature;</li>
+<li>at <span class="arithmatex">\(T_n\)</span>, the “low” minimum is physically the true one (smaller
+    free energy).</li>
+</ul>
+<p><strong>Expected plot</strong></p>
+<ul>
+<li>Horizontal: <span class="arithmatex">\(\phi\)</span> in the neighborhood of both minima at <span class="arithmatex">\(T_n\)</span>.</li>
+<li>Vertical: <span class="arithmatex">\(V(\phi, T_n)\)</span>.</li>
+<li>Curve: <span class="arithmatex">\(V(\phi, T_n)\)</span>.</li>
+<li>
+<p>Vertical lines marking:</p>
+</li>
+<li>
+<p><code>high_vev</code> (false vacuum),</p>
+</li>
+<li><code>low_vev</code> (true vacuum).</li>
+</ul>
+<p>This is the analogue of Test B2, but now at the “special” temperature <span class="arithmatex">\(T_n\)</span>
+defined by the nucleation criterion instead of an arbitrary <span class="arithmatex">\(T\)</span>.</p>
+<p><strong>Placeholder for figure</strong></p>
+<p><img alt="Test B3 – Potential at T_n with false and true minima" src="../assets/Lot_B_3.png" /></p>
+<p><strong>Space for important prints</strong></p>
+<p>It is worth recording something like:</p>
+<div class="highlight"><pre><span></span><code> --- tunnelFromPhase result ---
+  T_nuc              ≈ 101.8969
+  S3(T_nuc)          ≈ 14191.6326
+  S3(T_nuc) / T_nuc  ≈ 139.2744
+  low_phase key      = 0
+  high_phase key     = 1
+  trantype           = 1 (1 = first order)
+  S3/T - 140 ≈ -0.726
+  Critical temperature T_crit ≈ 102.0621
+  We expect T_nuc &lt; T_crit for a supercooled first-order transition.
+  V(false, T_nuc) at phi=-0.0000 = 1.2320e-35
+  V(true,  T_nuc) at phi=43.5502  = -5.7643e+03
+</code></pre></div>
+<p>to illustrate numerically:</p>
+<ul>
+<li>how close <span class="arithmatex">\(S_3/T\)</span> is to <span class="arithmatex">\(140\)</span>,</li>
+<li>how far below <span class="arithmatex">\(T_\text{crit}\)</span> the <span class="arithmatex">\(T_n\)</span> sits,</li>
+<li>and that the “low” phase is indeed the energetically favored one.</li>
+</ul>
+<hr />
+<h3 id="demo-alternative-nucleation-criterion-pedagogical-example">Demo – Alternative nucleation criterion (pedagogical example)<a class="headerlink" href="#demo-alternative-nucleation-criterion-pedagogical-example" title="Permanent link">&para;</a></h3>
+<p><strong>Functions:</strong> <code>ew_like_nuclCriterion</code>, <code>demo_blockB_alternative_nucleation_criterion</code></p>
+<p>Besides the tests, the file includes a <strong>non-pytest demo</strong> that shows how to
+replace the standard nucleation criterion with another one, for example:</p>
+<div class="arithmatex">\[
+\frac{S_3(T)}{T} = 4 \ln\left(\frac{M_\text{eff}}{T}\right)
+\]</div>
+<p>with some arbitrary scale <span class="arithmatex">\(M_\text{eff}\)</span>. The goal here is <strong>not</strong> to be
+realistic for the toy model, but rather to:</p>
+<ul>
+<li>show the signature that <code>nuclCriterion(S,T)</code> must have;</li>
+<li>illustrate how the choice of criterion can shift <span class="arithmatex">\(T_n\)</span>.</li>
+</ul>
+<p>The function <code>demo_blockB_alternative_nucleation_criterion()</code>:</p>
+<ol>
+<li>calls <code>tunnelFromPhase</code> with the standard criterion <span class="arithmatex">\(S/T - 140\)</span>;</li>
+<li>calls it again with <code>ew_like_nuclCriterion</code>;</li>
+<li>prints both <span class="arithmatex">\(T_n\)</span> values and both <span class="arithmatex">\(S_3/T\)</span> values, allowing a comparison.</li>
+</ol>
+<p>This demo is useful as a <em>template</em> for plugging in your favorite nucleation
+criterion without touching the main code.</p>
+<p>If you want to see the full script for these tests (Block B), see <a href="/tests/transitionFinder/Lot_B.py">tests/transitionFinder</a></p>
+<hr />
+<h2 id="block-c-transition-history-from-phase-structure-to-cosmic-history">Block C – Transition history: from phase structure to cosmic history<a class="headerlink" href="#block-c-transition-history-from-phase-structure-to-cosmic-history" title="Permanent link">&para;</a></h2>
+<p>Block C takes everything we built in Blocks A and B and pushes it one step further:</p>
+<ul>
+<li>From <strong>phase structure</strong> (<code>Phase</code> objects, traced minima),</li>
+<li>Plus <strong>tunneling information</strong> (bounce actions and nucleation temperatures),</li>
+<li>To a <strong>full thermal history</strong>: a sequence of phase transitions as the Universe cools.</li>
+</ul>
+<p>The central routines are:</p>
+<ul>
+<li><code>secondOrderTrans</code> – convenience wrapper for second-order transitions.</li>
+<li><code>findAllTransitions</code> – builds the <em>actual</em> transition history using bounces.</li>
+<li><code>findCriticalTemperatures</code> – finds all degeneracy temperatures <code>Tcrit</code>.</li>
+<li><code>addCritTempsForFullTransitions</code> – matches <code>Tcrit</code> to <code>Tnuc</code> to quantify supercooling.</li>
+</ul>
+<p>All tests in this block still use the same 1D Landau–Ginzburg potential as Blocks A and B.</p>
+<hr />
+<h3 id="test-0-secondordertrans-dictionary-layout-and-conventions">Test 0 – <code>secondOrderTrans</code>: dictionary layout and conventions<a class="headerlink" href="#test-0-secondordertrans-dictionary-layout-and-conventions" title="Permanent link">&para;</a></h3>
+<p><strong>Script:</strong> <code>test_blockC_0_secondOrderTrans_basic_structure</code></p>
+<p><strong>What it does</strong></p>
+<ul>
+<li>
+<p>Builds the phase structure using <code>traceMultiMin</code> (symmetric + broken branches).</p>
+</li>
+<li>
+<p>Picks two phases and constructs a “second-order transition” dictionary by calling:</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>tdict = secondOrderTrans(high_phase, low_phase, Tstr=&quot;Tnuc&quot;)
+</code></pre></div>
+<ul>
+<li>
+<p>Checks that:</p>
+</li>
+<li>
+<p>The dictionary contains the expected keys: <code>Tnuc</code>, <code>high_vev</code>, <code>low_vev</code>,
+    <code>high_phase</code>, <code>low_phase</code>, <code>action</code>, <code>instanton</code>, <code>trantype</code>.</p>
+</li>
+<li><code>trantype == 2</code> (second order).</li>
+<li><code>action == 0.0</code> and <code>instanton is None</code> (no barrier, no bounce).</li>
+<li><code>Tnuc</code> is defined as the <em>midpoint</em> between the end of the high-T branch
+    and the start of the low-T branch:
+    $$
+    T_\text{nuc} = \tfrac12\bigl(T_\text{high}(T_0) + T_\text{low}(T_\text{end})\bigr).
+    $$</li>
+<li><code>high_vev</code> and <code>low_vev</code> coincide with the high-T phase vev at its upper end.</li>
+</ul>
+<p><strong>Physical intuition</strong></p>
+<p>For a strictly second-order transition, there is no tunneling and no action; the order parameter changes continuously and the “critical temperature” is where the curvature changes sign. <code>secondOrderTrans</code> encodes this in a simple dictionary so that second-order steps can live in the same pipeline as first-order (bounce-driven) transitions.</p>
+<p><strong>Placeholder for output</strong></p>
+<div class="highlight"><pre><span></span><code>[Block C / Test 0] secondOrderTrans: basic structure and fields
+Tracing phase starting at x = [138.38962553], T = 50.0
+  Tracing minimum up in T
+Tracing phase starting at x = [1.35525272e-19], T = 102.47832031250125
+  Tracing minimum down in T
+  Tracing minimum up in T
+  Constructed second-order transition dictionary:
+          Tnuc : 125.0
+       low_vev : [138.38962553]
+      high_vev : [138.38962553]
+     low_phase : 1
+    high_phase : 0
+        action : 0.0
+     instanton : None
+      trantype : 2
+</code></pre></div>
+<hr />
+<h3 id="test-1-findalltransitions-full-thermal-history-with-nucleation">Test 1 – <code>findAllTransitions</code>: full thermal history with nucleation<a class="headerlink" href="#test-1-findalltransitions-full-thermal-history-with-nucleation" title="Permanent link">&para;</a></h3>
+<p><strong>Script:</strong> <code>test_blockC_1_findAllTransitions_full_history</code></p>
+<p><strong>What it does</strong></p>
+<ul>
+<li>
+<p>Rebuilds the phase structure (<code>Phase</code> objects) with <code>traceMultiMin</code>.</p>
+</li>
+<li>
+<p>Uses <code>getStartPhase(phases, V)</code> to identify the <strong>high-temperature phase</strong>.</p>
+</li>
+<li>
+<p>Calls</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>transitions = findAllTransitions(phases, V, dV_dphi, tunnelFromPhase_args=...)
+</code></pre></div>
+<p>which internally:</p>
+<ol>
+<li>Starts from the high-T phase.</li>
+<li>Attempts tunneling via <code>tunnelFromPhase</code> to all lower-energy phases.</li>
+<li>Chooses the <strong>lowest-action</strong> transition and moves to that phase.</li>
+<li>Repeats from the new phase, stepping down in temperature, until no further
+     transitions occur.</li>
+<li>
+<p>Falls back to <code>secondOrderTrans</code> if there is a continuous (second-order) branch.</p>
+</li>
+<li>
+<p>Prints a compact table:</p>
+</li>
+<li>
+<p><code>idx</code> – index in the history (0 = earliest, highest T).</p>
+</li>
+<li><code>Tnuc</code> – nucleation temperature.</li>
+<li><code>type</code> – <code>1</code> (first order, tunneling) or <code>2</code> (second order).</li>
+<li><code>high_phase → low_phase</code> – phase labels.</li>
+<li>
+<p><code>S(Tnuc)</code> – bounce action at nucleation.</p>
+</li>
+<li>
+<p>Checks that:</p>
+</li>
+<li>
+<p>There is at least one transition.</p>
+</li>
+<li><code>Tnuc</code> is <strong>non-increasing</strong> along the history (Universe cools).</li>
+<li>Phase keys in the table are valid entries of the <code>phases</code> dictionary.</li>
+</ol>
+<p><strong>Expected plot</strong></p>
+<p><strong>Phase structure with nucleation markers</strong></p>
+<ul>
+<li>
+<p>Horizontal axis: <code>T</code>.</p>
+</li>
+<li>
+<p>Vertical axis: <span class="arithmatex">\(\phi_{\min}(T)\)</span> for each <code>Phase</code>.</p>
+</li>
+<li>
+<p>For each phase:</p>
+</li>
+<li>
+<p>A smooth curve <span class="arithmatex">\(\phi_{\min}(T)\)</span> from the spline representation.</p>
+</li>
+<li>
+<p>For each transition in <code>transitions</code>:</p>
+</li>
+<li>
+<p>A vertical line at <code>Tnuc</code>.</p>
+</li>
+<li>A circle marker at <code>(Tnuc, high_vev)</code>.</li>
+<li>A square marker at <code>(Tnuc, low_vev)</code>.</li>
+</ul>
+<p><strong>What to look for</strong></p>
+<ul>
+<li>At high T, the symmetric phase (<span class="arithmatex">\(\phi \approx 0\)</span>) is occupied.</li>
+<li>As T decreases, at some <code>Tnuc</code> the code jumps from the symmetric branch
+  to the broken branch (or to another low-T phase).</li>
+<li>The printed <code>S(Tnuc)</code> values tell you whether nucleation happens close to the
+  “canonical” criterion (e.g. <code>S/T ≈ 140</code>) or at a different strength,
+  depending on the chosen <code>nuclCriterion</code>.</li>
+</ul>
+<p><strong>Placeholder for figure</strong></p>
+<p><img alt="Test C1 – Phase structure and nucleation temperatures Tnuc" src="../assets/Lot_C_1.png" /></p>
+<hr />
+<h3 id="test-2-findcriticaltemperatures-degeneracy-temperatures-tcrit">Test 2 – <code>findCriticalTemperatures</code>: degeneracy temperatures <code>Tcrit</code><a class="headerlink" href="#test-2-findcriticaltemperatures-degeneracy-temperatures-tcrit" title="Permanent link">&para;</a></h3>
+<p><strong>Script:</strong> <code>test_blockC_2_findCriticalTemperatures_degeneracies</code></p>
+<p><strong>What it does</strong></p>
+<ul>
+<li>
+<p>Reuses the same <code>phases</code> dictionary.</p>
+</li>
+<li>
+<p>Calls</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>crit_trans = findCriticalTemperatures(phases, V, start_high=False)
+</code></pre></div>
+<p>which:</p>
+<ul>
+<li>Loops over all ordered pairs of phases <code>(phase1, phase2)</code> with overlapping
+    temperature ranges.</li>
+<li>For each pair, defines</li>
+</ul>
+<div class="arithmatex">\[\Delta V(T) = V(\phi_1(T), T) - V(\phi_2(T), T),\]</div>
+<p>where <span class="arithmatex">\(\phi_i(T) = \text{phase}_i.\text{valAt}(T)\)</span>.
+  * Uses a 1D root finder (<code>brentq</code>) to find <code>Tcrit</code> such that
+    <span class="arithmatex">\(\Delta V(Tcrit) = 0\)</span> whenever the sign of <span class="arithmatex">\(\Delta V\)</span> changes across the overlap.
+  * Assembles a dictionary</p>
+<pre><code>```text
+{
+  "Tcrit": Tcrit,
+  "high_vev": phase1.valAt(Tcrit),
+  "low_vev" : phase2.valAt(Tcrit),
+  "high_phase": phase1.key,
+  "low_phase" : phase2.key,
+  "trantype": 1,
+}
+```
+</code></pre>
+<ul>
+<li>
+<p>Prints a summary table:</p>
+</li>
+<li>
+<p><code>Tcrit</code>, <code>trantype</code>, <code>high_phase → low_phase</code>,</p>
+</li>
+<li>and the free-energy difference</li>
+</ul>
+<div class="arithmatex">\[\Delta V = V(\phi_\text{high}, T_\text{crit}) - V(\phi_\text{low}, T_\text{crit}),\]</div>
+<pre><code>which should be numerically close to zero.
+</code></pre>
+<ul>
+<li>Asserts that for each first-order entry <code>abs(ΔV) &lt; 1e-3</code> (degeneracy).</li>
+</ul>
+<p><strong>Physical interpretation</strong></p>
+<p><code>findCriticalTemperatures</code> ignores <em>dynamics</em> and nucleation rates. It simply asks:</p>
+<blockquote>
+<p><em>For which temperatures do two phases have identical free energy?</em></p>
+</blockquote>
+<p>This is the equilibrium notion of a first-order transition line <code>Tcrit</code>, which
+is then compared with the actual <strong>nucleation temperature</strong> <code>Tnuc</code> in Test 3.</p>
+<p><strong>Expected plot</strong></p>
+<p><strong>Phase structure with <code>Tcrit</code> markers</strong></p>
+<ul>
+<li>Same background curves <span class="arithmatex">\(\phi_{\min}(T)\)</span> for each <code>Phase</code>.</li>
+<li>
+<p>For each critical transition dictionary in <code>crit_trans</code>:</p>
+</li>
+<li>
+<p>A vertical dashed line at <code>Tcrit</code>.</p>
+</li>
+</ul>
+<p>This plot is the purely thermodynamic “phase diagram in T”: the vertical lines
+show where phases swap their free-energy ordering.</p>
+<p><strong>Placeholder for figure</strong></p>
+<p><img alt="Test C2 – Phase structure and critical temperatures Tcrit" src="../assets/Lot_C_2.png" /></p>
+<hr />
+<h3 id="test-3-addcrittempsforfulltransitions-matching-tcrit-and-tnuc">Test 3 – <code>addCritTempsForFullTransitions</code>: matching <code>Tcrit</code> and <code>Tnuc</code><a class="headerlink" href="#test-3-addcrittempsforfulltransitions-matching-tcrit-and-tnuc" title="Permanent link">&para;</a></h3>
+<p><strong>Script:</strong> <code>test_blockC_3_addCritTemps_match_Tcrit_and_Tnuc</code></p>
+<p><strong>What it does</strong></p>
+<ul>
+<li>
+<p>Rebuilds <code>phases</code>.</p>
+</li>
+<li>
+<p>Computes:</p>
+</li>
+<li>
+<p><code>full_trans</code> = <code>findAllTransitions(...)</code>
+    → <em>actual</em> transition history with nucleation temperatures <code>Tnuc</code>.</p>
+</li>
+<li>
+<p><code>crit_trans</code> = <code>findCriticalTemperatures(...)</code>
+    → thermodynamic degeneracy temperatures <code>Tcrit</code>.</p>
+</li>
+<li>
+<p>Calls</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>addCritTempsForFullTransitions(phases, crit_trans, full_trans)
+</code></pre></div>
+<p>which:</p>
+<ul>
+<li>Analyses the <em>ancestry</em> of phases (<code>parents_dict</code>) in terms of sequences of
+    critical transitions.</li>
+<li>For each full transition (nucleation step) in <code>full_trans</code>, searches for a
+    compatible critical transition in <code>crit_trans</code> (matching high/low branches
+    up to common parents).</li>
+<li>
+<p>Attaches the best match as <code>tdict["crit_trans"]</code> (or <code>None</code> if no match).</p>
+</li>
+<li>
+<p>Prints a detailed table:</p>
+</li>
+<li>
+<p>For each full transition:</p>
+<ul>
+<li><code>type</code> (<code>trantype</code>),</li>
+<li><code>Tcrit</code> (if found),</li>
+<li><code>Tnuc</code>,</li>
+<li><code>ΔT = Tcrit − Tnuc</code>,</li>
+<li>phase labels <code>high_phase → low_phase</code>.</li>
+</ul>
+</li>
+<li>
+<p>For first-order transitions with a matched <code>Tcrit</code>, checks that <code>Tcrit &gt;= Tnuc</code>
+  (you cannot nucleate <em>before</em> degeneracy).</p>
+</li>
+</ul>
+<p><strong>Physical interpretation</strong></p>
+<p>This test quantifies <strong>supercooling</strong> in a clean way:</p>
+<ul>
+<li><code>Tcrit</code> – the temperature at which phases are thermodynamically degenerate.</li>
+<li><code>Tnuc</code>  – the temperature at which bubbles actually nucleate efficiently.</li>
+<li><code>ΔT = Tcrit − Tnuc</code> – how far below the equilibrium transition temperature
+  the Universe cools before tunneling kicks in.</li>
+</ul>
+<p>In strongly first-order transitions, <code>ΔT</code> can be substantial, which is precisely
+what controls the strength of the phase transition and many gravitational-wave
+signatures.</p>
+<p><strong>Expected plot</strong></p>
+<p><strong>Phase structure with both <code>Tcrit</code> and <code>Tnuc</code></strong></p>
+<ul>
+<li>
+<p>Background: <span class="arithmatex">\(\phi_{\min}(T)\)</span> curves for all phases.</p>
+</li>
+<li>
+<p>From <code>crit_trans</code>:</p>
+</li>
+<li>
+<p>Vertical dashed lines at each <code>Tcrit</code>.</p>
+</li>
+<li>
+<p>From <code>full_trans</code>:</p>
+</li>
+<li>
+<p>Vertical solid lines at each <code>Tnuc</code>.</p>
+</li>
+<li>Circle and square markers for <code>high_vev</code> and <code>low_vev</code> at <code>Tnuc</code>.</li>
+</ul>
+<p><strong>What to look for</strong></p>
+<ul>
+<li>
+<p>For each first-order transition:</p>
+</li>
+<li>
+<p>a dashed line at <code>Tcrit</code>,</p>
+</li>
+<li>a solid line (with markers) at <code>Tnuc</code>,</li>
+<li>
+<p>with <code>Tnuc</code> at or below <code>Tcrit</code> (supercooling or equality).</p>
+</li>
+<li>
+<p>The size of <code>ΔT</code> gives you an immediate, visually intuitive measure of how
+  strong the supercooling is in this toy model.</p>
+</li>
+</ul>
+<p><strong>Placeholder for figure</strong></p>
+<p><img alt="Test C3 – Phase structure, Tcrit, Tnuc and supercooling ΔT" src="../assets/Lot_C_3.png" /></p>
+<div class="highlight"><pre><span></span><code>[Block C / Test 2] findCriticalTemperatures – phase degeneracies
+Tracing phase starting at x = [138.38962553], T = 50.0
+  Tracing minimum up in T
+Tracing phase starting at x = [1.35525272e-19], T = 102.47832031250125
+  Tracing minimum down in T
+  Tracing minimum up in T
+  Number of critical-temperature transitions found: 1
+
+  Summary of critical transitions (sorted by decreasing Tcrit):
+    idx |  Tcrit   | type | high_phase -&gt; low_phase | ΔV(high-low)
+    ----+----------+------+-------------------------+--------------
+      0 |  102.062 |  1   | 1 -&gt;        0 |    3.347e-10
+
+[Block C / Test 3] addCritTempsForFullTransitions – matching Tcrit and Tnuc
+Tracing phase starting at x = [138.38962553], T = 50.0
+  Tracing minimum up in T
+Tracing phase starting at x = [1.35525272e-19], T = 102.47832031250125
+  Tracing minimum down in T
+  Tracing minimum up in T
+  Number of full transitions: 1
+  Number of critical transitions: 1
+
+  Matching Tcrit and Tnuc for each full transition:
+    idx |  type |  Tcrit   |  Tnuc    |  ΔT=Tcrit-Tnuc | high_phase -&gt; low_phase
+    ----+-------+----------+----------+----------------+------------------------
+      0 |  1    |  102.062 |  101.895 |          0.167 | 1 -&gt; 0
+
+[Block C] All example tests executed.
+</code></pre></div>
+<p>If you want to see the full Block C test script, including all prints and plots, see
+<a href="/tests/transitionFinder/Lot_C.py"><code>tests/transitionFinder/Lot_C.py</code></a>.</p>
+<hr />
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax-config.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

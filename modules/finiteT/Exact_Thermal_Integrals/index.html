@@ -1,0 +1,3177 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../../helper_functions/interpolation_functions/">
+      
+      
+        <link rel="next" href="../Spline_Thermal_Integrals/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Exact Thermal Integrals - CosmoTransitions (modernized)</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#exact-thermal-integrals-jb-jf" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-header__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosmoTransitions (modernized)
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Exact Thermal Integrals
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-nav__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CosmoTransitions (modernized)
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap & Flowchart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples (Core modules)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples (Core modules)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_tunneling1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling 1D full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_1" id="__nav_5_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helper Functions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Helper Functions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Miscellaneous_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Miscellaneous Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Numerical_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Integration Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Numerical_derivatives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Derivatives Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/interpolation_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interpolation Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Finite Temperature (One loop corrections)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Finite Temperature (One loop corrections)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_asarray" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _asarray
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_asarray">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_is_scalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _is_scalar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_is_scalar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_apply_elementwise" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _apply_elementwise
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_apply_elementwise">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_jf_exact_scalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _Jf_exact_scalar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_Jf_exact_scalar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#where-the-formula-comes-from-qft-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the formula comes from (QFT background)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#real-argument-path-direct-integral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real-argument path (direct integral)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pore-complex-argument-path-domain-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pore Complex-argument path (domain split)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_jb_exact_scalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _Jb_exact_scalar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_Jb_exact_scalar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#where-the-formula-comes-from-qft-background_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the formula comes from (QFT background)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#real-argument-path-direct-integral_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real-argument path (direct integral)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pure-complex-argument-path-domain-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pure Complex-argument path (domain split)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_jf_exact2_scalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _Jf_exact2_scalar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_Jf_exact2_scalar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-a-based-api-and-why-keep-it-alongside-the-x-based-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a θ-based API (and why keep it alongside the x based one)?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#positive-branch-thetage-0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Positive-θ branch \((\theta\ge 0)\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#negative-branch-theta0-domain-split-with-real-integrands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Negative-θ branch \((\theta&lt;0)\) — domain split with real integrands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_jb_exact2_scalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _Jb_exact2_scalar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_Jb_exact2_scalar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-a-based-api-and-why-keep-it-alongside-the-x-based-one_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a θ based API (and why keep it alongside the x-based one)?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#positive-branch-thetage-0_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Positive-θ branch \((\theta\ge 0)\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#negative-branch-theta0-domain-split-with-real-integrands_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Negative-θ branch \((\theta&lt;0)\) — domain split with real integrands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationship-between-the-x-and-based-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationship between the x- and θ based functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_djf_exact_scalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _dJf_exact_scalar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_dJf_exact_scalar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#differentiating-under-the-integral-sign" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Differentiating under the integral sign
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#numerical-stability-choices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Numerical stability choices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_djb_exact_scalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _dJb_exact_scalar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_dJb_exact_scalar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#differentiating-under-the-integral-sign_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Differentiating under the integral sign
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#numerical-stability-choices_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Numerical stability choices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Spline_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spline Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Approx_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Approx Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Short_Hand_Jb%26Jf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Short Hand for All Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling (1D)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tunneling (1D)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tunneling1D/single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Field functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tunneling1D/tests_single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of SF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Transition Finder
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../transitionFinder/transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../transitionFinder/tests_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of TF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generic Potential
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Generic Potential
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generic_potential/generic_potential/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Potential Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_asarray" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _asarray
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_asarray">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_is_scalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _is_scalar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_is_scalar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_apply_elementwise" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _apply_elementwise
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_apply_elementwise">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_jf_exact_scalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _Jf_exact_scalar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_Jf_exact_scalar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#where-the-formula-comes-from-qft-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the formula comes from (QFT background)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#real-argument-path-direct-integral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real-argument path (direct integral)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pore-complex-argument-path-domain-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pore Complex-argument path (domain split)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_jb_exact_scalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _Jb_exact_scalar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_Jb_exact_scalar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#where-the-formula-comes-from-qft-background_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the formula comes from (QFT background)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#real-argument-path-direct-integral_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real-argument path (direct integral)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pure-complex-argument-path-domain-split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pure Complex-argument path (domain split)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_jf_exact2_scalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _Jf_exact2_scalar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_Jf_exact2_scalar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-a-based-api-and-why-keep-it-alongside-the-x-based-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a θ-based API (and why keep it alongside the x based one)?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#positive-branch-thetage-0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Positive-θ branch \((\theta\ge 0)\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#negative-branch-theta0-domain-split-with-real-integrands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Negative-θ branch \((\theta&lt;0)\) — domain split with real integrands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_jb_exact2_scalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _Jb_exact2_scalar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_Jb_exact2_scalar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-a-based-api-and-why-keep-it-alongside-the-x-based-one_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a θ based API (and why keep it alongside the x-based one)?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#positive-branch-thetage-0_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Positive-θ branch \((\theta\ge 0)\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#negative-branch-theta0-domain-split-with-real-integrands_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Negative-θ branch \((\theta&lt;0)\) — domain split with real integrands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationship-between-the-x-and-based-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationship between the x- and θ based functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_djf_exact_scalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _dJf_exact_scalar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_dJf_exact_scalar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#differentiating-under-the-integral-sign" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Differentiating under the integral sign
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#numerical-stability-choices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Numerical stability choices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_djb_exact_scalar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _dJb_exact_scalar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_dJb_exact_scalar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#differentiating-under-the-integral-sign_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Differentiating under the integral sign
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#numerical-stability-choices_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Numerical stability choices
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="exact-thermal-integrals-jb-jf">Exact Thermal Integrals (Jb, Jf)<a class="headerlink" href="#exact-thermal-integrals-jb-jf" title="Permanent link">&para;</a></h1>
+<hr />
+<h2 id="_asarray"><code>_asarray</code><a class="headerlink" href="#_asarray" title="Permanent link">&para;</a></h2>
+<h3 id="signature">Signature<a class="headerlink" href="#signature" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">_asarray</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+<h3 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h3>
+<p>Convert input to a NumPy array <strong>without copying</strong> when possible (thin wrapper around <code>np.asarray</code>). Normalizes heterogeneous inputs (lists, tuples, scalars) into an <code>ndarray</code> for downstream vectorized code.</p>
+<h3 id="parameters-returns-and-raises">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>x</code> (<code>array_like</code>): Any object that can be interpreted as an array (e.g., list, tuple, scalar, or <code>ndarray</code>).</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>np.ndarray</code>: A NumPy view of <code>x</code> if <code>x</code> is already an <code>ndarray</code>; otherwise a newly allocated array.</li>
+</ul>
+<p><strong>Raises / Assumptions</strong></p>
+<ul>
+<li>Propagates exceptions from <code>np.asarray</code> if <code>x</code> cannot be interpreted as an array.</li>
+</ul>
+<p><strong>Notes</strong></p>
+<ul>
+<li>Internal helper only, used by other functions</li>
+</ul>
+<hr />
+<h2 id="_is_scalar"><code>_is_scalar</code><a class="headerlink" href="#_is_scalar" title="Permanent link">&para;</a></h2>
+<h3 id="signature_1">Signature<a class="headerlink" href="#signature_1" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">_is_scalar</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+</code></pre></div>
+<h3 id="purpose_1">Purpose<a class="headerlink" href="#purpose_1" title="Permanent link">&para;</a></h3>
+<p>Check whether <code>x</code> is a <strong>scalar</strong> (Python/NumPy numeric scalar or a <strong>0-D <code>ndarray</code></strong>). Useful to preserve the contract “scalar-in → scalar-out” from legacy.</p>
+<h3 id="parameters-returns-and-raises_1">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_1" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>x</code> (<code>array_like</code>): Object to inspect.</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>bool</code>: <code>True</code> if <code>x</code> is scalar (including 0-D arrays), otherwise <code>False</code>.</li>
+</ul>
+<p><strong>Raises / Assumptions</strong></p>
+<ul>
+<li>Never raises by design; if <code>np.ndim(x)</code> errors for exotic objects, the function safely returns <code>False</code>.</li>
+</ul>
+<p><strong>Notes</strong></p>
+<ul>
+<li>Internal helper only, used by other functions</li>
+</ul>
+<hr />
+<h2 id="_apply_elementwise"><code>_apply_elementwise</code><a class="headerlink" href="#_apply_elementwise" title="Permanent link">&para;</a></h2>
+<h3 id="signature_2">Signature<a class="headerlink" href="#signature_2" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">_apply_elementwise</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Number</span><span class="p">],</span> <span class="n">Number</span><span class="p">],</span><span class="n">x</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span><span class="o">*</span><span class="p">,</span><span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Number</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+</code></pre></div>
+<h3 id="purpose_2">Purpose<a class="headerlink" href="#purpose_2" title="Permanent link">&para;</a></h3>
+<p>Apply a <strong>scalar</strong> function <code>f</code> to <code>x</code> (scalar or array) <strong>element wise</strong>, preserving <strong>scalar-in → scalar-out</strong> like legacy version.
+Mirrors the legacy behavior: <strong>any element</strong> that causes an exception during evaluation is mapped to <strong><code>NaN</code></strong> (instead of raising). Supports real or complex outputs via <code>dtype</code>.</p>
+<h3 id="parameters-returns-and-raises_2">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_2" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>f</code> (<code>callable</code>): Function of a single numeric argument returning a numeric value.</li>
+<li><code>x</code> (<code>array_like</code>): Input value(s); scalar or array-like of any shape.</li>
+<li><code>dtype</code> (<code>np.dtype</code>, optional): Output dtype when <code>x</code> is array-like (use <code>np.complex128</code> for complex results). Default <code>np.float64</code>.</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul>
+<li>
+<p><code>number | np.ndarray</code>:</p>
+</li>
+<li>
+<p>If <code>x</code> is scalar: the scalar result <code>f(x)</code> (or <code>NaN</code>/<code>NaN+0j</code> on failure).</p>
+</li>
+<li>If <code>x</code> is array-like: an array with the <strong>same shape</strong> as <code>x</code>, containing element-wise results (or <code>NaN</code> where evaluation fails).</li>
+</ul>
+<p><strong>Raises / Assumptions</strong></p>
+<ul>
+<li>Designed not to raise for per-element failures (they become <code>NaN</code>).</li>
+<li>May propagate errors only if <code>dtype</code> is invalid or memory allocation fails.</li>
+</ul>
+<p><strong>Notes</strong></p>
+<ul>
+<li>Preserves <strong>shape</strong> for array inputs and <strong>scalar semantics</strong> for scalar inputs.</li>
+<li>For complex outputs, pass <code>dtype=np.complex128</code> to avoid down-casting.</li>
+<li>Internal helper; used by other functions</li>
+</ul>
+<hr />
+<h2 id="_jf_exact_scalar"><code>_Jf_exact_scalar</code><a class="headerlink" href="#_jf_exact_scalar" title="Permanent link">&para;</a></h2>
+<h3 id="signature_3">Signature<a class="headerlink" href="#signature_3" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">_Jf_exact_scalar</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Number</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Number</span>
+</code></pre></div>
+<h3 id="purpose_3">Purpose<a class="headerlink" href="#purpose_3" title="Permanent link">&para;</a></h3>
+<p>Evaluate the <strong>exact one-loop fermionic thermal integral</strong> (<span class="arithmatex">\(J_f(x)\)</span>) for a <strong>scalar</strong> input (x) (real or complex),</p>
+<div class="arithmatex">\[J_f(x) = \int_{0}^{\infty}  dy \big(-y^2\big)\ln\Big(1 + e^{-\sqrt{y^2+x^2}}\Big)\]</div>
+<p>where (<span class="arithmatex">\(x \equiv m/T\)</span>) and (<span class="arithmatex">\(E=\sqrt{y^2+x^2}\)</span>) is the dimensionless energy.
+This scalar kernel is used internally by the vectorized public wrapper <code>Jf_exact</code>.</p>
+<h3 id="where-the-formula-comes-from-qft-background">Where the formula comes from (QFT background)<a class="headerlink" href="#where-the-formula-comes-from-qft-background" title="Permanent link">&para;</a></h3>
+<p>At one loop in finite-temperature field theory, the thermal correction for fermionic modes is proportional to
+<span class="arithmatex">\((\int d^3 p \ln \big (1+e^{-E_p/T}\big))\)</span>. After factoring constants and using spherical coordinates (<span class="arithmatex">\(p/T \to y\)</span>), the angular integration yields (<span class="arithmatex">\(4\pi\)</span>), and the radial part becomes exactly the integral above with the weight (<span class="arithmatex">\(y^2\)</span>).</p>
+<h3 id="real-argument-path-direct-integral">Real-argument path (direct integral)<a class="headerlink" href="#real-argument-path-direct-integral" title="Permanent link">&para;</a></h3>
+<p>For <strong>real</strong> (x), the integrand is real and we integrate directly:</p>
+<div class="arithmatex">\[J_f(x)=\int_0^\infty -y^2\ln\big(1+e^{-E}\big)dy \qquad E=\sqrt{y^2+x^2}\]</div>
+<p>We use the numerically stable identity <span class="arithmatex">\((ln(1+e^{-E})=\mathrm{log1p} (e^{-E}))\)</span>.</p>
+<h3 id="pore-complex-argument-path-domain-split">Pore Complex-argument path (domain split)<a class="headerlink" href="#pore-complex-argument-path-domain-split" title="Permanent link">&para;</a></h3>
+<p>If (x) carries an imaginary part only, then for (<span class="arithmatex">\(0\le y \le |x|\)</span>) the principal branch energy becomes <strong>purely imaginary</strong>:</p>
+<p>(E= iz) with <span class="arithmatex">\((z=\sqrt{|x|^2-y^2})\)</span>. In this regime,</p>
+<div class="arithmatex">\[1+e^{-E} = 1+e^{-i z} = 2e^{-i z/2}\cos(z/2)\quad\Rightarrow\quad \big|1+e^{-E}\big| = 2|\cos(z/2)|.\]</div>
+<p>Therefore, we split the integral at (<span class="arithmatex">\(a_x=|x|\)</span>) and evaluate</p>
+<div class="arithmatex">\[\boxed{
+\begin{aligned}
+J_f(x)=\int_0^{a_x}-y^2\ln\Big(2\big|\cos\big(\tfrac{\sqrt{a_x^2-y^2}}{2}\big)\big|\Big)dy \quad +\int_{a_x}^{\infty}-y^2,\ln\Big(1+e^{-\sqrt{y^2+x^2}}\Big)dy
+\end{aligned}}\]</div>
+<p>so that both pieces are <strong>real valued</strong> integrands, suitable for high accuracy quadrature.</p>
+<h3 id="parameters-returns-and-raises_3">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_3" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>x</code> (<code>Number</code>): Scalar input, real or complex.</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>Number</code>: The value of <span class="arithmatex">\((J_f(x))\)</span>. For real <code>x</code>, the result is real. For complex <code>x</code>, the value is computed via real integrands on both pieces and is real as well (principal-branch prescription).</li>
+</ul>
+<p><strong>Raises / Assumptions</strong></p>
+<ul>
+<li>Assumes the principal square root branch. Numerical quadrature tolerances are set to <code>epsabs=1e-10</code>, <code>epsrel=1e-8</code>, <code>limit=200</code>.</li>
+</ul>
+<p><strong>Notes</strong></p>
+<ul>
+<li>This is an <strong>internal scalar</strong> kernel. Use the public <code>Jf_exact</code> for array inputs (vectorized and with dtype control).</li>
+<li>The use of <code>log1p</code> improves robustness near (<span class="arithmatex">\(E\approx 0\)</span>).</li>
+</ul>
+<hr />
+<h2 id="_jb_exact_scalar"><code>_Jb_exact_scalar</code><a class="headerlink" href="#_jb_exact_scalar" title="Permanent link">&para;</a></h2>
+<h3 id="signature_4">Signature<a class="headerlink" href="#signature_4" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">_Jb_exact_scalar</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Number</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Number</span>
+</code></pre></div>
+<h3 id="purpose_4">Purpose<a class="headerlink" href="#purpose_4" title="Permanent link">&para;</a></h3>
+<p>Evaluate the <strong>exact one-loop bosonic thermal integral</strong> <span class="arithmatex">\((J_b(x))\)</span> for a <strong>scalar</strong> input (x) (real or complex),</p>
+<div class="arithmatex">\[J_b(x) = \int_{0}^{\infty} dy y^2\ln\Big(1 - e^{-\sqrt{y^2+x^2}}\Big)\]</div>
+<p>where (<span class="arithmatex">\(x=m/T\)</span>) and (<span class="arithmatex">\(E=\sqrt{y^2+x^2}\)</span>).</p>
+<p>This scalar kernel is used internally by the vectorized public wrapper <code>Jb_exact</code>.</p>
+<h3 id="where-the-formula-comes-from-qft-background_1">Where the formula comes from (QFT background)<a class="headerlink" href="#where-the-formula-comes-from-qft-background_1" title="Permanent link">&para;</a></h3>
+<p>For bosonic modes, the finite (T) one-loop contribution is proportional to <span class="arithmatex">\((\int d^3p \ln(1-e^{-E_p/T}))\)</span>.
+After the angular integral and rescaling (<span class="arithmatex">\(p/T\to y\)</span>), we obtain the radial integral above with weight (<span class="arithmatex">\(y^2\)</span>).</p>
+<h3 id="real-argument-path-direct-integral_1">Real-argument path (direct integral)<a class="headerlink" href="#real-argument-path-direct-integral_1" title="Permanent link">&para;</a></h3>
+<p>For <strong>real</strong> (x),</p>
+<div class="arithmatex">\[J_b(x)=\int_0^\infty y^2\ln\big(1-e^{-E}\big)dy\qquad E=\sqrt{y^2+x^2}\]</div>
+<p>We employ the stable identity <span class="arithmatex">\((\ln(1-e^{-E})=\mathrm{log1p}(-e^{-E}))\)</span>.</p>
+<h3 id="pure-complex-argument-path-domain-split">Pure Complex-argument path (domain split)<a class="headerlink" href="#pure-complex-argument-path-domain-split" title="Permanent link">&para;</a></h3>
+<p>If (x) has an imaginary component, then for (<span class="arithmatex">\(0\le y \le |x|\)</span>), (E=iz) with (<span class="arithmatex">\(z=\sqrt{|x|^2-y^2}\)</span>) and</p>
+<div class="arithmatex">\[1-e^{-E} = 1-e^{-i z} = 2e^{-i z/2}i\sin(z/2)\quad\Rightarrow\quad  \big|1-e^{-E}\big| = 2|\sin(z/2)|\]</div>
+<p>Thus, we split at (<span class="arithmatex">\(a_x=|x|\)</span>) and evaluate</p>
+<div class="arithmatex">\[\boxed{
+\begin{aligned}
+J_b(x)
+&amp;=\int_0^{a_x}y^2\ln\Big(2\big|\sin\big(\tfrac{\sqrt{a_x^2-y^2}}{2}\big)\big|\Big)dy\ \quad +\int_{a_x}^{\infty}y^2\ln\Big(1-e^{-\sqrt{y^2+x^2}}\Big)dy
+\end{aligned}}\]</div>
+<p>which again yields <strong>real</strong> integrands in both intervals.</p>
+<h3 id="parameters-returns-and-raises_4">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_4" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>x</code> (<code>Number</code>): Scalar (real or complex).</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>Number</code>: The value of ($J_b(x) $). For real <code>x</code> the result is real; with complex <code>x</code>, the split formulas ensure a real valued integral (principal branch choice).</li>
+</ul>
+<p><strong>Raises / Assumptions</strong></p>
+<ul>
+<li>Principal square-root branch. Quadrature settings: <code>epsabs=1e-10</code>, <code>epsrel=1e-8</code>, <code>limit=200</code>.</li>
+</ul>
+<p><strong>Notes</strong></p>
+<ul>
+<li>Internal scalar kernel; the vectorized public API is <code>Jb_exact</code>.</li>
+<li><code>log1p(-exp(-E))</code> mitigates loss of significance near (<span class="arithmatex">\(E\approx 0\)</span>) for bosons.</li>
+</ul>
+<hr />
+<h2 id="_jf_exact2_scalar"><code>_Jf_exact2_scalar</code><a class="headerlink" href="#_jf_exact2_scalar" title="Permanent link">&para;</a></h2>
+<h3 id="signature_5">Signature<a class="headerlink" href="#signature_5" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">_Jf_exact2_scalar</span><span class="p">(</span><span class="n">theta</span><span class="p">:</span> <span class="n">Number</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span>
+</code></pre></div>
+<h3 id="purpose_5">Purpose<a class="headerlink" href="#purpose_5" title="Permanent link">&para;</a></h3>
+<p>Evaluate the <strong>exact one-loop fermionic thermal integral</strong> (J_f) as a function of the <strong>real scalar</strong>
+(<span class="arithmatex">\(\theta \equiv x^2 = (m/T)^2\)</span>) equivalent to the functions above:</p>
+<div class="arithmatex">\[J_f(\theta) = \int_{0}^{\infty} dy \big(-y^2\big)\ln\Big(1 + e^{-\sqrt{y^2+\theta}}\Big) \]</div>
+<p>This is the scalar kernel used internally by the vectorized public wrapper <code>Jf_exact2(theta)</code>.</p>
+<h3 id="why-a-based-api-and-why-keep-it-alongside-the-x-based-one">Why a θ-based API (and why keep it alongside the x based one)?<a class="headerlink" href="#why-a-based-api-and-why-keep-it-alongside-the-x-based-one" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Physics-first variable.</strong> In finite-T QFT the natural scalar entering the thermal integrals is (<span class="arithmatex">\(\theta=m^2/T^2\)</span>) (a <strong>real</strong> quantity that may be <strong>negative</strong> in symmetry-broken/tachyonic regions).</li>
+<li><strong>Numerical stability.</strong> With (<span class="arithmatex">\(\theta\in\mathbb{R}\)</span>) the integrand is always chosen <strong>real-valued</strong>, even for (<span class="arithmatex">\(\theta&lt;0\)</span>) (see splitting below). Quadrature is typically faster and more robust.</li>
+<li><strong>Interpolation/caching.</strong> Tabulating in (<span class="arithmatex">\(\theta\)</span>) is convenient for splines (next block) and reuse across scans.</li>
+<li><strong>Compatibility.</strong> Remains legacy code that supplies (<span class="arithmatex">\(x=m/T\)</span>) directly. Both compute the same physics when (x) is real or purely imaginary ((<span class="arithmatex">\(\theta=x^2\)</span>) real).</li>
+</ul>
+<blockquote>
+<p>Implementation detail: this function <strong>takes the real part</strong> of <code>theta</code> internally (<code>th = float(np.real(theta))</code>) to enforce (<span class="arithmatex">\(\theta\in\mathbb{R}\)</span>) as used in physics.</p>
+</blockquote>
+<h3 id="positive-branch-thetage-0">Positive-θ branch <span class="arithmatex">\((\theta\ge 0)\)</span><a class="headerlink" href="#positive-branch-thetage-0" title="Permanent link">&para;</a></h3>
+<div class="arithmatex">\[J_f(\theta)=\int_0^\infty -y^2\ln\big(1+e^{-\sqrt{y^2+\theta}}\big)dy\]</div>
+<p>computed directly with the numerically stable identity <span class="arithmatex">\((\ln(1+e^{-E})=\mathrm{log1p}(e^{-E}))\)</span>.</p>
+<h3 id="negative-branch-theta0-domain-split-with-real-integrands">Negative-θ branch <span class="arithmatex">\((\theta&lt;0)\)</span> — domain split with real integrands<a class="headerlink" href="#negative-branch-theta0-domain-split-with-real-integrands" title="Permanent link">&para;</a></h3>
+<p>Write <span class="arithmatex">\((\theta=-\mu^2) ((\mu&gt;0))\)</span>. Then</p>
+<div class="arithmatex">\[E=\sqrt{y^2+\theta}=\sqrt{y^2-\mu^2}=
+\begin{cases}
+i\sqrt{\mu^2-y^2}\equiv i z &amp; 0\le y&lt;\mu 
+\sqrt{y^2-\mu^2}\in\mathbb{R}*+  &amp; y\ge \mu.
+\end{cases}\]</div>
+<p>For (E=iz), (<span class="arithmatex">\(1+e^{-E}=2e^{-iz/2}\cos(z/2)\)</span>) and (<span class="arithmatex">\(\big|1+e^{-E}\big|=2|\cos(z/2)|\)</span>).
+Thus we split:</p>
+<div class="arithmatex">\[\boxed{
+\begin{aligned}
+J_f(\theta)
+&amp;=\int_{0}^{\mu}-y^2\ln\Big(2\big|\cos!\big(\tfrac{\sqrt{\mu^2-y^2}}{2}\big)\big|\Big)dy\ \quad+\int_{\mu}^{\infty}-y^2\ln\Big(1+e^{-\sqrt{y^2-\mu^2}}\Big)dy
+\end{aligned}}\]</div>
+<p>Both pieces are <strong>real</strong>, ensuring stable high-accuracy quadrature.</p>
+<h3 id="parameters-returns-and-raises_5">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_5" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>theta</code> (<code>Number</code>): Scalar; only its <strong>real part</strong> is used internally.</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>float</code>: <span class="arithmatex">\((J_f(\theta))\)</span> as a real number.</li>
+</ul>
+<p><strong>Raises / Assumptions</strong></p>
+<ul>
+<li>Principal square-root branch. Quadrature tolerances are <code>epsabs=1e-10</code>, <code>epsrel=1e-8</code>, <code>limit=200</code>.</li>
+</ul>
+<p><strong>Notes</strong></p>
+<ul>
+<li>Prefer the θ API in new code (it is what the spline based approximations will use).</li>
+<li>For (x) real or (<span class="arithmatex">\(x=i\mu\)</span>) (pure imaginary), <code>_Jf_exact_scalar(x)</code> and <code>_Jf_exact2_scalar(\theta=x^2)</code> coincide.</li>
+</ul>
+<hr />
+<h2 id="_jb_exact2_scalar"><code>_Jb_exact2_scalar</code><a class="headerlink" href="#_jb_exact2_scalar" title="Permanent link">&para;</a></h2>
+<h3 id="signature_6">Signature<a class="headerlink" href="#signature_6" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">_Jb_exact2_scalar</span><span class="p">(</span><span class="n">theta</span><span class="p">:</span> <span class="n">Number</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span>
+</code></pre></div>
+<h3 id="purpose_6">Purpose<a class="headerlink" href="#purpose_6" title="Permanent link">&para;</a></h3>
+<p>Evaluate the <strong>exact one-loop bosonic thermal integral</strong> (<span class="arithmatex">\(J_b\)</span>) as a function of the <strong>real scalar</strong>
+(<span class="arithmatex">\(\theta \equiv x^2 = (m/T)^2\)</span>):</p>
+<div class="arithmatex">\[J_b(\theta) = \int_{0}^{\infty} dy y^2\ln\Big(1 - e^{-\sqrt{y^2+\theta}}\Big)\]</div>
+<p>This is the scalar kernel used internally by the vectorized public wrapper <code>Jb_exact2(theta)</code>.</p>
+<h3 id="why-a-based-api-and-why-keep-it-alongside-the-x-based-one_1">Why a θ based API (and why keep it alongside the x-based one)?<a class="headerlink" href="#why-a-based-api-and-why-keep-it-alongside-the-x-based-one_1" title="Permanent link">&para;</a></h3>
+<p>Same rationale as fermions:</p>
+<ul>
+<li>(<span class="arithmatex">\(\theta=m^2/T^2\)</span>) is the natural <strong>real</strong> control variable (possibly <strong>negative</strong>).</li>
+<li>Splitting at (<span class="arithmatex">\(\theta&lt;0\)</span>) yields <strong>real</strong> integrands everywhere ⇒ more stable and faster quadrature.</li>
+<li>Ideal for spline tables and caching; x API kept for <strong>compatibility</strong> with legacy callers providing (x).</li>
+</ul>
+<blockquote>
+<p>Implementation detail: only the <strong>real part</strong> of <code>theta</code> is used internally.</p>
+</blockquote>
+<h3 id="positive-branch-thetage-0_1">Positive-θ branch <span class="arithmatex">\((\theta\ge 0)\)</span><a class="headerlink" href="#positive-branch-thetage-0_1" title="Permanent link">&para;</a></h3>
+<div class="arithmatex">\[J_b(\theta)=\int_0^\infty y^2\ln\big(1-e^{-\sqrt{y^2+\theta}}\big)dy\]</div>
+<p>computed via the stable <span class="arithmatex">\((\ln(1-e^{-E})=\mathrm{log1p}(-e^{-E}))\)</span>.</p>
+<h3 id="negative-branch-theta0-domain-split-with-real-integrands_1">Negative-θ branch <span class="arithmatex">\((\theta&lt;0)\)</span> — domain split with real integrands<a class="headerlink" href="#negative-branch-theta0-domain-split-with-real-integrands_1" title="Permanent link">&para;</a></h3>
+<p>Let (<span class="arithmatex">\(\theta=-\mu^2\)</span>) <span class="arithmatex">\((\mu&gt;0)\)</span>. For (<span class="arithmatex">\(y&lt;\mu\)</span>), (E=i z) with (<span class="arithmatex">\(z=\sqrt{\mu^2-y^2}\)</span>) and</p>
+<div class="arithmatex">\[1-e^{-E}=2e^{-iz/2}i\sin(z/2)\quad\Rightarrow\quad
+\big|1-e^{-E}\big|=2|\sin(z/2)|.\]</div>
+<p>Therefore,</p>
+<div class="arithmatex">\[\boxed{
+\begin{aligned}
+J_b(\theta)
+&amp;=\int_{0}^{\mu}y^2\ln\Big(2\big|\sin\big(\tfrac{\sqrt{\mu^2-y^2}}{2}\big)\big|\Big)dy\ \quad+\int_{\mu}^{\infty}y^2\ln\Big(1-e^{-\sqrt{y^2-\mu^2}}\Big)dy
+\end{aligned}}\]</div>
+<p>Again, both integrands are <strong>real</strong>.</p>
+<h3 id="parameters-returns-and-raises_6">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_6" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>theta</code> (<code>Number</code>): Scalar; only its <strong>real part</strong> is used internally.</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>float</code>: <span class="arithmatex">\((J_b(\theta))\)</span> as a real number.</li>
+</ul>
+<p><strong>Raises / Assumptions</strong></p>
+<ul>
+<li>Principal square-root branch. Quadrature settings as above.</li>
+</ul>
+<p><strong>Notes</strong></p>
+<ul>
+<li>Prefer the θ-API for new code and for spline approximation.</li>
+<li>For (x) real or (<span class="arithmatex">\(x=i\mu\)</span>), <code>_Jb_exact_scalar(x)</code> and <code>_Jb_exact2_scalar(\theta=x^2)</code> agree.</li>
+</ul>
+<h3 id="relationship-between-the-x-and-based-functions">Relationship between the x- and θ based functions<a class="headerlink" href="#relationship-between-the-x-and-based-functions" title="Permanent link">&para;</a></h3>
+<ul>
+<li>If (x) is <strong>real</strong> or <strong>purely imaginary</strong> <span class="arithmatex">\(((x=i\mu\Rightarrow \theta=-\mu^2))\)</span>, both APIs are <strong>equivalent</strong> and yield the same physics.</li>
+<li>The θ-API enforces (<span class="arithmatex">\(\theta\in\mathbb{R}\)</span>) and constructs <strong>real integrands</strong> in all regimes, which improves numerical behavior and matches how downstream interpolation/approximations will operate.</li>
+<li>The x API remains for <strong>backward compatibility</strong> with callers that already supply (<span class="arithmatex">\(x=m/T\)</span>).</li>
+</ul>
+<hr />
+<h2 id="_djf_exact_scalar"><code>_dJf_exact_scalar</code><a class="headerlink" href="#_djf_exact_scalar" title="Permanent link">&para;</a></h2>
+<h3 id="signature_7">Signature<a class="headerlink" href="#signature_7" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">_dJf_exact_scalar</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Number</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span>
+</code></pre></div>
+<h3 id="purpose_7">Purpose<a class="headerlink" href="#purpose_7" title="Permanent link">&para;</a></h3>
+<p>Compute the <strong>exact derivative</strong> <span class="arithmatex">\((\dfrac{dJ_f}{dx})\)</span> for a <strong>scalar</strong> (x) with a numerically stable integrand.
+For fermions,</p>
+<div class="arithmatex">\[J_f(x)=\int_0^\infty -y^2\ln\Big(1+e^{-\sqrt{y^2+x^2}}\Big)dy \qquad E\equiv\sqrt{y^2+x^2}.\]</div>
+<h3 id="differentiating-under-the-integral-sign">Differentiating under the integral sign<a class="headerlink" href="#differentiating-under-the-integral-sign" title="Permanent link">&para;</a></h3>
+<p>Under standard regularity conditions (smooth, absolutely integrable integrand), we may exchange derivative and integral:</p>
+<div class="arithmatex">\[\frac{dJ_f}{dx} =\int_0^\infty \frac{\partial}{\partial x}\left[-y^2\ln\big(1+e^{-E}\big)\right]dy.\]</div>
+<p>Using</p>
+<div class="arithmatex">\[\frac{d}{dE}\Big[-\ln\big(1+e^{-E}\big)\Big] =\frac{e^{-E}}{1+e^{-E}} =\frac{1}{e^{E}+1}\equiv  n_F(E) \qquad \frac{dE}{dx}=\frac{x}{E}\]</div>
+<p>we obtain the <strong>fermionic derivative kernel</strong></p>
+<div class="arithmatex">\[\boxed{
+\frac{dJ_f}{dx}  =\int_0^\infty y^2 n_F(E) \frac{x}{E} dy =\int_0^\infty y^2\frac{x}{E}\frac{1}{e^{E}+1}dy \qquad E=\sqrt{y^2+x^2}}\]</div>
+<h3 id="numerical-stability-choices">Numerical stability choices<a class="headerlink" href="#numerical-stability-choices" title="Permanent link">&para;</a></h3>
+<ul>
+<li>We implement ( <span class="arithmatex">\(n_F(E)=\dfrac{1}{e^{E}+1}\)</span> ) as <code>special.expit(-E)</code> (the logistic function), which is stable for large (E).</li>
+<li>By <strong>parity</strong>, <span class="arithmatex">\((J_f(x))\)</span> is <strong>even</strong> in (x) (i.e., <span class="arithmatex">\((J_f(-x)=J_f(x))\)</span> ), hence ( $\tfrac{dJ_f}{dx}\big|_{x=0}=0 $). The function returns <strong>0</strong> exactly at (x=0).</li>
+<li>Internally we form (<span class="arithmatex">\(E=\sqrt{y^2+x_r^2}\)</span>) with (<span class="arithmatex">\(x_r=|x|\ge 0\)</span>) to guarantee (<span class="arithmatex">\(E\ge 0\)</span>). In physical use (<span class="arithmatex">\(x=m/T\ge 0\)</span>).
+  (For explicit sign handling: <span class="arithmatex">\((\tfrac{dJ_f}{dx}(-x)=-\tfrac{dJ_f}{dx}(x))\)</span> ).</li>
+</ul>
+<h3 id="parameters-returns-and-raises_7">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_7" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>x</code> (<code>Number</code>): Scalar (real or complex). In physical applications (<span class="arithmatex">\(x\in\mathbb{R}_{\ge 0}\)</span>).</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>float</code>: The real value of <span class="arithmatex">\((\dfrac{dJ_f}{dx})\)</span>.</li>
+</ul>
+<p><strong>Notes</strong></p>
+<ul>
+<li>Quadrature settings: <code>epsabs=1e-10</code>, <code>epsrel=1e-8</code>, <code>limit=200</code>.</li>
+<li>Integration domain <span class="arithmatex">\((y\in[0,\infty))\)</span> with stable integrand <span class="arithmatex">\((y^2,\dfrac{x}{E},n_F(E))\)</span>.</li>
+</ul>
+<hr />
+<h2 id="_djb_exact_scalar"><code>_dJb_exact_scalar</code><a class="headerlink" href="#_djb_exact_scalar" title="Permanent link">&para;</a></h2>
+<h3 id="signature_8">Signature<a class="headerlink" href="#signature_8" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">_dJb_exact_scalar</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Number</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span>
+</code></pre></div>
+<h3 id="purpose_8">Purpose<a class="headerlink" href="#purpose_8" title="Permanent link">&para;</a></h3>
+<p>Compute the <strong>exact derivative</strong> <span class="arithmatex">\((\dfrac{dJ_b}{dx})\)</span> for a <strong>scalar</strong> (x).
+For bosons,</p>
+<div class="arithmatex">\[ J_b(x)=\int_0^\infty y^2\ln\Big(1-e^{-\sqrt{y^2+x^2}}\Big)dy \qquad E\equiv\sqrt{y^2+x^2}.\]</div>
+<h3 id="differentiating-under-the-integral-sign_1">Differentiating under the integral sign<a class="headerlink" href="#differentiating-under-the-integral-sign_1" title="Permanent link">&para;</a></h3>
+<div class="arithmatex">\[\frac{dJ_b}{dx}
+=\int_0^\infty \frac{\partial}{\partial x}\left[y^2\ln\big(1-e^{-E}\big)\right]dy\]</div>
+<p>Using</p>
+<div class="arithmatex">\[\frac{d}{dE}\ln\big(1-e^{-E}\big) =\frac{e^{-E}}{1-e^{-E}}  =\frac{1}{e^{E}-1}\equiv n_B(E)\qquad \frac{dE}{dx}=\frac{x}{E} \]</div>
+<p>we obtain the <strong>bosonic derivative kernel</strong></p>
+<div class="arithmatex">\[\boxed{ \frac{dJ_b}{dx}
+=\int_0^\infty y^2 n_B(E)\frac{x}{E}dy =\int_0^\infty y^2\frac{x}{E}\frac{1}{e^{E}-1}dy \qquad E=\sqrt{y^2+x^2} }\]</div>
+<h3 id="numerical-stability-choices_1">Numerical stability choices<a class="headerlink" href="#numerical-stability-choices_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>We implement ( <span class="arithmatex">\(n_B(E)=\dfrac{1}{e^{E}-1}\)</span> ) as <code>1/np.expm1(E)</code>, which is stable as (<span class="arithmatex">\(E\to 0^+\)</span>).</li>
+<li>By <strong>parity</strong>, <span class="arithmatex">\((J_b(x))\)</span> is <strong>even</strong> in (x) (i.e., <span class="arithmatex">\((J_b(-x)=J_b(x))\)</span> ), hence <span class="arithmatex">\((\tfrac{dJ_b}{dx}\big|_{x=0}=0)\)</span>. The function returns <strong>0</strong> at (x=0).</li>
+<li>Internally (<span class="arithmatex">\(E=\sqrt{y^2+x_r^2}\)</span>) with (<span class="arithmatex">\(x_r=|x|\ge 0\)</span>), consistent with the physical case (<span class="arithmatex">\(x=m/T\ge 0\)</span>).
+  (For sign handling: ( $\tfrac{dJ_b}{dx}(-x)=-\tfrac{dJ_b}{dx}(x) $).)</li>
+</ul>
+<h3 id="parameters-returns-and-raises_8">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_8" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>x</code> (<code>Number</code>): Scalar (real or complex). In physical applications (<span class="arithmatex">\(x\in\mathbb{R}_{\ge 0}\)</span>).</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>float</code>: The real value of <span class="arithmatex">\((\dfrac{dJ_b}{dx})\)</span>.</li>
+</ul>
+<p><strong>Notes</strong></p>
+<ul>
+<li>Quadrature settings: <code>epsabs=1e-10</code>, <code>epsrel=1e-8</code>, <code>limit=200</code>.</li>
+<li>Integration domain <span class="arithmatex">\((y\in[0,\infty))\)</span> with stable integrand <span class="arithmatex">\((y^2,\dfrac{x}{E}n_B(E))\)</span>.</li>
+</ul>
+<hr />
+<h1 id="jf_exact-jf_exact2-jb_exact-jb_exact2-djf_exact-djb_exact">Jf_exact; Jf_exact2; Jb_exact; Jb_exact2; dJf_exact; dJb_exact<a class="headerlink" href="#jf_exact-jf_exact2-jb_exact-jb_exact2-djf_exact-djb_exact" title="Permanent link">&para;</a></h1>
+<h3 id="purpose_9">Purpose<a class="headerlink" href="#purpose_9" title="Permanent link">&para;</a></h3>
+<p>These functions are <strong>vectorized, user-facing wrappers</strong> around the exact scalar kernels for the one-loop thermal integrals (<span class="arithmatex">\(J_b\)</span>), (<span class="arithmatex">\(J_f\)</span>) and their derivatives. They:</p>
+<ul>
+<li>preserve the <strong>legacy cosmoTransitions API</strong> (same names/behavior),</li>
+<li>accept <strong>scalars or arrays</strong> and apply the scalar kernels <strong>element-wise</strong> (scalar-in → scalar-out),</li>
+<li>offer both <strong>x-based</strong> ((<span class="arithmatex">\(x=m/T\)</span>)) and <strong>θ based</strong> <span class="arithmatex">\((\theta=x^2=m^2/T^2\in\mathbb{R})\)</span> entry points.</li>
+</ul>
+<hr />
+<h2 id="signatures">Signatures<a class="headerlink" href="#signatures" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">Jf_exact</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Number</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+<span class="n">Jf_exact2</span><span class="p">(</span><span class="n">theta</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+
+<span class="n">Jb_exact</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+<span class="n">Jb_exact2</span><span class="p">(</span><span class="n">theta</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+
+<span class="n">dJf_exact</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+<span class="n">dJb_exact</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+</code></pre></div>
+<hr />
+<h2 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p><strong>For x based functions</strong> (<code>Jf_exact</code>, <code>Jb_exact</code>, <code>dJf_exact</code>, <code>dJb_exact</code>):</p>
+</li>
+<li>
+<p><code>x</code> (<code>float | complex | array-like</code>): argument(s) (<span class="arithmatex">\(x=m/T\)</span>).
+    • Real inputs are treated as <code>abs(x)</code> (legacy).
+    • Complex inputs are accepted for <strong>backward compatibility</strong> only; see Notes.</p>
+</li>
+<li>
+<p><strong>For θ based functions</strong> (<code>Jf_exact2</code>, <code>Jb_exact2</code>):</p>
+</li>
+<li>
+<p><code>theta</code> (<code>float | array-like</code>): (<span class="arithmatex">\(\theta=x^2=m^2/T^2\)</span>) (its <strong>real part</strong> is used).
+    May be <strong>negative</strong>; the implementation splits the domain to keep the integrand real.</p>
+</li>
+</ul>
+<hr />
+<h2 id="returns">Returns<a class="headerlink" href="#returns" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Scalar if the input is scalar; <code>ndarray</code> with the <strong>same shape</strong> as the input otherwise.</li>
+<li>On array inputs, any element that fails to evaluate returns <strong>NaN</strong> (legacy behavior preserved).</li>
+</ul>
+<hr />
+<h2 id="notes-apply-to-all">Notes (apply to all)<a class="headerlink" href="#notes-apply-to-all" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Vectorization &amp; semantics.</strong> All functions act <strong>element-wise</strong> on arrays and preserve shapes.</li>
+<li>
+<p><strong>Numerical stability.</strong> Internally use stable forms:</p>
+</li>
+<li>
+<p><code>log1p</code> / <code>log1p(-exp(-E))</code> for the logs,</p>
+</li>
+<li><code>special.expit(-E)</code> for the Fermi factor <span class="arithmatex">\((1/(e^E+1))\)</span>,</li>
+<li><code>1/np.expm1(E)</code> for the Bose factor <span class="arithmatex">\((1/(e^E-1))\)</span>.</li>
+<li>
+<p><strong>Branching / complex inputs.</strong></p>
+</li>
+<li>
+<p>For <strong>θ-API</strong> (<code>*_exact2</code>): (<span class="arithmatex">\(\theta\in\mathbb{R}\)</span>). If (<span class="arithmatex">\(\theta&lt;0\)</span>) the integral is split at (<span class="arithmatex">\(y=\sqrt{|\theta|}\)</span>) and expressed with (<span class="arithmatex">\(\cos\)</span>) / (<span class="arithmatex">\(\sin\)</span>), yielding <strong>real integrands</strong> throughout.</p>
+</li>
+<li>For <strong>x-API</strong> (<code>*_exact</code>): complex (x) triggers the <strong>legacy branch splitting</strong> (over (<span class="arithmatex">\([0,|x|]\)</span>)) to keep the integrals numerically real/stable.
+    <strong>Physical note:</strong> a <strong>general complex (x)</strong> has <strong>no standard physical meaning</strong> here; it is supported <strong>only for backward compatibility</strong>. In physics workflows, (<span class="arithmatex">\(x=m/T\)</span>) is real (or equivalently (<span class="arithmatex">\(\theta\)</span>) is real).</li>
+<li><strong>Recommended usage.</strong> Prefer the <strong>θ based</strong> functions (<code>Jf_exact2</code>, <code>Jb_exact2</code>) in new code (better for interpolation/splines and uniformly real integrands). Use x based names for seamless drop in replacement in legacy pipelines.</li>
+<li><strong>Derivatives.</strong> <code>dJf_exact</code>, <code>dJb_exact</code> implement the differentiated kernels:</li>
+</ul>
+<p><span class="arithmatex">\(<span class="arithmatex">\(\frac{dJ_f}{dx}=\int_0^\infty y^2\frac{x}{E}\frac{1}{e^E+1}dy\qquad  \frac{dJ_b}{dx}=\int_0^\infty y^2\frac{x}{E}\frac{1}{e^E-1}dy \quad E=\sqrt{y^2+x^2}\)</span>\)</span>
+  and return <strong>0</strong> exactly at <code>x==0</code> (removable singularity; evenness in (x)).</p>
+<hr />
+<h2 id="exact-thermal-integrals-examples">Exact Thermal Integrals — Examples<a class="headerlink" href="#exact-thermal-integrals-examples" title="Permanent link">&para;</a></h2>
+<p>This page documents progressive sanity/consistency checks for the <strong>exact</strong> one-loop thermal integrals and their derivatives:</p>
+<p><span class="arithmatex">\(<span class="arithmatex">\(J_b(x)=\int_0^\infty y^2\ln\bigl(1-e^{-\sqrt{y^2+x^2}}\bigr)dy\quad
+J_f(x)=\int_0^\infty -y^2\ln\bigl(1+e^{-\sqrt{y^2+x^2}}\bigr)dy\)</span>\)</span>
+We test the public API:
+<code>Jb_exact</code>, <code>Jf_exact</code>, <code>Jb_exact2</code>, <code>Jf_exact2</code>, <code>dJb_exact</code>, <code>dJf_exact</code>.</p>
+<p>All figures below are produced by the script
+<code>tests/finiteT/Exact_Thermal_Integrals.py</code>. see <a href="/tests/finiteT/Exact_Thermal_Integrals.py">tests/finiteT/Exact_Thermal_Integrals</a> for more</p>
+<hr />
+<h3 id="test-1-small-x-physics-sanity-constants-at-x0-and-near-zero-behavior">Test 1 — Small-x physics sanity: constants at (x=0) and near-zero behavior<a class="headerlink" href="#test-1-small-x-physics-sanity-constants-at-x0-and-near-zero-behavior" title="Permanent link">&para;</a></h3>
+<p><strong>What it checks</strong></p>
+<ul>
+<li>The known limits:</li>
+<li>
+<p><span class="arithmatex">\(<span class="arithmatex">\(J_b(0)=-\frac{\pi^4}{45},\qquad
+  J_f(0)=-\frac{7\pi^4}{360}.\)</span>\)</span></p>
+</li>
+<li>
+<p>For small positive (x), both (J_b) and (J_f) <strong>increase toward 0</strong>, as mass/temperature (<span class="arithmatex">\(x=m/T\)</span>) grows.</p>
+</li>
+</ul>
+<p><strong>Figure</strong></p>
+<ul>
+<li><em>Small-x behavior:</em>
+  <img alt="Small-x behavior" src="../assets/Exact_1.png" /></li>
+</ul>
+<p><strong>Console output</strong></p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 1: Small-x sanity (x → 0) ===</span>
+<span class="sd">J_b(0): num=-2.164646467421e+00, expected=-2.164646467422e+00, |Δ|=1.60e-12</span>
+<span class="sd">J_f(0): num=-1.894065658994e+00, expected=-1.894065658994e+00, |Δ|=6.66e-16</span>
+<span class="sd">Expectation: For both bosons and fermions, J(x) starts negative and increases toward 0 as x grows. </span>
+<span class="sd">As we can see in the image above, this expectation is met.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="test-2-consistency-jx-vs-jthetax2-for-xge-0">Test 2 — Consistency: (J(x)) vs (J(<span class="arithmatex">\(\theta=x^2\)</span>)) for (<span class="arithmatex">\(x\ge 0\)</span>)<a class="headerlink" href="#test-2-consistency-jx-vs-jthetax2-for-xge-0" title="Permanent link">&para;</a></h3>
+<p><strong>What it checks</strong></p>
+<ul>
+<li>Numerical agreement between the <strong>x-API</strong> (<code>J*_exact</code>) and the <strong>θ-API</strong> (<code>J*_exact2</code>) when (<span class="arithmatex">\(\theta=x^2\)</span>) with (<span class="arithmatex">\(x\ge 0\)</span>).</li>
+<li>Differences should be at <strong>quadrature noise</strong> level.</li>
+</ul>
+<p><strong>Figure</strong></p>
+<ul>
+<li><em>Direct consistency, (J(x)-J(<span class="arithmatex">\(\theta\)</span>)):</em>
+  <img alt="Consistency x vs theta" src="../assets/Exact_2.png" /></li>
+</ul>
+<p><strong>Console output</strong></p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 2: Consistency J(x) vs J(theta=x^2) (x ≥ 0) ===</span>
+<span class="sd">Max |J_b(x) - J_b(theta)| over grid: 0.000e+00</span>
+<span class="sd">Max |J_f(x) - J_f(theta)| over grid: 0.000e+00</span>
+<span class="sd">Expectation: differences ~ 0 within quadrature noise. </span>
+<span class="sd">This expectation its valid as we can see in the image above</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="test-2b-negative-theta-branch-and-imaginary-x-cross-check">Test 2b — Negative-(<span class="arithmatex">\(\theta\)</span>) branch and imaginary (x) cross-check<a class="headerlink" href="#test-2b-negative-theta-branch-and-imaginary-x-cross-check" title="Permanent link">&para;</a></h3>
+<p><strong>What it checks</strong></p>
+<ul>
+<li>For (<span class="arithmatex">\(\theta&lt;0\)</span>), compare the <strong>θ-API</strong> values (J(<span class="arithmatex">\(\theta=-\mu^2\)</span>)) with the <strong>x-API</strong> evaluated at (<span class="arithmatex">\(x=i\mu\)</span>) (dashed).
+  This confirms that our real, piecewise integrands for negative (<span class="arithmatex">\(\theta\)</span>) match the legacy branch split for purely imaginary (x).</li>
+</ul>
+<p><strong>Figure</strong></p>
+<ul>
+<li><em>(<span class="arithmatex">\(\theta&lt;0\)</span>) (solid) vs (<span class="arithmatex">\(x=i\mu\)</span>) (dashed):</em>
+  <img alt="Negative-theta vs imaginary-x" src="../assets/Exact_3.png" /></li>
+</ul>
+<p><strong>Console output</strong></p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 2b: Negative-θ branch and imaginary-x consistency ===</span>
+<span class="sd">Max |J_b(θ&lt;0) - J_b(x=iμ)| over grid: 5.551e-13</span>
+<span class="sd">Max |J_f(θ&lt;0) - J_f(x=iμ)| over grid: 5.596e-12</span>
+<span class="sd">Expectation: solid and dashed curves overlap within quadrature accuracy.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="test-3-derivatives-shape-and-sign-djdx-ge-0-for-xge-0">Test 3 — Derivatives: shape and sign (<span class="arithmatex">\((dJ/dx \ge 0)\)</span> for (<span class="arithmatex">\(x\ge 0\)</span>))<a class="headerlink" href="#test-3-derivatives-shape-and-sign-djdx-ge-0-for-xge-0" title="Permanent link">&para;</a></h3>
+<p><strong>What it checks</strong></p>
+<ul>
+<li>From the derivative formulas,</li>
+</ul>
+<p><span class="arithmatex">\(<span class="arithmatex">\(\frac{dJ_f}{dx}=\int_0^\infty y^2\frac{x}{E}\frac{1}{e^E+1}dy\qquad
+  \frac{dJ_b}{dx}=\int_0^\infty y^2\frac{x}{E}\frac{1}{e^E-1}dy\quad E=\sqrt{y^2+x^2}\)</span>\)</span></p>
+<p>we expect <strong>non negative</strong> derivatives for (<span class="arithmatex">\(x\ge 0\)</span>).
+* Plots should show both (<span class="arithmatex">\(dJ_b/dx\)</span>) and (<span class="arithmatex">\(dJ_f/dx\)</span>) positive and <strong>decreasing toward 0</strong> as (x) increases.</p>
+<p><strong>Figure</strong></p>
+<ul>
+<li><em>Derivatives vs (x):</em>
+  <img alt="Derivatives vs x" src="../assets/Exact_4.png" /></li>
+</ul>
+<p><strong>Console output</strong></p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 3: Derivative sign/shape (dJ/dx ≥ 0 for x ≥ 0) ===</span>
+<span class="sd">Min dJ_b/dx on grid: 0.000e+00  (expected ≥ 0)</span>
+<span class="sd">Min dJ_f/dx on grid: 0.000e+00  (expected ≥ 0)</span>
+<span class="sd">Expectation: derivatives are positive (curves move up toward 0). As we can see this is satisfied</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="test-4-cross-check-djdx-via-finite-difference-gradientfunction-order4">Test 4 — Cross-check (dJ/dx) via finite-difference <code>gradientFunction</code> (order=4)<a class="headerlink" href="#test-4-cross-check-djdx-via-finite-difference-gradientfunction-order4" title="Permanent link">&para;</a></h3>
+<p><strong>What it checks</strong></p>
+<ul>
+<li>Independent numerical differentiation (order-4 central differences) reproduces <code>dJ*_exact</code> closely.</li>
+</ul>
+<p><strong>Figures</strong></p>
+<ul>
+<li>
+<p><em>Boson derivative cross-check:</em>
+  <img alt="dJb cross-check" src="../assets/Exact_5.png" /></p>
+</li>
+<li>
+<p><em>Fermion derivative cross-check:</em>
+  <img alt="dJf cross-check" src="../assets/Exact_6.png" /></p>
+</li>
+</ul>
+<p><strong>Console output</strong></p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 4: Cross-check dJ/dx using gradientFunction (order=4) ===</span>
+<span class="sd">Max |dJ_b (FD) - dJ_b (exact)|: 1.318e-10</span>
+<span class="sd">Max |dJ_f (FD) - dJ_f (exact)|: 1.705e-11</span>
+<span class="sd">Expectation: order-4 finite differences should track the exact derivative closely (small max absolute error).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="test-5a-global-trend-x-from-0-to-large-approach-to-0">Test 5A — Global trend: (x) from 0 to large (approach to 0)<a class="headerlink" href="#test-5a-global-trend-x-from-0-to-large-approach-to-0" title="Permanent link">&para;</a></h3>
+<p><strong>What it checks</strong></p>
+<ul>
+<li>Over a wide range (<span class="arithmatex">\(x\in[0,10]\)</span>), both (<span class="arithmatex">\(J_b\)</span>) and (<span class="arithmatex">\(J_f\)</span>) <strong>approach 0</strong> as (x) grows (heavier mass over temperature).</li>
+<li>The plot includes a <strong>(y=0)</strong> reference line.</li>
+</ul>
+<p><strong>Figure</strong></p>
+<ul>
+<li><em>Global trend with (y=0) guide:</em>
+  <img alt="Global trend" src="../assets/Exact_7.png" /></li>
+</ul>
+<p><strong>Console output</strong></p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 5A: Global trend (x from 0 to large) with y=0 reference ===</span>
+<span class="sd">Expectation: as x increases (heavier over T), both J_b and J_f approach 0 exponentially.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="test-5b-large-x-tails-semilog-and-bessel-proxy-x2-k_2x">Test 5B — Large-(x) tails (semilog) and Bessel proxy <span class="arithmatex">\((x^2 K_2(x))\)</span><a class="headerlink" href="#test-5b-large-x-tails-semilog-and-bessel-proxy-x2-k_2x" title="Permanent link">&para;</a></h3>
+<p><strong>What it checks</strong></p>
+<ul>
+<li>On a <strong>semilog</strong> scale, (|J|) decays roughly like <span class="arithmatex">\((\exp(-x))\)</span>.</li>
+<li>The empirical proxy <span class="arithmatex">\((-x^2 K_2(x))\)</span> captures the qualitative tail behavior.</li>
+</ul>
+<p><strong>Figures</strong></p>
+<ul>
+<li>
+<p><em>Semilog magnitudes:</em>
+  <img alt="Large-x semilog" src="../assets/Exact_8.png" /></p>
+</li>
+<li>
+<p><em>Tail ratio vs proxy:</em>
+  <img alt="Tail ratio vs proxy" src="../assets/Exact_9.png" /></p>
+</li>
+</ul>
+<p><strong>Console output</strong></p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 5B: Large-x tail (semilog plots) ===</span>
+<span class="sd">Tail check (medians):</span>
+<span class="sd"> median[ J_b / ( -x^2 K2 ) ] = 1.000</span>
+<span class="sd"> median[ J_f / ( -x^2 K2 ) ] = 1.000</span>
+<span class="sd">Expectation: both |J| decay ~exp(-x); the Bessel proxy captures the trend qualitatively.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="test-6-physical-illustration-thermal-piece-v_tpropto-sum_i-n_ij_pmm_it">Test 6 — Physical illustration: thermal piece <span class="arithmatex">\((V_T\propto \sum_i n_i,J_{\pm}(m_i/T))\)</span><a class="headerlink" href="#test-6-physical-illustration-thermal-piece-v_tpropto-sum_i-n_ij_pmm_it" title="Permanent link">&para;</a></h3>
+<p><strong>What it checks</strong></p>
+<ul>
+<li>With illustrative degeneracies (n_b, n_f) and (T=1), thermal contributions built from (<span class="arithmatex">\(J_b\)</span>) and (<span class="arithmatex">\(J_f\)</span>) are largest near (x=0) and <strong>vanish for (<span class="arithmatex">\(x\gg 1\)</span>)</strong>.</li>
+</ul>
+<p><strong>Figure</strong></p>
+<ul>
+<li><em>Illustrative thermal potential piece:</em>
+  <img alt="Thermal piece VT" src="../assets/Exact_10.png" /></li>
+</ul>
+<p><strong>Console output</strong></p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd"># For illustration only (not a strict unit test):</span>
+<span class="sd">T = 1.0  # set T=1 to focus on x=m/T</span>
+<span class="sd">deg_b, deg_f = 2.0, 4.0  # example degeneracies</span>
+<span class="sd">x_phys = np.linspace(0.0, 10.0, 160)</span>
+<span class="sd">Vb = (T**4 / (2*np.pi**2)) * deg_b * Jb_exact(x_phys)</span>
+<span class="sd">Vf = (T**4 / (2*np.pi**2)) * deg_f * Jf_exact(x_phys).real</span>
+
+<span class="sd">=== Test 6: Thermal contribution V_T ∝ J(x) with x = m/T ===</span>
+<span class="sd">Expectation: contributions are largest near x≈0 and vanish exponentially for x≫1.</span>
+<span class="sd">---------- END OF TESTS: Exact Thermal Integrals ----------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="reproducibility-notes">Reproducibility notes<a class="headerlink" href="#reproducibility-notes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Quadrature tolerances used internally: <code>epsabs=1e-10</code>, <code>epsrel=1e-8</code>, <code>limit=200</code>.</li>
+<li>Small differences across machines/BLAS/SciPy versions are expected at the <span class="arithmatex">\((10^{-9})\)</span>-<span class="arithmatex">\((10^{-7})\)</span> level in these tests.</li>
+</ul>
+<hr />
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax-config.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

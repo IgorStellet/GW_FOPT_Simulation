@@ -1,0 +1,4401 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../../finiteT/Short_Hand_Jb%26Jf/">
+      
+      
+        <link rel="next" href="../tests_single_field/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Single Field functions - CosmoTransitions (modernized)</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#single-field-instanton" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-header__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosmoTransitions (modernized)
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Single Field functions
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-nav__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CosmoTransitions (modernized)
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap & Flowchart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples (Core modules)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples (Core modules)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_tunneling1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling 1D full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_1" id="__nav_5_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helper Functions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Helper Functions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Miscellaneous_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Miscellaneous Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Numerical_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Integration Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Numerical_derivatives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Derivatives Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/interpolation_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interpolation Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Finite Temperature (One loop corrections)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Finite Temperature (One loop corrections)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Exact_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Spline_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spline Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Approx_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Approx Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Short_Hand_Jb%26Jf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Short Hand for All Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling (1D)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tunneling (1D)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Field functions
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Field functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#module-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#behavioral-guarantees-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behavioral guarantees &amp; compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-usage-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick usage example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducibility-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducibility notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#class-singlefieldinstanton" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Class: SingleFieldInstanton
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Class: SingleFieldInstanton">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lot-sf-1-potential-interface-validations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lot SF-1 — Potential interface &amp; validations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lot SF-1 — Potential interface &amp; validations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#__init__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        __init__
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dvphi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dV(phi)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dV(phi)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scheme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scheme
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, Returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dv_from_absmindelta_phi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dV_from_absMin(delta_phi)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dV_from_absMin(delta_phi)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, Returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d2vphi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        d2V(phi)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="d2V(phi)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scheme_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scheme
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, Returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lot-sf-2-barrier-scales" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lot SF-2 — Barrier &amp; scales
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lot SF-2 — Barrier &amp; scales">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#findbarrierlocation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        findBarrierLocation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="findBarrierLocation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#behavior-algorithm-whats-new" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behavior &amp; algorithm (what’s new)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#findrscale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        findRScale
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="findRScale">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#physical-meaning-of-the-scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physical meaning of the scale
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#behavior-algorithm-whats-new_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behavior &amp; algorithm (what’s new)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lot-sf-3-quadratic-local-solution-initial-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lot SF-3 — Quadratic local solution &amp; initial conditions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lot SF-3 — Quadratic local solution &amp; initial conditions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#physical-background-why-bessel-functions-appear" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physical background (why Bessel functions appear)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exactsolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        exactSolution
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="exactSolution">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-definitions-appearing-in-formulas-and-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key definitions (appearing in formulas and code)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#physical-interpretation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physical interpretation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#initialconditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        initialConditions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="initialConditions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inputs-meaning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inputs &amp; meaning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strategy-what-the-code-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Strategy (what the code does)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#returns_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes &amp; guidance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-assumptions-for-both-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common assumptions (for both functions)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#numerical-stability-accuracy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Numerical stability &amp; accuracy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quick-reference-symbols" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick reference (symbols)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lot-sf-4-ode-core-equation-adaptive-driver-sampler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lot SF-4 — ODE core (equation, adaptive driver, sampler)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lot SF-4 — ODE core (equation, adaptive driver, sampler)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_normalize_tolerances-internal-helper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _normalize_tolerances (internal helper)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#equationofmotion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        equationOfMotion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integrateprofile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        integrateProfile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integrateandsaveprofile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        integrateAndSaveProfile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#practical-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Practical guidance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#failure-modes-and-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failure modes and messages
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lot-sf-5-profile-search-overshootundershoot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lot SF-5 — Profile search (overshoot/undershoot)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lot SF-5 — Profile search (overshoot/undershoot)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#singlefieldinstantonfindprofile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SingleFieldInstanton.findProfile(...)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SingleFieldInstanton.findProfile(...)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-problem-this-solves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What problem this solves
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-shooting-parameter-x" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The shooting parameter (x)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#radii-and-tolerances-numerics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Radii and tolerances (numerics)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-by-step-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step-by-step algorithm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#convergence-failure-modes-and-what-to-tweak" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Convergence / failure modes (and what to tweak)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#physical-interpretation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physical interpretation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-guarantees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output guarantees
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lot-sf-6-action-post-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lot SF-6 — Action &amp; post-processing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lot SF-6 — Action &amp; post-processing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#whats-new-vs-the-legacy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What’s new vs. the legacy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#physics-background-why-these-formulas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physics background (why these formulas)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#findactionprofile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        findAction(profile)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evenlyspacedphiphi-dphi-npoints100-k1-fixabstrue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        evenlySpacedPhi(phi, dphi, npoints=100, k=1, fixAbs=True)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#actionbreakdownprofile-new" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        actionBreakdown(profile) — New
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#walldiagnosticsprofile-frac01-09-new" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        wallDiagnostics(profile, frac=(0.1, 0.9)) — New
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#betaeffprofile-methodrscale-new" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        betaEff(profile, method="rscale") — New
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#practical-guidance-pitfalls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Practical guidance &amp; pitfalls
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tests_single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of SF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Transition Finder
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../transitionFinder/transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../transitionFinder/tests_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of TF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generic Potential
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Generic Potential
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generic_potential/generic_potential/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Potential Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#module-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#behavioral-guarantees-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behavioral guarantees &amp; compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-usage-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick usage example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducibility-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducibility notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#class-singlefieldinstanton" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Class: SingleFieldInstanton
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Class: SingleFieldInstanton">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lot-sf-1-potential-interface-validations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lot SF-1 — Potential interface &amp; validations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lot SF-1 — Potential interface &amp; validations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#__init__" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        __init__
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dvphi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dV(phi)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dV(phi)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scheme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scheme
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, Returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dv_from_absmindelta_phi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dV_from_absMin(delta_phi)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dV_from_absMin(delta_phi)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#method" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Method
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, Returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d2vphi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        d2V(phi)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="d2V(phi)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scheme_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scheme
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, Returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lot-sf-2-barrier-scales" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lot SF-2 — Barrier &amp; scales
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lot SF-2 — Barrier &amp; scales">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#findbarrierlocation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        findBarrierLocation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="findBarrierLocation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#behavior-algorithm-whats-new" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behavior &amp; algorithm (what’s new)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#findrscale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        findRScale
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="findRScale">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#physical-meaning-of-the-scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physical meaning of the scale
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#behavior-algorithm-whats-new_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behavior &amp; algorithm (what’s new)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lot-sf-3-quadratic-local-solution-initial-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lot SF-3 — Quadratic local solution &amp; initial conditions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lot SF-3 — Quadratic local solution &amp; initial conditions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#physical-background-why-bessel-functions-appear" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physical background (why Bessel functions appear)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exactsolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        exactSolution
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="exactSolution">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-definitions-appearing-in-formulas-and-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key definitions (appearing in formulas and code)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#physical-interpretation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physical interpretation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#initialconditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        initialConditions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="initialConditions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inputs-meaning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inputs &amp; meaning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strategy-what-the-code-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Strategy (what the code does)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#returns_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes &amp; guidance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-assumptions-for-both-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common assumptions (for both functions)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#numerical-stability-accuracy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Numerical stability &amp; accuracy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quick-reference-symbols" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick reference (symbols)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lot-sf-4-ode-core-equation-adaptive-driver-sampler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lot SF-4 — ODE core (equation, adaptive driver, sampler)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lot SF-4 — ODE core (equation, adaptive driver, sampler)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_normalize_tolerances-internal-helper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _normalize_tolerances (internal helper)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#equationofmotion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        equationOfMotion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integrateprofile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        integrateProfile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integrateandsaveprofile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        integrateAndSaveProfile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#practical-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Practical guidance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#failure-modes-and-messages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failure modes and messages
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lot-sf-5-profile-search-overshootundershoot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lot SF-5 — Profile search (overshoot/undershoot)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lot SF-5 — Profile search (overshoot/undershoot)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#singlefieldinstantonfindprofile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SingleFieldInstanton.findProfile(...)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SingleFieldInstanton.findProfile(...)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-problem-this-solves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What problem this solves
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-shooting-parameter-x" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The shooting parameter (x)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#radii-and-tolerances-numerics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Radii and tolerances (numerics)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-by-step-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step-by-step algorithm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#convergence-failure-modes-and-what-to-tweak" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Convergence / failure modes (and what to tweak)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#physical-interpretation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physical interpretation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-guarantees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output guarantees
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lot-sf-6-action-post-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lot SF-6 — Action &amp; post-processing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Lot SF-6 — Action &amp; post-processing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#whats-new-vs-the-legacy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What’s new vs. the legacy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#physics-background-why-these-formulas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physics background (why these formulas)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#findactionprofile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        findAction(profile)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evenlyspacedphiphi-dphi-npoints100-k1-fixabstrue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        evenlySpacedPhi(phi, dphi, npoints=100, k=1, fixAbs=True)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#actionbreakdownprofile-new" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        actionBreakdown(profile) — New
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#walldiagnosticsprofile-frac01-09-new" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        wallDiagnostics(profile, frac=(0.1, 0.9)) — New
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#betaeffprofile-methodrscale-new" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        betaEff(profile, method="rscale") — New
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#practical-guidance-pitfalls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Practical guidance &amp; pitfalls
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="single-field-instanton">Single Field Instanton<a class="headerlink" href="#single-field-instanton" title="Permanent link">&para;</a></h1>
+<p>This document describes the <strong>single-field instanton</strong> solver and the public API that underpins it. The implementation follows 
+the overshoot/undershoot shooting method and supports both <strong>thin-wall</strong> and <strong>thick-wall</strong> regimes with robust numerical defaults.
+see the <a href="tests_single_field">example</a> page of this class if you want to understand more of each function!.</p>
+<hr />
+<h2 id="module-overview">Module overview<a class="headerlink" href="#module-overview" title="Permanent link">&para;</a></h2>
+<p><code>tunneling1D</code> provides tools to compute O(α+1)–symmetric bounce (instanton) solutions in one field dimension. In the absence of gravity, the equation of motion for a radial profile <code>phi(r)</code> reads</p>
+<div class="arithmatex">\[\frac{d^2\phi}{dr^2} + \frac{\alpha}{r}\frac{d\phi}{dr} = \frac{dV}{d\phi}\]</div>
+<p>with boundary conditions</p>
+<div class="arithmatex">\[\phi '(0)=0 \qquad \phi(\infty)=\phi_{\rm metaMin}\]</div>
+<p>The <strong>primary entry point</strong> is the class <code>SingleFieldInstanton</code>, which:</p>
+<ul>
+<li>validates the potential and basic inputs,</li>
+<li>supplies numerically stable derivative approximations when the user does not provide them,</li>
+<li>detects a characteristic scale and the barrier location,</li>
+<li>and exposes high-level routines to find the <strong>profile</strong> and the <strong>action</strong>.</li>
+</ul>
+<hr />
+<h2 id="behavioral-guarantees-compatibility">Behavioral guarantees &amp; compatibility<a class="headerlink" href="#behavioral-guarantees-compatibility" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Scalar/array semantics.</strong> All derivative helpers accept scalars or NumPy arrays and <strong>preserve shapes</strong>.</li>
+<li><strong>Backward compatibility.</strong> Names and signatures are preserved. If you supply custom <code>dV</code>/<code>d2V</code>, the class uses them everywhere.</li>
+<li><strong>Numerical robustness.</strong> Defaults favor stability in thin-wall and stiff potentials; the step size never collapses to zero even if the two minima coincide numerically.</li>
+<li><strong>Clear errors.</strong> Missing metastability or barriers raise <code>PotentialError</code> with informative messages.</li>
+</ul>
+<hr />
+<h2 id="quick-usage-example">Quick usage example<a class="headerlink" href="#quick-usage-example" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">CosmoTransitions.tunneling1D</span><span class="w"> </span><span class="kn">import</span> <span class="n">SingleFieldInstanton</span>
+
+<span class="c1"># Quartic potential with two minima</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">V</span><span class="p">(</span><span class="n">phi</span><span class="p">):</span>  <span class="k">return</span> <span class="mf">0.25</span><span class="o">*</span><span class="n">phi</span><span class="o">**</span><span class="mi">4</span> <span class="o">-</span> <span class="mf">0.49</span><span class="o">*</span><span class="n">phi</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="mf">0.235</span><span class="o">*</span><span class="n">phi</span><span class="o">**</span><span class="mi">2</span>
+
+<span class="c1"># Instantiate the solver (use builtin derivatives)</span>
+<span class="n">inst</span> <span class="o">=</span> <span class="n">SingleFieldInstanton</span><span class="p">(</span>
+    <span class="n">phi_absMin</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">phi_metaMin</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">V</span><span class="o">=</span><span class="n">V</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>          <span class="c1"># O(3) symmetry</span>
+    <span class="n">phi_eps</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>     <span class="c1"># relative FD step (safe floor applied automatically)</span>
+    <span class="n">fd_order</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>       <span class="c1"># 4th-order differences</span>
+    <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># prof = inst.findProfile()</span>
+<span class="c1"># S    = inst.findAction(prof)</span>
+</code></pre></div>
+<hr />
+<h2 id="reproducibility-notes">Reproducibility notes<a class="headerlink" href="#reproducibility-notes" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The FD step is <code>h = max(phi_eps * |Δphi|, fd_eps_min, auto_floor)</code>, where <code>auto_floor ≈ sqrt(machine_eps) × scale</code>.</li>
+<li>Built-in derivative formulas are <strong>central differences</strong> and do not cache potential evaluations across calls; users may optimize their <code>V</code> if desired.</li>
+</ul>
+<hr />
+<h2 id="class-singlefieldinstanton">Class: <code>SingleFieldInstanton</code><a class="headerlink" href="#class-singlefieldinstanton" title="Permanent link">&para;</a></h2>
+<p>Compute properties of a single-field instanton via the overshoot/undershoot method. Most users will only call <code>findProfile</code> and <code>findAction</code>, 
+but the constructor and derivative helpers are documented here because they define the <strong>potential interface</strong> and core <strong>validations</strong>.</p>
+<h3 id="signature">Signature<a class="headerlink" href="#signature" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SingleFieldInstanton</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">phi_absMin</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">phi_metaMin</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">V</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">dV</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">d2V</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">phi_eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">phi_bar</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">rscale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">fd_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="n">fd_eps_min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+<h3 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h3>
+<p>Create a solver instance for a <strong>single scalar field</strong> in a given potential <code>V(phi)</code>, with optional user-supplied derivatives. 
+The instance owns all numerical settings (finite-difference step/accuracy, friction <code>α</code>, barrier point, characteristic radius scale) required by later calls.</p>
+<h3 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p><code>phi_absMin</code> <em>(float)</em>
+  Field value of the <strong>stable</strong> (true) vacuum.</p>
+</li>
+<li>
+<p><code>phi_metaMin</code> <em>(float)</em>
+  Field value of the <strong>metastable</strong> (false) vacuum.</p>
+</li>
+<li>
+<p><code>V</code> <em>(callable)</em>
+  Potential <code>V(phi)</code>. It may accept scalars or NumPy arrays (vectorized); scalar support is sufficient.</p>
+</li>
+<li>
+<p><code>dV</code>, <code>d2V</code> <em>(callable | None)</em>
+  Optional first and second derivatives. If provided, they <strong>override</strong> the built-in finite-difference routines. Either or both may be supplied.</p>
+</li>
+<li>
+<p><code>phi_eps</code> <em>(float, default <code>1e-3</code>)</em>
+  <strong>Relative</strong> finite-difference step used by the built-in <code>dV</code>/<code>d2V</code>. The absolute step is</p>
+</li>
+</ul>
+<div class="arithmatex">\[h = \texttt{phi_eps}\times |\phi_{metaMin}-\phi_{absMin}| \]</div>
+<p>A safe lower floor is applied automatically (see <em>Notes</em>).</p>
+<ul>
+<li>
+<p><code>alpha</code> <em>(int | float, default <code>2</code>)</em>
+  Friction coefficient in the ODE. For O(α+1) symmetry, <code>alpha</code> equals the spatial dimension.</p>
+</li>
+<li>
+<p><code>phi_bar</code> <em>(float | None)</em>
+  Field value at the <strong>edge of the barrier</strong>, defined by <code>V(phi_bar) = V(phi_metaMin)</code>. If <code>None</code>, it is found by <code>findBarrierLocation()</code>.</p>
+</li>
+<li>
+<p><code>rscale</code> <em>(float | None)</em>
+  Characteristic radial scale. If <code>None</code>, it is found by <code>findRScale()</code>.</p>
+</li>
+<li>
+<p><code>fd_order</code> <em>{2, 4}, keyword-only, default <code>4</code></em>
+  Order of the built-in central finite differences (ignored if the user passes <code>dV</code>/<code>d2V</code>).</p>
+</li>
+<li>
+<p><code>fd_eps_min</code> <em>(float | None), keyword-only</em>
+  Absolute lower bound on the FD step <code>h</code>. If <code>None</code>, a safe value of order <code>sqrt(machine_eps) × scale</code> is used.</p>
+</li>
+<li>
+<p><code>validate</code> <em>(bool, default <code>True</code>), keyword-only</em>
+  Perform basic sanity checks and emit helpful errors/warnings.</p>
+</li>
+</ul>
+<h3 id="raises">Raises<a class="headerlink" href="#raises" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p><code>PotentialError("V(phi_metaMin) &lt;= V(phi_absMin); tunneling cannot occur.", "stable, not metastable")</code>
+  If the potential is not metastable.</p>
+</li>
+<li>
+<p><code>PotentialError(...)</code>
+  If barrier finding or scale detection fails (e.g., no barrier, negative curvature fit).</p>
+</li>
+</ul>
+<h3 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p><strong>Thin-wall acceleration.</strong> When minima are nearly degenerate, the solver starts integration near the wall using a local quadratic solution, making the search efficient even for extremely thin walls.</p>
+</li>
+<li>
+<p><strong>FD step safety.</strong> The absolute step <code>h</code> is computed from the <strong>minima separation</strong>; if the separation is tiny (or zero due to user inputs), a machine-precision-aware <strong>floor</strong> is applied to prevent catastrophic cancellation.</p>
+</li>
+<li>
+<p><strong>Overrides.</strong> If you pass custom <code>dV</code>/<code>d2V</code>, the solver will use those everywhere (including the high-accuracy helper <code>dV_from_absMin</code>).</p>
+</li>
+<li>
+<p><strong>Caching.</strong> The constructor caches <code>V(phi_absMin)</code>, <code>V(phi_metaMin)</code> and basic deltas; downstream methods reuse them.</p>
+</li>
+</ul>
+<hr />
+<h2 id="lot-sf-1-potential-interface-validations">Lot SF-1 — Potential interface &amp; validations<a class="headerlink" href="#lot-sf-1-potential-interface-validations" title="Permanent link">&para;</a></h2>
+<p>This lot modernizes the <strong>potential interface</strong> and core <strong>validations</strong>, and provides the built-in derivatives. 
+The public names are unchanged for backward compatibility.</p>
+<h3 id="__init__"><code>__init__</code><a class="headerlink" href="#__init__" title="Permanent link">&para;</a></h3>
+<p>See the class section above for the full signature and behavior. Implementation highlights:</p>
+<ul>
+<li><strong>Metastability check:</strong> require <code>V(phi_metaMin) &gt; V(phi_absMin)</code>.</li>
+<li><strong>Robust FD step:</strong> <code>h = max(phi_eps * |Δphi|, fd_eps_min or auto_floor)</code>, where <code>Δphi = phi_metaMin - phi_absMin</code> and <code>auto_floor ~ sqrt(machine_eps) × scale</code>.</li>
+<li><strong>User overrides respected:</strong> any provided <code>dV</code>/<code>d2V</code> replace the built-ins transparently.</li>
+<li><strong>Barrier/scale:</strong> compute <code>phi_bar</code> and <code>rscale</code> if not supplied; accept user input but warn if <code>V(phi_bar) ≉ V(phi_metaMin)</code>.</li>
+</ul>
+<hr />
+<h3 id="dvphi"><code>dV(phi)</code><a class="headerlink" href="#dvphi" title="Permanent link">&para;</a></h3>
+<h4 id="signature_1">Signature<a class="headerlink" href="#signature_1" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="n">dV</span><span class="p">(</span><span class="n">phi</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+<h4 id="purpose_1">Purpose<a class="headerlink" href="#purpose_1" title="Permanent link">&para;</a></h4>
+<p>Built-in finite-difference approximation to ( V'(\phi) ). Works with scalars or arrays (broadcasted). 
+If the user supplied a custom <code>dV</code> at construction, that override is used instead.</p>
+<h4 id="scheme">Scheme<a class="headerlink" href="#scheme" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><strong>Order 4 (default)</strong>
+  <span class="arithmatex">\(<span class="arithmatex">\(V'(\phi)\approx\frac{V(\phi-2h)-8V(\phi-h)+8V(\phi+h)-V(\phi+2h)}{12h}\)</span>\)</span></p>
+</li>
+<li>
+<p><strong>Order 2 (fallback)</strong>
+  <span class="arithmatex">\(<span class="arithmatex">\(V'(\phi)\approx\frac{V(\phi+h)-V(\phi-h)}{2h}\)</span>\)</span></p>
+</li>
+</ul>
+<p>with h =  absolute FD step defined in <code>__init__</code>.</p>
+<h4 id="parameters-returns-and-raises">Parameters, Returns and Raises<a class="headerlink" href="#parameters-returns-and-raises" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Parameters:</strong> <code>phi</code> <em>(float | array-like)</em> points where to evaluate.</li>
+<li><strong>Returns:</strong> same shape as <code>phi</code>.</li>
+<li><strong>Raises:</strong> only propagates exceptions from user <code>V</code> (non-finite, etc.).</li>
+</ul>
+<h4 id="notes_1">Notes<a class="headerlink" href="#notes_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li>The routine is <strong>side-effect free</strong> and <strong>vectorization-friendly</strong>.</li>
+<li>The step <code>h</code> is absolute; see <code>__init__</code> for how it is chosen safely.</li>
+</ul>
+<hr />
+<h3 id="dv_from_absmindelta_phi"><code>dV_from_absMin(delta_phi)</code><a class="headerlink" href="#dv_from_absmindelta_phi" title="Permanent link">&para;</a></h3>
+<h4 id="signature_2">Signature<a class="headerlink" href="#signature_2" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="n">dV_from_absMin</span><span class="p">(</span><span class="n">delta_phi</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span>
+</code></pre></div>
+<h4 id="purpose_2">Purpose<a class="headerlink" href="#purpose_2" title="Permanent link">&para;</a></h4>
+<p>High-accuracy derivative at <span class="arithmatex">\((\phi=\phi_{\rm absMin}+\delta\phi)\)</span>. Near the minimum, direct finite differences can lose precision;
+we therefore <strong>blend</strong> a Taylor estimate using (V'') with the FD estimate.
+This happens because near the true minimum <span class="arithmatex">\(V'(\phi)\)</span> it's expected to be exactly zero, therefore it's relevant to evaluate with an
+alternative Method, i.e., <code>V'(\phi) \approx V''(\phi_{\rm absMin}) (\phi-\phi_{\rm absMin})</code></p>
+<h4 id="method">Method<a class="headerlink" href="#method" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Let <span class="arithmatex">\((\phi=\phi_{\rm absMin}+\delta\phi)\)</span></li>
+<li>Compute <code>dV_fd = dV(phi)</code> (built-in or user override).</li>
+<li>Compute <code>dV_lin = d2V(phi) * delta_phi</code>.</li>
+<li>Blend with a smooth weight</li>
+</ul>
+<p><span class="arithmatex">\(<span class="arithmatex">\(w = \exp\Big[-\big(\delta\phi/h\big)^2\Big],\qquad h=\text{FD step}\)</span>\)</span>
+  Return <span class="arithmatex">\((w\cdot dV_{\rm lin} + (1-w)dV_{\rm fd})\)</span>.</p>
+<h4 id="parameters-returns-and-raises_1">Parameters, Returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Parameters:</strong> <code>delta_phi</code> <em>(float)</em> offset from the absolute minimum.</li>
+<li><strong>Returns:</strong> <em>(float)</em> blended derivative at <code>phi_absMin + delta_phi</code>.</li>
+<li><strong>Raises:</strong> Propagates only if user-supplied <code>dV</code>/<code>d2V</code> fail.</li>
+</ul>
+<h4 id="notes_2">Notes<a class="headerlink" href="#notes_2" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Guarantees <strong><code>dV_from_absMin(0.0) = 0.0</code></strong> to within round-off (through the blend).</li>
+<li>Uses the same <code>h</code> configured in <code>__init__</code>.</li>
+</ul>
+<hr />
+<h3 id="d2vphi"><code>d2V(phi)</code><a class="headerlink" href="#d2vphi" title="Permanent link">&para;</a></h3>
+<h4 id="signature_3">Signature<a class="headerlink" href="#signature_3" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="n">d2V</span><span class="p">(</span><span class="n">phi</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+<h4 id="purpose_3">Purpose<a class="headerlink" href="#purpose_3" title="Permanent link">&para;</a></h4>
+<p>Built-in finite-difference approximation to <span class="arithmatex">\((V''(\phi))\)</span>. Works with scalars or arrays (broadcasted). 
+If the user supplied a custom <code>d2V</code>, that takes precedence.</p>
+<h4 id="scheme_1">Scheme<a class="headerlink" href="#scheme_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><strong>Order 4 (default)</strong>
+  <span class="arithmatex">\(<span class="arithmatex">\(V''(\phi)\approx\frac{-V(\phi-2h)+16V(\phi-h)-30V(\phi)+16V(\phi+h)-V(\phi+2h)}{12h^2}\)</span>\)</span></p>
+</li>
+<li>
+<p><strong>Order 2 (fallback)</strong>
+  <span class="arithmatex">\(<span class="arithmatex">\(V''(\phi)\approx\frac{V(\phi+h)-2V(\phi)+V(\phi-h)}{h^2}\)</span>\)</span></p>
+</li>
+</ul>
+<h4 id="parameters-returns-and-raises_2">Parameters, Returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_2" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Parameters:</strong> <code>phi</code> <em>(float | array-like)</em>.</li>
+<li><strong>Returns:</strong> same shape as <code>phi</code>.</li>
+<li><strong>Raises:</strong> only propagates exceptions from <code>V</code>.</li>
+</ul>
+<h4 id="notes_3">Notes<a class="headerlink" href="#notes_3" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Uses the same safe absolute step <code>h</code> as <code>dV</code>.</li>
+<li>Vectorized; preserves input shape (scalar-in → scalar-out).</li>
+</ul>
+<hr />
+<h2 id="lot-sf-2-barrier-scales">Lot SF-2 — Barrier &amp; scales<a class="headerlink" href="#lot-sf-2-barrier-scales" title="Permanent link">&para;</a></h2>
+<p>This lot modernizes how we <strong>locate the barrier</strong> that separates the metastable (false) vacuum from the absolute (true) vacuum and 
+how we estimate a <strong>characteristic radial scale</strong> for the instanton solution. 
+Both functions keep their legacy names and public behavior, but the numerics and diagnostics are stronger and more transparent.</p>
+<hr />
+<h3 id="findbarrierlocation"><code>findBarrierLocation</code><a class="headerlink" href="#findbarrierlocation" title="Permanent link">&para;</a></h3>
+<h4 id="signature_4">Signature<a class="headerlink" href="#signature_4" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="n">findBarrierLocation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span>
+</code></pre></div>
+<h4 id="purpose_4">Purpose<a class="headerlink" href="#purpose_4" title="Permanent link">&para;</a></h4>
+<p>Return the <strong>edge of the barrier</strong> (<code>phi_bar</code>) defined implicitly by</p>
+<div class="arithmatex">\[V(\phi_{\mathrm{bar}}) = V(\phi_{\mathrm{metaMin}})\]</div>
+<p>on the <strong>downhill</strong> side of the barrier when moving from the metastable minimum toward the absolute minimum.
+This is the crossing point at which the field “leaves” the false-vacuum plateau as it rolls toward the true vacuum.</p>
+<h4 id="behavior-algorithm-whats-new">Behavior &amp; algorithm (what’s new)<a class="headerlink" href="#behavior-algorithm-whats-new" title="Permanent link">&para;</a></h4>
+<ul>
+<li>We first <strong>locate the barrier top</strong> (<code>phi_top</code>) — the maximizer of (V) — in the open interval between the two minima via a bounded 1D search (robust even if the potential has gentle wiggles).</li>
+<li>We then solve for the <strong>downhill crossing</strong> of <span class="arithmatex">\((G(\phi)=V(\phi)-V(\phi_{\rm metaMin}))\)</span> between <code>phi_top</code> and the absolute minimum using a <strong>bracketed Brent root</strong>.</li>
+<li>
+<p>On success, we return <code>phi_bar</code>. We also cache diagnostics in <code>self._barrier_info</code>:</p>
+</li>
+<li>
+<p><code>phi_bar</code>, <code>phi_top</code>,</p>
+</li>
+<li><code>V_top_minus_Vmeta = V(phi_top) - V(phi_metaMin)</code>,</li>
+<li><code>V_meta</code>, <code>V_abs</code>,</li>
+<li><code>interval = (min(phi_metaMin, phi_absMin), max(...))</code>.</li>
+</ul>
+<p>This approach eliminates fragile reliance on strict monotonicity and makes error messages precise.</p>
+<h4 id="parameters-returns-and-raises_3">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_3" title="Permanent link">&para;</a></h4>
+<p><strong>Parameters</strong></p>
+<p><em>None (uses the instance state).</em></p>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>float</code>: <code>phi_bar</code> such that <span class="arithmatex">\((V(\phi_{\rm bar})=V(\phi_{\rm metaMin}))\)</span>.</li>
+</ul>
+<p><strong>Raises</strong></p>
+<ul>
+<li><code>PotentialError("…", "no barrier")</code>: if the barrier top cannot be located inside the interval, or the barrier height is non-positive (no barrier).</li>
+<li><code>PotentialError("…", "stable, not metastable")</code>: defensively raised if <span class="arithmatex">\((V(\phi_{\rm metaMin}) \le V(\phi_{\rm absMin}))\)</span>.</li>
+</ul>
+<h4 id="notes_4">Notes<a class="headerlink" href="#notes_4" title="Permanent link">&para;</a></h4>
+<ul>
+<li>The method is <strong>purely 1D</strong> and makes no smoothness assumptions beyond what the line search and root solver require (continuous (V)).</li>
+<li>The cached <code>self._barrier_info</code> lets you reuse <code>phi_top</code> and heights in later analysis/plots without recomputation.</li>
+</ul>
+<hr />
+<h3 id="findrscale"><code>findRScale</code><a class="headerlink" href="#findrscale" title="Permanent link">&para;</a></h3>
+<h4 id="signature_5">Signature<a class="headerlink" href="#signature_5" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="n">findRScale</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span>
+</code></pre></div>
+<h4 id="purpose_5">Purpose<a class="headerlink" href="#purpose_5" title="Permanent link">&para;</a></h4>
+<p>Estimate a <strong>characteristic radial scale</strong> <span class="arithmatex">\((r_{\rm scale})\)</span> for the instanton solution. 
+This sets physical step sizes for ODE integration and helps select plotting ranges.</p>
+<h4 id="physical-meaning-of-the-scale">Physical meaning of the scale<a class="headerlink" href="#physical-meaning-of-the-scale" title="Permanent link">&para;</a></h4>
+<p>Near the <strong>barrier top</strong> the Euclidean EoM linearizes to</p>
+<div class="arithmatex">\[\phi'' + \frac{\alpha}{r}\phi' \simeq V''(\phi_{\rm top}) \bigl(\phi - \phi_{\rm top}\bigr)\]</div>
+<p>If the top were strictly quadratic with curvature <span class="arithmatex">\((V''(\phi_{\rm top})&lt;0)\)</span>, a naive local scale is <span class="arithmatex">\((r_{\rm curv}\sim 1/\sqrt{\lvert V''(\phi_{\rm top})\rvert})\)</span>.
+However, many relevant potentials in cosmology/phase transitions have <strong>flat-topped</strong> barriers <span class="arithmatex">\(((V''(\phi_{\rm top})\approx 0))\)</span>, making <span class="arithmatex">\((r_{\rm curv})\)</span> blow up 
+even when tunneling is well-defined.</p>
+<p>To remain stable and <strong>legacy-compatible</strong>, we adopt a <strong>cubic surrogate</strong> for the barrier shape that matches:</p>
+<ul>
+<li>a <strong>maximum</strong> at the top <span class="arithmatex">\(((\phi_{\rm top}))\)</span>,</li>
+<li>a <strong>minimum</strong> at the metastable vacuum <span class="arithmatex">\(((\phi_{\rm metaMin}))\)</span>,</li>
+</ul>
+<p>which yields the robust scale</p>
+<div class="arithmatex">\[\boxed{
+r_{\rm scale} = r_{\rm cubic} =
+\frac{\bigl|\phi_{\rm top}-\phi_{\rm metaMin}\bigr|}
+{\sqrt{6[V(\phi_{\rm top})-V(\phi_{\rm metaMin})]}} }\]</div>
+<p>This remains finite on flat tops and empirically tracks the small-oscillation period scale up to an <span class="arithmatex">\((\mathcal{O}(1))\)</span>
+factor — ideal for setting numerics.</p>
+<h4 id="behavior-algorithm-whats-new_1">Behavior &amp; algorithm (what’s new)<a class="headerlink" href="#behavior-algorithm-whats-new_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Reuses <code>findBarrierLocation</code> to validate the barrier and obtain <code>phi_top</code> and its height above the false vacuum.</li>
+<li>Computes and <strong>returns</strong> the legacy <strong>cubic</strong> scale <span class="arithmatex">\((r_{\rm cubic})\)</span> (unchanged public behavior).</li>
+<li>Also computes an optional <strong>curvature</strong> diagnostic <span class="arithmatex">\((r_{\rm curv} = 1/\sqrt{-V''(\phi_{\rm top})})\)</span> when 
+<span class="arithmatex">\((V''(\phi_{\rm top})&lt;0)\)</span> (otherwise (+\infty)).</li>
+<li>
+<p>Caches diagnostics in <code>self._scale_info</code>:</p>
+</li>
+<li>
+<p><code>phi_top</code>, <code>V_top_minus_Vmeta</code>, <code>xtop = phi_top - phi_metaMin</code>,</p>
+</li>
+<li><code>rscale_cubic</code>, <code>rscale_curv</code>, <code>d2V_top</code>.</li>
+</ul>
+<h4 id="parameters-returns-and-raises_4">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_4" title="Permanent link">&para;</a></h4>
+<p><strong>Parameters</strong></p>
+<p><em>None (uses the instance state).</em></p>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>float</code>: <span class="arithmatex">\((r_{\rm scale} = r_{\rm cubic})\)</span>, used elsewhere for step sizes and domain lengths.</li>
+</ul>
+<p><strong>Raises</strong></p>
+<ul>
+<li><code>PotentialError("…", "no barrier")</code>: if the barrier fails validation (no interior top or non-positive height).</li>
+</ul>
+<h4 id="notes_5">Notes<a class="headerlink" href="#notes_5" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Returning the cubic scale preserves the <strong>legacy interface</strong> and numerical behavior.</li>
+<li>The diagnostics are helpful for <strong>thin-wall detection</strong>, performance tuning, and sanity plots.</li>
+</ul>
+<hr />
+<p>Here’s the continuation of <strong><code>single_field.md</code></strong> for the next block.</p>
+<hr />
+<h2 id="lot-sf-3-quadratic-local-solution-initial-conditions">Lot SF-3 — Quadratic local solution &amp; initial conditions<a class="headerlink" href="#lot-sf-3-quadratic-local-solution-initial-conditions" title="Permanent link">&para;</a></h2>
+<p>This block implements the <em>local</em> (near-center) analytic control we use to (i) evaluate the field in a small neighborhood of the bubble center and
+(ii) generate safe initial conditions away from the (r=0) singular point of the radial equation.
+The two public members covered here are:</p>
+<ul>
+<li><code>exactSolution(r, phi0, dV, d2V)</code></li>
+<li><code>initialConditions(delta_phi0, rmin, delta_phi_cutoff)</code></li>
+</ul>
+<p>Both are methods of <code>SingleFieldInstanton</code>.</p>
+<h3 id="physical-background-why-bessel-functions-appear">Physical background (why Bessel functions appear)<a class="headerlink" href="#physical-background-why-bessel-functions-appear" title="Permanent link">&para;</a></h3>
+<p>The Euclidean bounce equation for a spherically symmetric profile in <span class="arithmatex">\(((\alpha+1))\)</span> spatial dimensions is</p>
+<div class="arithmatex">\[\phi''(r) + \frac{\alpha}{r}\phi'(r) = V'(\phi)\qquad r\ge 0\]</div>
+<p>Near a chosen point <span class="arithmatex">\((\phi_0)\)</span> (typically very close to the true minimum <span class="arithmatex">\((\phi_{\rm absMin})\)</span> when constructing thin-wall bounces), 
+Taylor-expand the potential to quadratic order:</p>
+<div class="arithmatex">\[V'(\phi) \approx dV + d2V(\phi-\phi_0); \quad dV = V'(\phi_0);\quad d2V = V''(\phi_0)\]</div>
+<p>Let <span class="arithmatex">\((\delta\phi(r)=\phi(r)-\phi_0)\)</span>. Then</p>
+<div class="arithmatex">\[\delta\phi'' + \frac{\alpha}{r}\delta\phi' - d2V\delta\phi = dV\]</div>
+<p>Shift out the constant drive with <span class="arithmatex">\((\delta\phi=\psi + dV/d2V)\)</span> (when <span class="arithmatex">\((d2V\neq 0)\)</span>), to obtain the homogeneous equation</p>
+<div class="arithmatex">\[\psi'' + \frac{\alpha}{r}\psi' - d2V\psi = 0\]</div>
+<p>whose regular solution at the origin is expressed in terms of Bessel functions. Defining</p>
+<div class="arithmatex">\[\nu \equiv \frac{\alpha-1}{2}\qquad ,\beta \equiv \sqrt{|d2V|},\qquad t \equiv \beta r\]</div>
+<p>the <em>regular</em> solution is</p>
+<ul>
+<li><strong>Stable curvature</strong> ((d2V&gt;0), harmonic well):</li>
+</ul>
+<div class="arithmatex">\[\phi(r)-\phi_0 = \frac{dV}{d2V}\Bigg[\Gamma(\nu+1)\Big(\tfrac{t}{2}\Big)^{-\nu} I_\nu(t)-1\Bigg]\]</div>
+<ul>
+<li><strong>Unstable curvature</strong> ((d2V&lt;0), inverted well, e.g. near the barrier top): replace <span class="arithmatex">\((I_\nu \to J_\nu)\)</span>.</li>
+</ul>
+<p>Regularity at the origin enforces <span class="arithmatex">\((\phi'(0)=0)\)</span> for any <span class="arithmatex">\((\alpha\ge 0)\)</span>.</p>
+<p>If <strong>(d2V=0)</strong> (flat curvature), the ODE reduces to a constant drive and the <em>exact</em> regular solution is the polynomial</p>
+<div class="arithmatex">\[\phi(r)=\phi_0 + \frac{dV}{2(\alpha+1)}r^2\qquad \phi'(r)=\frac{dV}{\alpha+1}r\]</div>
+<p>These closed forms are what the code evaluates, with numerically stable branches for small/large arguments.</p>
+<hr />
+<h3 id="exactsolution"><code>exactSolution</code><a class="headerlink" href="#exactsolution" title="Permanent link">&para;</a></h3>
+<h4 id="signature_6">Signature<a class="headerlink" href="#signature_6" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="n">exactSolution</span><span class="p">(</span><span class="n">r</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">phi0</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">dV</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">d2V</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">exactSolution_rval</span>
+<span class="c1"># exactSolution_rval = namedtuple(&quot;exactSolution_rval&quot;, &quot;phi dphi&quot;)</span>
+</code></pre></div>
+<h4 id="purpose_6">Purpose<a class="headerlink" href="#purpose_6" title="Permanent link">&para;</a></h4>
+<p>Compute the <strong>regular</strong> local solution <span class="arithmatex">\(((\phi(r),\phi'(r)))\)</span> at radius (r) assuming a quadratic expansion of the potential around <span class="arithmatex">\((\phi_0)\)</span>.
+This is used to:</p>
+<ul>
+<li>accurately probe the profile near the origin,</li>
+<li>build safe, physically consistent initial conditions for the global ODE solver.</li>
+</ul>
+<h4 id="key-definitions-appearing-in-formulas-and-code">Key definitions (appearing in formulas and code)<a class="headerlink" href="#key-definitions-appearing-in-formulas-and-code" title="Permanent link">&para;</a></h4>
+<ul>
+<li><span class="arithmatex">\((\alpha)\)</span>: friction power in the radial term, i.e. spacetime dimension minus 1.</li>
+<li><span class="arithmatex">\((\nu=(\alpha-1)/2)\)</span>: effective Bessel index fixed by the radial Laplacian.</li>
+<li><span class="arithmatex">\((\beta=\sqrt{|d2V|})\)</span> and <span class="arithmatex">\((t=\beta r)\)</span>: scale &amp; argument controlling oscillatory/exponential behavior.</li>
+<li>Regularity: <span class="arithmatex">\((\phi'(0)=0)\)</span> (enforced exactly by the implementation).</li>
+</ul>
+<h4 id="parameters_1">Parameters<a class="headerlink" href="#parameters_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>r</code> (<code>float</code>): radius (≥ 0). At <code>r==0</code> the method returns <code>(phi0, 0.0)</code> exactly.</li>
+<li><code>phi0</code> (<code>float</code>): expansion point for the quadratic model.</li>
+<li><code>dV</code> (<code>float</code>): <span class="arithmatex">\((V'(\phi_0))\)</span>.</li>
+<li><code>d2V</code> (<code>float</code>): <span class="arithmatex">\((V''(\phi_0))\)</span>.</li>
+</ul>
+<h4 id="returns">Returns<a class="headerlink" href="#returns" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>exactSolution_rval(phi, dphi)</code>: field and radial derivative at radius <code>r</code>.</li>
+</ul>
+<h4 id="implementation-notes">Implementation notes<a class="headerlink" href="#implementation-notes" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Flat curvature</strong> (<code>d2V==0</code>): uses the exact polynomial solution above (no Bessel calls).</li>
+<li><strong>Small argument</strong> (<code>t = beta*r ≤ 1e-5</code>): uses a <strong>short even-power series</strong> up to (t^6), which is well-conditioned and avoids any division by <code>r</code>.</li>
+<li><strong>General case</strong>: uses the Bessel/modified-Bessel forms, with overflow/underflow warnings suppressed locally; the combined expressions are finite.</li>
+<li>Input validation ensures all inputs are finite and <code>r≥0</code>.</li>
+</ul>
+<h4 id="physical-interpretation">Physical interpretation<a class="headerlink" href="#physical-interpretation" title="Permanent link">&para;</a></h4>
+<ul>
+<li>(d2V&gt;0): local <strong>restoring force</strong>; near a true minimum the solution is “massive” and grows as <span class="arithmatex">\((I_\nu(t))\)</span> but regularized to match <span class="arithmatex">\((\phi'(0)=0)\)</span>.</li>
+<li>(d2V&lt;0): local <strong>tachyonic/inverted</strong> curvature, relevant near the barrier top; the solution is oscillatory via <span class="arithmatex">\((J_\nu)\)</span>.</li>
+<li>(d2V=0): locally flat—driven purely by the constant slope (dV); the profile starts quadratically from the center.</li>
+</ul>
+<hr />
+<h3 id="initialconditions"><code>initialConditions</code><a class="headerlink" href="#initialconditions" title="Permanent link">&para;</a></h3>
+<h4 id="signature_7">Signature<a class="headerlink" href="#signature_7" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="n">initialConditions</span><span class="p">(</span><span class="n">delta_phi0</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">rmin</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">delta_phi_cutoff</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">initialConditions_rval</span>
+<span class="c1"># initialConditions_rval = namedtuple(&quot;initialConditions_rval&quot;, &quot;r0 phi dphi&quot;)</span>
+</code></pre></div>
+<h4 id="purpose_7">Purpose<a class="headerlink" href="#purpose_7" title="Permanent link">&para;</a></h4>
+<p>Choose <strong>where</strong> to start integrating the full ODE (away from the (r=0) singularity) and with <strong>which values</strong> <span class="arithmatex">\(((\phi,\phi'))\)</span>,
+using the local quadratic solution as a high-accuracy guide. 
+The goal is to start just outside the bubble center yet already sufficiently displaced from the true minimum to keep the 
+overshoot/undershoot search efficient and stable.</p>
+<h4 id="inputs-meaning">Inputs &amp; meaning<a class="headerlink" href="#inputs-meaning" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>delta_phi0</code>: desired central offset <span class="arithmatex">\(( \phi(0)-\phi_{\rm absMin} )\)</span>. In thin-wall cases this can be <em>very</em> small.</li>
+<li><code>rmin</code>: the <strong>smallest</strong> radius allowed for starting the global integration (relative to <code>rscale</code> in higher-level code).</li>
+<li><code>delta_phi_cutoff</code>: the target magnitude of the field offset at the starting radius <span class="arithmatex">\((r_0)\)</span>:
+  <span class="arithmatex">\((|\phi(r_0)-\phi_{\rm absMin}| &gt; |\delta\phi_{\rm cutoff}|)\)</span>.</li>
+</ul>
+<h4 id="strategy-what-the-code-does">Strategy (what the code does)<a class="headerlink" href="#strategy-what-the-code-does" title="Permanent link">&para;</a></h4>
+<ol>
+<li>Construct <span class="arithmatex">\((\phi_0 = \phi_{\rm absMin} + \delta\phi_0)\)</span> and compute <span class="arithmatex">\((dV=V'(\phi_0))\)</span>, <span class="arithmatex">\((d2V=V''(\phi_0))\)</span>.</li>
+<li>
+<p>Use <code>exactSolution</code> at <code>rmin</code>.</p>
+</li>
+<li>
+<p>If <span class="arithmatex">\((|\phi(r_{\min})-\phi_{\rm absMin}| &gt; |\delta\phi_{\rm cutoff}|)\)</span>, <strong>start there</strong>.</p>
+</li>
+<li>If the field is moving the <strong>wrong way</strong> (sign of <span class="arithmatex">\((\phi'(r_{\min}))\)</span> opposite to <span class="arithmatex">\((\delta\phi_0))\)</span>, <strong>start there</strong> as well; increasing (r) won’t fix the direction.</li>
+<li>Otherwise, <strong>geometrically increase</strong> (r) (×10 each step) and re-evaluate with <code>exactSolution</code> until the cutoff is exceeded (this brackets the crossing).</li>
+<li>Solve for the exact <span class="arithmatex">\((r_0)\)</span> by a 1D root find on
+   <span class="arithmatex">\((f(r)=|\phi(r)-\phi_{\rm absMin}|-|\delta\phi_{\rm cutoff}|)\)</span>.</li>
+<li>Return <span class="arithmatex">\(((r_0,\phi(r_0),\phi'(r_0)))\)</span> as a named tuple.</li>
+</ol>
+<p>If the geometric search fails to bracket the crossing (pathological potential/settings), a clear <code>IntegrationError</code> is raised.</p>
+<h4 id="returns_1">Returns<a class="headerlink" href="#returns_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>initialConditions_rval(r0, phi, dphi)</code>: starting radius and values to feed the global integrator.</li>
+</ul>
+<h4 id="notes-guidance">Notes &amp; guidance<a class="headerlink" href="#notes-guidance" title="Permanent link">&para;</a></h4>
+<ul>
+<li>This method is agnostic to the global wall shape; it only relies on the <strong>local</strong> quadratic model, which is accurate near the true minimum where <span class="arithmatex">\((r_0)\)</span> lives in thin-wall cases.</li>
+<li>Choosing a too large <code>delta_phi_cutoff</code> may degrade accuracy (starting too far from the regime where the quadratic model is excellent). Too small can slow down the shoot or underflow numerics. The default policy used upstream balances these effects.</li>
+<li>The named-tuple interface is intentional—downstream code can unpack by name or position.</li>
+</ul>
+<hr />
+<h3 id="common-assumptions-for-both-functions">Common assumptions (for both functions)<a class="headerlink" href="#common-assumptions-for-both-functions" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Spherical symmetry</strong> and <strong>regularity at the origin</strong> <span class="arithmatex">\(((\phi'(0)=0))\)</span>.</li>
+<li>The <strong>principal</strong> branches for <span class="arithmatex">\((\sqrt{\cdot})\)</span> and Bessel functions are used.</li>
+<li><span class="arithmatex">\((\alpha\ge 0)\)</span> (physical cases); nonetheless, the formulas are coded generically.</li>
+<li>All inputs are finite; non-finite inputs raise a value error upfront.</li>
+</ul>
+<hr />
+<h3 id="numerical-stability-accuracy">Numerical stability &amp; accuracy<a class="headerlink" href="#numerical-stability-accuracy" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Small-argument regime</strong>: the (t)-series keeps terms through <span class="arithmatex">\((t^6)\)</span>, which is more than enough for <span class="arithmatex">\((t\lesssim 10^{-2})\)</span> in double precision.</li>
+<li><strong>Flat curvature</strong>: handled by an <strong>exact polynomial</strong>; no Bessel calls or divisions-by-(r).</li>
+<li><strong>Overflow/underflow</strong>: benign warnings inside SciPy’s Bessel routines are silenced locally, and the combinations used are finite by construction.</li>
+<li><strong>Deterministic regularity</strong>: at <code>r==0</code>, <code>exactSolution</code> returns <code>(phi0, 0.0)</code> exactly.</li>
+</ul>
+<hr />
+<h3 id="quick-reference-symbols">Quick reference (symbols)<a class="headerlink" href="#quick-reference-symbols" title="Permanent link">&para;</a></h3>
+<ul>
+<li><span class="arithmatex">\((\alpha)\)</span>: friction power in the radial Laplacian; equals spacetime dimension minus 1.</li>
+<li><span class="arithmatex">\((\nu=(\alpha-1)/2)\)</span>: Bessel index.</li>
+<li><span class="arithmatex">\((dV=V'(\phi_0))\)</span>, <span class="arithmatex">\((d2V=V''(\phi_0))\)</span>: local slope &amp; curvature of the potential.</li>
+<li><span class="arithmatex">\((\beta=\sqrt{|d2V|})\)</span>, <span class="arithmatex">\((t=\beta r)\)</span>: scale and argument for Bessel functions.</li>
+<li><span class="arithmatex">\((\phi_{\rm absMin})\)</span>, <span class="arithmatex">\((\phi_{\rm metaMin})\)</span>: true and false vacuum field values (set in the class constructor).</li>
+<li><code>delta_phi0</code>, <code>delta_phi_cutoff</code>: user-level displacements used to place the start of the integration.</li>
+</ul>
+<hr />
+<h2 id="lot-sf-4-ode-core-equation-adaptive-driver-sampler">Lot SF-4 — ODE core (equation, adaptive driver, sampler)<a class="headerlink" href="#lot-sf-4-ode-core-equation-adaptive-driver-sampler" title="Permanent link">&para;</a></h2>
+<p>This lot contains the numerical engine that integrates the bounce equation once the potential interface and scales are known. It provides:</p>
+<ul>
+<li>the <strong>equation of motion</strong> in first-order form;</li>
+<li>an <strong>adaptive step driver</strong> that marches the solution and classifies the outcome as <em>overshoot</em>, <em>undershoot</em>, or <em>converged</em>;</li>
+<li>a <strong>sampler</strong> that fills a user-chosen radial grid with a smooth profile using cubic Hermite interpolation between accepted RK steps;</li>
+<li>a small <strong>tolerance normalizer</strong> to make error controls explicit and robust.</li>
+</ul>
+<p>Throughout, we solve the radial Euclidean EOM for a single field,</p>
+<div class="arithmatex">\[\frac{d^2\phi}{dr^2}+\frac{\alpha}{r}\frac{d\phi}{dr}= \frac{dV}{d\phi}(\phi)\]</div>
+<p>where <span class="arithmatex">\((\alpha)\)</span> is the “friction” coefficient (commonly <span class="arithmatex">\((\alpha=2)\)</span> for (O(3)) finite-temperature bounces and <span class="arithmatex">\((\alpha=3)\)</span> for <span class="arithmatex">\((O(4))\)</span> zero-temperature bounces). 
+The <span class="arithmatex">\((\alpha/r)\)</span> term comes from the radial Laplacian in <span class="arithmatex">\(((\alpha+1))\)</span> dimensions.</p>
+<hr />
+<h3 id="_normalize_tolerances-internal-helper"><code>_normalize_tolerances</code> (internal helper)<a class="headerlink" href="#_normalize_tolerances-internal-helper" title="Permanent link">&para;</a></h3>
+<p><strong>Signature</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
+<span class="n">_normalize_tolerances</span><span class="p">(</span><span class="n">epsfrac</span><span class="p">,</span> <span class="n">epsabs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+</code></pre></div>
+<p><strong>Purpose</strong></p>
+<p>Accepts <em>either</em> scalars <em>or</em> 2-component arrays for the relative/absolute tolerances and returns:</p>
+<ol>
+<li><code>ef_scalar</code> – a single relative tolerance passed to the RK stepper (strictest across components);</li>
+<li><code>ea_scalar</code> – a single absolute tolerance for the RK stepper (strictest across components);</li>
+<li><code>eps_phi</code>   – absolute threshold (3× <code>epsabs</code> for <span class="arithmatex">\((\phi)\)</span>) used by our <em>event/convergence</em> tests;</li>
+<li><code>eps_dphi</code>  – absolute threshold (3× <code>epsabs</code> for <span class="arithmatex">\((d\phi)\)</span>) used likewise.</li>
+</ol>
+<p>This keeps the step controller simple (scalar tolerances) while still giving per-component, physically meaningful stopping criteria.</p>
+<p><strong>Notes</strong></p>
+<ul>
+<li>If <code>epsabs</code> is scalar, both <span class="arithmatex">\((\phi)\)</span> and <span class="arithmatex">\((d\phi)\)</span> use the same <span class="arithmatex">\((3\times)\)</span> threshold; with a 2-vector, they may differ.</li>
+<li>The factor <strong>3</strong> in <code>eps_phi</code>, <code>eps_dphi</code> mirrors the legacy “within ~3× absolute tol ⇒ good enough” convention used elsewhere in this module.</li>
+</ul>
+<hr />
+<h3 id="equationofmotion"><code>equationOfMotion</code><a class="headerlink" href="#equationofmotion" title="Permanent link">&para;</a></h3>
+<p><strong>Signature</strong></p>
+<div class="highlight"><pre><span></span><code><span class="n">equationOfMotion</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">r</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+<p><strong>Purpose</strong></p>
+<p>Right-hand side of the first-order system for <span class="arithmatex">\((y=[\phi, \dot\phi])\)</span> <span class="arithmatex">\((dot ≡ (d/dr))\)</span>:</p>
+<div class="arithmatex">\[\dot{\phi} = y_1\qquad \dot{y}_1 = \frac{dV}{d\phi}(\phi) - \frac{\alpha}{r} y_1\]</div>
+<p><strong>Implementation details</strong></p>
+<ul>
+<li>To guard against accidental calls at (r=0) (which should not happen in production—integrations always start at (r&gt;0)), we replace (r) by a tiny positive <code>r_eff</code> if needed so the friction term stays finite.</li>
+<li>Uses the user-provided/derived <code>self.dV(phi)</code>.</li>
+</ul>
+<p><strong>Physics notes</strong></p>
+<p>The <span class="arithmatex">\(( \alpha/r )\)</span> “friction” originates from the radial Laplacian in <span class="arithmatex">\(((\alpha+1))\)</span> Euclidean dimensions.
+Regular bounce solutions satisfy <span class="arithmatex">\(( d\phi/dr = \mathcal{O}(r) )\)</span> as <span class="arithmatex">\(( r\to 0 )\)</span>, so the product <span class="arithmatex">\(( (\alpha/r)d\phi )\)</span> remains finite.</p>
+<hr />
+<h3 id="integrateprofile"><code>integrateProfile</code><a class="headerlink" href="#integrateprofile" title="Permanent link">&para;</a></h3>
+<p><strong>Signature</strong></p>
+<div class="highlight"><pre><span></span><code><span class="n">integrateProfile</span><span class="p">(</span>
+    <span class="n">r0</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">y0</span><span class="p">:</span> <span class="n">array_like</span><span class="p">,</span>      <span class="c1"># [phi(r0), dphi(r0)]</span>
+    <span class="n">dr0</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">epsfrac</span><span class="p">,</span> <span class="n">epsabs</span><span class="p">,</span>     <span class="c1"># scalar or 2-vector tolerances</span>
+    <span class="n">drmin</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">rmax</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">eqn_args</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;integrateProfile_rval&quot;</span><span class="p">,</span> <span class="s2">&quot;r y convergence_type&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>What it does</strong></p>
+<p>Advances the ODE solution from <span class="arithmatex">\(((r_0,y_0))\)</span> using an <strong>adaptive Cash–Karp RK5(4)</strong> stepper (<code>rkqs</code>) until one of three conditions is met:</p>
+<ol>
+<li><strong>converged</strong> – both <span class="arithmatex">\((|\phi-\phi_{\rm metaMin}|&lt;\epsilon_{\phi})\)</span> and <span class="arithmatex">\((|d\phi|&lt;\epsilon_{d\phi})\)</span>;</li>
+<li><strong>overshoot</strong> – within a step the field crosses <span class="arithmatex">\((\phi_{\rm metaMin})\)</span>;</li>
+<li><strong>undershoot</strong> – within a step the field “turns back” (sign of <span class="arithmatex">\((d\phi)\)</span> indicates motion away from the target).</li>
+</ol>
+<p>In (2) and (3), we locate the event <strong>inside the last accepted step</strong> by <strong>cubic Hermite interpolation</strong> (our <code>cubicInterpFunction</code>), and refine with a bracketing root find (<code>scipy.optimize.brentq</code>).
+If bracketing fails (rare, degenerate slope), we fall back to the point minimizing the relevant magnitude (either <span class="arithmatex">\((|\phi-\phi_{\rm metaMin}|)\)</span> or <span class="arithmatex">\((|d\phi|))\)</span> on a small uniform subgrid of the step.</p>
+<p><strong>Inputs &amp; error control</strong></p>
+<ul>
+<li>
+<p><code>epsfrac</code>, <code>epsabs</code> can be scalars or 2-vectors. They are normalized via <code>_normalize_tolerances</code>:</p>
+</li>
+<li>
+<p><code>ef_scalar</code>, <code>ea_scalar</code> go to <code>rkqs</code>;</p>
+</li>
+<li><code>eps_phi</code>, <code>eps_dphi</code> define the <em>event/convergence</em> thresholds.</li>
+<li><code>drmin</code> prevents step underflow; if an accepted step requests <code>dr&lt;drmin</code>, we abort with a clear <code>IntegrationError</code>.</li>
+<li><code>rmax</code> limits the total travelled distance; we abort if <span class="arithmatex">\((r &gt; r_0 + r_{\max})\)</span>.</li>
+</ul>
+<p><strong>Direction logic (overshoot vs. undershoot)</strong></p>
+<p>We define a sign <code>ysign</code> that encodes “where the target is” relative to the current motion:</p>
+<ul>
+<li>If we start noticeably away from the target, <code>ysign = sign(phi - phi_metaMin)</code>.</li>
+<li>If we start essentially on target, we use <code>ysign = -sign(dphi)</code> so that moving <em>away</em> is treated as an undershoot and a crossing back is an overshoot.</li>
+</ul>
+<p>Given <code>ysign</code>, we classify a step by looking at:</p>
+<ul>
+<li><strong>undershoot</strong> if <code>dphi * ysign &gt; +eps_dphi</code> (slope keeps pushing further from target);</li>
+<li><strong>overshoot</strong> if <code>(phi - phi_metaMin) * ysign &lt; -eps_phi</code> (crossing the target).</li>
+</ul>
+<p><strong>Return value</strong></p>
+<p>A named tuple with:</p>
+<ul>
+<li><code>r</code> – the final radius (event location or the last time where convergence was satisfied),</li>
+<li><code>y</code> – the final state <span class="arithmatex">\(([\phi, d\phi])\)</span> at that radius,</li>
+<li><code>convergence_type</code> – one of <code>"converged"</code>, <code>"overshoot"</code>, <code>"undershoot"</code>.</li>
+</ul>
+<p><strong>Why cubic Hermite interpolation?</strong></p>
+<p>We know <span class="arithmatex">\((y_0, dy/dr\cdot {r_0})\)</span> and <span class="arithmatex">\((y_1, dy/dr\cdot {r_1})\)</span> for both ends of a step. 
+The cubic Hermite (a.k.a. piecewise cubic with end slopes) reconstructs a smooth in-step curve that respects both values and slopes, 
+giving accurate, monotone-friendly event localization without taking extra ODE mini-steps.</p>
+<p><strong>Typical usage</strong></p>
+<p><code>findProfile</code> uses this method in a bisection-like loop over the shooting parameter, reading only the outcome (“over/under/converged”) and the precise event radius. 
+After the best initial condition is found, it calls <code>integrateAndSaveProfile</code> to produce a full, nicely sampled wall profile.</p>
+<hr />
+<h3 id="integrateandsaveprofile"><code>integrateAndSaveProfile</code><a class="headerlink" href="#integrateandsaveprofile" title="Permanent link">&para;</a></h3>
+<p><strong>Signature</strong></p>
+<div class="highlight"><pre><span></span><code><span class="n">integrateAndSaveProfile</span><span class="p">(</span>
+    <span class="n">R</span><span class="p">:</span> <span class="n">array_like</span><span class="p">,</span>       <span class="c1"># monotonically increasing radii</span>
+    <span class="n">y0</span><span class="p">:</span> <span class="n">array_like</span><span class="p">,</span>      <span class="c1"># [phi(R[0]), dphi(R[0])]</span>
+    <span class="n">dr</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">epsfrac</span><span class="p">,</span> <span class="n">epsabs</span><span class="p">,</span>     <span class="c1"># scalar or 2-vector tolerances</span>
+    <span class="n">drmin</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="o">*</span><span class="n">eqn_args</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;Profile1D&quot;</span><span class="p">,</span> <span class="s2">&quot;R Phi dPhi Rerr&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Purpose</strong></p>
+<p>Integrate the ODE once more <strong>and fill a user-specified radial grid</strong> (R) with <span class="arithmatex">\((\phi(R_i))\)</span> and <span class="arithmatex">\((d\phi/dR(R_i))\)</span>. 
+This is the second (“sampling”) pass typically used <em>after</em> the shooting has determined the correct initial condition and outer radius.</p>
+<p><strong>How it works</strong></p>
+<ul>
+<li>Uses the same adaptive RK driver as <code>integrateProfile</code>.</li>
+<li>Between accepted RK step endpoints <span class="arithmatex">\(((r_0,y_0))\)</span> and <span class="arithmatex">\(((r_1,y_1))\)</span>, it evaluates the <strong>same cubic Hermite interpolant</strong> and writes samples for all <code>R[i] ∈ (r0, r1]</code>.</li>
+<li>If a proposed accepted step would have <code>dr &lt; drmin</code>, it <strong>clamps</strong> to <code>drmin</code>, records <code>Rerr</code> on first occurrence (the radius where step clamping first became necessary), and continues so the output arrays are always fully populated.</li>
+</ul>
+<p><strong>Outputs</strong></p>
+<ul>
+<li><code>R</code> – the input grid, echoed back;</li>
+<li><code>Phi</code> – values <span class="arithmatex">\((\phi(R_i))\)</span>;</li>
+<li><code>dPhi</code> – values <span class="arithmatex">\((d\phi/dR(R_i))\)</span>;</li>
+<li><code>Rerr</code> – <code>None</code> if every accepted step satisfied <code>dr ≥ drmin</code>; otherwise the <strong>first</strong> radius where clamping was applied.</li>
+</ul>
+<p><strong>Notes</strong></p>
+<ul>
+<li>This routine does <strong>not</strong> attempt to classify events (over/under/converged). That logic belongs in <code>integrateProfile</code>. Here the goal is to <em>sample</em> a known good solution.</li>
+</ul>
+<hr />
+<h3 id="practical-guidance">Practical guidance<a class="headerlink" href="#practical-guidance" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p><strong>Tolerances.</strong> A good starting point mirrors the legacy defaults used in the higher-level driver:</p>
+</li>
+<li>
+<p><code>epsfrac = [phitol, phitol]</code>,</p>
+</li>
+<li><code>epsabs = [|Δφ|·phitol, |Δφ|/rscale · phitol]</code>,
+    with <code>phitol ~ 1e-4</code> and <code>Δφ = φ_metaMin − φ_absMin</code>. You can also pass scalars.</li>
+<li><strong>Initial step.</strong> Set <code>dr0 ~ rmin</code> (the same “small” radius where we start, coming from Lot SF-2’s <code>rscale</code>).</li>
+<li><strong>Limits.</strong> Choose <code>rmax</code> comfortably above the expected wall thickness (often <code>~O(10)·rscale)</code>); choose <code>drmin</code> at least a few orders of magnitude below the smallest features you want to resolve.</li>
+<li><strong>Performance.</strong> The cubic Hermite interpolation avoids tiny corrective micro-steps for event localization, which keeps the driver fast while maintaining smooth, physically sensible crossings.</li>
+</ul>
+<hr />
+<h3 id="failure-modes-and-messages">Failure modes and messages<a class="headerlink" href="#failure-modes-and-messages" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>IntegrationError("... exceeded rmax ...")</code> – the profile did not settle/cross within the allowed domain; revisit <code>rmax</code> or the shooting parameter.</li>
+<li><code>IntegrationError("... step underflow ...")</code> – the stepper kept asking for <code>dr &lt; drmin</code> to meet tolerances; loosen tolerances or increase <code>drmin</code> cautiously.</li>
+<li>Value errors guard obvious API misuse (non-finite <code>y0</code>, wrong shapes, non-monotonic <code>R</code>, etc.).</li>
+</ul>
+<hr />
+<h3 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h3>
+<p>Lot SF-4 equips the <code>SingleFieldInstanton</code> class with a clean, robust integrator:</p>
+<ul>
+<li>a <strong>physically faithful ODE</strong> (with friction and a safe <span class="arithmatex">\((r\to 0)\)</span> guard),</li>
+<li>an <strong>adaptive, tolerance-driven stepper</strong> with explicit convergence semantics (over/under/converged),</li>
+<li>and a <strong>high-quality sampler</strong> that turns accepted steps into smooth profiles on any grid.</li>
+</ul>
+<p>These pieces are deliberately modular: subclasses (e.g., constant friction walls) reuse the same machinery by passing extra arguments to <code>equationOfMotion</code> via <code>*eqn_args</code>, while keeping the numerics identical.</p>
+<hr />
+<h2 id="lot-sf-5-profile-search-overshootundershoot">Lot SF-5 — Profile search (overshoot/undershoot)<a class="headerlink" href="#lot-sf-5-profile-search-overshootundershoot" title="Permanent link">&para;</a></h2>
+<p><strong>Goal.</strong> Find the full bounce profile <span class="arithmatex">\(( \phi(r) )\)</span> by <em>shooting</em> on the unknown center value <span class="arithmatex">\(( \phi(0) )\)</span>. 
+We adjust a scalar parameter (x) so that the outward integration converges onto the false (metastable) vacuum as <span class="arithmatex">\(( r\to\infty )\)</span>. 
+The search uses classic <strong>overshoot/undershoot</strong> bracketing and a final dense sampling pass.</p>
+<hr />
+<h3 id="singlefieldinstantonfindprofile"><code>SingleFieldInstanton.findProfile(...)</code><a class="headerlink" href="#singlefieldinstantonfindprofile" title="Permanent link">&para;</a></h3>
+<p><strong>Signature (unchanged).</strong></p>
+<div class="highlight"><pre><span></span><code><span class="n">findProfile</span><span class="p">(</span>
+    <span class="n">xguess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">xtol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">phitol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span>
+    <span class="n">thinCutoff</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">npoints</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">rmin</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">rmax</span><span class="o">=</span><span class="mf">1e4</span><span class="p">,</span>
+    <span class="n">max_interior_pts</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Profile1D</span>  <span class="c1"># (R, Phi, dPhi, Rerr)</span>
+</code></pre></div>
+<h4 id="what-problem-this-solves">What problem this solves<a class="headerlink" href="#what-problem-this-solves" title="Permanent link">&para;</a></h4>
+<p>We need the solution of</p>
+<div class="arithmatex">\[\phi''(r) + \frac{\alpha}{r}\phi'(r) = V'(\phi)\]</div>
+<p>that starts at the true minimum <span class="arithmatex">\(((\phi\approx\phi_{\rm absMin}))\)</span> near (r=0) and asymptotes to the false minimum <span class="arithmatex">\(((\phi\to\phi_{\rm metaMin}))\)</span> for large (r). 
+The correct central value <span class="arithmatex">\((\phi(0))\)</span> is <em>not</em> known a priori; we determine it by shoot-and-correct.</p>
+<h4 id="the-shooting-parameter-x">The shooting parameter (x)<a class="headerlink" href="#the-shooting-parameter-x" title="Permanent link">&para;</a></h4>
+<p>Instead of varying <span class="arithmatex">\((\phi(0))\)</span> directly, we vary</p>
+<p><span class="arithmatex">\(<span class="arithmatex">\(\boxed{\phi(0) \equiv \phi_{\rm absMin}+ e^{-x}\big(\phi_{\rm metaMin}-\phi_{\rm absMin}\big)}\)</span>\)</span>
+  so that:</p>
+<ul>
+<li><strong>Small</strong> (x) → <span class="arithmatex">\((\phi(0))\)</span> close to the <em>false</em> minimum (high potential energy) → dynamics tend to <strong>overshoot</strong> across <span class="arithmatex">\((\phi_{\rm metaMin})\)</span>.</li>
+<li><strong>Large</strong> (x) → <span class="arithmatex">\((\phi(0))\)</span> close to the <em>true</em> minimum (low energy) → dynamics turn around before reaching <span class="arithmatex">\((\phi_{\rm metaMin})\)</span> (<strong>undershoot</strong>).</li>
+</ul>
+<p>If <code>xguess</code> is not provided, we choose a sensible default by placing <span class="arithmatex">\((\phi(0))\)</span> near the barrier “edge” <span class="arithmatex">\((\phi_{\rm bar})\)</span>, i.e.</p>
+<div class="arithmatex">\[x_{\rm init} \approx -\ln\left(
+\frac{\phi_{\rm bar}-\phi_{\rm absMin}}{\phi_{\rm metaMin}-\phi_{\rm absMin}}
+\right).\]</div>
+<h4 id="radii-and-tolerances-numerics">Radii and tolerances (numerics)<a class="headerlink" href="#radii-and-tolerances-numerics" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p>We scale all radii with the characteristic <code>rscale</code> (Lot SF-2).</p>
+</li>
+<li>
+<p><code>rmin * rscale</code>: the <strong>starting radius</strong> guess and initial stepsize.</p>
+</li>
+<li><code>drmin = 0.01 * rmin * rscale</code>: <strong>minimum</strong> allowed stepsize for the RK driver.</li>
+<li><code>rmax * rscale</code>: <strong>maximum</strong> travel distance from the start.</li>
+<li>
+<p>Error controls for the adaptive RK driver (Lot SF-4):</p>
+</li>
+<li>
+<p><code>phitol</code> sets both <strong>relative</strong> (<code>epsfrac=[phitol, phitol]</code>) and <strong>absolute</strong> tolerances</p>
+</li>
+</ul>
+<p><span class="arithmatex">\(<span class="arithmatex">\(epsabs = \big[\texttt{phitol}\cdot |\Delta\phi|, \texttt{phitol}\cdot |\Delta\phi|/\texttt{rscale}\big]\)</span>\)</span>
+    for <span class="arithmatex">\(([\phi,\phi'])\)</span>.
+  * The driver uses a strict scalar for per-step control and per-component thresholds for event detection and convergence.</p>
+<h4 id="step-by-step-algorithm">Step-by-step algorithm<a class="headerlink" href="#step-by-step-algorithm" title="Permanent link">&para;</a></h4>
+<ol>
+<li>
+<p><strong>Map <span class="arithmatex">\((x\to\Delta\phi_0)\)</span>.</strong>
+   <span class="arithmatex">\((\Delta\phi_0 = e^{-x}(\phi_{\rm metaMin}-\phi_{\rm absMin}))\)</span>.</p>
+</li>
+<li>
+<p><strong>Practical initial surface at <span class="arithmatex">\((r_0&gt;0)\)</span>.</strong>
+   Call <code>initialConditions(Δφ0, rmin*rscale, thinCutoff*|Δφ|)</code>.
+   This uses the local quadratic solution (Lot SF-3) to pick <span class="arithmatex">\((r_0)\)</span> such that
+   <span class="arithmatex">\((|\phi(r_0)-\phi_{\rm absMin}| \approx \texttt{thinCutoff}\cdot|\Delta\phi|)\)</span>
+   and returns$ ((r_0,\phi(r_0),\phi'(r_0)))$.
+   <em>Intuition:</em> for thin walls, start integration near the wall (not at the exact center), which stabilizes shooting.</p>
+</li>
+<li>
+<p><strong>Trial integration and event classification.</strong>
+   Run <code>integrateProfile(r0, y0, ...)</code> (Lot SF-4). Three outcomes:</p>
+</li>
+<li>
+<p><code>"converged"</code>: <span class="arithmatex">\(( |\phi-\phi_{\rm metaMin}| )\)</span> and <span class="arithmatex">\(( |\phi'| )\)</span> are within tolerance.</p>
+</li>
+<li><code>"overshoot"</code>: within the last step, <span class="arithmatex">\((\phi)\)</span> <strong>crossed</strong> <span class="arithmatex">\((\phi_{\rm metaMin})\)</span>;
+     we locate the crossing by <strong>cubic Hermite</strong> interpolation (with consistent slopes).</li>
+<li>
+<p><code>"undershoot"</code>: the field <strong>turns around</strong> before reaching <span class="arithmatex">\((\phi_{\rm metaMin})\)</span>
+     (detected via <span class="arithmatex">\((\phi'=0 )\)</span>), again located by cubic interpolation.</p>
+</li>
+<li>
+<p><strong>Bracket in (x) and bisect.</strong>
+   Maintain <span class="arithmatex">\(([x_{\min}, x_{\max}])\)</span> such that:</p>
+</li>
+<li>
+<p>undershoot ⇒ <span class="arithmatex">\((x_{\min} \leftarrow x)\)</span> (we were too close to the true minimum);</p>
+</li>
+<li>
+<p>overshoot ⇒ (<span class="arithmatex">\(x_{\max} \leftarrow x)\)</span> (we were too close to the false minimum).
+     If no upper bound yet, expand geometrically (<code>xincrease ≈ 5</code>).
+     Once bracketing exists, <strong>bisect</strong> until <span class="arithmatex">\((x_{\max}-x_{\min}&lt;\texttt{xtol})\)</span> or we get <code>"converged"</code>.</p>
+</li>
+<li>
+<p><strong>Final dense pass (returned profile).</strong>
+   With the last valid <span class="arithmatex">\(((r_0,y_0))\)</span> and end radius <span class="arithmatex">\((r_f)\)</span>, build a uniform array
+   <code>R = linspace(r0, rf, npoints)</code> and call
+   <code>integrateAndSaveProfile(R, y0, ...)</code>.
+   This integrates adaptively <strong>and</strong> fills every <code>R[i]</code> by cubic Hermite interpolation between accepted RK steps. The return object is:</p>
+</li>
+<li>
+<p><code>R</code>: radii,</p>
+</li>
+<li><code>Phi</code>: (\phi(R)),</li>
+<li><code>dPhi</code>: (\phi'(R)),</li>
+<li>
+<p><code>Rerr</code>: first radius where the step would have fallen below <code>drmin</code> (if it happened), else <code>None</code>.</p>
+</li>
+<li>
+<p><strong>(Optional) Interior points <span class="arithmatex">\((0 \le r &lt; r_0)\)</span>.</strong>
+   If <code>max_interior_pts</code> is not zero, we synthesize points in the <strong>bubble interior</strong> using the analytic <em>local</em> solution (<code>exactSolution</code>) derived in Lot SF-3. We place up to <code>max_interior_pts</code> points on a non-uniform grid that lands exactly on (r=0) and <span class="arithmatex">\((r=r_0)\)</span>, then concatenate interior and integrated segments.</p>
+</li>
+<li>
+<p>If <code>max_interior_pts=None</code>, we default to <code>npoints//2</code>.</p>
+</li>
+<li>Set it to <code>0</code> to skip interior fill.</li>
+</ol>
+<h4 id="convergence-failure-modes-and-what-to-tweak">Convergence / failure modes (and what to tweak)<a class="headerlink" href="#convergence-failure-modes-and-what-to-tweak" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Iteration cap reached</strong> while bracketing in (x): increase <code>rmax</code>, relax <code>phitol</code>, or widen <code>thinCutoff</code> so the initial surface is farther from the center (easier shooting).</li>
+<li><strong>Step underflow</strong> (<code>dr &lt; drmin</code>) in the driver: increase <code>rmin</code> (hence <code>drmin</code>) or relax <code>phitol</code>.</li>
+<li><strong>Both trials on the same side</strong> (can't bracket): try a smaller/larger <code>xguess</code>, or increase <code>xincrease</code> (implicitly done inside); extreme thin-wall cases often benefit from a larger <code>thinCutoff</code> (e.g. <code>0.05–0.2</code>).</li>
+</ul>
+<h4 id="physical-interpretation_1">Physical interpretation<a class="headerlink" href="#physical-interpretation_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li>In the <strong>thin-wall</strong> limit (almost degenerate minima), the correct (x) is <em>large</em>: <span class="arithmatex">\((\phi(0))\)</span> sits very close to the true vacuum and the wall is narrow. Small changes in (x) produce large changes in outcome—hence the careful bracketing.</li>
+<li>In the <strong>thick-wall</strong> regime, the search is gentler: the field starts farther from the true minimum, and both overshoot/undershoot are easier to bracket.</li>
+</ul>
+<h4 id="output-guarantees">Output guarantees<a class="headerlink" href="#output-guarantees" title="Permanent link">&para;</a></h4>
+<ul>
+<li>The returned profile always corresponds to the <strong>last successful integration</strong> over <span class="arithmatex">\(([r_0,r_f])\)</span>, sampled at <code>npoints</code>. If an interior segment is synthesized, the profile begins at (r=0); otherwise it begins at <span class="arithmatex">\((r=r_0&gt;0)\)</span> (typical for thin walls).</li>
+<li><code>Rerr</code> is purely diagnostic: if not <code>None</code>, it marks the first place where the integrator had to clamp a too-small step to <code>drmin</code>; the profile remains valid.</li>
+</ul>
+<hr />
+<p><strong>In short:</strong> <code>findProfile</code> wraps three building blocks developed in the previous lots—(i) a stable <em>local</em> start (<code>initialConditions</code>), 
+(ii) an event-aware, tolerance-controlled driver (<code>integrateProfile</code>),
+and (iii) a dense sampler (<code>integrateAndSaveProfile</code>)—into a robust overshoot/undershoot search in the single scalar parameter (x).</p>
+<hr />
+<h2 id="lot-sf-6-action-post-processing">Lot SF-6 — Action &amp; post-processing<a class="headerlink" href="#lot-sf-6-action-post-processing" title="Permanent link">&para;</a></h2>
+<p><strong>Goal.</strong> 
+Given a converged bounce profile <span class="arithmatex">\(((R,\Phi(R),\Phi'(R)))\)</span>, compute the <strong>Euclidean action</strong> and provide <strong>diagnostics</strong> 
+and <strong>geometric scales</strong> that are useful for interpretation and downstream phenomenology.
+This lot modernizes the legacy <code>findAction</code> and adds practical post-processing helpers.</p>
+<p><strong>Context &amp; notation</strong></p>
+<ul>
+<li>We work in <span class="arithmatex">\((d=\alpha+1)\)</span> radial dimensions (i.e., <span class="arithmatex">\((\alpha=d-1)\)</span> in the ODE).</li>
+<li>The unit <span class="arithmatex">\((\alpha)\)</span>-sphere area is</li>
+</ul>
+<div class="arithmatex">\[\Omega_\alpha \equiv \frac{2\pi^{(\alpha+1)/2}}{\Gamma!\big((\alpha+1)/2\big)}\]</div>
+<ul>
+<li>A profile is the named tuple returned by <code>findProfile</code>: <code>profile.R</code>, <code>profile.Phi</code>, <code>profile.dPhi</code> (and <code>profile.Rerr</code>).</li>
+<li>We subtract the false-vacuum energy <span class="arithmatex">\((V(\phi_{\rm meta}))\)</span> so the action density is anchored at the metastable vacuum.</li>
+</ul>
+<hr />
+<h3 id="whats-new-vs-the-legacy">What’s new vs. the legacy<a class="headerlink" href="#whats-new-vs-the-legacy" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>New</strong>: <code>actionBreakdown(profile)</code> — splits (S) into kinetic/potential/“interior bulk” pieces and returns per-radius <strong>densities</strong> for plotting and checks.</li>
+<li><strong>New</strong>: <code>wallDiagnostics(profile, frac=(0.1,0.9))</code> — estimates <strong>wall position</strong> and <strong>thickness</strong> directly from the profile (levels in <span class="arithmatex">\((\phi)\)</span> and peak <span class="arithmatex">\((|\Phi'|)\)</span>).</li>
+<li><strong>New</strong>: <code>betaEff(profile, method=...)</code> — <strong>proxies</strong> for an inverse length/time scale <span class="arithmatex">\((\beta_{\rm eff})\)</span> (<code>"rscale"</code>, <code>"curvature"</code>, <code>"wall"</code>).</li>
+<li><strong>Improved</strong>: <code>evenlySpacedPhi(...)</code> — robust <span class="arithmatex">\((\phi)\)</span>-space resampling with monotonicity enforcement and endpoint padding (zero slopes at vacua).</li>
+</ul>
+<hr />
+<h3 id="physics-background-why-these-formulas">Physics background (why these formulas)<a class="headerlink" href="#physics-background-why-these-formulas" title="Permanent link">&para;</a></h3>
+<p>The action (with the false-vacuum constant removed) is</p>
+<div class="arithmatex">\[S = \int_{r_0}^{\infty}\Big[\tfrac12(\partial_r\phi)^2+\big(V(\phi)-V(\phi_{\rm meta})\big)\Big]  r^\alpha dr\Omega_\alpha +\]</div>
+<div class="arithmatex">\[+\underbrace{ \int_{0}^{r_0} \big(V(\phi(r_0)) - V(\phi_{\rm meta})\big),d^dr }_{\text{“interior bulk”}}\]</div>
+<p>because thin-wall integrations start at <span class="arithmatex">\((r=r_0&gt;0)\)</span>. Regularity implies$ (\phi'(r)\sim\mathcal{O}(r))$,
+so the <strong>gradient</strong> contribution from <span class="arithmatex">\(([0,r_0])\)</span> is negligible,
+but the <strong>potential</strong> offset must be accounted for via the (d)-ball volume:</p>
+<div class="arithmatex">\[{\rm Vol}_d(r_0)=\frac{\pi^{d/2}}{\Gamma(d/2+1)}r_0^d\]</div>
+<p>This matches the original legacy semantics while making the computation explicit and numerically stable.</p>
+<hr />
+<h3 id="findactionprofile"><code>findAction(profile)</code><a class="headerlink" href="#findactionprofile" title="Permanent link">&para;</a></h3>
+<p><strong>What it computes.</strong>
+The scalar Euclidean action (S) using</p>
+<div class="arithmatex">\[S_{\rm line}=\int_{r_0}^{\infty}\left[\tfrac12\Phi'(r)^2 + V(\Phi(r))-V(\phi_{\rm meta})\right] r^\alpha dr\Omega_\alpha\]</div>
+<div class="arithmatex">\[\Delta S_{\rm interior}={\rm Vol}*d(r_0)\big[V(\Phi(r_0))-V(\phi*{\rm meta})\big]\]</div>
+<p>and returns <span class="arithmatex">\((S=S_{\rm line}+\Delta S_{\rm interior})\)</span>.</p>
+<p><strong>Inputs.</strong>
+<code>profile</code> (from <code>findProfile</code>): arrays <code>R</code>, <code>Phi</code>, <code>dPhi</code> must be 1D, same length <span class="arithmatex">\((\ge 2)\)</span>.</p>
+<p><strong>Output.</strong>
+A single <code>float</code> — the Euclidean action.</p>
+<p><strong>Why it matters.</strong>
+(S) controls the (zero-temperature) tunneling rate prefactor <span class="arithmatex">\(( \Gamma \propto e^{-S} )\)</span> (up to determinants).
+In thermal problems <span class="arithmatex">\((S_3/T)\)</span> plays the analogous role; 
+our formulation and helpers are designed to interface cleanly with those workflows later.</p>
+<p><strong>Numerical notes.</strong></p>
+<ul>
+<li>Uses Simpson integration on the line contribution with the correct geometric weight <span class="arithmatex">\((r^\alpha\Omega_\alpha)\)</span>.</li>
+<li>Adds the interior potential-only bulk term if <span class="arithmatex">\((r_0&gt;0)\)</span>.</li>
+</ul>
+<hr />
+<h3 id="evenlyspacedphiphi-dphi-npoints100-k1-fixabstrue"><code>evenlySpacedPhi(phi, dphi, npoints=100, k=1, fixAbs=True)</code><a class="headerlink" href="#evenlyspacedphiphi-dphi-npoints100-k1-fixabstrue" title="Permanent link">&para;</a></h3>
+<p><strong>What it does.</strong>
+Resamples <span class="arithmatex">\(((\phi(r), \phi'(r)))\)</span> onto a <strong>uniform grid in <span class="arithmatex">\((\phi)\)</span></strong>,
+returning arrays <span class="arithmatex">\(((\phi_i, \phi'_i))\)</span> with <span class="arithmatex">\((\phi_i)\)</span> equally spaced.</p>
+<p><strong>Why it’s useful.</strong></p>
+<ul>
+<li>Many diagnostics/plots are more readable vs <strong>field value</strong> than vs radius (e.g., comparing kinetic vs potential terms along the wall).</li>
+<li>Makes it easy to overlay different profiles in the same <span class="arithmatex">\((\phi)\)</span>-space.</li>
+</ul>
+<p><strong>Key options.</strong></p>
+<ul>
+<li><code>fixAbs=True</code> pads endpoints to <strong>exactly</strong> <span class="arithmatex">\(((\phi_{\rm abs},\phi_{\rm meta}))\)</span> with zero slopes — physically correct for regular instantons.</li>
+<li>Enforces <strong>monotonic <span class="arithmatex">\((\phi)\)</span></strong> (drops tiny backtracks before spline fitting) to avoid oscillatory spline artifacts.</li>
+<li><code>k=1</code> (linear) is very robust; <code>k=3</code> gives smooth derivatives when the data are clean.</li>
+</ul>
+<p><strong>Output.</strong>
+<code>phi2</code>, <code>dphi2</code> (both 1D arrays with length <code>npoints</code>).</p>
+<hr />
+<h3 id="actionbreakdownprofile-new"><code>actionBreakdown(profile)</code>  — <strong>New</strong><a class="headerlink" href="#actionbreakdownprofile-new" title="Permanent link">&para;</a></h3>
+<p><strong>What it returns.</strong>
+A named tuple with:</p>
+<ul>
+<li><code>S_total</code>: same value as <code>findAction(profile)</code>.</li>
+<li><code>S_kin</code>, <code>S_pot</code>: line integrals of the kinetic and potential pieces <strong>separately</strong>.</li>
+<li><code>S_interior</code>: the interior bulk correction.</li>
+<li>Copies of <code>r</code>, <code>phi</code>, <code>dphi</code>.</li>
+<li>
+<p><code>density</code>: a dict with arrays</p>
+</li>
+<li>
+<p><code>density["kin"]</code> = <span class="arithmatex">\(tfrac12\Phi'^2 r^\alpha \Omega_\alpha\)</span>,</p>
+</li>
+<li><code>density["pot"]</code> = <span class="arithmatex">\((V(\Phi)-V_{\rm meta}) r^\alpha \Omega_\alpha\)</span></li>
+<li><code>density["tot"] = density["kin"] + density["pot"]</code>.</li>
+</ul>
+<p><strong>Why it’s helpful.</strong></p>
+<ul>
+<li>Lets you <strong>plot</strong> where the action is accumulated (e.g., most weight sits in the wall).</li>
+<li>Makes <strong>sanity checks</strong> straightforward (e.g., verify positivity of densities, small contribution far from the wall, etc.).</li>
+</ul>
+<p><strong>Caveat.</strong>
+<code>density["tot"]</code> covers only the <strong>line</strong> part; the interior bulk is a single additive scalar, not a distributed density.</p>
+<hr />
+<h3 id="walldiagnosticsprofile-frac01-09-new"><code>wallDiagnostics(profile, frac=(0.1, 0.9))</code>  — <strong>New</strong><a class="headerlink" href="#walldiagnosticsprofile-frac01-09-new" title="Permanent link">&para;</a></h3>
+<p><strong>Idea.</strong>
+Characterize the <strong>wall geometry</strong> directly from the profile.</p>
+<p><strong>Definitions.</strong></p>
+<ul>
+<li>Let <span class="arithmatex">\((\Delta\phi \equiv \phi_{\rm meta}-\phi_{\rm abs})\)</span>.</li>
+<li>Define field levels</li>
+</ul>
+<div class="arithmatex">\[\phi_{\rm lo}=\phi_{\rm abs}+f_{\rm lo}\Delta\phi\]</div>
+<div class="arithmatex">\[\phi_{\rm hi}= \phi_{\rm abs}+f_{\rm hi}\Delta\phi  \]</div>
+<div class="arithmatex">\[(\phi_{\rm mid}=\tfrac12(\phi_{\rm abs}+\phi_{\rm meta})) \]</div>
+<ul>
+<li>Invert the (monotonic) profile to get radii <span class="arithmatex">\((r(\phi))\)</span>;</li>
+</ul>
+<p><strong>What it returns.</strong></p>
+<ul>
+<li><code>r_peak</code>: radius where <span class="arithmatex">\((|\Phi'|)\)</span> is maximal (often used as “wall center”).</li>
+<li><code>r_mid</code>: radius where <span class="arithmatex">\((\phi=\phi_{\rm mid})\)</span>.</li>
+<li><code>r_lo</code>, <code>r_hi</code>: radii at the chosen fractional field levels.</li>
+<li><code>thickness</code> = <span class="arithmatex">\(|r_{\rm hi} - r_{\rm lo}|\)</span>.</li>
+<li>The field levels <code>phi_lo</code>, <code>phi_hi</code>.</li>
+</ul>
+<p><strong>Why it’s useful.</strong></p>
+<ul>
+<li>Provides a <strong>coordinate-free</strong> estimate of wall thickness and location.</li>
+<li>Enables simple comparisons between thin- and thick-wall regimes.</li>
+</ul>
+<hr />
+<h3 id="betaeffprofile-methodrscale-new"><code>betaEff(profile, method="rscale")</code>  — <strong>New</strong><a class="headerlink" href="#betaeffprofile-methodrscale-new" title="Permanent link">&para;</a></h3>
+<p><strong>Purpose.</strong>
+Return a <strong>proxy</strong> for the inverse timescale/length <span class="arithmatex">\((\beta_{\rm eff})\)</span> often used for order-of-magnitude reasoning. 
+This is <strong>not</strong> the cosmological <span class="arithmatex">\((\beta \equiv -d(S_3/T)/dt)\)</span>; computing that requires a (T)-dependent potential and <span class="arithmatex">\((S_3(T)/T)\)</span>.</p>
+<p><strong>Methods.</strong></p>
+<ul>
+<li><code>"rscale"</code>: <span class="arithmatex">\((\beta_{\rm eff} = 1/\texttt{rscale})\)</span>.
+  Always defined; <code>rscale</code> was obtained in Lot SF-2 from barrier geometry.</li>
+<li><code>"curvature"</code>: <span class="arithmatex">\((\beta_{\rm eff} = \sqrt{|V''(\phi_{\rm top})|})\)</span>.
+  Uses the second derivative at the barrier top; agrees with <span class="arithmatex">\((1/\texttt{rscale})\)</span> up to <span class="arithmatex">\((\mathcal{O}(1))\)</span> in many models.</li>
+<li><code>"wall"</code>: <span class="arithmatex">\((\beta_{\rm eff}=1/\texttt{thickness})\)</span>.
+  Thickness from <code>wallDiagnostics</code>; simple geometric proxy tied to the wall width.</li>
+</ul>
+<p><strong>When to use which.</strong></p>
+<ul>
+<li>If you just need <strong>one number</strong>: <code>"rscale"</code>.</li>
+<li>If the <strong>barrier curvature</strong> is physically meaningful in your model: <code>"curvature"</code>.</li>
+<li>If your analysis hinges on <strong>wall width</strong> (e.g., friction effects): <code>"wall"</code>.</li>
+</ul>
+<hr />
+<h3 id="practical-guidance-pitfalls">Practical guidance &amp; pitfalls<a class="headerlink" href="#practical-guidance-pitfalls" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Profiles starting at <span class="arithmatex">\((r_0&gt;0)\)</span> (thin walls):</strong>
+  Expect a <strong>nonzero interior bulk</strong> potential term. The kinetic part from <span class="arithmatex">\(([0,r_0])\)</span> is suppressed by regularity.</li>
+<li><strong>Units &amp; scaling:</strong>
+  (S) is dimensionless if (r) and (V) are in consistent units (as in the usual bounce conventions). All geometric addends preserve dimensional consistency.</li>
+<li><strong>Monotonicity in (\phi):</strong>
+  Small numerical back-and-forth in (\phi(r)) can spoil interpolation in (\phi)-space. The resampler removes those via a monotonic-indices filter before spline fitting.</li>
+<li><strong>Interpreting densities:</strong>
+  Most of the action density typically <strong>localizes in the wall</strong>; plotting <code>density["kin"]</code> and <code>density["pot"]</code> helps verify this and diagnose integration issues.</li>
+</ul>
+<hr />
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax-config.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

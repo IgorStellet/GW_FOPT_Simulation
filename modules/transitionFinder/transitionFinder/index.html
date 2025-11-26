@@ -1,0 +1,4557 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../../tunneling1D/tests_single_field/">
+      
+      
+        <link rel="next" href="../tests_transitionFinder/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Transition Functions - CosmoTransitions (modernized)</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#transition-finder" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-header__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosmoTransitions (modernized)
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Transition Functions
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-nav__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CosmoTransitions (modernized)
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap & Flowchart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples (Core modules)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples (Core modules)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_tunneling1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling 1D full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_1" id="__nav_5_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helper Functions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Helper Functions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Miscellaneous_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Miscellaneous Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Numerical_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Integration Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Numerical_derivatives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Derivatives Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/interpolation_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interpolation Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Finite Temperature (One loop corrections)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Finite Temperature (One loop corrections)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Exact_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Spline_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spline Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Approx_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Approx Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Short_Hand_Jb%26Jf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Short Hand for All Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling (1D)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tunneling (1D)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tunneling1D/single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Field functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tunneling1D/tests_single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of SF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Transition Finder
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Functions
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#block-a-following-minima-and-building-phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block A — Following minima and building phases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Block A — Following minima and building phases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-physical-overview-of-the-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Physical overview of the module
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-traceminimum-following-a-minimum-as-t-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. traceMinimum: following a minimum as T changes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. traceMinimum: following a minimum as T changes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-the-mathematical-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1. The mathematical problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-signature-and-main-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2. Signature and main inputs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-main-steps-in-the-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3. Main steps in the code
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.3. Main steps in the code">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#231-initial-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3.1. Initial setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#232-auxiliary-function-dxmindt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3.2. Auxiliary function dxmindt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#233-local-minimization-fmin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3.3. Local minimization fmin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#234-scales-and-initial-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3.4. Scales and initial state
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#235-main-loop-in-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3.5. Main loop in T
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-physical-interpretation-of-traceminimum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4. Physical interpretation of traceMinimum
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-phase-encapsulating-a-minimum-as-a-physical-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Phase: encapsulating a minimum as a physical object
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Phase: encapsulating a minimum as a physical object">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-construction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1. Construction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-valat-inspecting-the-phase-at-arbitrary-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2. valAt: inspecting the phase at arbitrary T
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-addlinkfrom-marking-second-order-connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3. addLinkFrom: marking second-order connections
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-tracemultimin-reconstructing-all-phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. traceMultiMin: reconstructing all phases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. traceMultiMin: reconstructing all phases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-key-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1. Key inputs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-high-accuracy-local-minimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2. High-accuracy local minimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-seed-queue-next_points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3. Seed queue (next_points)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-exploration-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4. Exploration loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-tracing-to-lower-and-higher-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5. Tracing to lower and higher T
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-building-a-phase-from-downup-pieces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6. Building a Phase from down/up pieces
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-findapproxlocalmin-hunting-for-intermediate-phases-along-a-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. findApproxLocalMin: hunting for intermediate phases along a line
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. findApproxLocalMin: hunting for intermediate phases along a line">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#physical-idea" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physical idea
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Algorithm
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-_removeredundantphase-and-removeredundantphases-cleaning-the-phase-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. _removeRedundantPhase and removeRedundantPhases: cleaning the phase graph
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. _removeRedundantPhase and removeRedundantPhases: cleaning the phase graph">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-removeredundantphases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1. removeRedundantPhases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6.1. removeRedundantPhases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#611-local-minimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1.1. Local minimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#612-loop-until-no-redundancies-remain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1.2. Loop until no redundancies remain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#613-merging-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1.3. Merging cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-_removeredundantphase-reconnecting-the-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2. _removeRedundantPhase: reconnecting the graph
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-getstartphase-picking-the-high-temperature-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. getStartPhase: picking the high-temperature phase
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. getStartPhase: picking the high-temperature phase">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#physical-interpretation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physical interpretation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#putting-it-all-together-integrated-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Putting it all together: integrated picture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#block-b-tunneling-core-instantons-and-nucleation-temperature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block B – Tunneling core: instantons and nucleation temperature
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Block B – Tunneling core: instantons and nucleation temperature">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-_solve_bounce-unified-backend-for-the-instanton" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. _solve_bounce: unified backend for the instanton
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-_tunnelfromphaseatt-scan-all-possible-transitions-at-a-given-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. _tunnelFromPhaseAtT: scan all possible transitions at a given \(T\)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. _tunnelFromPhaseAtT: scan all possible transitions at a given \(T\)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-input-and-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1. Input and cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-finding-minima-at-fixed-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2. Finding minima at fixed \(T\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-overlapangle-pruning-strongly-aligned-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3. overlapAngle: pruning strongly aligned targets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-solving-bounces-and-choosing-the-smallest-s" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4. Solving bounces and choosing the smallest \(S\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-_potentialdiffforphase-who-is-energetically-preferred" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. _potentialDiffForPhase: who is energetically preferred?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-_maxtcritforphase-maximum-critical-t-for-the-initial-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. _maxTCritForPhase: maximum critical \(T\) for the initial phase
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-tunnelfromphase-high-level-interface-for-t_n-and-the-instanton" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. tunnelFromPhase: high-level interface for \(T_n\) and the instanton
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. tunnelFromPhase: high-level interface for \(T_n\) and the instanton">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-main-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1. Main inputs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-range-in-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2. Range in \(T\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-two-step-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3. Two-step strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4. Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-closing-block-b-integrated-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Closing Block B: integrated view
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#block-c-transition-history-secondordertrans-findalltransitions-findcriticaltemperatures-addcrittempsforfulltransitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block C – Transition history (secondOrderTrans, findAllTransitions, findCriticalTemperatures, addCritTempsForFullTransitions)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Block C – Transition history (secondOrderTrans, findAllTransitions, findCriticalTemperatures, addCritTempsForFullTransitions)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-secondordertrans-encoding-second-order-transitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. secondOrderTrans – encoding second-order transitions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-findalltransitions-building-a-full-thermal-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. findAllTransitions – building a full thermal history
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-findcriticaltemperatures-scanning-for-degeneracies-tcrit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. findCriticalTemperatures – scanning for degeneracies Tcrit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-addcrittempsforfulltransitions-matching-tnuc-with-tcrit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. addCritTempsForFullTransitions – matching Tnuc with Tcrit
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tests_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of TF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generic Potential
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Generic Potential
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generic_potential/generic_potential/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Potential Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#block-a-following-minima-and-building-phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block A — Following minima and building phases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Block A — Following minima and building phases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-physical-overview-of-the-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Physical overview of the module
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-traceminimum-following-a-minimum-as-t-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. traceMinimum: following a minimum as T changes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. traceMinimum: following a minimum as T changes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-the-mathematical-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1. The mathematical problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-signature-and-main-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2. Signature and main inputs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-main-steps-in-the-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3. Main steps in the code
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.3. Main steps in the code">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#231-initial-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3.1. Initial setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#232-auxiliary-function-dxmindt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3.2. Auxiliary function dxmindt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#233-local-minimization-fmin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3.3. Local minimization fmin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#234-scales-and-initial-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3.4. Scales and initial state
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#235-main-loop-in-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3.5. Main loop in T
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-physical-interpretation-of-traceminimum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4. Physical interpretation of traceMinimum
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-phase-encapsulating-a-minimum-as-a-physical-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Phase: encapsulating a minimum as a physical object
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Phase: encapsulating a minimum as a physical object">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-construction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1. Construction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-valat-inspecting-the-phase-at-arbitrary-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2. valAt: inspecting the phase at arbitrary T
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-addlinkfrom-marking-second-order-connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3. addLinkFrom: marking second-order connections
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-tracemultimin-reconstructing-all-phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. traceMultiMin: reconstructing all phases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. traceMultiMin: reconstructing all phases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-key-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1. Key inputs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-high-accuracy-local-minimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2. High-accuracy local minimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-seed-queue-next_points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3. Seed queue (next_points)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-exploration-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4. Exploration loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-tracing-to-lower-and-higher-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5. Tracing to lower and higher T
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#46-building-a-phase-from-downup-pieces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.6. Building a Phase from down/up pieces
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-findapproxlocalmin-hunting-for-intermediate-phases-along-a-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. findApproxLocalMin: hunting for intermediate phases along a line
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. findApproxLocalMin: hunting for intermediate phases along a line">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#physical-idea" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physical idea
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Algorithm
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-_removeredundantphase-and-removeredundantphases-cleaning-the-phase-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. _removeRedundantPhase and removeRedundantPhases: cleaning the phase graph
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. _removeRedundantPhase and removeRedundantPhases: cleaning the phase graph">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-removeredundantphases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1. removeRedundantPhases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6.1. removeRedundantPhases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#611-local-minimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1.1. Local minimization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#612-loop-until-no-redundancies-remain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1.2. Loop until no redundancies remain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#613-merging-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1.3. Merging cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-_removeredundantphase-reconnecting-the-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2. _removeRedundantPhase: reconnecting the graph
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-getstartphase-picking-the-high-temperature-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. getStartPhase: picking the high-temperature phase
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. getStartPhase: picking the high-temperature phase">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#physical-interpretation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Physical interpretation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#putting-it-all-together-integrated-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Putting it all together: integrated picture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#block-b-tunneling-core-instantons-and-nucleation-temperature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block B – Tunneling core: instantons and nucleation temperature
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Block B – Tunneling core: instantons and nucleation temperature">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-_solve_bounce-unified-backend-for-the-instanton" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. _solve_bounce: unified backend for the instanton
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-_tunnelfromphaseatt-scan-all-possible-transitions-at-a-given-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. _tunnelFromPhaseAtT: scan all possible transitions at a given \(T\)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. _tunnelFromPhaseAtT: scan all possible transitions at a given \(T\)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-input-and-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1. Input and cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-finding-minima-at-fixed-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2. Finding minima at fixed \(T\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-overlapangle-pruning-strongly-aligned-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3. overlapAngle: pruning strongly aligned targets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-solving-bounces-and-choosing-the-smallest-s" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4. Solving bounces and choosing the smallest \(S\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-_potentialdiffforphase-who-is-energetically-preferred" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. _potentialDiffForPhase: who is energetically preferred?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-_maxtcritforphase-maximum-critical-t-for-the-initial-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. _maxTCritForPhase: maximum critical \(T\) for the initial phase
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-tunnelfromphase-high-level-interface-for-t_n-and-the-instanton" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. tunnelFromPhase: high-level interface for \(T_n\) and the instanton
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. tunnelFromPhase: high-level interface for \(T_n\) and the instanton">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-main-inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1. Main inputs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-range-in-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2. Range in \(T\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-two-step-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3. Two-step strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4. Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-closing-block-b-integrated-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Closing Block B: integrated view
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#block-c-transition-history-secondordertrans-findalltransitions-findcriticaltemperatures-addcrittempsforfulltransitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block C – Transition history (secondOrderTrans, findAllTransitions, findCriticalTemperatures, addCritTempsForFullTransitions)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Block C – Transition history (secondOrderTrans, findAllTransitions, findCriticalTemperatures, addCritTempsForFullTransitions)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-secondordertrans-encoding-second-order-transitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. secondOrderTrans – encoding second-order transitions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-findalltransitions-building-a-full-thermal-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. findAllTransitions – building a full thermal history
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-findcriticaltemperatures-scanning-for-degeneracies-tcrit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. findCriticalTemperatures – scanning for degeneracies Tcrit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-addcrittempsforfulltransitions-matching-tnuc-with-tcrit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. addCritTempsForFullTransitions – matching Tnuc with Tcrit
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="transition-finder">Transition finder<a class="headerlink" href="#transition-finder" title="Permanent link">&para;</a></h1>
+<h2 id="block-a-following-minima-and-building-phases">Block A — Following minima and building phases<a class="headerlink" href="#block-a-following-minima-and-building-phases" title="Permanent link">&para;</a></h2>
+<p>In this section we focus on the “kinematics” of phases as a function of temperature:</p>
+<ul>
+<li><strong>what the code does numerically</strong> (so you can read it without fear), and</li>
+<li><strong>what it means physically</strong> (as if a sharp physicist were staring at a phase diagram).</li>
+</ul>
+<p>We follow this order:</p>
+<ol>
+<li>Physical overview of the module.</li>
+<li><code>traceMinimum</code>.</li>
+<li><code>Phase</code>.</li>
+<li><code>traceMultiMin</code>.</li>
+<li><code>findApproxLocalMin</code>.</li>
+<li><code>_removeRedundantPhase</code> and <code>removeRedundantPhases</code>.</li>
+<li><code>getStartPhase</code>.</li>
+</ol>
+<hr />
+<h3 id="1-physical-overview-of-the-module">1. Physical overview of the module<a class="headerlink" href="#1-physical-overview-of-the-module" title="Permanent link">&para;</a></h3>
+<p>Context: you have a finite-temperature effective potential <span class="arithmatex">\(V(\phi, T)\)</span> (written as <span class="arithmatex">\(f(x,T)\)</span> in the code), possibly with several field components.</p>
+<ul>
+<li>For each fixed (T) there are <strong>local minima</strong> (phases) — some stable, some metastable.</li>
+<li>
+<p>As (T) changes:</p>
+</li>
+<li>
+<p>those minima move in field space,</p>
+</li>
+<li>some disappear (turn into saddles or spinodals),</li>
+<li>new minima can appear (new phases),</li>
+<li>in some temperature ranges two (or more) phases coexist and phase transitions become possible.</li>
+</ul>
+<p>The <code>transitionFinder</code> module bridges between:</p>
+<ul>
+<li>the <strong>microscopic potential</strong> <span class="arithmatex">\(V(\phi, T)\)</span>, and</li>
+<li>the <strong>macroscopic phase history</strong>: which minima exist at each T, how they connect, and which are involved in 1st/2nd-order transitions.</li>
+</ul>
+<p>The pieces in Block A are:</p>
+<ul>
+<li><code>traceMinimum</code> + <code>Phase</code>: follow <strong>a single minimum</strong> as a function of temperature.</li>
+<li><code>traceMultiMin</code>: reconstruct <strong>all relevant phases</strong> in a given temperature interval and link them.</li>
+<li><code>findApproxLocalMin</code>: detect intermediate minima that may correspond to new phases.</li>
+<li><code>removeRedundantPhases</code>: “deduplicate” multiple copies of the same phase.</li>
+<li><code>getStartPhase</code>: choose the high-temperature phase.</li>
+</ul>
+<p>Physically, this gives you something like a <strong>1D phase diagram in T</strong>, but with the full information about the location of the minimum in <span class="arithmatex">\(\phi\)</span> and how it evolves.</p>
+<hr />
+<h3 id="2-traceminimum-following-a-minimum-as-t-changes">2. <code>traceMinimum</code>: following a minimum as T changes<a class="headerlink" href="#2-traceminimum-following-a-minimum-as-t-changes" title="Permanent link">&para;</a></h3>
+<h4 id="21-the-mathematical-problem">2.1. The mathematical problem<a class="headerlink" href="#21-the-mathematical-problem" title="Permanent link">&para;</a></h4>
+<p>We want to follow a solution <span class="arithmatex">\(x_{\min}(T)\)</span> such that</p>
+<div class="arithmatex">\[
+\frac{\partial f}{\partial x}\bigl(x_{\min}(T), T\bigr) = 0
+\]</div>
+<p>where <span class="arithmatex">\(x \in \mathbb{R}^{N_\text{fields}}\)</span>.</p>
+<p>Differentiating this condition with respect to T:</p>
+<div class="arithmatex">\[
+\frac{d}{dT} \left( \frac{\partial f}{\partial x} \right)
+= \frac{\partial^2 f}{\partial x^2}\frac{dx_{\min}}{dT}+ \frac{\partial}{\partial T}\left(\frac{\partial f}{\partial x}\right)
+  = 0.
+\]</div>
+<p>Define</p>
+<ul>
+<li><span class="arithmatex">\(H = \partial^2 f / \partial x^2\)</span> (the Hessian),</li>
+<li><span class="arithmatex">\(b = \partial/\partial T \left(\partial f/\partial x\right)\)</span>.</li>
+</ul>
+<p>Then we have the implicit equation</p>
+<div class="arithmatex">\[
+H \cdot \frac{dx_{\min}}{dT} = -b.
+\]</div>
+<p>If the minimum is well defined (Hessian invertible and positive definite), we can write</p>
+<div class="arithmatex">\[
+\frac{dx_{\min}}{dT} = -H^{-1} b.
+\]</div>
+<p><code>traceMinimum</code> acts as an ODE integrator in T for this equation, but with <strong>periodic corrections</strong> using numerical minimization, 
+so that it stays glued to the actual minimum of (f).</p>
+<hr />
+<h4 id="22-signature-and-main-inputs">2.2. Signature and main inputs<a class="headerlink" href="#22-signature-and-main-inputs" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>def traceMinimum(
+    f,
+    d2f_dxdt,
+    d2f_dx2,
+    x0,
+    t0,
+    tstop,
+    dtstart,
+    deltaX_target,
+    dtabsMax=20.0,
+    dtfracMax=0.25,
+    dtmin=1e-3,
+    deltaX_tol=1.2,
+    minratio=1e-2,
+) -&gt; TraceMinimumResult:
+</code></pre></div>
+<p>Physical reading:</p>
+<ul>
+<li><code>f(x, T)</code>: the effective potential <span class="arithmatex">\(V(\phi, T)\)</span>.</li>
+<li><code>d2f_dxdt(x, T)</code>: <span class="arithmatex">\(\partial/\partial T (\partial f / \partial x)\)</span>, the right-hand side in the linear system.</li>
+<li><code>d2f_dx2(x, T)</code>: Hessian <span class="arithmatex">\(H = \partial^2 f / \partial x^2\)</span>.</li>
+<li><code>x0</code>, <code>t0</code>: a known minimum at some initial temperature (you must start at a minimum).</li>
+<li><code>tstop</code>: final temperature you want to reach.</li>
+<li><code>dtstart</code>: initial step in T (its sign sets the direction: positive → going to higher (T); negative → to lower (T)).</li>
+<li><code>deltaX_target</code>: target displacement in field space per accepted step (the adaptive step controller tries to keep the actual motion “of this order”).</li>
+</ul>
+<p>The other arguments are safety knobs for the integrator:</p>
+<ul>
+<li><code>dtabsMax</code>, <code>dtfracMax</code>: cap the maximum allowed <span class="arithmatex">\(|\Delta T|\)</span>.</li>
+<li><code>dtmin</code>: if <span class="arithmatex">\(|\Delta T|\)</span> becomes smaller than this, the routine gives up.</li>
+<li><code>deltaX_tol</code>: relative tolerance to decide whether a step is “good”.</li>
+<li><code>minratio</code>: criterion to say “the Hessian is becoming degenerate/negative → we are near a saddle/instability”.</li>
+</ul>
+<hr />
+<h4 id="23-main-steps-in-the-code">2.3. Main steps in the code<a class="headerlink" href="#23-main-steps-in-the-code" title="Permanent link">&para;</a></h4>
+<p>High-level view of the internal logic:</p>
+<h5 id="231-initial-setup">2.3.1. Initial setup<a class="headerlink" href="#231-initial-setup" title="Permanent link">&para;</a></h5>
+<div class="highlight"><pre><span></span><code>x = np.atleast_1d(np.asarray(x0, dtype=float))
+Ndim = x.size
+
+M0 = np.asarray(d2f_dx2(x, t0), dtype=float)
+eig0 = linalg.eigvalsh(M0)
+...
+minratio = float(minratio) * float(
+    np.min(np.abs(eig0)) / np.max(np.abs(eig0))
+)
+</code></pre></div>
+<ul>
+<li>Convert <code>x0</code> into a 1D array: uniform handling of one or many fields.</li>
+<li>Compute the initial Hessian and its eigenvalues.</li>
+<li>If all eigenvalues are zero, the minimum is singular → error.</li>
+<li>
+<p><strong>Rescale <code>minratio</code></strong> according to the local conditioning:</p>
+</li>
+<li>
+<p>if the Hessian is already poorly conditioned, the “almost singular” threshold is relaxed;</p>
+</li>
+<li>if it is very well conditioned, you can afford a stricter ratio before declaring trouble.</li>
+</ul>
+<p>Physical interpretation: this is a quasi-theoretical check that you are really at a <strong>stable minimum</strong> (all eigenvalues positive and not tiny).</p>
+<hr />
+<h5 id="232-auxiliary-function-dxmindt">2.3.2. Auxiliary function <code>dxmindt</code><a class="headerlink" href="#232-auxiliary-function-dxmindt" title="Permanent link">&para;</a></h5>
+<div class="highlight"><pre><span></span><code>def dxmindt(x_now, t_now):
+    M = np.asarray(d2f_dx2(x_now, t_now), dtype=float)
+    if np.abs(linalg.det(M)) &lt; (1e-3 * np.max(np.abs(M))) ** Ndim:
+        return None, False
+    b = -np.asarray(d2f_dxdt(x_now, t_now), dtype=float).reshape(Ndim)
+    eigs = linalg.eigvalsh(M)
+    try:
+        dxdt_local = linalg.solve(M, b, overwrite_a=False, overwrite_b=False)
+        isneg = (eigs &lt;= 0).any() or (
+            np.min(eigs) / np.max(eigs) &lt; minratio
+        )
+    except linalg.LinAlgError:
+        dxdt_local = None
+        isneg = False
+    return dxdt_local, isneg
+</code></pre></div>
+<p>What it does:</p>
+<ol>
+<li>Grab the Hessian <code>M</code> at <code>(x_now, T_now)</code>.</li>
+<li>
+<p>Rough singularity check via determinant:</p>
+</li>
+<li>
+<p>if <code>det(M)</code> is smaller than a threshold → return <code>dxdt=None</code>.</p>
+</li>
+<li>Form <code>b = - d2f_dxdt</code> as the right-hand side.</li>
+<li>Solve <code>M * dxdt_local = b</code> for <code>dx/dT</code>.</li>
+<li>
+<p>Compute eigenvalues <code>eigs</code> and define</p>
+</li>
+<li>
+<p><code>isneg = True</code> if there is any non-positive eigenvalue or if <code>min/max</code> falls below <code>minratio</code>, signaling a nearly flat/negative direction.</p>
+</li>
+</ol>
+<p>Physical meaning:</p>
+<ul>
+<li>When <code>dxdt</code> exists and all eigenvalues are positive and reasonable, you are in a <strong>well-defined phase</strong>, with positive mass squared in every direction.</li>
+<li>
+<p>If any eigenvalue becomes zero or negative:</p>
+</li>
+<li>
+<p>a massless or tachyonic mode appears → you are at the <strong>end of that phase</strong> (spinodal) or at a second-order/continuous transition.</p>
+</li>
+</ul>
+<hr />
+<h5 id="233-local-minimization-fmin">2.3.3. Local minimization <code>fmin</code><a class="headerlink" href="#233-local-minimization-fmin" title="Permanent link">&para;</a></h5>
+<div class="highlight"><pre><span></span><code>xeps = float(deltaX_target) * 1e-2
+
+def fmin(x_guess, t_now):
+    x_guess = np.asarray(x_guess, dtype=float).reshape(Ndim)
+    res = optimize.fmin(
+        f,
+        x_guess,
+        args=(t_now,),
+        xtol=xeps,
+        ftol=np.inf,
+        disp=False,
+    )
+    return np.asarray(res, dtype=float).reshape(Ndim)
+</code></pre></div>
+<ul>
+<li>Given an initial guess <code>x_guess</code> (coming from the ODE integration), this function slides down to the actual local minimum of <code>f</code> at that temperature.</li>
+<li><code>xtol = xeps</code>: position tolerance proportional to <code>deltaX_target</code>.</li>
+<li><code>ftol = np.inf</code>: the minimizer does not care about the value of <code>f</code>, only about convergence in (x).</li>
+</ul>
+<p><strong>Why re-minimize?</strong></p>
+<p>Because integrating only the ODE <code>dx/dT = -H^{-1} b</code> accumulates error: you are following an approximate equation. The <code>fmin</code> correction keeps the trajectory stuck to the true minimum at each step.</p>
+<hr />
+<h5 id="234-scales-and-initial-state">2.3.4. Scales and initial state<a class="headerlink" href="#234-scales-and-initial-state" title="Permanent link">&para;</a></h5>
+<div class="highlight"><pre><span></span><code>tscale = abs(float(dtstart))
+dtabsMax = float(dtabsMax) * tscale
+dtmin = float(dtmin) * tscale
+deltaX_tol_abs = float(deltaX_tol) * float(deltaX_target)
+
+t = float(t0)
+dt = float(dtstart)
+dxdt, negeig = dxmindt(x, t)
+
+X_list = [x.copy()]
+T_list = [t]
+dXdT_list = [np.zeros_like(x) if dxdt is None else dxdt.copy()]
+overX = x.copy()
+overT = t
+</code></pre></div>
+<ul>
+<li>
+<p>Convert <code>dtstart</code> into an absolute scale and define:</p>
+</li>
+<li>
+<p><code>dtabsMax</code> = maximum allowed <span class="arithmatex">\(|\Delta T|\)</span>,</p>
+</li>
+<li>
+<p><code>dtmin</code> = minimum allowed <span class="arithmatex">\(|\Delta T|\)</span>.</p>
+</li>
+<li>
+<p>Compute the first <code>dxdt</code> at the initial point.</p>
+</li>
+<li>
+<p>Initialize the output lists with the starting point.</p>
+</li>
+</ul>
+<hr />
+<h5 id="235-main-loop-in-t">2.3.5. Main loop in T<a class="headerlink" href="#235-main-loop-in-t" title="Permanent link">&para;</a></h5>
+<p>Skeleton of the update:</p>
+<div class="highlight"><pre><span></span><code>while dxdt is not None:
+    tnext = t + dt
+    x_pred = x + dxdt * dt
+    xnext = fmin(x_pred, tnext)
+    dxdt_next, negeig = dxmindt(xnext, tnext)
+
+    if dxdt_next is None or negeig:
+        dt *= 0.5
+        overX, overT = xnext.copy(), float(tnext)
+    else:
+        err1 = np.linalg.norm(x + dxdt * dt - xnext)
+        err2 = np.linalg.norm(xnext - dxdt_next * dt - x)
+        xerr = max(err1, err2)
+
+        if xerr &lt; deltaX_tol_abs:
+            # accept step
+            ...
+        else:
+            # step too aggressive
+            dt *= 0.5
+            overX, overT = xnext.copy(), float(tnext)
+    ...
+</code></pre></div>
+<p>Step-by-step:</p>
+<ol>
+<li>
+<p><strong>Prediction</strong>:</p>
+</li>
+<li>
+<p><code>tnext = t + dt</code>,</p>
+</li>
+<li>
+<p><code>x_pred = x + dxdt * dt</code>: ODE prediction.</p>
+</li>
+<li>
+<p><strong>Minimum correction</strong>:</p>
+</li>
+<li>
+<p><code>xnext = fmin(x_pred, tnext)</code> refines to the nearest minimum at the new temperature.</p>
+</li>
+<li>
+<p><strong>New dx/dT</strong>:</p>
+</li>
+<li>
+<p><code>dxdt_next, negeig = dxmindt(xnext, tnext)</code>.</p>
+</li>
+<li>
+<p><strong>If there is trouble</strong> (<code>dxdt_next is None</code> or <code>negeig</code>):</p>
+</li>
+<li>
+<p>reduce the step: <code>dt *= 0.5</code>,</p>
+</li>
+<li>
+<p>update <code>overX, overT</code> to this “problematic” point (where the minimum disappears or becomes unstable).</p>
+</li>
+<li>
+<p><strong>If everything is OK</strong>, estimate the error:</p>
+</li>
+<li>
+<p><code>err1</code>: difference between the ODE prediction <code>x + dxdt * dt</code> and the refined minimum <code>xnext</code>;</p>
+</li>
+<li>
+<p><code>err2</code>: consistency check of going forward and then backward in T using local slopes;</p>
+</li>
+<li>
+<p><code>xerr = max(err1, err2)</code>, compare with <code>deltaX_tol_abs</code>.</p>
+</li>
+<li>
+<p>If <code>xerr</code> is small → <strong>accept the step</strong>:</p>
+<ul>
+<li>
+<p>append <code>tnext</code>, <code>xnext</code>, <code>dxdt_next</code> to the lists,</p>
+</li>
+<li>
+<p>adapt <code>dt</code>:</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>dt *= deltaX_target / (xerr + 1e-100)
+</code></pre></div>
+<ul>
+<li>update <code>(x, t, dxdt)</code> to the new point.</li>
+</ul>
+</li>
+<li>
+<p>If <code>xerr</code> is large → reject the step, cut <code>dt</code> in half.</p>
+</li>
+<li>
+<p><strong>Stopping criteria</strong>:</p>
+</li>
+<li>
+<p>If <code>|dt| &lt; dtmin</code> → we found a transition (or at least a point where further evolution is impractical) and stop.</p>
+</li>
+<li>If we are crossing or reaching <code>tstop</code>, force a final step exactly up to <code>tstop</code> and then exit.</li>
+<li>If <code>|dt|</code> grows beyond the allowed maximum, clip it back.</li>
+</ol>
+<p>At the end, the lists <code>X_list</code>, <code>T_list</code>, <code>dXdT_list</code> are turned into arrays and returned together with <code>overX</code>, <code>overT</code>.</p>
+<hr />
+<h4 id="24-physical-interpretation-of-traceminimum">2.4. Physical interpretation of <code>traceMinimum</code><a class="headerlink" href="#24-physical-interpretation-of-traceminimum" title="Permanent link">&para;</a></h4>
+<p>Think of a simple temperature-dependent double-well:</p>
+<ul>
+<li>at very high T, only a minimum at <span class="arithmatex">\(\phi = 0\)</span> exists;</li>
+<li>as you cool down, broken-symmetry minima at <span class="arithmatex">\(\phi \neq 0\)</span> appear;</li>
+<li>following one of these minima, you reach a point where the solution ceases to exist (spinodal) or the Hessian develops a negative mode (loss of stability).</li>
+</ul>
+<p><code>traceMinimum</code>:</p>
+<ul>
+<li>gives you the curve <span class="arithmatex">\(x_{\min}(T)\)</span> for <strong>one</strong> of these minima;</li>
+<li>tells you <strong>where it ceases to be stable/metastable</strong>, via <code>overT</code>;</li>
+<li>
+<p>this curve is the basis for</p>
+</li>
+<li>
+<p>building <span class="arithmatex">\(V(\phi_{\min}(T), T)\)</span>,</p>
+</li>
+<li>computing thermodynamic quantities along the phase,</li>
+<li>providing boundary conditions for tunneling (e.g. in <code>tunneling1D</code>).</li>
+</ul>
+<hr />
+<h3 id="3-phase-encapsulating-a-minimum-as-a-physical-object">3. <code>Phase</code>: encapsulating a minimum as a physical object<a class="headerlink" href="#3-phase-encapsulating-a-minimum-as-a-physical-object" title="Permanent link">&para;</a></h3>
+<p><code>Phase</code> takes the output of <code>traceMinimum</code> and packages it as an object that holds</p>
+<ul>
+<li>the arrays <code>X(T)</code>, <code>T</code>, <code>dXdT</code>,</li>
+<li>a spline <span class="arithmatex">\(T \mapsto X(T)\)</span>,</li>
+<li>and second-order links to other phases (<code>low_trans</code> / <code>high_trans</code>).</li>
+</ul>
+<h4 id="31-construction">3.1. Construction<a class="headerlink" href="#31-construction" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>class Phase:
+    def __init__(self, key, X, T, dXdT) -&gt; None:
+        self.key = key
+        T = np.asarray(T, dtype=float).reshape(-1)
+        X = np.asarray(X, dtype=float)
+        dXdT = np.asarray(dXdT, dtype=float)
+
+        order = np.argsort(T)
+        self.T = T[order]
+        self.X = X[order]
+        self.dXdT = dXdT[order]
+
+        k = 3 if self.T.size &gt; 3 else 1
+        tck, _ = interpolate.splprep(self.X.T, u=self.T, s=0.0, k=k)
+        self.tck = tck
+
+        self.low_trans: set = set()
+        self.high_trans: set = set()
+</code></pre></div>
+<p>Details:</p>
+<ul>
+<li>Everything is sorted by temperature (to fix any small ordering issues from the tracing routine).</li>
+<li>
+<p>A parametric B-spline is constructed, <span class="arithmatex">\(T \mapsto X(T)\)</span>, via <code>splprep</code>:</p>
+</li>
+<li>
+<p><code>k=3</code> (cubic) when enough points are available,</p>
+</li>
+<li>otherwise <code>k=1</code> (linear).</li>
+<li><code>low_trans</code> and <code>high_trans</code> are initialized as empty sets.</li>
+</ul>
+<hr />
+<h4 id="32-valat-inspecting-the-phase-at-arbitrary-t">3.2. <code>valAt</code>: inspecting the phase at arbitrary T<a class="headerlink" href="#32-valat-inspecting-the-phase-at-arbitrary-t" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>def valAt(self, T, deriv: int = 0) -&gt; np.ndarray:
+    if deriv &lt; 0:
+        raise ValueError(&quot;deriv must be non-negative.&quot;)
+    T_arr = np.asanyarray(T)
+    y = interpolate.splev(T_arr, self.tck, der=deriv)
+    arr = np.asanyarray(y).T
+    return arr
+</code></pre></div>
+<ul>
+<li><code>deriv = 0</code>: returns <span class="arithmatex">\(x_{\min}(T)\)</span>.</li>
+<li><code>deriv = 1</code>: returns <span class="arithmatex">\(dx_{\min}/dT\)</span> from the spline (a smooth approximation to the discrete <code>dXdT</code>).</li>
+<li>For scalar T, the result has shape <code>(n_fields,)</code>; for an array of temperatures, <code>(n_T, n_fields)</code>.</li>
+</ul>
+<p>Physical use case:</p>
+<ul>
+<li>This allows you to evaluate, for instance, <span class="arithmatex">\(V(\phi_{\min}(T), T)\)</span> on a fine (T) grid without re-minimizing:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>T_grid = np.linspace(50.0, 200.0, 500)
+phi_grid = phase.valAt(T_grid)
+V_grid = V(phi_grid, T_grid)
+</code></pre></div>
+<hr />
+<h4 id="33-addlinkfrom-marking-second-order-connections">3.3. <code>addLinkFrom</code>: marking second-order connections<a class="headerlink" href="#33-addlinkfrom-marking-second-order-connections" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>def addLinkFrom(self, other_phase: &quot;Phase&quot;) -&gt; None:
+    if np.min(self.T) &gt;= np.max(other_phase.T):
+        self.low_trans.add(other_phase.key)
+        other_phase.high_trans.add(self.key)
+    if np.max(self.T) &lt;= np.min(other_phase.T):
+        self.high_trans.add(other_phase.key)
+        other_phase.low_trans.add(self.key)
+</code></pre></div>
+<p>Logic:</p>
+<ul>
+<li>
+<p>If this phase only exists at <strong>lower</strong> temperatures than <code>other_phase</code> (i.e. it starts where the other ends), then:</p>
+</li>
+<li>
+<p><code>self.low_trans</code> includes <code>other_phase.key</code>,</p>
+</li>
+<li>
+<p><code>other_phase.high_trans</code> includes <code>self.key</code>.</p>
+</li>
+<li>
+<p>If this phase only exists at <strong>higher</strong> temperatures, the opposite happens.</p>
+</li>
+</ul>
+<p>This is a criterion purely based on <strong>temperature overlap</strong>: when two phases “touch” in temperature without a window of coexistence with a barrier, they are candidates for a <strong>second-order/continuous transition</strong>.</p>
+<p>Physically:</p>
+<ul>
+<li>
+<p>You build a graph of phases:</p>
+</li>
+<li>
+<p>edges in <code>low_trans</code> / <code>high_trans</code> represent smooth connections (no barrier),</p>
+</li>
+<li>first-order transitions (with tunneling) will be handled elsewhere (e.g. via <code>tunneling1D</code>).</li>
+</ul>
+<hr />
+<h3 id="4-tracemultimin-reconstructing-all-phases">4. <code>traceMultiMin</code>: reconstructing all phases<a class="headerlink" href="#4-tracemultimin-reconstructing-all-phases" title="Permanent link">&para;</a></h3>
+<p><code>traceMinimum</code> follows <strong>one</strong> minimum. <code>traceMultiMin</code> orchestrates this into a global algorithm that:</p>
+<ul>
+<li>starts from several seeds,</li>
+<li>traces each phase up and down in temperature,</li>
+<li>when a phase disappears, looks for new minima nearby,</li>
+<li>and builds a dictionary of <code>Phase</code> objects.</li>
+</ul>
+<h4 id="41-key-inputs">4.1. Key inputs<a class="headerlink" href="#41-key-inputs" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>def traceMultiMin(
+    f,
+    d2f_dxdt,
+    d2f_dx2,
+    points,
+    tLow,
+    tHigh,
+    deltaX_target,
+    dtstart=1e-3,
+    tjump=1e-3,
+    forbidCrit=None,
+    single_trace_args=None,
+    local_min_args=None,
+) -&gt; Dict[Hashable, Phase]:
+</code></pre></div>
+<ul>
+<li>
+<p><code>points</code>: list of seeds <span class="arithmatex">\((x_\text{seed}, T_\text{seed})\)</span>:</p>
+</li>
+<li>
+<p>each should be near a minimum — typically minima at very high and very low temperatures.</p>
+</li>
+<li>
+<p><code>tLow</code>, <code>tHigh</code>: temperature interval of interest.</p>
+</li>
+<li>
+<p><code>deltaX_target</code>: same philosophy as in <code>traceMinimum</code>.</p>
+</li>
+<li>
+<p><code>dtstart</code>, <code>tjump</code>: <strong>fractions</strong> of <code>(tHigh - tLow)</code>:</p>
+</li>
+<li>
+<p><code>dtstart_abs = dtstart * (tHigh - tLow)</code> is the initial temperature step for <code>traceMinimum</code>,</p>
+</li>
+<li>
+<p><code>tjump_abs = tjump * (tHigh - tLow)</code> is the temperature offset beyond the end of a phase used for probing new minima.</p>
+</li>
+<li>
+<p><code>forbidCrit(x)</code>: function that says “this point in field space is forbidden”.</p>
+</li>
+<li>
+<p><code>single_trace_args</code>: extra keyword arguments forwarded to <code>traceMinimum</code>.</p>
+</li>
+<li>
+<p><code>local_min_args</code>: extra keyword arguments for <code>findApproxLocalMin</code> (except <code>args</code>, which is always the temperature).</p>
+</li>
+</ul>
+<hr />
+<h4 id="42-high-accuracy-local-minimization">4.2. High-accuracy local minimization<a class="headerlink" href="#42-high-accuracy-local-minimization" title="Permanent link">&para;</a></h4>
+<p>Internally there is another <code>fmin</code>, now with even tighter tolerances:</p>
+<div class="highlight"><pre><span></span><code>xeps = deltaX_target * 1e-2
+
+def fmin(x, t):
+    x = np.asarray(x, dtype=float)
+    xmin = optimize.fmin(
+        f,
+        x + xeps,
+        args=(t,),
+        xtol=xeps * 1e-3,
+        ftol=np.inf,
+        disp=False,
+    )
+    return np.asarray(xmin, dtype=float)
+</code></pre></div>
+<p>Note the small shift <code>x + xeps</code>: this can help escape pathological flat points.</p>
+<hr />
+<h4 id="43-seed-queue-next_points">4.3. Seed queue (<code>next_points</code>)<a class="headerlink" href="#43-seed-queue-next_points" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>phases: Dict[Hashable, Phase] = {}
+next_points: List[List[Any]] = []
+
+for x_seed, t_seed in points:
+    x_seed = np.asarray(x_seed, dtype=float)
+    next_points.append([float(t_seed), dtstart_abs, fmin(x_seed, t_seed), None])
+</code></pre></div>
+<p>Each element of <code>next_points</code> is:</p>
+<ol>
+<li><code>T_current</code> – temperature of the seed.</li>
+<li><code>dt_current</code> – base step to use in <code>traceMinimum</code> from that seed.</li>
+<li><code>x_current</code> – refined minimum at that temperature.</li>
+<li><code>linked_from_key</code> – which phase (if any) generated this seed (for second-order linking).</li>
+</ol>
+<hr />
+<h4 id="44-exploration-loop">4.4. Exploration loop<a class="headerlink" href="#44-exploration-loop" title="Permanent link">&para;</a></h4>
+<p>The main <code>while next_points:</code> loop does:</p>
+<ol>
+<li>
+<p><strong>Pop a seed</strong> from the queue.</p>
+</li>
+<li>
+<p>Refine again <code>x1 = fmin(x1, t1)</code> to ensure we really start at a minimum.</p>
+</li>
+<li>
+<p>Check if:</p>
+</li>
+<li>
+<p>it lies within <code>[tLow, tHigh]</code>,</p>
+</li>
+<li>
+<p>it is allowed by <code>forbidCrit</code>.</p>
+</li>
+<li>
+<p><strong>Check redundancy</strong> against phases already found:</p>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><code>for key, phase in phases.items():
+    ...
+    x_phase = fmin(phase.valAt(t1), t1)
+    if np.linalg.norm(x_phase - x1) &lt; 2 * deltaX_target:
+        # already covered
+</code></pre></div>
+<p>If some existing <code>Phase</code> has almost the same minimum at <code>t1</code>, this is not a new phase; the seed can be discarded (or used only to adjust links).</p>
+<ol>
+<li>
+<p>If not redundant:</p>
+</li>
+<li>
+<p>print <code>Tracing phase starting at ...</code>,</p>
+</li>
+<li>set <code>phase_key = len(phases)</code> for the new phase,</li>
+<li>trace that phase <strong>downwards</strong> and <strong>upwards</strong> in T using <code>traceMinimum</code>.</li>
+</ol>
+<hr />
+<h4 id="45-tracing-to-lower-and-higher-t">4.5. Tracing to lower and higher T<a class="headerlink" href="#45-tracing-to-lower-and-higher-t" title="Permanent link">&para;</a></h4>
+<p><strong>Downwards:</strong></p>
+<div class="highlight"><pre><span></span><code>if t1 &gt; tLow:
+    down_trace = traceMinimum(
+        f=f,
+        d2f_dxdt=d2f_dxdt,
+        d2f_dx2=d2f_dx2,
+        x0=x1,
+        t0=t1,
+        tstop=tLow,
+        dtstart=-abs(dt1),
+        deltaX_target=deltaX_target,
+        **single_trace_kwargs,
+    )
+    X_down, T_down, dXdT_down = down_trace.X, down_trace.T, down_trace.dXdT
+    nX_down, nT_down = down_trace.overX, down_trace.overT
+
+    t2 = nT_down - tjump_abs
+    dt2 = 0.1 * tjump_abs
+    x2 = fmin(nX_down, t2)
+    next_points.append([t2, dt2, x2, phase_key])
+
+    if np.linalg.norm(X_down[-1] - x2) &gt; deltaX_target:
+        for point in findApproxLocalMin(
+            f,
+            X_down[-1],
+            x2,
+            args=(t2,),
+            **local_min_kwargs,
+        ):
+            next_points.append([t2, dt2, fmin(point, t2), phase_key])
+
+    X_down = X_down[::-1]
+    T_down = T_down[::-1]
+    dXdT_down = dXdT_down[::-1]
+</code></pre></div>
+<p>Physical picture:</p>
+<ul>
+<li>
+<p>You take the minimum at <code>T = t1</code> and follow it down to <code>T = tLow</code>.</p>
+</li>
+<li>
+<p><code>traceMinimum</code> stops when the phase ceases to exist (Hessian issues, etc.).</p>
+</li>
+<li>
+<p>The point <code>overX, overT</code> is where the phase “dies”.</p>
+</li>
+<li>
+<p>You then step further in temperature (<code>t2 = overT - tjump_abs</code>), minimize again, and use this as a new seed.</p>
+</li>
+<li>
+<p>If a new phase has nucleated beyond the end of the old one, this seed will fall into its minimum.</p>
+</li>
+<li>
+<p><code>findApproxLocalMin</code> between <code>X_down[-1]</code> and <code>x2</code> searches for additional minima along that straight segment (potential <strong>hidden intermediate phases</strong>).</p>
+</li>
+</ul>
+<p><strong>Upwards:</strong></p>
+<p>The upward block is analogous:</p>
+<div class="highlight"><pre><span></span><code>if t1 &lt; tHigh:
+    up_trace = traceMinimum(
+        ...,
+        tstop=tHigh,
+        dtstart=+abs(dt1),
+        ...
+    )
+    X_up, T_up, dXdT_up = up_trace.X, up_trace.T, up_trace.dXdT
+    nX_up, nT_up = up_trace.overX, up_trace.overT
+
+    t2 = nT_up + tjump_abs
+    dt2 = 0.1 * tjump_abs
+    x2 = fmin(nX_up, t2)
+    next_points.append([t2, dt2, x2, phase_key])
+
+    if np.linalg.norm(X_up[-1] - x2) &gt; deltaX_target:
+        for point in findApproxLocalMin(...):
+            next_points.append([t2, dt2, fmin(point, t2), phase_key])
+</code></pre></div>
+<hr />
+<h4 id="46-building-a-phase-from-downup-pieces">4.6. Building a <code>Phase</code> from down/up pieces<a class="headerlink" href="#46-building-a-phase-from-downup-pieces" title="Permanent link">&para;</a></h4>
+<p>After tracing down and up:</p>
+<div class="highlight"><pre><span></span><code>if X_down is None:      # only traced upwards
+    X, T, dXdT = X_up, T_up, dXdT_up
+elif X_up is None:      # only traced downwards
+    X, T, dXdT = X_down, T_down, dXdT_down
+else:
+    # join, avoiding duplicating the pivot
+    X = np.append(X_down, X_up[1:], axis=0)
+    T = np.append(T_down, T_up[1:], axis=0)
+    dXdT = np.append(dXdT_down, dXdT_up[1:], axis=0)
+</code></pre></div>
+<p>Then it applies the <code>forbidCrit</code> filter to the endpoints; if the phase is allowed and contains more than one point:</p>
+<div class="highlight"><pre><span></span><code>new_phase = Phase(phase_key, X, T, dXdT)
+if linked_from is not None:
+    new_phase.addLinkFrom(phases[linked_from])
+phases[phase_key] = new_phase
+</code></pre></div>
+<p>If the phase is forbidden, it and its descendants are treated as dead ends.</p>
+<p>At the end of the <code>while</code> loop, <code>phases</code> is a dictionary <code>{key → Phase}</code> covering all relevant phases in <code>[tLow, tHigh]</code>, with continuous (second-order) connections encoded through <code>addLinkFrom</code>.</p>
+<p>Physically: you get a <strong>tree/graph of phases</strong>. From a modest set of seeds, the algorithm explores the potential, discovering all phases connected through minima as temperature changes, and mapping how they appear and disappear.</p>
+<hr />
+<h3 id="5-findapproxlocalmin-hunting-for-intermediate-phases-along-a-line">5. <code>findApproxLocalMin</code>: hunting for intermediate phases along a line<a class="headerlink" href="#5-findapproxlocalmin-hunting-for-intermediate-phases-along-a-line" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>def findApproxLocalMin(
+    f,
+    x1,
+    x2,
+    args=(),
+    n=100,
+    edge=0.05,
+) -&gt; np.ndarray:
+</code></pre></div>
+<h4 id="physical-idea">Physical idea<a class="headerlink" href="#physical-idea" title="Permanent link">&para;</a></h4>
+<p>When a phase ends at <code>(overX, overT)</code> and you step slightly in T and minimize again, you may land in a new minimum far away in field space. Between those two points <code>x1</code> and <code>x2</code> there may exist a <strong>third minimum</strong> that you would miss by simply re-minimizing.</p>
+<p><code>findApproxLocalMin</code> is a cheap detector of “possible hidden phases” along the straight segment from <code>x1</code> to <code>x2</code>.</p>
+<h4 id="algorithm">Algorithm<a class="headerlink" href="#algorithm" title="Permanent link">&para;</a></h4>
+<ol>
+<li>
+<p>Ensure <code>x1</code> and <code>x2</code> have the same shape and reinterpret them as 1D vectors: <code>x1_vec</code>, <code>x2_vec</code>.</p>
+</li>
+<li>
+<p>Build a grid in a parameter <span class="arithmatex">\(t \in [\text{edge}, 1 - \text{edge}]\)</span>:</p>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><code>t_grid = np.linspace(edge, 1.0 - edge, n).reshape(n, 1)
+x_grid = x1_vec + t_grid * (x2_vec - x1_vec)  # (n, ndim)
+</code></pre></div>
+<p>The <code>edge</code> parameter trims the endpoints:</p>
+<ul>
+<li><code>edge=0</code> includes the endpoints,</li>
+<li>
+<p><code>edge=0.05</code> ignores the first and last 5% of the line, so you do not simply re-detect the original minima.</p>
+</li>
+<li>
+<p>Evaluate <code>f</code> on the grid:</p>
+</li>
+<li>
+<p>Try vectorized evaluation: <code>y_raw = f(x_grid, *args)</code>.</p>
+</li>
+<li>If the shape does not match or the call fails, fall back to a scalar loop <code>_evaluate_scalar_grid</code> which calls <code>f</code> point by point.</li>
+<li>
+<p>In the end, <code>y</code> is a 1D array of length <code>n</code>.</p>
+</li>
+<li>
+<p>Look for discrete internal minima:</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>is_min = (y[2:] &gt; y[1:-1]) &amp; (y[:-2] &gt; y[1:-1])
+minima = x_grid[1:-1][is_min]
+</code></pre></div>
+<p>This is the classic finite-difference criterion: a point is a minimum if it is lower than its immediate neighbors.</p>
+<ol>
+<li>Return an array with shape <code>(k, ndim)</code> containing the approximate positions of these minima. It may be empty.</li>
+</ol>
+<p>Refinement is done later by the internal <code>fmin</code> of <code>traceMultiMin</code>.</p>
+<hr />
+<h3 id="6-_removeredundantphase-and-removeredundantphases-cleaning-the-phase-graph">6. <code>_removeRedundantPhase</code> and <code>removeRedundantPhases</code>: cleaning the phase graph<a class="headerlink" href="#6-_removeredundantphase-and-removeredundantphases-cleaning-the-phase-graph" title="Permanent link">&para;</a></h3>
+<p>Despite all heuristics, you may still discover the <strong>same physical phase</strong> more than once (e.g. from different seeds). <code>removeRedundantPhases</code> is a post-processing step that:</p>
+<ul>
+<li>scans pairs of phases,</li>
+<li>checks whether they represent the same minimum over their overlapping temperature range,</li>
+<li>if they do, merges or discards one,</li>
+<li>and updates second-order links (<code>low_trans</code> / <code>high_trans</code>) consistently.</li>
+</ul>
+<h4 id="61-removeredundantphases">6.1. <code>removeRedundantPhases</code><a class="headerlink" href="#61-removeredundantphases" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code>def removeRedundantPhases(
+    f,
+    phases,
+    xeps=1e-5,
+    diftol=1e-2,
+) -&gt; None:
+</code></pre></div>
+<p><code>phases</code> is modified in place.</p>
+<h5 id="611-local-minimization">6.1.1. Local minimization<a class="headerlink" href="#611-local-minimization" title="Permanent link">&para;</a></h5>
+<p>Again a local <code>fmin</code> is defined:</p>
+<div class="highlight"><pre><span></span><code>def fmin(x, t):
+    xmin = optimize.fmin(
+        f,
+        x,
+        args=(t,),
+        xtol=xeps,
+        ftol=np.inf,
+        disp=False,
+    )
+    return np.asarray(xmin, dtype=float)
+</code></pre></div>
+<p>The idea is to guarantee that when comparing two phases you compare <strong>true minima of (f)</strong>, not just spline values.</p>
+<h5 id="612-loop-until-no-redundancies-remain">6.1.2. Loop until no redundancies remain<a class="headerlink" href="#612-loop-until-no-redundancies-remain" title="Permanent link">&para;</a></h5>
+<div class="highlight"><pre><span></span><code>has_redundant_phase = True
+while has_redundant_phase:
+    has_redundant_phase = False
+    keys = list(phases.keys())
+
+    for i in keys:
+        ...
+        for j in keys:
+            ...
+            phase1 = phases[i]
+            phase2 = phases[j]
+
+            tmax = min(phase1.T[-1], phase2.T[-1])
+            tmin = max(phase1.T[0], phase2.T[0])
+            if tmin &gt; tmax:
+                continue
+            ...
+</code></pre></div>
+<p>For each pair <code>phase1</code>, <code>phase2</code>:</p>
+<ul>
+<li>
+<p>Compute the overlap in temperature:</p>
+</li>
+<li>
+<p><code>tmin</code> = larger of the two Tmin’s,</p>
+</li>
+<li>
+<p><code>tmax</code> = smaller of the two Tmax’s.</p>
+</li>
+<li>
+<p>If there is no overlap (<code>tmin &gt; tmax</code>), skip.</p>
+</li>
+</ul>
+<p>Then:</p>
+<ul>
+<li>
+<p>Compare positions at <code>tmax</code> and <code>tmin</code>:</p>
+</li>
+<li>
+<p>if the boundary matches exactly a stored point, use that,</p>
+</li>
+<li>otherwise interpolate via <code>valAt</code> and refine with <code>fmin</code>.</li>
+</ul>
+<p>Define:</p>
+<div class="highlight"><pre><span></span><code>dif = np.linalg.norm(x1 - x2)
+same_at_tmax = dif &lt; diftol
+...
+same_at_tmin = dif &lt; diftol
+</code></pre></div>
+<p>If <code>same_at_tmin</code> and <code>same_at_tmax</code> are both true:</p>
+<ul>
+<li>the two phases are indistinguishable at both ends of their overlapping temperature interval.</li>
+</ul>
+<hr />
+<h5 id="613-merging-cases">6.1.3. Merging cases<a class="headerlink" href="#613-merging-cases" title="Permanent link">&para;</a></h5>
+<p>If they are redundant:</p>
+<ul>
+<li>
+<p>Set <code>has_redundant_phase = True</code> so that the outer loop restarts after modifying <code>phases</code>.</p>
+</li>
+<li>
+<p>Define</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>p_low  = phase1 if phase1.T[0] &lt; phase2.T[0] else phase2
+p_high = phase1 if phase1.T[-1] &gt; phase2.T[-1] else phase2
+</code></pre></div>
+<ul>
+<li>Two scenarios:</li>
+</ul>
+<p><strong>(a) <code>p_low is p_high</code></strong>: they cover essentially the same temperature range.</p>
+<ul>
+<li>
+<p>Keep one and discard the other:</p>
+<div class="highlight"><pre><span></span><code>p_reject = phase1 if p_low is phase2 else phase2
+_removeRedundantPhase(phases, p_reject, p_low)
+</code></pre></div>
+</li>
+</ul>
+<p><strong>(b) <code>p_low</code> and <code>p_high</code> differ</strong>: one covers lower temperatures, the other higher temperatures.</p>
+<ul>
+<li>
+<p>Cut and stitch:</p>
+<div class="highlight"><pre><span></span><code>mask_low  = p_low.T  &lt;= tmax
+mask_high = p_high.T &gt;  tmax
+
+T = np.append(p_low.T[mask_low],  p_high.T[mask_high])
+X = np.append(p_low.X[mask_low],  p_high.X[mask_high], axis=0)
+dXdT = np.append(p_low.dXdT[mask_low], p_high.dXdT[mask_high], axis=0)
+
+new_key = f&quot;{p_low.key}_{p_high.key}&quot;
+new_phase = Phase(new_key, X, T, dXdT)
+phases[new_key] = new_phase
+
+_removeRedundantPhase(phases, p_low,  new_phase)
+_removeRedundantPhase(phases, p_high, new_phase)
+</code></pre></div>
+</li>
+</ul>
+<p>You create a “stitched” phase covering the whole temperature range and replace the two old phases.</p>
+<p>If two phases coincide at only one end of the overlap, you hit:</p>
+<div class="highlight"><pre><span></span><code>elif same_at_tmin or same_at_tmax:
+    raise NotImplementedError(...)
+</code></pre></div>
+<p>This makes it explicit that the ambiguous “touching at one end only” case is not handled automatically (it would require more sophisticated logic to split and stitch correctly).</p>
+<hr />
+<h4 id="62-_removeredundantphase-reconnecting-the-graph">6.2. <code>_removeRedundantPhase</code>: reconnecting the graph<a class="headerlink" href="#62-_removeredundantphase-reconnecting-the-graph" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_removeRedundantPhase</span><span class="p">(</span><span class="n">phases</span><span class="p">,</span> <span class="n">removed_phase</span><span class="p">,</span> <span class="n">redundant_with_phase</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">removed_phase</span><span class="o">.</span><span class="n">low_trans</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="o">!=</span> <span class="n">redundant_with_phase</span><span class="o">.</span><span class="n">key</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">phases</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">high_trans</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">removed_phase</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
+            <span class="n">redundant_with_phase</span><span class="o">.</span><span class="n">addLinkFrom</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">removed_phase</span><span class="o">.</span><span class="n">high_trans</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="o">!=</span> <span class="n">redundant_with_phase</span><span class="o">.</span><span class="n">key</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">phases</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">low_trans</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">removed_phase</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
+            <span class="n">redundant_with_phase</span><span class="o">.</span><span class="n">addLinkFrom</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">phases</span><span class="p">[</span><span class="n">removed_phase</span><span class="o">.</span><span class="n">key</span><span class="p">]</span>
+</code></pre></div>
+<ul>
+<li>
+<p>For each neighbor in <code>low_trans</code> and <code>high_trans</code>:</p>
+</li>
+<li>
+<p>remove links to the phase that is being deleted,</p>
+</li>
+<li>
+<p>create the corresponding link with the surviving phase <code>redundant_with_phase</code>.</p>
+</li>
+<li>
+<p>Finally, delete the redundant phase from the dictionary.</p>
+</li>
+</ul>
+<p>Physically: you keep the phase graph coherent — no dangling links pointing to a deleted phase, and second-order connections are preserved via the “merged” phase.</p>
+<hr />
+<h3 id="7-getstartphase-picking-the-high-temperature-phase">7. <code>getStartPhase</code>: picking the high-temperature phase<a class="headerlink" href="#7-getstartphase-picking-the-high-temperature-phase" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>def getStartPhase(
+    phases: Mapping[Hashable, Phase],
+    V: Optional[Callable[[np.ndarray, float], float]] = None,
+) -&gt; Hashable:
+</code></pre></div>
+<p>A seemingly simple function, but conceptually important. It answers:</p>
+<blockquote>
+<p>“In which phase is the Universe at very high temperature?”</p>
+</blockquote>
+<h4 id="logic">Logic<a class="headerlink" href="#logic" title="Permanent link">&para;</a></h4>
+<ol>
+<li>
+<p>If <code>phases</code> is empty → raise an error.</p>
+</li>
+<li>
+<p>Scan all phases to find those with the <strong>largest</strong> maximum temperature:</p>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><code>start_candidates = []
+Tmax = None
+for key, phase in phases.items():
+    phase_Tmax = phase.T[-1]
+    if Tmax is None or phase_Tmax &gt; Tmax:
+        Tmax = phase_Tmax
+        start_candidates = [key]
+    elif phase_Tmax == Tmax:
+        start_candidates.append(key)
+</code></pre></div>
+<ol>
+<li>
+<p>If there is <strong>only one</strong> candidate, or if <code>V</code> is <code>None</code>:</p>
+</li>
+<li>
+<p>return that candidate.</p>
+</li>
+<li>
+<p>If there are several phases that survive up to the same <code>Tmax</code> and a potential <code>V</code> is provided:</p>
+</li>
+<li>
+<p>evaluate <code>V(phase.X[-1], phase.T[-1])</code> for each candidate,</p>
+</li>
+<li>pick the one with the <strong>lowest potential</strong> — thermodynamically preferred.</li>
+</ol>
+<h4 id="physical-interpretation">Physical interpretation<a class="headerlink" href="#physical-interpretation" title="Permanent link">&para;</a></h4>
+<ul>
+<li>In many models, at high enough T, there is a single “symmetric” phase, e.g. <span class="arithmatex">\(\phi=0\)</span>.</li>
+<li>Sometimes, due to approximate symmetries, several phases may survive to the same maximal scanned temperature; then it is important to check the value of (V) and select the true global minimum.</li>
+<li>This “start phase” is the initial state for any routine that builds the <strong>sequence of transitions</strong> as the Universe cools down.</li>
+</ul>
+<hr />
+<h3 id="putting-it-all-together-integrated-picture">Putting it all together: integrated picture<a class="headerlink" href="#putting-it-all-together-integrated-picture" title="Permanent link">&para;</a></h3>
+<p>The conceptual pipeline for Block A is:</p>
+<ol>
+<li>
+<p><strong>Input</strong>: a potential <span class="arithmatex">\(V(\phi,T)\)</span> and its derivatives, plus a handful of seed minima.</p>
+</li>
+<li>
+<p><code>traceMultiMin</code>:</p>
+</li>
+<li>
+<p>uses <code>traceMinimum</code> to follow each minimum in temperature,</p>
+</li>
+<li>when a phase ends, explores nearby points in (T) and field space (<code>findApproxLocalMin</code>) to find new phases,</li>
+<li>
+<p>builds a dictionary of <code>Phase</code> objects with second-order connections (<code>low_trans</code> / <code>high_trans</code>).</p>
+</li>
+<li>
+<p><code>removeRedundantPhases</code>:</p>
+</li>
+<li>
+<p>ensures each physical phase appears only once in the graph.</p>
+</li>
+<li>
+<p><code>getStartPhase</code>:</p>
+</li>
+<li>
+<p>selects the high-temperature phase from which cosmological evolution starts.</p>
+</li>
+</ol>
+<p>From here, the later blocks (e.g. <code>tunneling1D</code> and related routines) will:</p>
+<ul>
+<li>take pairs of phases (false/true vacuum),</li>
+<li>for a given (T), evaluate <span class="arithmatex">\(\phi_\text{false}(T)\)</span>, <span class="arithmatex">\(\phi_\text{true}(T)\)</span>,</li>
+<li>solve the bounce equation and obtain <span class="arithmatex">\(S_3(T)/T\)</span> or <span class="arithmatex">\(S_4(T)\)</span>,</li>
+<li>build <span class="arithmatex">\(S(T)/T\)</span> vs. (T), find <span class="arithmatex">\(T_n\)</span>, <span class="arithmatex">\(T_c\)</span>, etc.,</li>
+<li>and ultimately estimate parameters like <span class="arithmatex">\(\alpha\)</span>, <span class="arithmatex">\(\beta/H\)</span> and the corresponding gravitational-wave spectrum.</li>
+</ul>
+<p>In the tests we will use a concrete example potential, for instance</p>
+<div class="arithmatex">\[
+V(\phi, T) = \lambda \phi^4 - ET\phi^3 + D(T^2 - T_0^2)\phi^2
+\]</div>
+<p>and show explicitly how the functions in Block A reconstruct the phase structure and prepare the ground for tunneling and gravitational-wave calculations.</p>
+<hr />
+<h2 id="block-b-tunneling-core-instantons-and-nucleation-temperature">Block B – Tunneling core: instantons and nucleation temperature<a class="headerlink" href="#block-b-tunneling-core-instantons-and-nucleation-temperature" title="Permanent link">&para;</a></h2>
+<p>In this block the focus changes:
+in Block A we <em>only</em> built the <strong>phase diagram as a function of <span class="arithmatex">\(T\)</span></strong> – which phases exist, where they start/end, and how the minima move in field space.</p>
+<p>Block B answers the really crucial physics question:</p>
+<blockquote>
+<p>Given a metastable phase (false vacuum) and other, more stable phases,
+<strong>when</strong> does the Universe actually make the transition via tunneling?
+And <strong>which</strong> bounce (instanton) dominates this nucleation?</p>
+</blockquote>
+<p>The pipeline is:</p>
+<ol>
+<li>Read the phase diagram (<code>Phase</code> object + <code>phases</code> dictionary from Block A).</li>
+<li>At each temperature <span class="arithmatex">\(T\)</span>, look at which phases are energetically accessible with <span class="arithmatex">\(V_\text{low}(T) &lt; V_\text{high}(T)\)</span>.</li>
+<li>For each candidate, try to solve the bounce (via <code>pathDeformation.fullTunneling</code> or <code>tunneling1D</code>).</li>
+<li>Choose the <strong>bounce with the smallest action</strong> <span class="arithmatex">\(S(T)\)</span>.</li>
+<li>Search for the <span class="arithmatex">\(T\)</span> at which the nucleation condition is satisfied (by default <span class="arithmatex">\(S(T)/T \simeq 140\)</span>).</li>
+</ol>
+<p>From the numerical point of view, Block B provides:</p>
+<ul>
+<li>a clean backend for the bounce <code>_solve_bounce</code>,</li>
+<li>a “scanner in <span class="arithmatex">\(T\)</span>” <code>_tunnelFromPhaseAtT</code>,</li>
+<li>helper functions to find the maximum <span class="arithmatex">\(T_\text{crit}\)</span> where the phase still makes sense,</li>
+<li>and the high-level function <code>tunnelFromPhase</code>, which directly returns the instanton and <span class="arithmatex">\(T_\text{nuc}\)</span>.</li>
+</ul>
+<p>What follows is a function-by-function description.</p>
+<hr />
+<h3 id="1-_solve_bounce-unified-backend-for-the-instanton">1. <code>_solve_bounce</code>: unified backend for the instanton<a class="headerlink" href="#1-_solve_bounce-unified-backend-for-the-instanton" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>def _solve_bounce(
+    x_high: np.ndarray,
+    x_low: np.ndarray,
+    V_fixed: Callable[[np.ndarray], float],
+    dV_fixed: Callable[[np.ndarray], np.ndarray],
+    T: float,
+    fullTunneling_params: Optional[Mapping[str, Any]] = None,
+) -&gt; Tuple[Optional[Any], float, int]:
+    ...
+</code></pre></div>
+<p><strong>Numerical goal</strong></p>
+<p>Given:</p>
+<ul>
+<li>a metastable minimum (“false vacuum”) at <code>x_high</code>,</li>
+<li>a stable minimum at <code>x_low</code>,</li>
+<li>a fixed-temperature potential <span class="arithmatex">\(V_\text{fixed}(x) = V(x, T)\)</span>,</li>
+<li>and its gradient <span class="arithmatex">\(dV_\text{fixed}(x) = \nabla_x V(x, T)\)</span>,</li>
+</ul>
+<p>this function calls <code>pathDeformation.fullTunneling</code> to:</p>
+<ul>
+<li>find the bounce <span class="arithmatex">\(\phi_b(r)\)</span> that connects <span class="arithmatex">\(x_\text{high} \to x_\text{low}\)</span>,</li>
+<li>extract the Euclidean action <span class="arithmatex">\(S\)</span>,</li>
+<li>classify the type of transition.</li>
+</ul>
+<p>All of this is encapsulated in a single place, with standardized error handling.</p>
+<p><strong>Treatment of edge cases</strong></p>
+<p><code>pathDeformation.fullTunneling</code> can raise <code>tunneling1D.PotentialError</code> with standard messages:</p>
+<ul>
+<li>
+<p><code>"no barrier"</code>
+  → there is no barrier between the minima
+  → <strong>not a first-order transition</strong> (or second-order limit)
+  → <code>trantype = 0</code>, <code>action = 0.0</code>.</p>
+</li>
+<li>
+<p><code>"stable, not metastable"</code>
+  → the “false vacuum” is actually stable (no metastable well)
+  → there is no relevant bounce
+  → <code>trantype = 0</code>, <code>action = +∞</code>.</p>
+</li>
+</ul>
+<p>Any other message is propagated as an unexpected error (this is important: we do <strong>not</strong> hide genuine numerical problems).</p>
+<p><strong>Output</strong></p>
+<ul>
+<li>
+<p><code>instanton</code>:</p>
+</li>
+<li>
+<p>the object returned by <code>fullTunneling</code> if a bounce is found;</p>
+</li>
+<li>
+<p><code>None</code> in the <code>"no barrier"</code> or <code>"stable, not metastable"</code> cases.</p>
+</li>
+<li>
+<p><code>action</code>:</p>
+</li>
+<li>
+<p><span class="arithmatex">\(S\)</span> if <code>trantype = 1</code>,</p>
+</li>
+<li>
+<p><code>0.0</code> or <code>np.inf</code> in special cases.</p>
+</li>
+<li>
+<p><code>trantype</code>:</p>
+</li>
+<li>
+<p><code>1</code> → first-order transition with bounce,</p>
+</li>
+<li><code>0</code> → no bounce (second order, stable, etc.).</li>
+</ul>
+<p><strong>Physical interpretation</strong></p>
+<p><code>_solve_bounce</code> is the “engine” that turns a snapshot of the potential at a given temperature <span class="arithmatex">\(T\)</span> into a physical object:</p>
+<ul>
+<li>radial profile <span class="arithmatex">\(\phi_b(r)\)</span>,</li>
+<li>action <span class="arithmatex">\(S_3(T)\)</span> (or <span class="arithmatex">\(S_4\)</span>, depending on the backend implementation),</li>
+<li>type of transition (first order or not).</li>
+</ul>
+<p>Everything else in Block B is essentially organization around repeated calls to <code>_solve_bounce</code> for different temperatures and phase pairs.</p>
+<hr />
+<h3 id="2-_tunnelfromphaseatt-scan-all-possible-transitions-at-a-given-t">2. <code>_tunnelFromPhaseAtT</code>: scan all possible transitions at a given <span class="arithmatex">\(T\)</span><a class="headerlink" href="#2-_tunnelfromphaseatt-scan-all-possible-transitions-at-a-given-t" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>def _tunnelFromPhaseAtT(
+    T,
+    phases,
+    start_phase,
+    V,
+    dV,
+    phitol,
+    overlapAngle,
+    nuclCriterion,
+    fullTunneling_params,
+    verbose,
+    outdict,
+) -&gt; float:
+    ...
+</code></pre></div>
+<p>This function is the <strong>“<span class="arithmatex">\(S(T)\)</span> wrapper”</strong>: it receives a temperature <span class="arithmatex">\(T\)</span> and returns</p>
+<div class="arithmatex">\[
+nuclCriterion\bigl( S_\text{min}(T), T \bigr),
+\]</div>
+<p>where <span class="arithmatex">\(S_\text{min}(T)\)</span> is the smallest action among all possible transitions from <code>start_phase</code> to any other phase with <span class="arithmatex">\(V_\text{low}(T) &lt; V_\text{high}(T)\)</span>.</p>
+<p>It also <strong>fills the cache</strong> <code>outdict[T]</code> with the best transition found.</p>
+<h4 id="21-input-and-cache">2.1. Input and cache<a class="headerlink" href="#21-input-and-cache" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><code>T</code> may come as a scalar or array (because of <code>optimize.fmin</code>):</p>
+</li>
+<li>
+<p>the function always converts it to a scalar <code>T_val</code>.</p>
+</li>
+<li>
+<p>If <code>T_val</code> is already in <code>outdict</code>, it means we have already computed the best transition at that <span class="arithmatex">\(T\)</span>:</p>
+</li>
+<li>
+<p>it is enough to return <code>nuclCriterion(outdict[T_val]["action"], T_val)</code>.</p>
+</li>
+</ul>
+<p>This is important for efficiency: <code>brentq</code> and <code>fmin</code> will call <code>_tunnelFromPhaseAtT</code> many times with the same <span class="arithmatex">\(T\)</span>, and solving the bounce is expensive.</p>
+<h4 id="22-finding-minima-at-fixed-t">2.2. Finding minima at fixed <span class="arithmatex">\(T\)</span><a class="headerlink" href="#22-finding-minima-at-fixed-t" title="Permanent link">&para;</a></h4>
+<p>It defines a precise 1D minimizer:</p>
+<div class="highlight"><pre><span></span><code>def fmin_min(x0):
+    xmin = optimize.fmin(V, x0, args=(T_val,), xtol=phitol, ftol=np.inf, disp=False)
+    return np.asarray(xmin, dtype=float)
+</code></pre></div>
+<ul>
+<li>First, it refines the minimum of the initial phase:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>x0_guess = start_phase.valAt(T_val)
+x0 = fmin_min(x0_guess)
+V0 = V(x0, T_val)
+</code></pre></div>
+<ul>
+<li>Then it scans all other phases and looks for candidates:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>for key, phase in phases.items():
+    if key == start_phase.key:
+        continue
+    # phase must exist at T
+    if phase.T[0] &gt; T_val or phase.T[-1] &lt; T_val:
+        continue
+
+    x1_guess = phase.valAt(T_val)
+    x1 = fmin_min(x1_guess)
+    V1 = V(x1, T_val)
+    if V1 &gt;= V0:
+        continue  # only care if V_low &lt; V_high
+    tunnel_list.append({ ... })
+</code></pre></div>
+<p><strong>Physics:</strong>
+this step builds the list of possible transitions</p>
+<div class="arithmatex">\[
+\text{high phase} \to \text{low phase}
+\]</div>
+<p>in which the “low” phase has smaller free energy at temperature <span class="arithmatex">\(T\)</span>.</p>
+<h4 id="23-overlapangle-pruning-strongly-aligned-targets">2.3. <code>overlapAngle</code>: pruning strongly aligned targets<a class="headerlink" href="#23-overlapangle-pruning-strongly-aligned-targets" title="Permanent link">&para;</a></h4>
+<p>If <code>overlapAngle &gt; 0</code>, we introduce a geometric criterion:</p>
+<ul>
+<li>
+<p>For each pair of candidates <span class="arithmatex">\((i, j)\)</span>:</p>
+</li>
+<li>
+<p>define the vectors</p>
+</li>
+</ul>
+<div class="arithmatex">\[\Delta x_i = x_i - x_0,\quad \Delta x_j = x_j - x_0\]</div>
+<ul>
+<li>compute the angle between them:</li>
+</ul>
+<div class="arithmatex">\[\cos\theta_{ij}= \frac{ \Delta x_i \cdot \Delta x_j }{ \lvert\Delta x_i\rvert \lvert\Delta x_j\rvert }\]</div>
+<ul>
+<li>If <span class="arithmatex">\(\theta_{ij}\)</span> is smaller than <code>overlapAngle</code> (in degrees), that is,</li>
+</ul>
+<div class="highlight"><pre><span></span><code>dotij &gt;= sqrt(xi2 * xj2) * cos_overlap
+</code></pre></div>
+<p>then the two transitions are essentially “in the same direction” in field space.</p>
+<ul>
+<li>We keep only the one closer (in norm) to the false vacuum and discard the other.</li>
+</ul>
+<p><strong>Physics:</strong>
+this avoids spending time solving very similar bounces that, in practice, have almost identical actions, keeping only the <strong>shortest</strong> direction in field space (the most promising for having smaller action).</p>
+<p>If you want to study <strong>all</strong> directions, just use <code>overlapAngle=0.0</code> in the high-level call.</p>
+<h4 id="24-solving-bounces-and-choosing-the-smallest-s">2.4. Solving bounces and choosing the smallest <span class="arithmatex">\(S\)</span><a class="headerlink" href="#24-solving-bounces-and-choosing-the-smallest-s" title="Permanent link">&para;</a></h4>
+<p>It defines <span class="arithmatex">\(T\)</span>-fixed wrappers:</p>
+<div class="highlight"><pre><span></span><code>def V_fixed(x): return V(x, T_val)
+def dV_fixed(x): return dV(x, T_val)
+</code></pre></div>
+<p>Then, for each candidate in <code>tunnel_list</code>:</p>
+<ul>
+<li>
+<p>prints information if <code>verbose=True</code>,</p>
+</li>
+<li>
+<p>calls <code>_solve_bounce(...)</code>,</p>
+</li>
+<li>
+<p>fills:</p>
+</li>
+<li>
+<p><code>tdict["instanton"]</code>,</p>
+</li>
+<li><code>tdict["action"]</code>,</li>
+<li>
+<p><code>tdict["trantype"]</code>,</p>
+</li>
+<li>
+<p>updates <code>lowest_action</code> and <code>lowest_tdict</code> if the action is smaller.</p>
+</li>
+</ul>
+<p>In the end:</p>
+<ul>
+<li>it stores <code>lowest_tdict</code> in <code>outdict[T_val]</code>,</li>
+<li>it returns <code>nuclCriterion(lowest_action, T_val)</code>.</li>
+</ul>
+<p><strong>Physics:</strong>
+for each <span class="arithmatex">\(T\)</span>, you construct the envelope</p>
+<div class="arithmatex">\[
+S_\text{min}(T)
+= \min_{\text{target phases}}
+S_{\text{bounce}, \text{high phase} \to \text{low phase}}(T),
+\]</div>
+<p>which is what enters the nucleation condition.</p>
+<hr />
+<h3 id="3-_potentialdiffforphase-who-is-energetically-preferred">3. <code>_potentialDiffForPhase</code>: who is energetically preferred?<a class="headerlink" href="#3-_potentialdiffforphase-who-is-energetically-preferred" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>def _potentialDiffForPhase(
+    T: float,
+    start_phase: Phase,
+    other_phases: Sequence[Phase],
+    V: Callable[[np.ndarray, float], float],
+) -&gt; float:
+    ...
+</code></pre></div>
+<p>This function is simple but conceptually important. It answers:</p>
+<blockquote>
+<p>At a given temperature <span class="arithmatex">\(T\)</span>, what is the smallest free-energy difference
+between any other phase and <code>start_phase</code>?</p>
+</blockquote>
+<p>More precisely:</p>
+<ul>
+<li>
+<p>it computes <span class="arithmatex">\(V_0 = V(x_\text{start}(T), T)\)</span>,</p>
+</li>
+<li>
+<p>for each other phase <span class="arithmatex">\(i\)</span>:</p>
+</li>
+<li>
+<p>computes <span class="arithmatex">\(V_i = V(x_i(T), T)\)</span>,</p>
+</li>
+<li>
+<p>evaluates <span class="arithmatex">\(V_i - V_0\)</span>,</p>
+</li>
+<li>
+<p>and returns the <strong>minimum</strong> over all phases:</p>
+</li>
+</ul>
+<div class="arithmatex">\[
+\Delta V_\text{min}(T)
+= \min_i \bigl[ V_i(T) - V_0(T) \bigr].
+\]</div>
+<p><strong>Interpretation</strong></p>
+<ul>
+<li>
+<p>If <span class="arithmatex">\(\Delta V_\text{min}(T) &gt; 0\)</span>:
+  the potential of <code>start_phase</code> is lower than that of any other phase → it is <em>energetically preferred</em> (stable) at that <span class="arithmatex">\(T\)</span>.</p>
+</li>
+<li>
+<p>If <span class="arithmatex">\(\Delta V_\text{min}(T) &lt; 0\)</span>:
+  there exists some other phase with <span class="arithmatex">\(V &lt; V_0\)</span> → <code>start_phase</code> is <em>energetically disfavored</em> (unstable) at that <span class="arithmatex">\(T\)</span>.</p>
+</li>
+</ul>
+<p>This sign is what <code>_maxTCritForPhase</code> uses to locate critical temperatures where <code>start_phase</code> ceases to be preferred.</p>
+<hr />
+<h3 id="4-_maxtcritforphase-maximum-critical-t-for-the-initial-phase">4. <code>_maxTCritForPhase</code>: maximum critical <span class="arithmatex">\(T\)</span> for the initial phase<a class="headerlink" href="#4-_maxtcritforphase-maximum-critical-t-for-the-initial-phase" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>def _maxTCritForPhase(
+    phases: Mapping[Hashable, Phase],
+    start_phase: Phase,
+    V: Callable[[np.ndarray, float], float],
+    Ttol: float,
+) -&gt; float:
+    ...
+</code></pre></div>
+<p><strong>Physical question</strong></p>
+<p>For the phase <code>start_phase</code>, what is the <strong>largest temperature</strong> <span class="arithmatex">\(T_\text{crit}\)</span> such that there exists another phase degenerate in free energy?</p>
+<div class="arithmatex">\[
+V_\text{start}(T_\text{crit}) \approx V_\text{other}(T_\text{crit}).
+\]</div>
+<p>This temperature is relevant to delimit the range in which the false vacuum still makes sense as a metastable minimum.</p>
+<p><strong>Numerical steps</strong></p>
+<ol>
+<li>
+<p>It builds the list <code>other_phases</code> with all phases different from <code>start_phase</code>.</p>
+</li>
+<li>
+<p>It defines the relevant <span class="arithmatex">\(T\)</span> bounds:</p>
+</li>
+<li>
+<p><code>Tmin</code> = largest initial <span class="arithmatex">\(T\)</span> among the other phases;</p>
+</li>
+<li><code>Tmax</code> = smallest final <span class="arithmatex">\(T\)</span> among the other phases;</li>
+<li>
+<p>then it intersects with <span class="arithmatex">\([T_\text{start,min}, T_\text{start,max}]\)</span>.</p>
+</li>
+<li>
+<p>It evaluates:</p>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><code>DV_Tmin = _potentialDiffForPhase(Tmin, start_phase, other_phases, V)
+DV_Tmax = _potentialDiffForPhase(Tmax, start_phase, other_phases, V)
+</code></pre></div>
+<ul>
+<li>If <code>DV_Tmin &gt;= 0</code>: at <code>Tmin</code> the <code>start_phase</code> is already stable (lower than the others) → it returns <code>Tmin</code>.</li>
+<li>
+<p>If <code>DV_Tmax &lt;= 0</code>: at <code>Tmax</code> it is already unstable (some other phase has smaller <span class="arithmatex">\(V\)</span>) → it returns <code>Tmax</code>.</p>
+</li>
+<li>
+<p>Otherwise, the signs of <span class="arithmatex">\(\Delta V\)</span> at <code>Tmin</code> and <code>Tmax</code> are opposite:</p>
+</li>
+<li>
+<p>it uses <code>optimize.brentq</code> on <code>_potentialDiffForPhase</code> to find the zero:</p>
+<p>$$
+ \Delta V_\text{min}(T_\text{crit}) = 0.
+ $$</p>
+</li>
+<li>
+<p>it returns this <code>Tcrit</code> with tolerance <code>Ttol</code>.</p>
+</li>
+</ul>
+<p><strong>Use inside Block B</strong></p>
+<p><code>tunnelFromPhase</code> uses <code>_maxTCritForPhase</code> when the initial search in <span class="arithmatex">\(T\)</span> does not directly find a nucleation solution:</p>
+<ul>
+<li>it restricts <code>Tmax</code> to this <code>Tmax_crit</code> to avoid searching for nucleation in a region where the minimum has already ceased to be physically meaningful (the phase has stopped being a local minimum).</li>
+</ul>
+<hr />
+<h3 id="5-tunnelfromphase-high-level-interface-for-t_n-and-the-instanton">5. <code>tunnelFromPhase</code>: high-level interface for <span class="arithmatex">\(T_n\)</span> and the instanton<a class="headerlink" href="#5-tunnelfromphase-high-level-interface-for-t_n-and-the-instanton" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>def tunnelFromPhase(
+    phases,
+    start_phase,
+    V,
+    dV,
+    Tmax,
+    Ttol=1e-3,
+    maxiter=100,
+    phitol=1e-8,
+    overlapAngle=45.0,
+    nuclCriterion=lambda S, T: S/(T + 1e-100) - 140.0,
+    verbose=True,
+    fullTunneling_params=None,
+) -&gt; Optional[Dict[str, Any]]:
+    ...
+</code></pre></div>
+<p>This is the function you will call “in practice” when you want to:</p>
+<ul>
+<li><strong>find <span class="arithmatex">\(T_n\)</span></strong> (the nucleation temperature) for the transition starting from <code>start_phase</code>,</li>
+<li><strong>obtain the dominant bounce</strong> in the form of the <code>instanton</code> object.</li>
+</ul>
+<h4 id="51-main-inputs">5.1. Main inputs<a class="headerlink" href="#51-main-inputs" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><code>phases</code>: <code>{key → Phase}</code> dictionary from Block A.</p>
+</li>
+<li>
+<p><code>start_phase</code>: <code>Phase</code> object representing the initial metastable phase.</p>
+</li>
+<li>
+<p><code>V</code>, <code>dV</code>: potential and gradient, <span class="arithmatex">\(V(x, T)\)</span> and <span class="arithmatex">\(dV(x, T)\)</span>.</p>
+</li>
+<li>
+<p><code>Tmax</code>: maximum <span class="arithmatex">\(T\)</span> allowed for nucleation (you choose the range of interest).</p>
+</li>
+<li>
+<p><code>Ttol</code>: tolerance in <span class="arithmatex">\(T\)</span> for locating the zero of <code>nuclCriterion</code>.</p>
+</li>
+<li>
+<p><code>phitol</code>: tolerance used in 1D minimizations in field space (to find minima).</p>
+</li>
+<li>
+<p><code>overlapAngle</code>: parameter used to prune nearly redundant directions in field space (passed to <code>_tunnelFromPhaseAtT</code>).</p>
+</li>
+<li>
+<p><code>nuclCriterion(S, T)</code>:</p>
+</li>
+<li>
+<p>default: <span class="arithmatex">\(S/T - 140\)</span> (a standard choice in cosmological FOPTs),</p>
+</li>
+<li>
+<p>the routine seeks a <span class="arithmatex">\(T\)</span> such that <code>nuclCriterion(...) = 0</code>.</p>
+</li>
+<li>
+<p><code>fullTunneling_params</code>: extra kwargs for <code>pathDeformation.fullTunneling</code>.</p>
+</li>
+</ul>
+<h4 id="52-range-in-t">5.2. Range in <span class="arithmatex">\(T\)</span><a class="headerlink" href="#52-range-in-t" title="Permanent link">&para;</a></h4>
+<p>First, it defines the effective interval:</p>
+<ul>
+<li><code>Tmin = start_phase.T[0]</code>,</li>
+<li><code>T_highest_other</code> = largest final <span class="arithmatex">\(T\)</span> among all phases,</li>
+<li><code>Tmax_eff = min(Tmax, T_highest_other)</code>.</li>
+</ul>
+<p>It checks whether <code>Tmax_eff &gt;= Tmin</code>; otherwise, the search does not make numerical sense.</p>
+<h4 id="53-two-step-strategy">5.3. Two-step strategy<a class="headerlink" href="#53-two-step-strategy" title="Permanent link">&para;</a></h4>
+<p>The function tries, in order:</p>
+<ol>
+<li>
+<p><strong>Direct root-finding with <code>brentq</code></strong>:</p>
+</li>
+<li>
+<p>it defines <span class="arithmatex">\(f(T) = _tunnelFromPhaseAtT(T, ...)\)</span>,</p>
+</li>
+<li>
+<p>it tries to find a zero of <span class="arithmatex">\(f\)</span> between <code>Tmin</code> and <code>Tmax_eff</code>:</p>
+<div class="highlight"><pre><span></span><code>Tnuc = brentq(f, Tmin, Tmax_eff, ...)
+</code></pre></div>
+</li>
+<li>
+<p>if this works, we are done: <code>Tnuc</code> is found directly.</p>
+</li>
+<li>
+<p>If <code>brentq</code> fails with the typical error
+   <code>"f(a) and f(b) must have different signs"</code>:</p>
+</li>
+<li>
+<p>it means that <span class="arithmatex">\(nuclCriterion(S(T), T)\)</span> has the same sign over the whole interval:</p>
+<ul>
+<li>either it never crosses zero,</li>
+<li>or it does cross, but the endpoints do not show that clearly.</li>
+</ul>
+</li>
+</ol>
+<p>Then the function switches to a more careful mode:</p>
+<ul>
+<li>
+<p>it ensures that the endpoints <code>Tmin</code> and <code>Tmax_eff</code> have been computed (via <code>_tunnelFromPhaseAtT</code>) and cached in <code>outdict</code>;</p>
+</li>
+<li>
+<p>it checks:</p>
+<ul>
+<li>whether <span class="arithmatex">\(nuclCriterion(S(T_\text{max,eff}), T_\text{max,eff}) &gt; 0\)</span> (tunneling too suppressed at high <span class="arithmatex">\(T\)</span>);</li>
+<li>and whether <span class="arithmatex">\(nuclCriterion(S(T_\text{min}), T_\text{min}) &lt; 0\)</span> (strong tunneling at low <span class="arithmatex">\(T\)</span>).</li>
+</ul>
+</li>
+<li>
+<p>if such a sign change exists, it restricts the maximum temperature to a <code>Tmax_crit</code> obtained from <code>_maxTCritForPhase</code> (the region where the phase is still physically meaningful).</p>
+</li>
+<li>
+<p>it then performs a <strong>minimization in <span class="arithmatex">\(T\)</span></strong> using <code>optimize.fmin</code> on <code>_tunnelFromPhaseAtT</code>, with a <code>callback</code>:</p>
+<ul>
+<li>as soon as the function enters a region with <span class="arithmatex">\(nuclCriterion \le 0\)</span>, the callback raises a <code>StopIteration(T)</code>, containing an estimate of the <span class="arithmatex">\(T\)</span> where this happens.</li>
+</ul>
+</li>
+<li>
+<p>once this <code>Tmin_opt</code> is obtained, it checks whether at that point <span class="arithmatex">\(nuclCriterion\)</span> is indeed <span class="arithmatex">\(\le 0\)</span>; if it is still <span class="arithmatex">\(&gt; 0\)</span>, the function concludes that there is no efficient nucleation → it returns <code>None</code>.</p>
+</li>
+<li>
+<p>if there is a genuine crossing, it performs a second <code>brentq</code> in a narrower interval <span class="arithmatex">\((T_\text{min,opt}, T_\text{max,crit})\)</span> to better locate the zero.</p>
+</li>
+<li>
+<p>otherwise (for example, if <span class="arithmatex">\(nuclCriterion\)</span> never becomes <span class="arithmatex">\(&lt; 0\)</span> even at <code>Tmin</code>), it concludes that the transition <strong>does not nucleate</strong> in the given interval → it returns <code>None</code>.</p>
+</li>
+</ul>
+<p>If, on the other hand, the nucleation condition is already satisfied at <code>Tmax_eff</code> (i.e. <span class="arithmatex">\(nuclCriterion \le 0\)</span> there), the function simply defines:</p>
+<ul>
+<li><code>Tnuc = Tmax_eff</code>: nucleation “happens immediately” at the upper bound of the range.</li>
+</ul>
+<h4 id="54-output">5.4. Output<a class="headerlink" href="#54-output" title="Permanent link">&para;</a></h4>
+<p>After determining <code>Tnuc</code>:</p>
+<ul>
+<li>it ensures that <code>outdict[Tnuc]</code> has been filled by <code>_tunnelFromPhaseAtT</code>,</li>
+<li>it takes <code>rdict = outdict[Tnuc]</code>.</li>
+</ul>
+<p>If <code>rdict["trantype"] &gt; 0</code> (first-order transition with bounce), it returns the dictionary:</p>
+<ul>
+<li><code>Tnuc</code> : nucleation temperature;</li>
+<li><code>low_vev</code>, <code>high_vev</code> : low- and high- T minima;</li>
+<li><code>low_phase</code>, <code>high_phase</code> : keys of the phases involved;</li>
+<li><code>action</code> : instanton action;</li>
+<li><code>instanton</code> : object returned by <code>fullTunneling</code>;</li>
+<li><code>trantype</code> : <code>1</code> for first-order transition.</li>
+</ul>
+<p>If <code>trantype</code> is <code>0</code> (no bounce – second-order case or stable), it returns <code>None</code>.</p>
+<p><strong>Physical interpretation</strong></p>
+<p><span class="arithmatex">\(T_n\)</span> is the temperature at which, according to the chosen criterion (typically <span class="arithmatex">\(S(T)/T \simeq 140\)</span>), the nucleation probability per Hubble volume becomes relevant.</p>
+<p>In terms of cosmological history:</p>
+<ul>
+<li>above <span class="arithmatex">\(T_n\)</span>, the Universe remains trapped in the metastable phase (unless there is a second-order transition);</li>
+<li>close to <span class="arithmatex">\(T_n\)</span>, bubbles of the true phase appear efficiently;</li>
+<li>the returned instanton is the solution that dominates this nucleation.</li>
+</ul>
+<hr />
+<h3 id="6-closing-block-b-integrated-view">6. Closing Block B: integrated view<a class="headerlink" href="#6-closing-block-b-integrated-view" title="Permanent link">&para;</a></h3>
+<p>With Blocks A and B together, the full conceptual flow for a first-order phase transition is:</p>
+<ol>
+<li>
+<p><strong>Build the phase diagram in <span class="arithmatex">\(T\)</span></strong>:</p>
+</li>
+<li>
+<p>use <code>traceMultiMin</code> and <code>Phase</code> to find all phases;</p>
+</li>
+<li>clean redundancies with <code>removeRedundantPhases</code>;</li>
+<li>
+<p>choose the high-<span class="arithmatex">\(T\)</span> phase with <code>getStartPhase</code>.</p>
+</li>
+<li>
+<p><strong>Choose a metastable phase of interest</strong> (<code>start_phase</code>).</p>
+</li>
+<li>
+<p><strong>Run the tunneling core</strong>:</p>
+</li>
+<li>
+<p>for each <span class="arithmatex">\(T\)</span>, <code>_tunnelFromPhaseAtT</code> builds all possible bounces starting from <code>start_phase</code> → <span class="arithmatex">\(S_\text{min}(T)\)</span>;</p>
+</li>
+<li><code>_maxTCritForPhase</code> helps determine up to which temperature it makes sense to demand metastability;</li>
+<li>
+<p><code>tunnelFromPhase</code> combines everything, applies the nucleation criterion, and returns <span class="arithmatex">\(T_n\)</span> and the dominant instanton.</p>
+</li>
+<li>
+<p><strong>From <span class="arithmatex">\(T_n\)</span> and the instanton</strong>, other blocks (or user scripts) can:</p>
+</li>
+<li>
+<p>reconstruct <span class="arithmatex">\(S(T)/T\)</span> as a function of <span class="arithmatex">\(T\)</span>;</p>
+</li>
+<li>determine <span class="arithmatex">\(T_c\)</span> (the critical temperature where the phases become degenerate);</li>
+<li>extract cosmological parameters such as <span class="arithmatex">\(\alpha\)</span> and <span class="arithmatex">\(\beta/H\)</span>;</li>
+<li>compute gravitational-wave spectra.</li>
+</ol>
+<p>In the next test files, we will implement concrete examples using the same one-component Landau–Ginzburg potential, to visualize:</p>
+<ul>
+<li>how <code>tunnelFromPhase</code> selects the correct target phase,</li>
+<li>how <span class="arithmatex">\(S(T)/T\)</span> crosses <span class="arithmatex">\(140\)</span>,</li>
+<li>and how this connects to the phase diagram built in Block A.</li>
+</ul>
+<hr />
+<h2 id="block-c-transition-history-secondordertrans-findalltransitions-findcriticaltemperatures-addcrittempsforfulltransitions">Block C – Transition history (<code>secondOrderTrans</code>, <code>findAllTransitions</code>, <code>findCriticalTemperatures</code>, <code>addCritTempsForFullTransitions</code>)<a class="headerlink" href="#block-c-transition-history-secondordertrans-findalltransitions-findcriticaltemperatures-addcrittempsforfulltransitions" title="Permanent link">&para;</a></h2>
+<p>Block C takes everything built in Blocks A and B</p>
+<ul>
+<li><strong>phases</strong> traced in temperature (<code>Phase</code>, <code>traceMultiMin</code>, <code>getStartPhase</code>);</li>
+<li><strong>bounce solutions</strong> and <strong>nucleation temperatures</strong> (<code>tunnelFromPhase</code>);</li>
+</ul>
+<p>and turns it into something you actually want as a cosmologist:</p>
+<blockquote>
+<p>A <strong>coherent thermal history</strong> of the Universe:
+which phase is realized at which temperature, when first-order vs second-order transitions happen, and how far the system supercools before tunneling.</p>
+</blockquote>
+<p>Conceptually:</p>
+<ul>
+<li>Block A: <em>“What are the minima as a function of T?”</em></li>
+<li>Block B: <em>“Given two minima, when and how do we tunnel between them?”</em></li>
+<li><strong>Block C</strong>: <em>“Chaining everything together, what is the full sequence of transitions as the Universe cools?”</em></li>
+</ul>
+<p>Below we describe each Block C function (how it works, what it returns, and what it means physically) in the same style as the previous blocks. </p>
+<hr />
+<h3 id="1-secondordertrans-encoding-second-order-transitions">1. <code>secondOrderTrans</code> – encoding second-order transitions<a class="headerlink" href="#1-secondordertrans-encoding-second-order-transitions" title="Permanent link">&para;</a></h3>
+<p><strong>Role:</strong>
+<code>secondOrderTrans(high_phase, low_phase, Tstr="Tnuc")</code> is a small helper that builds a <strong>transition dictionary</strong> for cases where the transition is <strong>second order</strong> (no barrier, no bounce).</p>
+<p>In the language of Block A:</p>
+<ul>
+<li>Both <code>high_phase</code> and <code>low_phase</code> are <code>Phase</code> objects.</li>
+<li>The <strong>graph structure</strong> (via <code>low_trans</code>) tells us that, as T goes down, the system can slide continuously from <code>high_phase</code> into <code>low_phase</code>.</li>
+</ul>
+<p><strong>Code behavior</strong></p>
+<ul>
+<li>
+<p>It constructs a dictionary with keys:</p>
+</li>
+<li>
+<p><code>Tstr</code> (usually <code>"Tnuc"</code> or <code>"Tcrit"</code>),</p>
+</li>
+<li><code>high_phase</code>, <code>low_phase</code>,</li>
+<li><code>high_vev</code>, <code>low_vev</code>,</li>
+<li><code>action</code>, <code>instanton</code>, <code>trantype</code>.</li>
+<li>
+<p>For a second-order transition we use:</p>
+</li>
+<li>
+<p><code>action = 0.0</code>,</p>
+</li>
+<li><code>instanton = None</code>,</li>
+<li><code>trantype = 2</code>,</li>
+<li><code>high_vev</code> and <code>low_vev</code> set to the same field value (the first point of <code>high_phase.X</code>), reflecting that the VEV is <em>continuous</em> across the transition.</li>
+</ul>
+<p>Physically, this is a <strong>continuous symmetry restoration/breaking</strong>:</p>
+<ul>
+<li>No barrier → no instanton,</li>
+<li>Correlation length diverges at the critical point,</li>
+<li>Thermal fluctuations, not quantum tunneling, control the dynamics.</li>
+</ul>
+<hr />
+<h3 id="2-findalltransitions-building-a-full-thermal-history">2. <code>findAllTransitions</code> – building a full thermal history<a class="headerlink" href="#2-findalltransitions-building-a-full-thermal-history" title="Permanent link">&para;</a></h3>
+<p><strong>Role:</strong>
+<code>findAllTransitions(phases, V, dV, tunnelFromPhase_args=...)</code> takes the phase structure (Block A) and the tunneling machinery (Block B), and constructs a <strong>single cooling path</strong>:</p>
+<div class="arithmatex">\[
+\text{Phase}_\text{high} ;\rightarrow; \text{Phase}_1 ;\rightarrow; \text{Phase}_2 ;\rightarrow; \dots
+\]</div>
+<p>ordered from <strong>high temperature to low temperature</strong>.</p>
+<p><strong>High-level algorithm</strong></p>
+<ol>
+<li>
+<p><strong>Start at high T</strong></p>
+</li>
+<li>
+<p>Use <code>getStartPhase(phases, V)</code> to identify the dominant high-T phase (usually symmetric, φ ≈ 0).</p>
+</li>
+<li>
+<p>Set <code>Tmax</code> to the highest T where this phase is defined.</p>
+</li>
+<li>
+<p><strong>Iterative step from a given <code>start_phase</code></strong></p>
+</li>
+<li>
+<p>Remove <code>start_phase</code> from the working map (we won’t tunnel <em>into</em> it again).</p>
+</li>
+<li>
+<p>Call <code>tunnelFromPhase(phases_work, start_phase, V, dV, Tmax, **tunnelFromPhase_args)</code>:</p>
+<ul>
+<li>
+<p>If a <strong>first-order</strong> transition is found, <code>tunnelFromPhase</code> returns a dict with:</p>
+<ul>
+<li><code>Tnuc</code>, <code>low_phase</code>, <code>high_phase</code>, <code>low_vev</code>, <code>high_vev</code>,</li>
+<li><code>instanton</code>, <code>action</code>, <code>trantype = 1</code>.<ul>
+<li>If <strong>no</strong> first-order solution exists, it returns <code>None</code>.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>If first-order succeeded:</strong></p>
+<ul>
+<li>Append the returned dict to the <code>transitions</code> list.</li>
+<li>Set <code>start_phase = phases_work[low_phase]</code>.</li>
+<li>Update <code>Tmax = Tnuc</code> (we only look for <em>later</em> transitions).</li>
+</ul>
+</li>
+<li>
+<p><strong>If first-order failed:</strong></p>
+<ul>
+<li>Look at <code>start_phase.low_trans</code> (if present) – these are “downstream” phases that can be reached continuously (second order).</li>
+<li>If at least one of them is still in <code>phases_work</code>, pick the first and build a second-order transition via <code>secondOrderTrans(start_phase, low_phase)</code>.</li>
+<li>Append that dict to <code>transitions</code>, update <code>start_phase = low_phase</code>, and set <code>Tmax</code> to the top of the new phase’s T-range.</li>
+<li>If there are no valid <code>low_trans</code> targets, the history stops.</li>
+</ul>
+</li>
+</ol>
+<p><strong>Outputs</strong></p>
+<p>The function returns a <strong>list of transition dictionaries</strong>, each of which looks like:</p>
+<ul>
+<li>
+<p>First-order:</p>
+</li>
+<li>
+<p><code>{"Tnuc", "low_vev", "high_vev", "low_phase", "high_phase", "action", "instanton", "trantype=1"}</code></p>
+</li>
+<li>
+<p>Second-order:</p>
+</li>
+<li>
+<p>Same keys but with <code>action=0.0</code>, <code>instanton=None</code>, <code>trantype=2</code>.</p>
+</li>
+</ul>
+<p>They are automatically ordered from <strong>hottest to coldest</strong> along a single, consistent path in phase space.</p>
+<p><strong>Physical interpretation on the toy model</strong></p>
+<p>In the Landau–Ginzburg model used in Blocks A and B:</p>
+<ul>
+<li>At high T: we start in the symmetric phase (φ ≈ 0).</li>
+<li>
+<p>As T drops:</p>
+</li>
+<li>
+<p><code>findAllTransitions</code> should find a <strong>first-order</strong> transition from the symmetric to the broken phase, with:</p>
+<ul>
+<li>A <code>Tnuc</code> slightly <strong>below</strong> the critical temperature (supercooling),</li>
+<li>Non-zero <code>action</code> and a <code>trantype=1</code>.</li>
+<li>If additional broken phases existed (multi-step symmetry breaking), they would appear as further entries, either first-order or second-order, depending on the barrier structure.</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h3 id="3-findcriticaltemperatures-scanning-for-degeneracies-tcrit">3. <code>findCriticalTemperatures</code> – scanning for degeneracies <code>Tcrit</code><a class="headerlink" href="#3-findcriticaltemperatures-scanning-for-degeneracies-tcrit" title="Permanent link">&para;</a></h3>
+<p><strong>Role:</strong>
+<code>findCriticalTemperatures(phases, V, start_high=False)</code> decouples the <em>geometric</em> information about <strong>phase degeneracies</strong> from the dynamical tunneling story.</p>
+<p>For every ordered pair of phases <code>(phase1 → phase2)</code> with overlapping temperature ranges, it asks:</p>
+<blockquote>
+<p>“Is there a temperature <code>Tcrit</code> where
+<code>V(φ₁(Tcrit), Tcrit) = V(φ₂(Tcrit), Tcrit)</code>?”</p>
+</blockquote>
+<p>If yes, <code>Tcrit</code> is a <strong>critical temperature</strong> where the two branches are degenerate in free energy.</p>
+<p><strong>Code behavior</strong></p>
+<ol>
+<li>
+<p>For each pair <code>(i, j)</code>:</p>
+</li>
+<li>
+<p>Identify the overlap interval in T:</p>
+<p>$$
+ [t_{\min}, t_{\max}] =
+ [\max(T_i^{\min}, T_j^{\min}), \min(T_i^{\max}, T_j^{\max})].
+ $$</p>
+</li>
+<li>
+<p>If there is <strong>no overlap</strong> (<code>tmin &gt;= tmax</code>):</p>
+</li>
+<li>
+<p>Check for a second-order link via <code>phase2.key in phase1.low_trans</code>.</p>
+</li>
+<li>
+<p>If such a link exists, construct a second-order transition using
+     <code>secondOrderTrans(phase1, phase2, "Tcrit")</code>.</p>
+</li>
+<li>
+<p>If there <strong>is</strong> overlap:</p>
+</li>
+<li>
+<p>Define:</p>
+<p>$$
+ \Delta V(T) = V(\phi_1(T), T) - V(\phi_2(T), T),
+ $$</p>
+<p>with <code>φ1 = phase1.valAt(T)</code> and <code>φ2 = phase2.valAt(T)</code>.</p>
+</li>
+<li>
+<p>Evaluate <code>DV(tmin)</code> and <code>DV(tmax)</code>.</p>
+</li>
+<li>
+<p>Require:</p>
+<ul>
+<li><code>DV(tmin) &gt;= 0</code> and <code>DV(tmax) &lt;= 0</code>, so that <code>phase1</code> is higher
+   at one end and lower at the other → sign change.</li>
+</ul>
+</li>
+<li>
+<p>If the sign change exists, use <code>optimize.brentq</code> to find <code>Tcrit</code> in <code>[tmin, tmax]</code>.</p>
+</li>
+<li>
+<p>Build a transition dict:</p>
+<div class="highlight"><pre><span></span><code>{
+  &quot;Tcrit&quot;: Tcrit,
+  &quot;high_vev&quot;: phase1.valAt(Tcrit),
+  &quot;high_phase&quot;: phase1.key,
+  &quot;low_vev&quot;: phase2.valAt(Tcrit),
+  &quot;low_phase&quot;: phase2.key,
+  &quot;trantype&quot;: 1,
+}
+</code></pre></div>
+</li>
+<li>
+<p>After looping over all pairs, sort the list in <strong>decreasing <code>Tcrit</code></strong>.</p>
+</li>
+</ol>
+<p><strong>Physics: <code>Tcrit</code> vs <code>Tnuc</code></strong></p>
+<ul>
+<li>
+<p>For a <strong>first-order</strong> transition, <code>Tcrit</code> is the temperature where two minima become <strong>degenerate</strong>.</p>
+</li>
+<li>
+<p>But nucleation actually happens at a lower <code>Tnuc</code> where:</p>
+</li>
+</ul>
+<p>$$
+  \frac{S_3(T)}{T} \approx 140
+  $$</p>
+<p>(or whatever criterion you use in <code>tunnelFromPhase</code>).</p>
+<ul>
+<li>The difference <code>Tcrit − Tnuc</code> is a direct measure of <strong>supercooling</strong>.</li>
+</ul>
+<p>For a purely <strong>second-order</strong> transition:</p>
+<ul>
+<li>The minima coalesce at <code>Tcrit</code>, there is <strong>no barrier</strong>, and we typically have <code>Tnuc ≈ Tcrit</code> and <code>trantype=2</code>.</li>
+</ul>
+<hr />
+<h3 id="4-addcrittempsforfulltransitions-matching-tnuc-with-tcrit">4. <code>addCritTempsForFullTransitions</code> – matching <code>Tnuc</code> with <code>Tcrit</code><a class="headerlink" href="#4-addcrittempsforfulltransitions-matching-tnuc-with-tcrit" title="Permanent link">&para;</a></h3>
+<p><strong>Role:</strong>
+<code>addCritTempsForFullTransitions(phases, crit_trans, full_trans)</code> glues together:</p>
+<ul>
+<li>the <strong>dynamical</strong> information from supercooled transitions (<code>full_trans</code>, typically output from <code>findAllTransitions</code>), and</li>
+<li>the <strong>static</strong> degeneracy information from <code>findCriticalTemperatures</code> (<code>crit_trans</code>).</li>
+</ul>
+<p>For each nucleation transition with a given <code>Tnuc</code>, it tries to find the “corresponding” <code>Tcrit</code> along the graph of phases, and attaches that dictionary under the key <code>"crit_trans"</code>.</p>
+<p><strong>Why this is useful</strong></p>
+<p>In any realistic model you often want to quote both:</p>
+<ul>
+<li>the <strong>critical temperature</strong> (thermodynamic degeneracy),</li>
+<li>the <strong>nucleation temperature</strong> (kinetic onset of the transition),</li>
+</ul>
+<p>for each step in the cosmological history. Knowing both is essential for:</p>
+<ul>
+<li>estimating latent heat and strength of the transition,</li>
+<li>computing gravitational-wave spectra (supercooling directly affects the signal),</li>
+<li>comparing with analytic expectations.</li>
+</ul>
+<p><strong>How the matching works (logic overview)</strong></p>
+<ol>
+<li>
+<p><strong>Build “parent” chains in the critical graph</strong></p>
+</li>
+<li>
+<p>For each phase <code>i</code> in <code>phases</code>, we construct a list <code>parents_dict[i]</code>:</p>
+<div class="highlight"><pre><span></span><code>parents = [i, ...]
+</code></pre></div>
+<p>by scanning <code>crit_trans</code> from low T to high T and, whenever we see a critical transition <code>high → low</code> with <code>low</code> already in <code>parents</code>, we append <code>high</code>.</p>
+</li>
+<li>
+<p>Intuitively: these chains encode <strong>ancestry along critical transitions</strong> when moving from low T → high T.</p>
+</li>
+<li>
+<p><strong>For each nucleation transition <code>tdict</code> in <code>full_trans</code>:</strong></p>
+</li>
+<li>
+<p>Extract <code>low_phase</code> and <code>high_phase</code>.</p>
+</li>
+<li>
+<p>Get ancestry lists:</p>
+<ul>
+<li><code>low_parents = parents_dict[low_phase]</code>,</li>
+<li><code>high_parents = parents_dict[high_phase]</code>.</li>
+<li>
+<p>Find the set of <strong>common parents</strong> between these chains and carefully prune them:</p>
+</li>
+<li>
+<p>Remove common ancestors from the tail of <code>low_parents</code>,</p>
+</li>
+<li>Trim the tail of <code>high_parents</code> so that they share only the relevant high-T part.</li>
+<li>This focuses our search on the segment of the phase graph that actually distinguishes the two phases associated with this nucleation event.</li>
+</ul>
+</li>
+<li>
+<p><strong>Scan <code>crit_trans</code> (from low T to high T):</strong></p>
+</li>
+<li>
+<p>For each candidate <code>tcdict</code> in <code>crit_trans</code>:</p>
+<ul>
+<li>
+<p>Skip if <code>Tcrit &lt; Tnuc</code> (we only accept degeneracies above or at the nucleation temperature).</p>
+</li>
+<li>
+<p>Check whether:</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>tcdict[&quot;low_phase&quot;]  in low_parents
+tcdict[&quot;high_phase&quot;] in high_parents
+</code></pre></div>
+<ul>
+<li>The first such match is taken to be the <strong>critical counterpart</strong> of the nucleation transition.</li>
+</ul>
+</li>
+<li>
+<p>Attach this dict as:</p>
+<div class="highlight"><pre><span></span><code>tdict[&quot;crit_trans&quot;] = tcdict
+</code></pre></div>
+</li>
+<li>
+<p>If no match is found, set:</p>
+<div class="highlight"><pre><span></span><code>tdict[&quot;crit_trans&quot;] = None
+</code></pre></div>
+</li>
+</ol>
+<hr />
+<p>If you want to see the full Block C implementation, look at the <code>transitionFinder</code> module in the same file where Blocks A and B live. Block C is the “glue layer” that:</p>
+<ul>
+<li>takes the <strong>phase structure</strong> from Block A,</li>
+<li>the <strong>bounce physics</strong> from Block B,</li>
+<li>
+<p>and turns them into a <strong>human-readable thermal history</strong> with:</p>
+</li>
+<li>
+<p>which phases appear,</p>
+</li>
+<li>at which temperatures they become degenerate,</li>
+<li>at which temperatures they actually nucleate,</li>
+<li>and whether each step is first- or second-order.</li>
+</ul>
+<hr />
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax-config.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

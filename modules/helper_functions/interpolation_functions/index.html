@@ -1,0 +1,2311 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../Numerical_derivatives/">
+      
+      
+        <link rel="next" href="../../finiteT/Exact_Thermal_Integrals/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Interpolation Functions - CosmoTransitions (modernized)</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#interpolation-functions" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-header__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosmoTransitions (modernized)
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Interpolation Functions
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-nav__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CosmoTransitions (modernized)
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap & Flowchart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples (Core modules)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples (Core modules)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_tunneling1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling 1D full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_1" id="__nav_5_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helper Functions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Helper Functions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Miscellaneous_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Miscellaneous Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Numerical_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Integration Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Numerical_derivatives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Derivatives Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interpolation Functions
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interpolation Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#makeinterpfuncs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        makeInterpFuncs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="makeInterpFuncs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cubicinterpfunction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cubicInterpFunction
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cubicInterpFunction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_safe_div" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _safe_div
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_safe_div">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nbspl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nbspl
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Nbspl">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes-properties-useful-facts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes &amp; properties (useful facts)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nbspld1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nbspld1
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Nbspld1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nbspld2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nbspld2
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Nbspld2">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Finite Temperature (One loop corrections)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Finite Temperature (One loop corrections)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Exact_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Spline_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spline Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Approx_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Approx Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Short_Hand_Jb%26Jf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Short Hand for All Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling (1D)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tunneling (1D)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tunneling1D/single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Field functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tunneling1D/tests_single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of SF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Transition Finder
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../transitionFinder/transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../transitionFinder/tests_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of TF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generic Potential
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Generic Potential
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generic_potential/generic_potential/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Potential Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#makeinterpfuncs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        makeInterpFuncs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="makeInterpFuncs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cubicinterpfunction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cubicInterpFunction
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cubicInterpFunction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_safe_div" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _safe_div
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_safe_div">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nbspl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nbspl
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Nbspl">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes-properties-useful-facts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes &amp; properties (useful facts)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nbspld1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nbspld1
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Nbspld1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nbspld2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nbspld2
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Nbspld2">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="interpolation-functions">Interpolation Functions<a class="headerlink" href="#interpolation-functions" title="Permanent link">&para;</a></h1>
+<hr />
+<h2 id="makeinterpfuncs"><code>makeInterpFuncs</code><a class="headerlink" href="#makeinterpfuncs" title="Permanent link">&para;</a></h2>
+<h3 id="signature">Signature<a class="headerlink" href="#signature" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">makeInterpFuncs</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">dy0</span><span class="p">,</span> <span class="n">d2y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">dy1</span><span class="p">,</span> <span class="n">d2y1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Callable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">]</span>
+</code></pre></div>
+<h3 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h3>
+<p>Build a <strong>quintic (5th-degree) interpolant</strong> on the normalized domain <strong>x ∈ [0,1]</strong> that matches <strong>value, first, and second derivatives at both endpoints</strong>:</p>
+<div class="arithmatex">\[
+f(0)=y_0,\quad f'(0)=d y_0,\quad f''(0)=d^2 y_0,\qquad
+f(1)=y_1,\quad f'(1)=d y_1,\quad f''(1)=d^2 y_1.
+\]</div>
+<p>It returns two callables:</p>
+<ul>
+<li><code>f(x)</code>: the interpolating polynomial,</li>
+<li><code>df(x)</code>: its first derivative.</li>
+</ul>
+<blockquote>
+<p>Intuition: a quintic has 6 coefficients, exactly the number of endpoint constraints (value/slope/curvature at 0 and 1).
+We <strong>fix three</strong> coefficients from the left-end constraints and <strong>solve a small 3×3 linear system</strong> for the remaining ones using the right-end constraints.
+This is the classic <strong>Hermite-type two-point interpolation</strong> with up to second derivatives.</p>
+</blockquote>
+<h3 id="parameters-returns-and-raises">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>y0, dy0, d2y0</code>: value, 1st and 2nd derivative at <code>x=0</code>.</li>
+<li><code>y1, dy1, d2y1</code>: value, 1st and 2nd derivative at <code>x=1</code>.</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>f</code> (<code>callable</code>): evaluates the quintic at scalar/array <code>x</code> in <code>[0,1]</code>.</li>
+<li><code>df</code> (<code>callable</code>): evaluates the first derivative at the same <code>x</code>.</li>
+</ul>
+<p><em>(No custom exceptions; the internal 3×3 system has a fixed, well-conditioned matrix.)</em></p>
+<h3 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p>The polynomial is <span class="arithmatex">\(p(x)=a_0+a_1 x+a_2 x^2+a_3 x^3+a_4 x^4+a_5 x^5\)</span>.</p>
+</li>
+<li>
+<p>From the left endpoint:</p>
+<div class="arithmatex">\[a_0=y_0,\quad a_1= d y_0,\quad a_2=\tfrac{1}{2} d^2 y_0\]</div>
+</li>
+<li>
+<p>The remaining <span class="arithmatex">\((a_3,a_4,a_5)\)</span> come from the right endpoint via
+    a <strong>fixed</strong> 3×3 system (hard-coded matrix), solved against the residuals
+    after subtracting the known <span class="arithmatex">\(a_0,a_1,a_2\)</span>.</p>
+</li>
+<li>Both <code>f</code> and <code>df</code> use <strong>Horner’s scheme</strong> for numeric stability and speed.</li>
+<li>To interpolate over an arbitrary interval <span class="arithmatex">\([x_a,x_b]\)</span>, map <span class="arithmatex">\(x\)</span> to
+  <span class="arithmatex">\(s=(x-x_a)/(x_b-x_a)\in[0,1]\)</span>. Endpoint derivatives must be <strong>scaled</strong>:</li>
+</ul>
+<div class="arithmatex">\[\frac{df}{dx}\Big|_{x_a} = \frac{1}{h}\frac{df}{ds}\Big|_{s=0}\quad \frac{d^2 f}{dx^2}\Big|_{x_a} = \frac{1}{h^2}\frac{d^2 f}{ds^2}\Big|_{s=0}\]</div>
+<p>with <span class="arithmatex">\(h=x_b-x_a\)</span> (same at the right end).</p>
+<h3 id="when-to-use-and-examples">When to use and examples<a class="headerlink" href="#when-to-use-and-examples" title="Permanent link">&para;</a></h3>
+<p>Use when you need a <strong>smooth segment</strong> with <strong>continuous value, slope, and curvature</strong> at both ends (e.g., path stitching, potential profiles, or boundary-matched trajectories, without overshoot typical of low-order polynomials).</p>
+<p>see the full test script in <a href="/tests/helper_functions/interpolation_functions.py">tests/helper_functions/interpolation_functions</a> for more</p>
+<p><strong>Example</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Endpoint constraints on x in [0,1]</span>
+<span class="n">y0</span><span class="p">,</span> <span class="n">dy0</span><span class="p">,</span> <span class="n">d2y0</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span>  <span class="mf">0.75</span>
+<span class="n">y1</span><span class="p">,</span> <span class="n">dy1</span><span class="p">,</span> <span class="n">d2y1</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>  <span class="mf">0.8</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.25</span>
+<span class="n">f</span><span class="p">,</span> <span class="n">df</span> <span class="o">=</span> <span class="n">makeInterpFuncs</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">dy0</span><span class="p">,</span> <span class="n">d2y0</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">dy1</span><span class="p">,</span> <span class="n">d2y1</span><span class="p">)</span>
+</code></pre></div>
+<ul>
+<li><strong>Quintic Interpolation</strong>
+<img alt="Quintic Interpolation" src="../assets/interpolation_1.png" /></li>
+</ul>
+<hr />
+<h2 id="cubicinterpfunction"><code>cubicInterpFunction</code><a class="headerlink" href="#cubicinterpfunction" title="Permanent link">&para;</a></h2>
+<h3 id="signature_1">Signature<a class="headerlink" href="#signature_1" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">cubicInterpFunction</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">dy0</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">dy1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<h3 id="purpose_1">Purpose<a class="headerlink" href="#purpose_1" title="Permanent link">&para;</a></h3>
+<p>Cubic two-point interpolant on the normalized parameter <strong>t ∈ [0,1]</strong> that matches <strong>value and first derivative at both ends</strong>.
+Implements the <strong>Bézier form</strong> that is algebraically equivalent to <strong>Hermite</strong> interpolation with endpoint slopes.</p>
+<blockquote>
+<p>Intuition: a cubic has 4 degrees of freedom—exactly the endpoint value/tangent pair at <strong>t=0</strong> and <strong>t=1</strong>.
+Writing it in Bézier form makes the geometry transparent: the middle control points are just the endpoints nudged in the tangent directions.</p>
+</blockquote>
+<h3 id="parameters-returns-and-raises_1">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_1" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>y0, dy0</code>: value and slope at <code>t=0</code>.</li>
+<li><code>y1, dy1</code>: value and slope at <code>t=1</code>.
+  All can be <strong>scalar or array-like</strong> (vectors/fields); shapes must be broadcastable to a common shape.</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul>
+<li>Calling the instance: <code>y = cubic(t)</code> evaluates the interpolant at scalar/array <code>t</code>; the output shape follows <code>t</code> and the shapes of <code>y0/y1</code>.</li>
+</ul>
+<h3 id="notes_1">Notes<a class="headerlink" href="#notes_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Bézier control points (from Hermite data):</strong></li>
+</ul>
+<p>$$P_0 = y_0,\quad P_1 = y_0 + \tfrac{1}{3}\,d y_0,\quad P_2 = y_1 - \tfrac{1}{3}\,d y_1,\quad P_3 = y_1 $$</p>
+<p>and</p>
+<p>$$B(t)=(1-t)^3P_0+3(1-t)^2 t P_1+3(1-t)t^2 P_2+t^3 P_3 $$</p>
+<ul>
+<li><strong>Endpoint slopes &amp; reparameterization:</strong> if you want slopes with respect to a physical coordinate <span class="arithmatex">\(x\in[x_a,x_b]\)</span> (not <span class="arithmatex">\(t\)</span>), map <span class="arithmatex">\(t=(x-x_a)/h\)</span> with <span class="arithmatex">\(h=x_b-x_a\)</span> and set
+  <code>dy0 = (dy/dx at x_a) * h</code>, <code>dy1 = (dy/dx at x_b) * h</code>.</li>
+</ul>
+<h3 id="when-to-use-and-examples_1">When to use and examples<a class="headerlink" href="#when-to-use-and-examples_1" title="Permanent link">&para;</a></h3>
+<p>Use when you need a <strong>compact, slope controlled</strong> segment between two states—great for smooth paths, schedules, or boundary-matched profiles—without the extra curvature constraints of the quintic.</p>
+<p>see the full test script in <a href="/tests/helper_functions/interpolation_functions.py">tests/helper_functions/interpolation_functions.py</a> for more</p>
+<p><strong>Example</strong></p>
+<p><div class="highlight"><pre><span></span><code><span class="c1"># 2) Cubic two-point interpolation (Bezier/Hermite): slope control</span>
+<span class="n">y0</span><span class="p">,</span> <span class="n">y1</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span>
+<span class="n">dy0</span><span class="p">,</span> <span class="n">dy1</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span>
+<span class="n">cubic</span> <span class="o">=</span> <span class="n">cubicInterpFunction</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">dy0</span><span class="p">,</span> <span class="n">y1</span><span class="p">,</span> <span class="n">dy1</span><span class="p">)</span>
+<span class="n">ts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">400</span><span class="p">)</span>
+<span class="n">ys</span> <span class="o">=</span> <span class="n">cubic</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
+<span class="c1"># Expected: curve starts rising fast (positive dy0) and ends with negative slope (dy1).</span>
+</code></pre></div>
+- <strong>Cubic Interpolation</strong>
+<img alt="Cubic Interpolation" src="../assets/interpolation_2.png" /></p>
+<hr />
+<h2 id="_safe_div"><code>_safe_div</code><a class="headerlink" href="#_safe_div" title="Permanent link">&para;</a></h2>
+<h3 id="signature_2">Signature<a class="headerlink" href="#signature_2" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">_safe_div</span><span class="p">(</span><span class="n">num</span><span class="p">,</span> <span class="n">den</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+<h3 id="purpose_2">Purpose<a class="headerlink" href="#purpose_2" title="Permanent link">&para;</a></h3>
+<p>Elementwise division with broadcasting that <strong>returns 0 where <code>den == 0</code></strong>.
+Used inside the Cox–de Boor recursion to safely handle <strong>repeated knots</strong> (zero denominators) without producing NaNs.</p>
+<p><strong>Returns</strong></p>
+<ul>
+<li>Array with the broadcasted shape of <code>num</code> and <code>den</code>, containing <code>num/den</code> where <code>den≠0</code> and <code>0</code> where <code>den=0</code>.</li>
+</ul>
+<hr />
+<h2 id="nbspl"><code>Nbspl</code><a class="headerlink" href="#nbspl" title="Permanent link">&para;</a></h2>
+<h3 id="signature_3">Signature<a class="headerlink" href="#signature_3" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">Nbspl</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+<h3 id="purpose_3">Purpose<a class="headerlink" href="#purpose_3" title="Permanent link">&para;</a></h3>
+<p>Evaluate the <strong>B-spline basis functions</strong> of <strong>degree <code>k</code></strong> for a given <strong>knot vector</strong> <code>t</code> at points <code>x</code>, using the <strong>Cox–de Boor recursion</strong>.
+This returns the <strong>basis matrix</strong> <span class="arithmatex">\(N\)</span> so you can build a spline curve or field as</p>
+<div class="arithmatex">\[
+S(x_j)\;=\;\sum_{i=0}^{\text{nb}-1} c_i\,N_{i,k}(x_j),
+\]</div>
+<p>where <span class="arithmatex">\(\text{nb} = m - k - 1\)</span> is the number of degree-<code>k</code> basis functions (with m=len(t)) and <span class="arithmatex">\(c_i\)</span> are your control coefficients.</p>
+<blockquote>
+<p>Intuition (how it works):
+• <strong>Degree 0 (piecewise constants):</strong> each <span class="arithmatex">\(N_{i,0}\)</span> is 1 on the knot interval <span class="arithmatex">\((t_i, t_{i+1}]\)</span> and 0 elsewhere (this code uses a <strong>right-closed</strong> convention to mirror the legacy behavior).
+• <strong>Elevate degree recursively:</strong> for <span class="arithmatex">\(p=1..k\)</span>,</p>
+<div class="arithmatex">\[
+N_{i,p}(x)\;=\;\frac{x-t_i}{t_{i+p}-t_i}\,N_{i,p-1}(x)\;+\;\frac{t_{i+p+1}-x}{t_{i+p+1}-t_{i+1}}\,N_{i+1,p-1}(x).
+\]</div>
+<p>The helper <code>_safe_div</code> makes each fraction <strong>zero</strong> if its denominator vanishes (e.g., repeated knots), which is the standard convention.</p>
+</blockquote>
+<h3 id="parameters-returns-and-raises_2">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_2" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>t</code> (<code>array_like</code>, shape <code>(m,)</code>): <strong>Non-decreasing</strong> knot vector. Repeated knots are allowed (lower continuity).</li>
+<li><code>x</code> (<code>array_like</code>, shape <code>(n,)</code>): Points where you want the basis evaluated.</li>
+<li><code>k</code> (<code>int</code>, default <code>3</code>): <strong>Degree</strong> of the spline (cubic by default). Must satisfy <code>k &lt;= len(t) - 2</code>.</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>N</code> (<code>np.ndarray</code>, shape <code>(n, m-k-1)</code>):
+  Basis matrix with <strong>rows = evaluation points</strong> and <strong>columns = basis functions</strong>. Entry <code>N[j, i]</code> is <span class="arithmatex">\(N_{i,k}(x_j)\)</span>.</li>
+</ul>
+<p><strong>Raises / Assumptions</strong></p>
+<ul>
+<li><code>ValueError</code> if <code>k &gt; len(t) - 2</code>.</li>
+<li>Assumes <code>t</code> is non-decreasing. If many knots are identical, the corresponding denominators are zero and the code returns 0 for those fractions (as desired).</li>
+</ul>
+<h3 id="notes-properties-useful-facts">Notes &amp; properties (useful facts)<a class="headerlink" href="#notes-properties-useful-facts" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Local support:</strong> <span class="arithmatex">\(N_{i,k}(x)\)</span> is nonzero only on the interval <span class="arithmatex">\([t_i,\,t_{i+k+1}]\)</span>. Hence each row of <code>N</code> has at most <code>k+1</code> nonzeros.</li>
+<li>
+<p><strong>Partition of unity:</strong> for <span class="arithmatex">\(x\)</span> strictly inside the knot span, <span class="arithmatex">\(\sum_i N_{i,k}(x)=1\)</span>. At exact knot locations the right-closed convention assigns the mass to the <strong>right</strong> interval:</p>
+</li>
+<li>
+<p>At <span class="arithmatex">\(x = t_0\)</span>: all zeros (no interval to the left),</p>
+</li>
+<li>At <span class="arithmatex">\(x = t_{m-1}\)</span>: the <strong>last</strong> basis evaluates to 1.</li>
+<li><strong>Continuity:</strong> with <strong>simple knots</strong> (no repetition), splines are <span class="arithmatex">\(C^{k-1}\)</span>. A knot of multiplicity <code>r</code> reduces continuity to <span class="arithmatex">\(C^{k-r}\)</span>.</li>
+</ul>
+<h3 id="when-to-use-and-examples_2">When to use and examples<a class="headerlink" href="#when-to-use-and-examples_2" title="Permanent link">&para;</a></h3>
+<p>Use B-splines when you need <strong>smooth, local-control</strong> interpolation/approximation with tunable continuity via the knot vector—ideal for smooth paths, potentials, or any 1D field where you want <strong>stability</strong> and <strong>partition-of-unity</strong> behavior.</p>
+<p>see the full test script in <a href="/tests/helper_functions/interpolation_functions.py">tests/helper_functions/Interpolation_functions</a> for more</p>
+<p><strong>Examples</strong></p>
+<ul>
+<li><strong>B-spline bases: partition of unity, non-negativity, local support</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;&quot;</span>
+<span class="sd">=== Test 3: B-spline bases (partition of unity &amp; local support) ===</span>
+<span class="sd">knots =  [0.  0.  0.  0.  0.2 0.4 0.6 0.8 1.  1.  1.  1. ]</span>
+<span class="sd">Partition of unity: max|sum_i N_i(x)-1| = 1.0</span>
+<span class="sd">Non-negativity: min(N) = 0.0  (should be &gt;= 0)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<p><img alt="B spline Bases" src="../assets/interpolation_3.png" /></p>
+<p><strong>What the figure shows:</strong></p>
+<ul>
+<li><strong>Partition of unity:</strong> at every <code>x</code>, the colored curves sum to <strong>1</strong> (visually, one “stack” fills the unit height).</li>
+<li><strong>Non-negativity:</strong> each basis is ≥ 0.</li>
+<li>
+<p><strong>Local support:</strong> at any <code>x</code> only <strong><code>k+1=4</code></strong> curves are nonzero (for cubic). This is why changing one coefficient <code>c_i</code> only affects a small neighborhood in the final spline.</p>
+</li>
+<li>
+<p><strong>Exact interpolation via <code>N($x_i$) c = y</code> (Greville collocation)</strong></p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="n">f</span>  <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.2</span><span class="o">*</span><span class="n">x</span>
+<span class="n">y</span>  <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">Xi</span><span class="p">)</span>
+
+<span class="c1"># Square collocation system (nb x nb)</span>
+<span class="n">N_colloc</span> <span class="o">=</span> <span class="n">Nbspl</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">Xi</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">N_colloc</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>             <span class="c1"># exact at Xi</span>
+
+<span class="c1"># Evaluate on a fine grid</span>
+<span class="n">xf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">600</span><span class="p">)</span>
+<span class="n">Nf</span> <span class="o">=</span> <span class="n">Nbspl</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">xf</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+<span class="n">Sf</span> <span class="o">=</span> <span class="n">Nf</span> <span class="o">@</span> <span class="n">c</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 5: Exact interpolation via B-splines (solve for coefficients) ===</span>
+<span class="sd">Max residual at collocation points (should be ~1e-12): 2.220e-16</span>
+<span class="sd">Max abs error on fine grid (approx. quality, not necessarily tiny): 2.234e-03</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<p><img alt="B spline interpolation" src="../assets/interpolation_5.png" /></p>
+<p><strong>What the figure shows (caption/notes):</strong></p>
+<ul>
+<li>The <strong>red dashed</strong> spline matches the <strong>black</strong> target <strong>exactly at the blue Greville points</strong> (interpolation).</li>
+<li>
+<p>Between collocation points the match is <strong>approximate</strong> (still very good here because we used 10 cubic bases on <code>[0,1]</code>).</p>
+</li>
+<li>
+<p>For <strong>exact interpolation</strong>, use <strong>Greville points</strong> to build a square, well-conditioned system and solve <code>N @ c = y</code>.</p>
+</li>
+<li>For <strong>fitting/denoising</strong>, solve <code>min_c ||N c − y||</code> (possibly with a smoothness regularizer).</li>
+</ul>
+<hr />
+<h2 id="nbspld1"><code>Nbspld1</code><a class="headerlink" href="#nbspld1" title="Permanent link">&para;</a></h2>
+<h3 id="signature_4">Signature<a class="headerlink" href="#signature_4" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">Nbspld1</span><span class="p">(</span><span class="n">t</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+</code></pre></div>
+<h3 id="purpose_4">Purpose<a class="headerlink" href="#purpose_4" title="Permanent link">&para;</a></h3>
+<p>Same idea as <code>Nbspl</code>, but also returns the <strong>first derivatives</strong> of the degree-<code>k</code> B-spline basis with respect to <code>x</code>. 
+Internally it builds and caches all bases up to degree <code>k</code>, then uses the <strong>closed-form derivative</strong>:</p>
+<div class="arithmatex">\[\frac{d}{dx}N_{i,k}(x) = \frac{k}{t_{i+k}-t_i}\,N_{i,k-1}(x) - \frac{k}{t_{i+k+1}-t_{i+1}}\,N_{i+1,k-1}(x) \]</div>
+<p>with the convention that any term with zero denominator contributes <strong>0</strong> (repeated knots).</p>
+<h3 id="parameters-returns-and-raises_3">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_3" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong> — same as <code>Nbspl(t, x, k)</code>.</p>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>N</code>  (<code>ndarray</code>, shape <code>(n, m-k-1)</code>): basis values <span class="arithmatex">\(N_{i,k}(x_j)\)</span>.</li>
+<li><code>dN</code> (<code>ndarray</code>, shape <code>(n, m-k-1)</code>): first derivatives <span class="arithmatex">\(\partial_x N_{i,k}(x_j)\)</span>.</li>
+</ul>
+<p><strong>Raises / Notes</strong></p>
+<ul>
+<li><code>ValueError</code> if <code>k &gt; len(t) - 2</code>.</li>
+<li>Uses the same <strong>right-closed</strong> seed for the degree-0 basis as <code>Nbspl</code>.</li>
+<li>At clamped ends (<code>open</code> knots), derivatives near the extreme knots are well-defined but finite-difference checks must avoid crossing the boundary row (see fix below).</li>
+</ul>
+<hr />
+<h2 id="nbspld2"><code>Nbspld2</code><a class="headerlink" href="#nbspld2" title="Permanent link">&para;</a></h2>
+<h3 id="signature_5">Signature<a class="headerlink" href="#signature_5" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">Nbspld2</span><span class="p">(</span><span class="n">t</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+</code></pre></div>
+<h3 id="purpose_5">Purpose<a class="headerlink" href="#purpose_5" title="Permanent link">&para;</a></h3>
+<p>As above, but also returns the <strong>second derivatives</strong>. It first computes all first-derivative tables for degrees <code>0..k</code>, then applies the same closed-form again on <code>dN_{*,k-1}</code>:</p>
+<div class="arithmatex">\[\frac{d^2}{dx^2}N_{i,k}(x)= \frac{k}{t_{i+k}-t_i}\,\frac{d}{dx}N_{i,k-1}(x)- \frac{k}{t_{i+k+1}-t_{i+1}}\,\frac{d}{dx}N_{i+1,k-1}(x),
+\]</div>
+<p>with the same zero-denominator convention.</p>
+<h3 id="parameters-returns-and-raises_4">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_4" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong> — same as <code>Nbspl</code>.</p>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>N</code>   (<code>ndarray</code>, shape <code>(n, m-k-1)</code>): basis values.</li>
+<li><code>dN</code>  (<code>ndarray</code>, shape <code>(n, m-k-1)</code>): first derivatives.</li>
+<li><code>d2N</code> (<code>ndarray</code>, shape <code>(n, m-k-1)</code>): second derivatives.</li>
+</ul>
+<p><strong>Raises / Notes</strong></p>
+<ul>
+<li><code>ValueError</code> if <code>k &gt; len(t) - 2</code>.</li>
+<li>For <code>k=0</code> or <code>k=1</code>, the second derivative is identically <strong>0</strong> (as expected).</li>
+</ul>
+<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
+<p>see the full test script in <a href="/tests/helper_functions/interpolation_functions.py">tests/helper_functions/Interpolation_functions</a> for more</p>
+<ul>
+<li><strong>Basis Functions derivatives (first and second)</strong></li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 4: dN/dx and d²N/dx² vs finite differences (sanity) ===</span>
+<span class="sd">Max |dN - FD|  = 1.374e-03</span>
+<span class="sd">Max |d2N - FD| = 3.208e-01</span>
+<span class="sd">Expected: small (method consistent); edges less accurate (central FD not applicable).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<p><img alt="B spline basis derivatives" src="../assets/interpolation_4.png" /></p>
+<ul>
+<li><em>Basis Functions with repeated knots (reduce smoothness)</em></li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 6: Repeated interior knot reduces smoothness (see jump in derivatives) ===</span>
+<span class="sd">Interior knot at x≈0.5: left slope=-11.423134, right slope=-11.644709</span>
+<span class="sd">Expected: visible change in slope at the repeated knot (reduced continuity).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<p><img alt="B spline repeated knots" src="../assets/interpolation_6.png" /></p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 7: Expected error cases ===</span>
+<span class="sd">k too large (Nbspl): Nbspl: require k &lt;= len(t)-2</span>
+<span class="sd">x not 1D (may raise/behave unexpectedly): ValueError(&#39;operands could not be broadcast together with shapes (2,1,3) (9,) &#39;)</span>
+<span class="sd">knot length invalid (Nbspl): Nbspl: require k &lt;= len(t)-2</span>
+
+<span class="sd">(Equal for Nbspl, Nbspld1 and Nbspld2)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax-config.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

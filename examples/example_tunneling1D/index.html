@@ -1,0 +1,1916 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../../architecture/">
+      
+      
+        <link rel="next" href="../example_transitionFinder/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Tunneling 1D full example - CosmoTransitions (modernized)</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tunneling-1d-all-that-you-need-to-know" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="CosmoTransitions (modernized)" class="md-header__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosmoTransitions (modernized)
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Tunneling 1D full example
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="CosmoTransitions (modernized)" class="md-nav__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CosmoTransitions (modernized)
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap & Flowchart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples (Core modules)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples (Core modules)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling 1D full example
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling 1D full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#single-field-instaton" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single Field Instaton
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Single Field Instaton">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#introduction-and-minimal-params" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Introduction and minimal params
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#about-the-boundary-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        About the boundary conditions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-imporants-params-in-vphi-lot-2-of-the-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other imporants params in \(V(\phi)\) | Lot 2 of the code
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#visualizing-potential-and-its-inversion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visualizing potential and its inversion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#near-solutions-and-initial-conditions-lot-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Near solutions and initial conditions| Lot 3
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#odeintegrate-saveprofile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ODE/Integrate &amp; Saveprofile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#find-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Find profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-beta-and-terms-contributions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action, \(\beta\) and terms contributions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../example_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_1" id="__nav_5_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helper Functions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Helper Functions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/helper_functions/Miscellaneous_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Miscellaneous Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/helper_functions/Numerical_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Integration Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/helper_functions/Numerical_derivatives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Derivatives Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/helper_functions/interpolation_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interpolation Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Finite Temperature (One loop corrections)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Finite Temperature (One loop corrections)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/finiteT/Exact_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/finiteT/Spline_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spline Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/finiteT/Approx_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Approx Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/finiteT/Short_Hand_Jb%26Jf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Short Hand for All Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling (1D)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tunneling (1D)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/tunneling1D/single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Field functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/tunneling1D/tests_single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of SF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Transition Finder
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/transitionFinder/transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/transitionFinder/tests_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of TF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generic Potential
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Generic Potential
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/generic_potential/generic_potential/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Potential Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#single-field-instaton" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single Field Instaton
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Single Field Instaton">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#introduction-and-minimal-params" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Introduction and minimal params
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#about-the-boundary-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        About the boundary conditions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-imporants-params-in-vphi-lot-2-of-the-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other imporants params in \(V(\phi)\) | Lot 2 of the code
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#visualizing-potential-and-its-inversion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Visualizing potential and its inversion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#near-solutions-and-initial-conditions-lot-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Near solutions and initial conditions| Lot 3
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#odeintegrate-saveprofile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ODE/Integrate &amp; Saveprofile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#find-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Find profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-beta-and-terms-contributions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action, \(\beta\) and terms contributions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="tunneling-1d-all-that-you-need-to-know">Tunneling 1D - All that you need to know<a class="headerlink" href="#tunneling-1d-all-that-you-need-to-know" title="Permanent link">&para;</a></h1>
+<p>This page aims to teach you only what's necessary for someone to use and call the functions that
+find the bounce solution in the single-field (1D) case.</p>
+<p>If you're not interested in seeing how each function works separately, with clear examples fore every sub-fuctions,
+this is the place. However, if you have questions about a specifc functions or want to inspect one in detail,
+I recommend checking the folder <a href="/docs/modules/tunneling1D">modules/tunneling1D</a>.</p>
+<hr />
+<h2 id="single-field-instaton">Single Field Instaton<a class="headerlink" href="#single-field-instaton" title="Permanent link">&para;</a></h2>
+<h3 id="introduction-and-minimal-params">Introduction and minimal params<a class="headerlink" href="#introduction-and-minimal-params" title="Permanent link">&para;</a></h3>
+<p>In this module we solve the differential equation </p>
+<div class="arithmatex">\[\frac{d^2 \phi}{dr^2}+\frac{\alpha}{r}\frac{d\phi}{dr} = \frac{dV}{d\phi} \]</div>
+<p>This comes from writing the Laplacian in spherical coordinates and assuming spherical symmetry. 
+More importantly, we are already in Euclidean signature: after the Wick rotation in the time 
+coordinate  <span class="arithmatex">\(t\rightarrow -i\tau\)</span>, the field equation becomes:</p>
+<div class="arithmatex">\[\nabla^2 \phi = V'(\phi) \quad (\text{with }\nabla \text{ in 4D}); \qquad \rho\equiv \sqrt{\tau^2+x^2+y^2+z^2}\]</div>
+<p><strong>Semiclassical picture.</strong> This is a semiclassical approximation valid for tunneling.
+It governs the part where the field transition through classically forbidden paths. After tunneling,
+we switch back to real time and evolve classically. At (t=0) what we "see" in space is the radial bounce
+profile <span class="arithmatex">\(\phi_b(\rho)\)</span> we just solved for, and them the Minkowski evolution follows:</p>
+<div class="arithmatex">\[\ddot{\phi} -\nabla^2 \phi \equiv\Box \phi = -V'(\phi) \qquad \dot{\phi}=0; \quad \phi(x,t=0)=\phi_{bounce}(r)  \]</div>
+<p>This point is quite crucial; we can imagine a timeline from <span class="arithmatex">\(\tau \rightarrow \infty\)</span> until <span class="arithmatex">\(\tau=0\)</span> 
+that has the semiclassical description made here. </p>
+<p>Remembering that <span class="arithmatex">\(\tau \gg\)</span> 1 are high temperatures (we are closer to the beginning of the universe) 
+and <span class="arithmatex">\(\tau\)</span> = 0 would be more towards the "future".
+At <span class="arithmatex">\(\tau=0\)</span> we return to real time and return to the classical description with the equation above</p>
+<p><strong>About <span class="arithmatex">\(\alpha\)</span>.</strong> The “friction” coefficient is <span class="arithmatex">\(\alpha=d-1\)</span>, where (d) 
+Thermal effects compactify Euclidean time with period <span class="arithmatex">\(\beta=1/T\)</span>. At high temperature the time circle is small, 
+the solution is effectively 3D, and <span class="arithmatex">\(\alpha=2\)</span> <em>O(3)</em>. In the zero-temperature limit the solution is <em>O(4)</em> and <span class="arithmatex">\(\alpha=3\)</span>. 
+In practice, transitions are often high-(T), so we default to <span class="arithmatex">\(\alpha=2\)</span>.</p>
+<p>With that minimal intro, here’s what you must provide for the solver (three parameters):</p>
+<ul>
+<li><span class="arithmatex">\(\phi_{\text{true}}\)</span>: field value at the true (stable) minimum</li>
+<li><span class="arithmatex">\(\phi_{\text{meta}}\)</span>: field value at the false/metastable minimum</li>
+<li><span class="arithmatex">\(V(\phi)\)</span>: the scalar potential</li>
+</ul>
+<p>If you also have analytic <span class="arithmatex">\(V'(\phi)\)</span> or <span class="arithmatex">\(V''(\phi)\)</span>, you can pass them too. Likewise, set <span class="arithmatex">\(\alpha\)</span>
+if you want something different from the default.</p>
+<div class="highlight"><pre><span></span><code>from CosmoTransitions.tunneling1D import SingleFieldInstanton
+
+phi_abs = 1.0
+phi_meta = 0.0
+alpha = 2 # O(3) 
+def V ... # Define your potential here
+
+inst = SingleFieldInstanton(
+        phi_absMin= phi_abs,
+        phi_metaMin=phi_meta,
+        V=V,
+        alpha=alpha,
+        phi_eps=1e-3)
+</code></pre></div>
+<p><strong>How to run this example</strong></p>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>docs.examples.example_tunneling1D
+</code></pre></div>
+<p>In all examples the potentials chosen was:</p>
+<div class="arithmatex">\[\text{THIN}: \frac{1}{4}\phi ^4 - 0.49\phi ^3 + 0.235 \phi ^2 \]</div>
+<div class="arithmatex">\[\text{THICK}:  \frac{1}{4}\phi ^4 - \frac{2}{5}\phi^3 + \frac{1}{10}\phi^2 \]</div>
+<hr />
+<h3 id="about-the-boundary-conditions">About the boundary conditions<a class="headerlink" href="#about-the-boundary-conditions" title="Permanent link">&para;</a></h3>
+<p>What we want from a bounce is simple to state: the solution starts at rest at the center and, as <span class="arithmatex">\(r\to\infty\)</span>, 
+it asymptotically approaches the false vacuum and stops on it.</p>
+<p>Keep in mind the <strong>inverted-potential picture</strong>. After the Wick rotation <span class="arithmatex">\(t\to -i\tau\)</span>, the Euclidan equation reads
+<span class="arithmatex">\(\phi''+frac{\alpha}{r}\phi'=V'(\phi)\)</span>. </p>
+<p>This is equivalent to a particle moving in the <strong>inverted potential</strong> (-V) with a time dependent friction
+<span class="arithmatex">\(\alpha/r\)</span>: the particle is realeased near the "top" corresponding to the true vacuum (a maximum of -V) and must roll,
+losing energy to friction, to the other "top" at the false vacuum, arriving there with zero velocity. 
+There is a unique "just-right" starting point <span class="arithmatex">\(\phi_0\)</span> for which this happens.</p>
+<p>Therefore, the boundary contions are:</p>
+<ul>
+<li><span class="arithmatex">\(\phi'(0)=0\)</span></li>
+<li><span class="arithmatex">\(\lim_{r \to \infty} \phi'(r) = 0\)</span></li>
+<li><span class="arithmatex">\(\lim_{r \to \infty} \phi(r) = \phi_{meta}\)</span></li>
+</ul>
+<p>Notice none of these impose something on <span class="arithmatex">\(\phi_0\)</span> (<span class="arithmatex">\(\equiv \phi(0)\)</span>). 
+The initial field value in Euclidean "time" can be anywhere between the true and false vacua, as long
+as  it is the one that makes the particle land and stop at <span class="arithmatex">\(\phi_{meta}\)</span> as <span class="arithmatex">\(r\to \infty\)</span>.</p>
+<p><strong>And how do we ever reach the true vacuum?</strong> After tunneling, we go back to real time.
+At (t=0) the initial data are <span class="arithmatex">\(\dot\phi(x,0)=0,\quad \phi(x,0)=\phi_{\text{bounce}}(r).\)</span>
+The bubble expands and the field relaxes toward <span class="arithmatex">\(\phi_{true}\)</span> (that's the phenomelogy we usually expects).
+It's always good to keep in mind that the classical model governs the dynamics after the transition, 
+and it will determine what will happen to the field after the transition.</p>
+<p><strong>Why <span class="arithmatex">\(\phi'(0)=0\)</span></strong>
+* Radial symmetry and Regularity at the origin forces <span class="arithmatex">\(\phi' _0=0\)</span> and more precisely, a smooth Taylor
+expansion <span class="arithmatex">\(\phi(r) = \phi_0 +\mathcal{O}(r^2)\)</span>.
+* The friction term <span class="arithmatex">\(\alpha/r \phi'\)</span> would be singular at r=0 unless <span class="arithmatex">\(\phi'\)</span> vanishes there
+* It is important to note that radial symmetry alone guarantees that the derivative will be 0 at r=0</p>
+<p><strong>Real time echo of this:</strong> At t=0 we set <span class="arithmatex">\(\dot{\phi} = 0\)</span>. After that, <span class="arithmatex">\(\dot{\phi}\)</span> generally
+becomes nonzero as the bubble grows. The configuration remains <strong>spherically symmetric</strong> (no angular dependence),
+but spatial gradients (\partial_r \phi) are zero only at the center (r=0), not everywhere. </p>
+<p>That's the whole boundary condition story resume. With this in place, we can move on to the key
+diagnostics the code computes</p>
+<hr />
+<h3 id="other-imporants-params-in-vphi-lot-2-of-the-code">Other imporants params in <span class="arithmatex">\(V(\phi)\)</span> | Lot 2 of the code<a class="headerlink" href="#other-imporants-params-in-vphi-lot-2-of-the-code" title="Permanent link">&para;</a></h3>
+<p>There are two especially useful landmarks <span class="arithmatex">\(V(\phi)\)</span>. </p>
+<p><strong>1) The "bar" point <span class="arithmatex">\(\phi_{bar}\)</span></strong></p>
+<p>In the inverted potential (-V) picture, we can think that, for <span class="arithmatex">\(\phi_0\)</span> reach the false vacuum level,
+energy must be at least equal to <span class="arithmatex">\(V(\phi_{meta})\)</span>. </p>
+<p>Therefore, the field value <span class="arithmatex">\(\phi_{bar}\)</span> is defined on the true-vaccum side of the barrier by:</p>
+<div class="arithmatex">\[V(\phi_{bar})= V(\phi_{meta}) \quad (\text{with} \phi_{bar} \text{located beyond the barrier peak})\]</div>
+<p>This gives a clean search window for the correct initial value <span class="arithmatex">\(\phi_0\)</span>:</p>
+<div class="arithmatex">\[V(\phi_{bar}) \geq V(\phi_0) \geq V(\phi_{True}) \]</div>
+<p>Intuitively: <span class="arithmatex">\(\phi_{bar}\)</span> marks the lowest energy starting point (on the true side) that still has the same
+Euclidean "energy" as the false vacuum; anything bellow it cannot reach <span class="arithmatex">\(\phi_{meta}\)</span> once friction is included.</p>
+<blockquote>
+<p>Small clarification on commom mental image: sometimes people describe <span class="arithmatex">\(\phi_{bar}\)</span> as a "turning point" if realeased
+from <span class="arithmatex">\(\phi_{meta}\)</span>  in the inverted potential. Strictly speaking, if you start exactly at <span class="arithmatex">\(\phi_{meta}\)</span> with 
+zero velocity you just sit there and just go for the other side by thermal fluctuations or quantum tunneling.</p>
+</blockquote>
+<p><strong>2) The barrier top <span class="arithmatex">\(\phi_{top}\)</span> and the curvature scale</strong>
+<span class="arithmatex">\(\phi_{top}\)</span> is simply the maximum of <span class="arithmatex">\(V(\phi)\)</span> (the peak of the barrier). Near this point we 
+can approximate: </p>
+<div class="arithmatex">\[ V(\phi) \approx V_{top}-\frac{1}{2} k^2 (\phi-\phi_{top})^2\]</div>
+<p>This motivates a <strong>curvature length</strong> scale</p>
+<div class="arithmatex">\[r_{scale} \equiv \frac{1}{\sqrt{|V''(\phi_{top})|}} \]</div>
+<p>It is a very handy measure of how "step" the barrier is and shows up in several numerical limits
+and diagnostics. In thin-wall situations the barrier is steep <span class="arithmatex">\(\Rightarrow |V''|\)</span> large <span class="arithmatex">\(\Rightarrow\)</span>
+<span class="arithmatex">\(r_{scale}\)</span> small. In thick-wall cases the top is shallow <span class="arithmatex">\(\Rightarrow |V''|\)</span> small <span class="arithmatex">\(\Rightarrow\)</span>
+<span class="arithmatex">\(r_{scale}\)</span> large; which matches each name.</p>
+<blockquote>
+<p>Practical note (used in the code): When the curvature at ther top is extremly small, dectyly using
+<span class="arithmatex">\(V''(\phi_{top})\)</span> can be noisy. In that case we fall back to more robust proxies, a cubic fit across the wall region.</p>
+</blockquote>
+<hr />
+<h3 id="visualizing-potential-and-its-inversion">Visualizing potential and its inversion<a class="headerlink" href="#visualizing-potential-and-its-inversion" title="Permanent link">&para;</a></h3>
+<p>Here is a plot for thin wall and thick wall with all the interesting points.</p>
+<p><em>Thin-wall — Potential with marks</em>
+<img alt="Thin_A1_V" src="../assets/thin/A1_V_with_markers.png" /></p>
+<p><em>Thick-wall — Potential with marks</em>
+<img alt="Thick_A1_V" src="../assets/thick/A1_V_with_markers.png" /></p>
+<p>And now the inverted plots (-V) with the founded <span class="arithmatex">\(\phi_0\)</span> solution:</p>
+<p><em>Thin-wall — <span class="arithmatex">\(-V(\phi)\)</span></em>
+<img alt="Thin_A2_V" src="../assets/thin/A2_inverted_with_phi0.png" /></p>
+<p><em>Thick-wall — <span class="arithmatex">\(-V(\phi)\)</span></em>
+<img alt="Thick_A2_V" src="../assets/thick/A2_inverted_with_phi0.png" /></p>
+<hr />
+<h3 id="near-solutions-and-initial-conditions-lot-3">Near solutions and initial conditions| Lot 3<a class="headerlink" href="#near-solutions-and-initial-conditions-lot-3" title="Permanent link">&para;</a></h3>
+<p>For any field value <span class="arithmatex">\(\phi(r)\)</span> taken near some arbitraty <span class="arithmatex">\(\phi_0\)</span>, we can rewrite the ODE in
+a locally linearized form and solve it exactly. Around <span class="arithmatex">\(\phi_0\)</span></p>
+<div class="arithmatex">\[V'(\phi)\approx V'(\phi_0)+V''(\phi_0)(\phi-\phi_0)\]</div>
+<p>The solution reads  </p>
+<div class="arithmatex">\[\phi(r)-\phi_0 = \frac{V'(\phi_0)}{V''(\phi_0)}\Bigg[\Gamma(\nu+1)\Big(\tfrac{t}{2}\Big)^{-\nu} I_\nu(t)-1\Bigg]\]</div>
+<p>where <span class="arithmatex">\(I_\nu\)</span> is the modified Bessel functions.</p>
+<p>The key point: This expressing is valid whenever the field is sitting near a point with <span class="arithmatex">\(\phi' \approx 0\)</span>.
+It doesn't matter if <span class="arithmatex">\(r\)</span> is tiny or moderately large - if the derivative stays small, the approximation keeps tracking.
+In practice we use it around the chosen <span class="arithmatex">\(\phi_0\)</span>; if you need it elsewhere, re-exapand around a new <span class="arithmatex">\(\phi_0\)</span>.</p>
+<p>Because the equation has a formal singularaty at <span class="arithmatex">\(r=0\)</span>, we start the numerical integration a little away from the origin,
+at <span class="arithmatex">\(r=r_{min}&gt;0\)</span>. To do that cleanly we introduce a <strong>lower bound</strong> <span class="arithmatex">\(\Delta\phi_{cutoff}\)</span> and choose <span class="arithmatex">\(r_{min}\)</span>
+such that:</p>
+<div class="arithmatex">\[|\phi(r_{min})-\phi_{true}| \gtrsim \Delta \phi_{cutoff} \]</div>
+<p>evaluating <span class="arithmatex">\(phi(r_{min})\)</span> with the exact small-r formula above.</p>
+<p>We also need an inatial guess for <span class="arithmatex">\(\phi_0\)</span>. Internally this is handled, but it's worth sating explicitly:</p>
+<div class="arithmatex">\[\phi_0 = \phi_{true} + \Delta \phi, qquad \text{with} \phi_0 \in [\phi_{true}, \phi_{bar}\]</div>
+<p>The algorthm procceds as follows (conceptually):</p>
+<ol>
+<li>Pick a trial <span class="arithmatex">\(\phi_0\)</span> in [<span class="arithmatex">\(\phi_{true}, \phi_{bar}\)</span>]</li>
+<li>Use the exact small-r solution to evaluate <span class="arithmatex">\(\phi(r)\)</span> at an initial <span class="arithmatex">\(r_{min}\)</span></li>
+<li>If <span class="arithmatex">\(|\phi(r_{min})-\phi_{true}| &lt; \Delta \phi_{cutoff}\)</span> increase <span class="arithmatex">\(r_{min}\)</span> (keeping the same <span class="arithmatex">\(\phi_0\)</span>) and check again.
+   Otherwise, start the full integration from that <span class="arithmatex">\(r_{min}\)</span>.</li>
+<li>If the boundary condition at infinity is not met (overshoot/undershoot), update <span class="arithmatex">\(\phi_0\)</span> and repeat</li>
+</ol>
+<p>Heuristic that i follow: choose <span class="arithmatex">\(\Delta \phi_{cutoff}\)</span> as small as makes the code stable, so we don't sart too
+far from <span class="arithmatex">\(\phi_{true}\)</span>. This matters even more in the thin-wall regime, where the correct <span class="arithmatex">\(phi_0\)</span> typically sits very close
+to <span class="arithmatex">\(\phi_{true}\)</span></p>
+<p>Note that if we choose a very high cutoff we may find a wrong solution that would still converge!</p>
+<p>Bellow are one example of a bad use of the <span class="arithmatex">\(\Delta \phi_{cutoff}\)</span> in a thin wall case:</p>
+<p><em>Error case Thin-wall</em> — <span class="arithmatex">\(\Delta \phi_{cutoff} =0.15\)</span>
+<img alt="Thin_error" src="../assets/error_case.png" /></p>
+<p><strong>So how do I know I've found the right one cutoff?</strong> I had the same question, but the key is to realize that if 
+your cutoff was too high, then your <span class="arithmatex">\(\phi\)</span> is below what it should be, and its derivative pulls it towards the correct value 
+(i.e., <span class="arithmatex">\(\phi'_0 \neq 0\)</span>). A good practice is to check your graph, as in the one above, 
+to see if <span class="arithmatex">\(\phi_0\)</span> (pink dot) is increasing towards some value going towards r=0; this shouldn't happen, as we expect <span class="arithmatex">\(\phi'_0=0\)</span>.</p>
+<p>In the case above: $\phi'_0 = -1.05e-01 $</p>
+<p>The correct thing is that going to r=0 there is a plateau at \phi_0 (not so much grow)</p>
+<p>In the end  are the correct solutions with <span class="arithmatex">\(\Delta \phi_{cutoff}=0.01\)</span>.</p>
+<p>Bellow are the plots for <span class="arithmatex">\(\phi\)</span> and <span class="arithmatex">\(\phi'\)</span> near <span class="arithmatex">\(r=0\)</span></p>
+<p><em>Thin-wall</em> - <span class="arithmatex">\(\phi\)</span> near r=0
+<img alt="Thin_B_approx" src="../assets/thin/B_small_r_phi_and_dphi_from_exactSolution.png" /></p>
+<p><em>Thick-wall</em> — <span class="arithmatex">\(\phi\)</span> near r=0
+<img alt="Thick_B_approx" src="../assets/thick/B_small_r_phi_and_dphi_from_exactSolution.png" /></p>
+<p>We can clearly see that both prevent the singularity of the friction term at the origin.</p>
+<p>Thin wall with <span class="arithmatex">\(\phi'\)</span> = 0 and thick with <span class="arithmatex">\(\phi' \propto r\)</span>, as we expected.</p>
+<hr />
+<h3 id="odeintegrate-saveprofile">ODE/Integrate &amp; Saveprofile<a class="headerlink" href="#odeintegrate-saveprofile" title="Permanent link">&para;</a></h3>
+<p>Inside the ODE the state is package as <span class="arithmatex">\((\phi,y)\)</span> with</p>
+<div class="arithmatex">\[\phi'=y;\quad  \phi''=V'(\phi)- \alpha/r \dot{\phi}\]</div>
+<p>(Here primes mean derivatives with respect to the radial coordinate r. I stick to primes to avoid
+confusion with time-dots used later in real time evolution).</p>
+<p>Given the initial conditions and this ODE, we integrate with RKCK and look for a solution that
+satisfies</p>
+<div class="arithmatex">\[|\phi(\infty)-\phi_{metamin}|&lt; \epsilon_{\phi}; \qquad |\phi'(\infty)| &lt; \epsilon_{d\phi} \]</div>
+<p>What <code>integrate</code> actually does is evolve from the chosen initial condition until one of the
+<strong>following stopping</strong> criteria triggers:</p>
+<ol>
+<li><strong>Converged--</strong> Both tolerances above are met. We return the arrays <span class="arithmatex">\(r, \phi(r)\)</span>, and <span class="arithmatex">\(\phi'(r)\)</span></li>
+<li><strong>Undershoot--</strong> The field strts turning back before reaching the false vacuum. In practice this show
+up as <span class="arithmatex">\(\phi'(r)\)</span> changing sign to positive whle <span class="arithmatex">\(\phi(r)&gt;\phi_{meta}\)</span>. 
+Physically: friction wins, not enough energy to climb all the way. We stop at the first turning point
+where <span class="arithmatex">\(\phi'(r)=0\)</span> and return <span class="arithmatex">\(r,\phi,\phi'\)</span> there.</li>
+<li><strong>Overshoot--</strong> The trajectory crosses the false vacuum, i.e., <span class="arithmatex">\(\phi(r)-\phi_{meta}&lt;0\)</span>
+within a step. Too much energy: it blows past the target. We stop at (or bracket to) the point
+where <span class="arithmatex">\(\phi=\phi_{meta}\)</span></li>
+</ol>
+<p>On undershoot/overshoot, the code adjusts the initial field value <span class="arithmatex">\(\phi_0\)</span> and repeats (classic shooting),
+until the exact solution is found.</p>
+<p>Once the correct initial condition is locked in, we run integrate-and-save to build the full
+bounce profile: we evaluate and store <span class="arithmatex">\(\phi(r)\)</span> on a user-controlled radius grid R. If the adaptive RKCK steps
+are coarser than the requested spacing, we fill in the missing samples by cubic interpolation between the integrator outputs
+(and, when available, we use the stored <span class="arithmatex">\(\phi'(r)\)</span> to do Hermit-quality interpolation). This produces a clean
+(<span class="arithmatex">\(R\)</span>, <span class="arithmatex">\(\phi(R),\phi'(R)\)</span>) profile ready for diagnostics and plots.</p>
+<h3 id="find-profile">Find profile<a class="headerlink" href="#find-profile" title="Permanent link">&para;</a></h3>
+<p>This is the most important part of the module—the place where a few internally chosen parameters are worth knowing 
+(and sometimes tweaking).</p>
+<p><strong>Minimum radius.</strong> The seach starts near the true vacuum at</p>
+<div class="arithmatex">\[r_{\min}=10^{-4} r_{\text{scale}}\]</div>
+<p><strong>Tolerances.</strong> <code>phi_tol</code> defaults to <span class="arithmatex">\(10^{-4}\)</span>. 
+From it  build the relative end point tolerances <span class="arithmatex">\(\varepsilon_\phi\)</span> and <span class="arithmatex">\(\varepsilon_{\phi'}\)</span>
+that the solution must satisfy at large r, as <span class="arithmatex">\(\phi\)</span> reachs the false vacuum.</p>
+<p><strong>Cutoff.</strong> Used</p>
+<div class="arithmatex">\[\texttt{cutoff}=10^{-2}|\phi_{\text{meta}}-\phi_{\text{true}}|\]</div>
+<p>as the lower bound for the initial displacement needed to leave the immediate vicinity of 
+<span class="arithmatex">\((\phi_{\text{true}})\)</span>.</p>
+<p><strong>How the initial condition is guessed</strong></p>
+<p>Because <span class="arithmatex">\(\phi_0 \equiv \phi(0)\)</span> is not known a priori, the code parametrizes it 
+with a single shooting variable (x):</p>
+<div class="arithmatex">\[\phi_0(x)=\phi_{\text{true}}+e^{-x}\bigl(\phi_{\text{meta}}-\phi_{\text{true}}\bigr)\]</div>
+<ul>
+<li>Large (x)  <span class="arithmatex">\(\Rightarrow \phi_0\)</span> close to the <strong>true</strong> vacuum.</li>
+<li>Small (x)  <span class="arithmatex">\(\Rightarrow \phi_0\)</span> close to the <strong>false</strong> (meta) vacuum.</li>
+</ul>
+<p>The code <strong>starts</strong> from the conservative side: pick (x) such that 
+<span class="arithmatex">\(\phi_0=\phi_{\text{bar}}\)</span> (remember <span class="arithmatex">\(\phi_0\ge \phi_{\text{bar}}\)</span>). Then:</p>
+<ol>
+<li>Try to find an admissible starting radius for this <span class="arithmatex">\((\phi_0)\)</span>. Otherwise, if can’t find any 
+, <strong>increase (x)</strong> (move <span class="arithmatex">\(\phi_0\)</span> a bit toward <span class="arithmatex">\(\phi_{\text{true}}\)</span>) and try again.</li>
+<li>Integrate until we either <strong>converge</strong> or detect <strong>undershoot/overshoot</strong> (see below).</li>
+</ol>
+<hr />
+<p><strong>What undershoot / overshoot mean here (and how x gets update)</strong></p>
+<ul>
+<li>
+<p><strong>Undershoot</strong>: friction wins and the field turns around before reaching <span class="arithmatex">\(\phi_{\text{meta}}\)</span>
+  (<span class="arithmatex">\(\phi'(r)\)</span> flips to <em>positive</em> while <span class="arithmatex">\(\phi&gt;\phi_{\text{meta}}\)</span>).
+  → We started too close to <span class="arithmatex">\(\phi_{\text{bar}}\)</span> (not enough energy).
+  → <strong>Set <span class="arithmatex">\(x_{\min}=x\)</span></strong> and <strong>increase (x)</strong>: <span class="arithmatex">\(x\leftarrow \tfrac{1}{2}(x_{\min}+x_{\max})\)</span>.</p>
+</li>
+<li>
+<p><strong>Overshoot</strong>: the trajectory crosses <span class="arithmatex">\(\phi_{\text{meta}}\)</span>.
+  → We started too close to <span class="arithmatex">\(\phi_{\text{true}}\)</span> (too much energy).
+  → <strong>Set <span class="arithmatex">\(x_{\max}=x\)</span></strong> and <strong>decrease (x)</strong>: <span class="arithmatex">\(x\leftarrow \tfrac{1}{2}(x_{\min}+x_{\max})\)</span>.</p>
+</li>
+</ul>
+<p>This bisection on (x) repeats until both end-point tolerances are satisfied.</p>
+<hr />
+<p><strong>After the correct <span class="arithmatex">\((\phi_0)\)</span> is found</strong></p>
+<p>Builds a radius grid</p>
+<div class="arithmatex">\[R={r_0,\dots,r_f}\quad\text{with}\quad \text{n_points}\]</div>
+<p>starting at the <strong>found</strong> <span class="arithmatex">\(r_0\)</span> from the initial-condition logic and going out to <span class="arithmatex">\(r_f\)</span>. 
+Note that <span class="arithmatex">\(r_0\)</span> can be <strong>well above</strong> zero (especially in thin wall): the field may 
+sit almost flat before it “decides” to roll.</p>
+<p>For the <strong>interior</strong> <span class="arithmatex">\(r\)</span> &lt; <span class="arithmatex">\(r_0\)</span>, The code fills the bubble by the exact small-(r) expansion 
+around <span class="arithmatex">\(\phi_0\)</span> (we effectively have <span class="arithmatex">\(\phi'\approx 0\)</span> there), which gives a smooth and 
+physically correct core.</p>
+<p><strong>Good practice.</strong> Always sanity-check that <span class="arithmatex">\(\phi'_0\approx 0\)</span>; if it’s not, 
+you’re likely starting a bit too far out or with an inconsistent <span class="arithmatex">\(\phi_0\)</span>.</p>
+<p>Bellow are all the plots for thin and thick wall with the correct solution for this simple
+case.</p>
+<div class="highlight"><pre><span></span><code># To get the profile
+inst = SingleFieldInstanton(
+        phi_absMin= phi_abs,
+        phi_metaMin=phi_meta,
+        V=V,
+        alpha=alpha,
+        phi_eps=1e-3)
+
+profile = inst.findProfile(
+        xguess=None, phitol=phitol,
+        thinCutoff=thinCutoff, npoints=npoints,
+        max_interior_pts=max_interior_pts,
+        _MAX_ITERS= _MAX_ITERS
+    )
+R= profile.R
+phi = profile.Phi
+dphi = profile.dPhi
+</code></pre></div>
+<p><em>Thin-wall</em> - Path of <span class="arithmatex">\(\phi(r)\)</span> on <span class="arithmatex">\(V(\phi)\)</span>
+<img alt="Thin_C_inverted" src="../assets/thin/C_inverted_path_with_arrows.png" /></p>
+<p><em>Thin-wall</em> - Path of <span class="arithmatex">\(\phi(r)\)</span> on <span class="arithmatex">\(V(\phi)\)</span>
+<img alt="Thick_C_inverted" src="../assets/thick/C_inverted_path_with_arrows.png" /></p>
+<hr />
+<p><em>Thin-wall</em> - Bounce Solution (<span class="arithmatex">\(\phi_b(r)\)</span>) <span class="arithmatex">\(\phi(r)\)</span>x r
+<img alt="Thin_D_inverted" src="../assets/thin/D_phi_of_r.png" /></p>
+<p><em>Thick-wall</em> - Bounce Solution (<span class="arithmatex">\(\phi_b(r)\)</span>) <span class="arithmatex">\(\phi(r)\)</span>x r
+<img alt="Thick_D_inverted" src="../assets/thick/D_phi_of_r.png" /></p>
+<hr />
+<p>Some plots to represent what we would see in 3D space, 
+at the moment after the bubble nucleation (t=0)</p>
+<p><em>Thin-wall - Cartesian slice</em>
+<img alt="Thin_E1_3D" src="../assets/thin/E1_cartesian_slice_with_rscale.png" /></p>
+<p><em>Thick-wall - Cartesian slice</em>
+<img alt="Thick_E1_3D" src="../assets/thick/E1_cartesian_slice_with_rscale.png" /></p>
+<p><em>Thin-wall - Surface 3D</em>
+<img alt="Thin_E2_3D" src="../assets/thin/E2_surface3D_t0.png" /></p>
+<p><em>Thick-wall - Surface 3D</em>
+<img alt="Thick_E2_3D" src="../assets/thick/E2_surface3D_t0.png" /></p>
+<hr />
+<h3 id="action-beta-and-terms-contributions">Action, <span class="arithmatex">\(\beta\)</span> and terms contributions<a class="headerlink" href="#action-beta-and-terms-contributions" title="Permanent link">&para;</a></h3>
+<p>Inside the class SingleFieldInstaton there is also a function to evaluate the action of the
+founded solution. </p>
+<p>The action (with the false-vacuum constant removed) is</p>
+<div class="arithmatex">\[S = \int_{r_0}^{\infty}\Big[\tfrac12(\partial_r\phi)^2+\big(V(\phi)-V(\phi_{\rm meta})\big)\Big]  r^\alpha dr\Omega_\alpha +\]</div>
+<div class="arithmatex">\[+\underbrace{ \int_{0}^{r_0} \big(V(\phi(r_0)) - V(\phi_{\rm meta})\big),d^dr }_{\text{“interior bulk”}}\]</div>
+<p>because thin-wall integrations start at <span class="arithmatex">\((r=r_0&gt;0)\)</span>. Regularity implies$ (\phi'(r)\sim\mathcal{O}(r))$,
+so the <strong>gradient</strong> contribution from <span class="arithmatex">\(([0,r_0])\)</span> is negligible,
+but the <strong>potential</strong> offset must be accounted for via the (d)-ball volume:</p>
+<div class="arithmatex">\[{\rm Vol}_d(r_0)=\frac{\pi^{d/2}}{\Gamma(d/2+1)}r_0^d\]</div>
+<p>The function <code>inst.actionBreakdown(profile)</code> returns</p>
+<p>A named tuple with:</p>
+<ul>
+<li><code>S_total</code>: valued with <code>findAction(profile)</code>.</li>
+<li><code>S_kin</code>, <code>S_pot</code>: line integrals of the kinetic and potential pieces <strong>separately</strong>.</li>
+<li><code>S_interior</code>: the interior bulk correction.</li>
+<li>Copies of <code>r</code>, <code>phi</code>, <code>dphi</code>.</li>
+<li>
+<p><code>density</code>: a dict with arrays</p>
+</li>
+<li>
+<p><code>density["kin"]</code> = <span class="arithmatex">\(\frac{1}{2}\Phi'^2 r^\alpha \Omega_\alpha\)</span>,</p>
+</li>
+<li><code>density["pot"]</code> = <span class="arithmatex">\((V(\Phi)-V_{\rm meta}) r^\alpha \Omega_\alpha\)</span></li>
+<li><code>density["tot"] = density["kin"] + density["pot"]</code>.</li>
+</ul>
+<p>From this we can see how the action density varies with r.</p>
+<hr />
+<p>The code also includes a function to calculate an approximate inverse 
+time scale <span class="arithmatex">\((\beta)\)</span>. This function uses 1/rscale or thickness.</p>
+<p>To understand this further or see everything the code can do, 
+see the complete code in <a href="/docs/examples/example_tunneling1D.py">docs/examples/tunneling1D</a> 
+or the full .md explanation of each function in <a href="/docs/modules/tunneling1D/single_field.md">docs/modules/tunneling1D/single_field</a></p>
+<p>Bellow are the plots made and the full diagnostics;</p>
+<p><em>Thin-wall -  ODE Terms contributions</em>
+<img alt="Thin_F_ODE" src="../assets/thin/F_ode_terms_and_potential.png" /></p>
+<p><em>Thick-wall -  ODE Terms contributions</em>
+<img alt="Thick_F_ODE" src="../assets/thick/F_ode_terms_and_potential.png" /></p>
+<p><em>Thin-wall -  Action</em>
+<img alt="Thin_G_Action" src="../assets/thin/G_action_density_and_cumulative.png" /></p>
+<p><em>Thick-wall - Action</em>
+<img alt="Thick_G_Action" src="../assets/thick/G_action_density_and_cumulative.png" /></p>
+<div class="highlight"><pre><span></span><code>Wall diagnostics:
+
+{
+  &quot;label&quot;: &quot;thin-wall&quot;,
+  &quot;phi_metaMin&quot;: 0.0,
+  &quot;phi_absMin&quot;: 1.0,
+  &quot;phi_bar&quot;: 0.8371714313771578,
+  &quot;phi_top&quot;: 0.4699999983395586,
+  &quot;V(phi_meta)&quot;: 0.0,
+  &quot;V(phi_true)&quot;: -0.0050000000000000044,
+  &quot;V(phi_top)&quot;: 0.013237432499999993,
+  &quot;DeltaV_true_minus_meta&quot;: -0.0050000000000000044,
+  &quot;r0&quot;: 40.55284169790182,
+  &quot;phi0&quot;: 0.9900000000000001,
+  &quot;dphi0&quot;: -0.007033518046022252,
+  &quot;rscale_cubic&quot;: 1.6677093050224265,
+  &quot;rscale_curv&quot;: 2.003609750059915,
+  &quot;wall_r_hi&quot;: 50.18104547208761,
+  &quot;wall_thickness&quot;: 6.229542940963725,
+  &quot;S_total&quot;: 1093.4288131878518,
+  &quot;S_kin&quot;: 1638.3947831914747,
+  &quot;S_pot&quot;: -544.9659700036232,
+  &quot;S_interior&quot;: 0.0,
+  &quot;beta_rscale&quot;: 0.5996248848575876,
+  &quot;beta_curvature&quot;: 0.49909918859817576,
+  &quot;beta_wall&quot;: 0.16052542048057503
+}
+
+{
+  &quot;label&quot;: &quot;thick-wall&quot;,
+  &quot;phi_metaMin&quot;: 0.0,
+  &quot;phi_absMin&quot;: 1.0,
+  &quot;phi_bar&quot;: 0.31010205014581543,
+  &quot;phi_top&quot;: 0.20000000196657425,
+  &quot;V(phi_meta)&quot;: 0.0,
+  &quot;V(phi_true)&quot;: -0.05000000000000002,
+  &quot;V(phi_top)&quot;: 0.0011999999999999992,
+  &quot;DeltaV_true_minus_meta&quot;: -0.05000000000000002,
+  &quot;r0&quot;: 0.0002357022627131459,
+  &quot;phi0&quot;: 0.7421401843117063,
+  &quot;dphi0&quot;: -8.151238531343361e-06,
+  &quot;rscale_cubic&quot;: 2.357022627131459,
+  &quot;rscale_curv&quot;: 2.499999981574293,
+  &quot;wall_r_hi&quot;: 7.990901987734343,
+  &quot;wall_thickness&quot;: 7.990901987734343,
+  &quot;S_total&quot;: 6.6298736618724545,
+  &quot;S_kin&quot;: 9.943318384815374,
+  &quot;S_pot&quot;: -3.3134447229429216,
+  &quot;S_interior&quot;: 0.0,
+  &quot;beta_rscale&quot;: 0.42426406454019444,
+  &quot;beta_curvature&quot;: 0.4000000002104124,
+  &quot;beta_wall&quot;: 0.1251423182933482
+}
+</code></pre></div>
+<h3 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h3>
+<p>It's <strong>important</strong> to emphasize that within this example, you can apply your <strong>own potential</strong> and test it to obtain all these graphs. 
+Note that so far, there are no temperature corrections or anything like that; we're doing everything very simply. 
+The rest will be covered in the next modules.</p>
+<p>Go to: <a href="/docs/examples/example_tunneling1D.py">docs/examples/example_tunneling1D.py</a></p>
+<ol>
+<li>At the beginning of the code, define your potential.</li>
+</ol>
+<p><div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">V_mine</span><span class="p">(</span><span class="n">phi</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span><span class="nb">float</span><span class="p">:</span>
+    <span class="k">return</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="n">phi</span> <span class="o">**</span> <span class="mi">4</span> <span class="o">-</span> <span class="mf">0.49</span> <span class="o">*</span> <span class="n">phi</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">+</span> <span class="mf">0.235</span> <span class="o">*</span> <span class="n">phi</span> <span class="o">**</span> <span class="mi">2</span>
+</code></pre></div>
+2. Go to the end of the code and uncomment the line with</p>
+<div class="highlight"><pre><span></span><code>run_all(case=&quot;mine&quot;, xguess=None, phitol=1e-5,thinCutoff=0.01,
+             phi_abs= 1.0, phi_meta =0.0, save_dir=None)
+</code></pre></div>
+<p>Note that you need to know a priori what <span class="arithmatex">\(\phi_{true}\)</span> and 
+<span class="arithmatex">\(\phi_{meta}\)</span> are, and you may need to adjust some parameters depending 
+on the error encountered raised throughout the code.</p>
+<hr />
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="../../javascripts/mathjax-config.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
