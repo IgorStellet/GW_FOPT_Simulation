@@ -18,7 +18,6 @@ from .tunneling1D import (PotentialError, SingleFieldInstanton)
 from .transitionFinder import (traceMinimum, _traceMinimum_rval, Phase, traceMultiMin, findApproxLocalMin, removeRedundantPhases,
                                _removeRedundantPhase, getStartPhase, _solve_bounce, _tunnelFromPhaseAtT, _potentialDiffForPhase,
                                _maxTCritForPhase, tunnelFromPhase, secondOrderTrans, findAllTransitions, findCriticalTemperatures,
-                               addCritTempsForFullTransitions, _partial_dVdT, hubble_rad, thermalObservablesForTransition,
-                               addObservablesToTransitions)
+                               addCritTempsForFullTransitions, )
 
 __version__ = "0.1.0"

@@ -30,13 +30,5 @@
   "Tn_from_transitionFinder_GeV": 66.03976310598935,
   "Tc_from_transitionFinder_GeV": 86.6829482842142,
   "T_spinodal_high_GeV": 46.95524023438488,
-  "T_spinodal_low_GeV": 99.64165039062385,
-  "S_at_Tn_from_transitionFinder": 9245.748292257715,
-  "S_over_Tn_from_transitionFinder": 140.00274769942638,
-  "T_star_from_obs_GeV": 66.03976310598935,
-  "S_obs": 9245.748292257715,
-  "S_over_T_obs": 140.00274769942638,
-  "alpha_strength": 0.11030902955585278,
-  "beta_eff_geom": 30.791786643072847,
-  "beta_over_H_eff_geom": 5025877966566451.0
+  "T_spinodal_low_GeV": 99.64165039062385
 }

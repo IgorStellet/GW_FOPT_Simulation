@@ -9,8 +9,6 @@
 # measure (another example test ).
 
 # -----------------------------------------------------------------------------
-
-from __future__ import annotations
 import os
 import math
 from typing import Tuple, Optional, Callable, NamedTuple, Dict, Any, Sequence, Mapping, Hashable
@@ -29,15 +27,6 @@ from scipy import interpolate, integrate, optimize
 from CosmoTransitions import SingleFieldInstanton
 from CosmoTransitions import deriv14, gradientFunction, hessianFunction
 from CosmoTransitions import Jb, Jf
-
-from CosmoTransitions.transitionFinder import (
-    Phase,
-    traceMultiMin,
-    removeRedundantPhases,
-    getStartPhase,
-    tunnelFromPhase,
-    _maxTCritForPhase,
-)
 
 
 np.set_printoptions(precision=6, suppress=True)
@@ -518,6 +507,8 @@ def _build_phases_and_transitions(
     forbidCrit=None,
     tunnelFromPhase_args: Dict[str, Any] | None = None,
     nuclCriterion: Callable[[float, float], float] | None = None,
+    Tn_Ttol: float = 1e-3,
+    Tn_maxiter: int = 80,
     verbose: bool = True,
 ) -> Dict[str, Any]:
     """
@@ -639,8 +630,8 @@ def _build_phases_and_transitions(
         return S / (T + 1e-100) - 140.0
 
     tf_args: Dict[str, Any] = dict(
-        Ttol=1e-3,
-        maxiter=80,
+        Ttol=float(Tn_Ttol),
+        maxiter=int(Tn_maxiter),
         phitol=1e-6,
         overlapAngle=45.0,
         verbose=verbose,
@@ -664,19 +655,6 @@ def _build_phases_and_transitions(
         crit_trans,
         full_trans,
     )
-
-    transitionFinder.addObservablesToTransitions(
-        full_trans,
-        V_XT,
-        dVdT=dVdT_XT,
-        T_key="Tnuc",
-        g_star=106.75,
-        beta_from_geometry=True,
-        beta_geom_method= "rscale"
-    )
-
-    if verbose:
-        print("[build_phases] Attached Block-D observables to transitions.")
 
     # First genuine first-order transition, if any
     main_transition = None
@@ -904,6 +882,8 @@ def example_C_transition_summary(
     phi_range: Tuple[float, float] = (-3.0, 3.0),
     n_T_seeds: int = 5,
     nuclCriterion: Callable[[float, float], float] | None = None,
+    Tn_Ttol: float = 1e-3,
+    Tn_maxiter: int = 80,
     save_dir: str = "figs",
     tag: str = "",
     verbose: bool = True,
@@ -931,6 +911,8 @@ def example_C_transition_summary(
         phi_range=phi_range,
         n_T_seeds=n_T_seeds,
         nuclCriterion=nuclCriterion,
+        Tn_Ttol=Tn_Ttol,
+        Tn_maxiter=Tn_maxiter,
         verbose=verbose,
     )
 
@@ -1015,7 +997,7 @@ def example_C_transition_summary(
     )
 
     # ------------------------------------------------------------------
-    # Print a compact table of scales (+ Block D observables if present)
+    # Print a compact table of scales
     # ------------------------------------------------------------------
     print("\n" + "=" * 72)
     print("Example C – key thermal scales from transitionFinder")
@@ -1043,17 +1025,6 @@ def example_C_transition_summary(
         print(f"  T_sp^(low phase)          = {T_spin_low:10.4g}")
     else:
         print("  T_sp^(low phase)          =   (not determined)")
-
-    # Block D observables, se já foram anexados em main_transition["obs"]
-    obs = main_transition.get("obs") if isinstance(main_transition, Mapping) else None
-    if obs:
-        try:
-            alpha = float(obs.get("alpha_strength", np.nan))
-            beta_over_H = float(obs.get("beta_over_H_eff", np.nan))
-            print(f"  alpha (strength)          = {alpha:10.4g}")
-            print(f"  beta/H_* (geom)           = {beta_over_H:10.4g}")
-        except Exception:
-            pass
 
     if (
         T_spin_high is not None
@@ -2257,7 +2228,7 @@ def gather_diagnostics(
         extra: Dict[str, float] = {}
         keyT = transition_summary.get("key_temperatures", {}) or {}
 
-        # Temperaturas características
+        # Important temperatures found by transitionFinder
         Tn_tf = keyT.get("Tn", np.nan)
         Tc_tf = keyT.get("Tc", None)
         Thigh_sp = keyT.get("T_spinodal_high_phase", None)
@@ -2267,26 +2238,6 @@ def gather_diagnostics(
         extra["Tc_from_transitionFinder_GeV"] = float(Tc_tf) if (Tc_tf is not None) else np.nan
         extra["T_spinodal_high_GeV"] = float(Thigh_sp) if (Thigh_sp is not None) else np.nan
         extra["T_spinodal_low_GeV"]  = float(Tlow_sp)  if (Tlow_sp  is not None) else np.nan
-
-        # S(Tn) e S/Tn vindos do transitionFinder
-        S_n_tf = keyT.get("S_at_Tn", np.nan)
-        S_over_Tn_tf = keyT.get("S_over_Tn", np.nan)
-        extra["S_at_Tn_from_transitionFinder"] = float(S_n_tf) if np.isfinite(S_n_tf) else np.nan
-        extra["S_over_Tn_from_transitionFinder"] = float(S_over_Tn_tf) if np.isfinite(S_over_Tn_tf) else np.nan
-
-        # Block D: observables da transição principal (alpha, beta/H)
-        main_tr = transition_summary.get("main_transition")
-        if isinstance(main_tr, Mapping):
-            obs = main_tr.get("obs", {}) or {}
-            try:
-                extra["T_star_from_obs_GeV"] = float(obs.get("T_star", np.nan))
-                extra["S_obs"]               = float(obs.get("S", np.nan))
-                extra["S_over_T_obs"]        = float(obs.get("S_over_T", np.nan))
-                extra["alpha_strength"]      = float(obs.get("alpha_strength", np.nan))
-                extra["beta_eff_geom"]       = float(obs.get("beta_eff", np.nan))
-                extra["beta_over_H_eff_geom"]= float(obs.get("beta_over_H_eff", np.nan))
-            except Exception:
-                pass
 
         base.update(extra)
 
@@ -2361,10 +2312,9 @@ def run_all(case: str = "paper",
             T_min: float = 5.0,
             T_max: float = 200.0,
             n_T_seeds: int = 2,
-            nuclCriterion: Callable[[float, float], float] | None = None):
-
-
-
+            nuclCriterion: Callable[[float, float], float] | None = None,
+            Tn_Ttol: float = 1e-3,
+            Tn_maxiter: int = 80, ):
     """
     Execute all examples A... in sequence for the chosen case ("thin", "thick" or "mine").
 
@@ -2446,6 +2396,8 @@ def run_all(case: str = "paper",
         phi_range=(phi_low_scan, phi_high_scan),
         n_T_seeds=n_T_seeds,
         nuclCriterion=nuclCriterion,
+        Tn_Ttol=Tn_Ttol,
+        Tn_maxiter=Tn_maxiter,
         save_dir=save_dir,
         tag=tag,
     )
@@ -2567,6 +2519,7 @@ def run_all(case: str = "paper",
 # -----------------------------------------------------------------------------
 # Script entry
 # -----------------------------------------------------------------------------
+
 if __name__ == "__main__":
     C = 3.83
     #run paper potential
@@ -2585,8 +2538,33 @@ if __name__ == "__main__":
         T_max=200.0,
         n_T_seeds=2,
         nuclCriterion=None,
+        Tn_Ttol= 1e-3,
+        Tn_maxiter= 80,
         save_dir=f"results_C_{C}.",        # "results"
     )
 
 
+""""
+C_list = [3.65, 3.75, 3.85]
 
+for C in C_list:
+    run_all(
+        case="paper",
+        C=C,
+        Lambda=1000.0,
+        finiteT=True,
+        include_daisy=True,
+        xguess=None,
+        phitol=1e-5,
+        npoints=800,
+        thinCutoff=0.0001,
+        phi_scan_range = None,
+        T_min=5.0,
+        T_max=200.0,
+        n_T_seeds=2,
+        nuclCriterion=None,
+        Tn_Ttol= 1e-3,
+        Tn_maxiter= 100,
+        save_dir=f"results_C_{C}.",        # "results"
+    )
+"""

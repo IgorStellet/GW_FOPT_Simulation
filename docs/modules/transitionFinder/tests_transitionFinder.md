@@ -16,7 +16,7 @@ concrete, finite-temperature scalar-field model.
 All tests in Block A use the same 1D finite-temperature potential
 
 $$
-V(\phi, T) = D (T^2 - T_0^2)\,\phi^2 \;-\; E\,T\,\phi^3 \;+\; \frac{\lambda}{4}\,\phi^4
+V(\phi, T) = D (T^2 - T_0^2)\phi^2 - ET\phi^3 + \frac{\lambda}{4}\phi^4
 $$
 
 with $D > 0$, $\lambda > 0$, and a small cubic term $E > 0$.
@@ -87,7 +87,7 @@ A single figure with two curves:
 
   * the temperature grid `T`,
   * the traced minimum $\phi_{\min}(T)$,
-  * the curvature $m^2(T) = d^2V/d\phi^2|*{\phi*{\min}(T)}$.
+  * the curvature $m^2(T) = \frac{d^2V}{d\phi^2}|_{\phi_{\min}(T)}$.
 * Compares the numerically extracted spinodal temperature `res.overT` with the
   analytic spinodal (for the symmetric phase) at $T_\text{spin} = T_0$.
 
@@ -109,7 +109,7 @@ A single figure with two curves:
 2. **Curvature $m^2(T)$ along the symmetric trace**
 
    * Horizontal axis: (T).
-   * Vertical axis: $m^2(T) = d^2V/d\phi^2|*{\phi*{\min}(T)}$.
+   * Vertical axis: $m^2(T) = d^2V/d\phi^2|_{\phi_{\min}(T)}$.
    * A horizontal line at $m^2 = 0$ indicating the stability threshold.
 
    Behaviour:
@@ -135,7 +135,7 @@ A single figure with two curves:
 
 * First finds a broken minimum at low temperature:
 
-  * (\phi_b(T=50)) via a 1D minimization.
+  * $\phi_b(T=50)$ via a 1D minimization.
 * Uses `traceMinimum` starting from $\phi_b(50)$ at (T = 50), and follows this
   broken minimum **upwards in temperature**.
 * Records the branch until the broken phase disappears or becomes unstable.
@@ -232,9 +232,7 @@ each phase’s vacuum expectation value evolves with temperature.
 
 * Considers a straight segment in field space:
 
-  $$
-  \phi \in [-3, +3]
-  $$
+$$\phi \in [-3, +3]$$
 
   and calls `findApproxLocalMin` along this segment.
 
@@ -263,11 +261,7 @@ Behaviour:
 ![Test 6 – findApproxLocalMin along a segment at T=150](assets/Lot_A_6.png)
 
 
----
-
 If you want to see the full test script of this block go to [tests/transitionFInder](/tests/transitionFinder/Lot_A.py)
-
----
 
 ---
 
@@ -468,10 +462,7 @@ Now we use the high-level tool `tunnelFromPhase` to:
 
 * apply a nucleation criterion of the form
 
-  $$
-  \text{nuclCriterion}(S_3(T), T)
-  = \frac{S_3(T)}{T} - 140 \approx 0,
-  $$
+$$\text{nuclCriterion}(S_3(T), T)= \frac{S_3(T)}{T} - 140 \approx 0$$
 
 * and identify the **nucleation temperature** $T_n$.
 
@@ -610,8 +601,6 @@ The function `demo_blockB_alternative_nucleation_criterion()`:
 
 This demo is useful as a *template* for plugging in your favorite nucleation
 criterion without touching the main code.
-
----
 
 If you want to see the full script for these tests (Block B), see [tests/transitionFinder](/tests/transitionFinder/Lot_B.py)
 
@@ -782,10 +771,10 @@ Tracing phase starting at x = [1.35525272e-19], T = 102.47832031250125
   * Loops over all ordered pairs of phases `(phase1, phase2)` with overlapping
     temperature ranges.
   * For each pair, defines
-    $$
-    \Delta V(T) = V(\phi_1(T), T) - V(\phi_2(T), T),
-    $$
-    where $\phi_i(T) = \text{phase}_i.\text{valAt}(T)$.
+  
+$$\Delta V(T) = V(\phi_1(T), T) - V(\phi_2(T), T),$$
+
+where $\phi_i(T) = \text{phase}_i.\text{valAt}(T)$.
   * Uses a 1D root finder (`brentq`) to find `Tcrit` such that
     $\Delta V(Tcrit) = 0$ whenever the sign of $\Delta V$ changes across the overlap.
   * Assembles a dictionary
@@ -805,9 +794,9 @@ Tracing phase starting at x = [1.35525272e-19], T = 102.47832031250125
 
   * `Tcrit`, `trantype`, `high_phase → low_phase`,
   * and the free-energy difference
-    $$
-    \Delta V = V(\phi_\text{high}, T_\text{crit}) - V(\phi_\text{low}, T_\text{crit}),
-    $$
+
+$$\Delta V = V(\phi_\text{high}, T_\text{crit}) - V(\phi_\text{low}, T_\text{crit}),$$
+
     which should be numerically close to zero.
 
 * Asserts that for each first-order entry `abs(ΔV) < 1e-3` (degeneracy).
@@ -957,7 +946,6 @@ Tracing phase starting at x = [1.35525272e-19], T = 102.47832031250125
 [Block C] All example tests executed.
 ```
 
----
 
 If you want to see the full Block C test script, including all prints and plots, see
 [`tests/transitionFinder/Lot_C.py`](/tests/transitionFinder/Lot_C.py).
