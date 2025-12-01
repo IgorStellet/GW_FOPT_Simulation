@@ -40,8 +40,13 @@ Therefore, this project aims to deliver substantial improvements to the original
 ## ⚙️ Install (dev) & quick start
 
 ```bash
-python -m pip install -U pip
-pip install -e .[dev]   # editable install with dev deps (pytest, ruff, black)
+git clone https://github.com/IgorStellet/GW_FOPT_Simulation.git
+cd GW_FOPT_Simulation
+
+bash scripts/dev_setup.sh
+
+source .venv/bin/activate
+
 ```
 
 ## Run all examples
@@ -51,6 +56,9 @@ scripts/run_examples.sh
 # Run a subset
 
 #scripts/run_examples.sh --grep finiteT
+
+#python docs/examples/example_tunneling1D.py
+
 ```
 
 

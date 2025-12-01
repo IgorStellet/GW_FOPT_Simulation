@@ -26,6 +26,9 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["CosmoTransitions*"]
+exclude = [
+  "legacy*",
+]
 
 [project.optional-dependencies]
 dev = [

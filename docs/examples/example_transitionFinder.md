@@ -830,4 +830,16 @@ can be checked by hand if you wish. Once you are happy with how
 this controlled environment, you can safely upgrade to your full model and
 re-use exactly the same logic.
 
+--
+
+## 10. Images
+
+![A1](assets_transitionFinder/figA_LG1D.png)
+
+
+![B](assets_transitionFinder/figB_LG1D.png)
+
+![C1](assets_transitionFinder/figC_m2_LG1D.png)
+
+![C2](assets_transitionFinder/figC_phi_LG1D.png)
 
