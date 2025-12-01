@@ -1,0 +1,2907 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../Numerical_integration/">
+      
+      
+        <link rel="next" href="../interpolation_functions/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Numerical Derivatives Functions - CosmoTransitions (modernized)</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#numerical-derivatives-functions" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-header__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosmoTransitions (modernized)
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Numerical Derivatives Functions
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-nav__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CosmoTransitions (modernized)
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap & Flowchart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples (Core modules)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples (Core modules)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_tunneling1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling 1D full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_1" id="__nav_5_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helper Functions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Helper Functions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Miscellaneous_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Miscellaneous Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Numerical_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Integration Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Derivatives Functions
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Derivatives Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#fd_weights_1d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fd_weights_1d
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="fd_weights_1d">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-use-and-intuition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to use and Intuition
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_stencil_indices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _stencil_indices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_stencil_indices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deriv14_const_dx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deriv14_const_dx
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="deriv14_const_dx">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deriv14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deriv14
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="deriv14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deriv23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deriv23
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="deriv23">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deriv23_const_dx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deriv23_const_dx
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="deriv23_const_dx">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deriv1n" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deriv1n
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="deriv1n">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises-briefly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises (briefly)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gradientfunction-callable-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gradientFunction (callable class)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="gradientFunction (callable class)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-a-class-not-just-a-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a class (not just a function)?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hessianfunction-callable-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hessianFunction (callable class)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="hessianFunction (callable class)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-a-class-not-just-a-function_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a class (not just a function)?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../interpolation_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interpolation Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Finite Temperature (One loop corrections)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Finite Temperature (One loop corrections)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Exact_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Spline_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spline Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Approx_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Approx Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Short_Hand_Jb%26Jf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Short Hand for All Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling (1D)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tunneling (1D)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tunneling1D/single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Field functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tunneling1D/tests_single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of SF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Transition Finder
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../transitionFinder/transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../transitionFinder/tests_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of TF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generic Potential
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Generic Potential
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generic_potential/generic_potential/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Potential Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#fd_weights_1d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fd_weights_1d
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="fd_weights_1d">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#raises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-use-and-intuition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to use and Intuition
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_stencil_indices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _stencil_indices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_stencil_indices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deriv14_const_dx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deriv14_const_dx
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="deriv14_const_dx">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deriv14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deriv14
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="deriv14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deriv23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deriv23
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="deriv23">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deriv23_const_dx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deriv23_const_dx
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="deriv23_const_dx">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deriv1n" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        deriv1n
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="deriv1n">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises-briefly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises (briefly)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#gradientfunction-callable-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gradientFunction (callable class)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="gradientFunction (callable class)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-a-class-not-just-a-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a class (not just a function)?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hessianfunction-callable-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        hessianFunction (callable class)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="hessianFunction (callable class)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-a-class-not-just-a-function_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a class (not just a function)?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-returns-and-raises_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters, returns and Raises
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-and-examples_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use and Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="numerical-derivatives-functions">Numerical Derivatives functions<a class="headerlink" href="#numerical-derivatives-functions" title="Permanent link">&para;</a></h1>
+<hr />
+<h2 id="fd_weights_1d"><code>fd_weights_1d</code><a class="headerlink" href="#fd_weights_1d" title="Permanent link">&para;</a></h2>
+<h3 id="signature">Signature<a class="headerlink" href="#signature" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">fd_weights_1d</span><span class="p">(</span><span class="n">x_nodes</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x0</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">der</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+<h3 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h3>
+<p>Computes the <strong>finite difference weithts</strong> that approximate the <code>der</code>-th derivatie of a function at point <code>x0</code>
+using an <strong>aribtraty stencil</strong> <code>x_nodes</code> (they do not need to be uniform or ordered).
+see <a href="https://www.colorado.edu/amath/sites/default/files/attached-files/2020_f_hermite-fd_ima_j_num_anal.pdf">fw_weights_jornal</a> 
+if you want to know more.</p>
+<p>It is the “engine” that the derivative routines use to form linear combinations of the type</p>
+<div class="arithmatex">\[f^{der}(x_0) \approx \sum_j w_j f(x_j) \]</div>
+<h3 id="parameters-returns-and-raises">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong>
+- <code>x_nodes</code> (<code>array like</code>, shape <code>(m,)</code>): Distinct stencil nodes; <strong>not</strong> required to be uniform or sorted
+- <code>x0</code> (<code>float</code>): Expansion point where the derivatie is approximated
+- <code>der</code> (<code>int</code>): Derivative order (0,1,2,...)
+Claim: In this project we typically use <code>der ∈ {1,2}</code>, but the algorithm supports <code>0 &lt;= der &lt;= m-1</code></p>
+<p><strong>Returns</strong>
+- <code>w</code> (<code>np,ndarray</code>, shape (<code>m,</code>)): Weights such that <code>f^(der)(x0) = \sum_j w[j]*f(x_nodes[j])</code> </p>
+<h3 id="raises">Raises<a class="headerlink" href="#raises" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>ValueError</code> if <code>der&lt;0</code> or if <code>m-1&lt;der</code> (need at least <code>m=der+1</code> nodes)</li>
+<li><code>ZeroDivisionError</code> if two stencil nodes coincide (nodes must be <strong>distinct</strong>)</li>
+</ul>
+<h3 id="how-to-use-and-intuition">How to use and Intuition<a class="headerlink" href="#how-to-use-and-intuition" title="Permanent link">&para;</a></h3>
+<p>This function has no examples because it is called by others (e.g., deriv14, deriv1n, ...)</p>
+<p><strong>intuition</strong> (Where the coefficients come from): Build the <strong>Lagrange interpolant</strong> <span class="arithmatex">\(p(x)=\sum_j f(x_j)L_j(x)\)</span>
+The weiths are precisely <span class="arithmatex">\(w_j = L_j ^{der}(x_0)\)</span>. <em>Fornberg's algorithm</em> computes these derivatives <strong>recuservely and stably</strong>
+filling a table <code>c[j,k]</code> (node <strong>j</strong>, derivative order <strong>k</strong>) and returning the column k=der chosen.</p>
+<p><strong>Notes</strong></p>
+<ul>
+<li><strong>Typical accuracy (near-uniform stencils):</strong> <span class="arithmatex">\((\mathcal{O}(h^{m-der}))\)</span> for smooth functions, with h a characteristic spacing</li>
+<li><strong>Polynomial exactness:</strong> Exact for all polynomials up do degree <code>m-1</code></li>
+</ul>
+<hr />
+<h2 id="_stencil_indices"><code>_stencil_indices</code><a class="headerlink" href="#_stencil_indices" title="Permanent link">&para;</a></h2>
+<h3 id="signature_1">Signature<a class="headerlink" href="#signature_1" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">_stencil_indices</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+<h3 id="purpose_1">Purpose<a class="headerlink" href="#purpose_1" title="Permanent link">&para;</a></h3>
+<p>Returns a <strong>contiguos, length-</strong> <code>m</code> window of indices insied <code>[0,n-1]</code> that is as <strong>centered around</strong> <code>k</code> as possible.
+Near the boundaries is <strong>falls back</strong> to left or right aligned windowns. For <strong>even</strong> <code>m</code>, the window is biased one step to the left of perfect centering.
+Internal helper to choose the stencil for finite-difference weights/derivatives use it to obtain a centered window in the
+interior and one-sided windows near the boundaries.</p>
+<h3 id="parameters-returns-and-raises_1">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_1" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong>
+- <code>n (int)</code>: Total number of samples (valid indices are <code>0..n-1</code>)
+- <code>k (int)</code>: Target center index
+- <code>m (int)</code>: Stencil lenght (window size)</p>
+<p><strong>Returns</strong>
+- <code>idx (np.ndarray[int])</code>, shape <code>(m,)</code>: Monotonically increasing, contiguous indices <code>start...start+m+1</code></p>
+<hr />
+<h2 id="deriv14_const_dx"><code>deriv14_const_dx</code><a class="headerlink" href="#deriv14_const_dx" title="Permanent link">&para;</a></h2>
+<h3 id="signature_2">Signature<a class="headerlink" href="#signature_2" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">deriv14_const_dx</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">dx</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+<h3 id="purpose_2">Purpose<a class="headerlink" href="#purpose_2" title="Permanent link">&para;</a></h3>
+<p>Compute the <strong>first derivative</strong> along the <strong>last axis</strong> of <code>y</code> sampled on a <strong>uniform grid</strong>, using the <strong>5-point, 4th-order</strong> finite-difference scheme.
+The routine is fully vectorized (no Python loops) and preserves the shape of <code>y</code>, making the function faster than <code>deriv14</code>.</p>
+<blockquote>
+<p>⚠️ Unlike <code>deriv14</code>, This function doesn't call <code>fd_weights_1d</code>, so it doesn't go through any loops and therefore calculates derivatives much faster. 
+The price to pay for this is providing a uniform grid</p>
+</blockquote>
+<ul>
+<li><strong>Interior (k = 2..n−3)</strong>: centered 5-point, 4th-order</li>
+</ul>
+<div class="arithmatex">\[f'(x_k)\ \approx\ \frac{f_{k-2}-8f_{k-1}+8f_{k+1}-f_{k+2}}{12h}\]</div>
+<ul>
+<li><strong>Boundaries</strong>: standard <strong>one-sided 5-point</strong> formulas (also 4th-order) for <code>k∈{0,1,n−2,n−1}</code>.</li>
+</ul>
+<h3 id="parameters-returns-and-raises_2">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_2" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>y</code> (<code>array_like</code>, shape <code>(..., n)</code>): Samples on a <strong>uniform</strong> grid along the last axis.</li>
+<li><code>dx</code> (<code>float</code>, optional): Uniform spacing <code>h</code> between consecutive samples (default <code>1.0</code>).</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>dy</code> (<code>np.ndarray</code>, same shape as <code>y</code>): Numerical approximation to <strong>∂y/∂x</strong> along the last axis.</li>
+</ul>
+<p><strong>Raises / Assumptions</strong></p>
+<ul>
+<li><code>ValueError</code> if <code>y.shape[-1] &lt; 5</code> (needs at least five points).</li>
+<li>Assumes <strong>uniform</strong> spacing with finite <code>dx</code> and monotonic (increasing or decreasing).</li>
+<li>⚠️ Error is <strong><span class="arithmatex">\(\mathcal{O}(h^4)\)</span></strong> in the interior; at the ends it remains 4th-order but with typically larger constants.</li>
+</ul>
+<h3 id="when-to-use-and-examples">When to use and Examples<a class="headerlink" href="#when-to-use-and-examples" title="Permanent link">&para;</a></h3>
+<p>Use when your data are on a <strong>uniform grid</strong> and you want a <strong>high-accuracy</strong> first derivative with a small, explicit stencil and <strong>fast vectorized</strong> implementation.</p>
+<p>see the full test script in <a href="/tests/helper_functions/Numerical_derivatives.py">tests/helper_functions/Numerical_derivatives</a> for more</p>
+<p><strong>Examples</strong></p>
+<ul>
+<li>
+<p><strong>Derivative of (sin) using deriv14_const_dx</strong>
+<img alt="Derivative of (sin)" src="../assets/derivative_1.png" /></p>
+</li>
+<li>
+<p><strong>Error of the derivative</strong>
+<img alt="Derivative of (sin)" src="../assets/derivative_2.png" /></p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">=== Test derivative: Uniform grid, first derivative (sin profile) ===</span>
+<span class="sd">Grid: N=201, dx=3.142e-02, function: sin(kx), k=1.0</span>
+<span class="sd">Max abs error (dy): 1.945e-07  (expected ~O(h^4) ~ 9.7e-07)</span>
+<span class="sd">Note: boundary stencils are one-sided; error is typically larger at the ends than in the interior.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+</code></pre></div>
+<hr />
+<h2 id="deriv14"><code>deriv14</code><a class="headerlink" href="#deriv14" title="Permanent link">&para;</a></h2>
+<h3 id="signature_3">Signature<a class="headerlink" href="#signature_3" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">deriv14</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+<h3 id="purpose_3">Purpose<a class="headerlink" href="#purpose_3" title="Permanent link">&para;</a></h3>
+<p>Compute the <strong>first derivative</strong> along the <strong>last axis</strong> of <code>y</code> sampled at <strong>non-uniform</strong> coordinates <code>x</code>, using <strong>5-point</strong> finite-difference stencils.
+The routine builds <strong>Fornberg weights</strong> per local stencil, yielding <strong>4th-order accuracy in the interior</strong> on smooth data (with one-sided high-order stencils at the boundaries).
+Works for strictly <strong>increasing or decreasing</strong> <code>x</code>!! .</p>
+<blockquote>
+<p>⚠️ Unlike <code>deriv14_const_dx</code>, This function call <code>fd_weights_1d</code>, so it goes through many loops and therefore calculates derivatives slower.
+What gains in return is the ability to compute on an arbitrary non-uniform grid</p>
+</blockquote>
+<h3 id="parameters-returns-and-raises_3">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_3" title="Permanent link">&para;</a></h3>
+<p><strong>Parameters</strong></p>
+<ul>
+<li><code>y</code> (<code>array_like</code>, shape <code>(..., n)</code>): Function values along the last axis.</li>
+<li><code>x</code> (<code>array_like</code>, shape <code>(n,)</code>): Sample locations, <strong>strictly monotonic</strong> (increasing or decreasing). Requires <code>n ≥ 5</code>.</li>
+</ul>
+<p><strong>Returns</strong></p>
+<ul>
+<li><code>dy</code> (<code>np.ndarray</code>, same shape as <code>y</code>): Numerical approximation to <strong>∂y/∂x</strong> along the last axis.</li>
+</ul>
+<p><strong>Raises / Assumptions</strong></p>
+<ul>
+<li><code>ValueError</code> if <code>x</code> is not 1D, if <code>n &lt; 5</code>, or if <code>x</code> is not <strong>strictly</strong> monotonic.</li>
+<li>Interior uses <strong>centered</strong> windows <code>[k-2..k+2]</code>; endpoints use <strong>one-sided</strong> 5-point stencils.</li>
+<li>Interior truncation error is typically <strong><span class="arithmatex">\(\mathcal{0}(h^4)\)</span></strong> on near-uniform meshes (with <span class="arithmatex">\(h\)</span> a typical spacing), while boundary errors have larger constants.</li>
+</ul>
+<h3 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Uses <code>fd_weights_1d</code> to obtain exact polynomial reproductions up to degree 4 on each stencil.</li>
+<li>Vectorized accumulation via <code>np.tensordot</code> along the last axis.</li>
+</ul>
+<h3 id="when-to-use-and-examples_1">When to use and Examples<a class="headerlink" href="#when-to-use-and-examples_1" title="Permanent link">&para;</a></h3>
+<p>Use when your samples lie on a <strong>non-uniform</strong> 1D grid and you want <strong>high order interior accuracy</strong> without resampling to a uniform mesh.</p>
+<p>see the full test script in <a href="/tests/helper_functions/Numerical_derivatives.py">tests/helper_functions/Numerical_derivatives</a> for more</p>
+<p><strong>Examples</strong> <em>(same structure as <code>deriv14_const_dx</code>; you can adapt the <code>x</code> grid to be non-uniform)</em>:</p>
+<p><strong>Examples</strong></p>
+<ul>
+<li><strong>Derivative of (exp) using deriv14</strong>
+<img alt="Derivative of (exp)" src="../assets/derivative_5.png" /></li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">=== Test 3: Non-uniform grid, first derivatives (exp profile) ===</span>
+<span class="sd">Non-uniform grid size: N=161</span>
+<span class="sd">Max abs error (dy):  6.659e-09</span>
+<span class="sd">=== Test 6: Expected error cases ===</span>
+<span class="sd">Too few points (deriv14): deriv14 requires at least 5 samples.</span>
+<span class="sd">x not 1D (deriv14): x must be 1D</span>
+<span class="sd">Non-monotonic x (deriv14): x must be strictly monotonic (increasing or decreasing).</span>
+<span class="sd">&#39;&#39;&#39;</span>
+</code></pre></div>
+<hr />
+<h2 id="deriv23"><code>deriv23</code><a class="headerlink" href="#deriv23" title="Permanent link">&para;</a></h2>
+<h3 id="signature_4">Signature<a class="headerlink" href="#signature_4" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">deriv23</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+<h3 id="purpose_4">Purpose<a class="headerlink" href="#purpose_4" title="Permanent link">&para;</a></h3>
+<p>Same algorithmic idea, assumptions, and stencil policy as <strong><code>deriv14</code></strong>, but for the <strong>second derivative</strong> on a <strong>non-uniform</strong> 1D grid.
+Uses <strong>5-point stencils</strong> with <strong>Fornberg weights</strong> (<code>der=2</code>): centered in the interior, one-sided near boundaries. Accuracy in smooth problems is typically <strong>3rd–4th order</strong> in the interior (exact for polynomials up to degree 4 on uniform stencils).</p>
+<h3 id="parameters-returns-and-raises_4">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Parameters, shape constraints, monotonicity checks, and error handling are the <strong>same pattern as <code>deriv14</code></strong>, with <code>der=2</code>.</li>
+<li>Returns an array with the <strong>same shape</strong> as <code>y</code>, containing <strong><span class="arithmatex">\(\partial y^2/ \partial x^2\)</span></strong> along the last axis.</li>
+</ul>
+<h3 id="when-to-use-and-examples_2">When to use and Examples<a class="headerlink" href="#when-to-use-and-examples_2" title="Permanent link">&para;</a></h3>
+<p>Use when you need <strong>second derivatives</strong> on <strong>non-uniform</strong> grids with high-order interior accuracy and robust boundary handling.</p>
+<p>see the full test script in <a href="/tests/helper_functions/Numerical_derivatives.py">tests/helper_functions/Numerical_derivatives</a> for more</p>
+<p><strong>Examples</strong></p>
+<ul>
+<li><strong>Second Derivative of (exp) using deriv23</strong>
+<img alt="Second Derivative of (exp)" src="../assets/derivative_6.png" /></li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">=== Test 3: Non-uniform grid, second derivatives (exp profile) ===</span>
+<span class="sd">Non-uniform grid size: N=161</span>
+<span class="sd">Max abs error (d2y): 2.625e-06</span>
+
+<span class="sd">=== Test 6: Expected error cases ===</span>
+<span class="sd">Too few points (deriv23): deriv23 requires at least 5 samples.</span>
+<span class="sd">x not 1D (deriv23): x must be 1D</span>
+<span class="sd">Non-monotonic x (deriv23): x must be strictly monotonic (increasing or decreasing).</span>
+<span class="sd">&#39;&#39;&#39;</span>
+</code></pre></div>
+<hr />
+<h2 id="deriv23_const_dx"><code>deriv23_const_dx</code><a class="headerlink" href="#deriv23_const_dx" title="Permanent link">&para;</a></h2>
+<h3 id="signature_5">Signature<a class="headerlink" href="#signature_5" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">deriv23_const_dx</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">dx</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+<h3 id="purpose_5">Purpose<a class="headerlink" href="#purpose_5" title="Permanent link">&para;</a></h3>
+<p>Same idea as <strong><code>deriv14_const_dx</code></strong>, but computing the <strong>second derivative</strong> on a <strong>uniform</strong> grid using the <strong>5-point, 4th-order</strong> scheme.
+Interior uses the standard centered 5-point formula,</p>
+<div class="arithmatex">\[
+f''(x_k)\approx\frac{-f_{k-2}+16f_{k-1}-30f_k+16f_{k+1}-f_{k+2}}{12\,h^2},
+\]</div>
+<p>with one-sided 5-point stencils at the boundaries</p>
+<h3 id="parameters-returns-and-raises_5">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_5" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Parameters and return shape mirror <strong><code>deriv14_const_dx</code></strong> (but for <strong><span class="arithmatex">\(\partial y^2/ \partial x^2\)</span></strong>). Requires at least <strong>5 points</strong> along the last axis; raises <code>ValueError</code> otherwise.</li>
+</ul>
+<h3 id="when-to-use-and-examples_3">When to use and Examples<a class="headerlink" href="#when-to-use-and-examples_3" title="Permanent link">&para;</a></h3>
+<p>Use for <strong>uniform grids</strong> when you want a <strong>fast, vectorized</strong> second derivative with high accuracy and small stencil.</p>
+<p>see the full test script in <a href="/tests/helper_functions/Numerical_derivatives.py">tests/helper_functions/Numerical_derivatives</a> for more</p>
+<p><strong>Examples</strong></p>
+<ul>
+<li>
+<p><strong>Second Derivative of (sin) using deriv23_const_dx</strong>
+<img alt="Second Derivative of (sin)" src="../assets/derivative_3.png" /></p>
+</li>
+<li>
+<p><strong>Error of the second derivative</strong>
+<img alt="Second Derivative of (sin)" src="../assets/derivative_4.png" /></p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">=== Test 2: Uniform grid, second derivative (sin profile) ===</span>
+<span class="sd">Max abs error (d2y): 2.580e-05  (expected ~O(h^3) at edges ~ 3.1e-05)</span>
+<span class="sd">Notes: The interior is still O(h^4) (see graph)</span>
+<span class="sd">&#39;&#39;&#39;</span>
+</code></pre></div>
+<hr />
+<h2 id="deriv1n"><code>deriv1n</code><a class="headerlink" href="#deriv1n" title="Permanent link">&para;</a></h2>
+<h3 id="signature_6">Signature<a class="headerlink" href="#signature_6" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">deriv1n</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+<h3 id="purpose_6">Purpose<a class="headerlink" href="#purpose_6" title="Permanent link">&para;</a></h3>
+<p>General <strong>first-derivative</strong> on a <strong>non-uniform</strong> 1D grid using an <strong>(n+1)-point</strong> stencil with <strong>Fornberg weights</strong>.
+Same overall idea/policies as <code>deriv14</code> (centered interior, one-sided near boundaries), but here the <strong>stencil size is configurable</strong> via <code>n</code> (so <code>m = n+1</code> points). 
+For smooth data on near-uniform meshes, interior truncation error scales <strong><span class="arithmatex">\((\approx \mathcal{O}(h^n))\)</span></strong> (e.g., <code>n=4</code> → 5-point, ~4th-order like <code>deriv14</code>).</p>
+<p><strong>What’s different vs. <code>deriv14</code> / <code>deriv14_const_dx</code>:</strong></p>
+<ul>
+<li>You <strong>choose</strong> accuracy/stencil size with <code>n</code> (recommended <strong>4 ≤ n ≤ 8</strong>: good accuracy vs. stability).</li>
+<li>Larger stencils can be <strong>more sensitive to noise</strong> and <strong>wider spacing</strong>; extremely irregular nodes may degrade conditioning.</li>
+<li>Uses <code>_stencil_indices</code> to pick a centered window when possible, otherwise one-sided near edges.</li>
+</ul>
+<h3 id="parameters-returns-and-raises-briefly">Parameters, returns and Raises (briefly)<a class="headerlink" href="#parameters-returns-and-raises-briefly" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>y</code>: values along the last axis <code>(..., N)</code>.</li>
+<li><code>x</code>: strictly <strong>monotonic</strong> 1D array <code>(N,)</code>; requires <code>N ≥ n+1</code>.</li>
+<li><code>n</code>: desired accuracy order; stencil size is <code>m = n+1</code>.</li>
+<li>Returns <code>dy</code> with the <strong>same shape</strong> as <code>y</code> (∂y/∂x along the last axis).</li>
+<li>Raises <code>ValueError</code> if <code>x</code> not 1D/monotonic, if <code>N &lt; n+1</code>, or if <code>n &lt; 2</code>.</li>
+<li>Internally: Fornberg weights with <code>der=1</code>, accumulated via <code>np.tensordot</code>.</li>
+</ul>
+<h3 id="when-to-use-and-examples_4">When to use and Examples<a class="headerlink" href="#when-to-use-and-examples_4" title="Permanent link">&para;</a></h3>
+<p>When you want to <strong>dial precision</strong> (and stencil width) for first derivatives on <strong>non-uniform</strong> grids without resampling.</p>
+<p>see the full test script in <a href="/tests/helper_functions/Numerical_derivatives.py">tests/helper_functions/Numerical_derivatives</a> for more</p>
+<p><strong>Examples</strong></p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 4: Accuracy vs stencil size (deriv1n on sin) ===</span>
+<span class="sd">n=4 (stencil m=5): max abs error = 2.964e-07</span>
+<span class="sd">n=6 (stencil m=7): max abs error = 2.573e-10</span>
+<span class="sd">n=8 (stencil m=9): max abs error = 2.558e-13</span>
+<span class="sd">Expected: error generally decreases as stencil size increases (for smooth functions).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+<h2 id="gradientfunction-callable-class"><code>gradientFunction</code> (callable class)<a class="headerlink" href="#gradientfunction-callable-class" title="Permanent link">&para;</a></h2>
+<h3 id="signature_7">Signature<a class="headerlink" href="#signature_7" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">ArrayLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">gradientFunction</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">eps</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">Ndim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<h3 id="purpose_7">Purpose<a class="headerlink" href="#purpose_7" title="Permanent link">&para;</a></h3>
+<p>Build a <strong>callable gradient operator</strong> for a scalar field <span class="arithmatex">\(f:\mathbb{R}^{N}\to\mathbb{R}\)</span> using <strong>finite differences</strong> of <strong>order 2 or 4</strong>, with <strong>per-axis steps</strong> <code>eps</code>.
+Once constructed, <code>gradientFunction(...)</code> behaves like a function: <code>df(x) → ∇f(x)</code>.</p>
+<blockquote>
+<p>Intuition: along each coordinate <span class="arithmatex">\(i\)</span>, evaluate <span class="arithmatex">\(f\)</span> at <strong>symmetrically shifted points</strong> <span class="arithmatex">\(x \pm \alpha\,\varepsilon_i\,\hat e_i\)</span> (second or fourth-order central differences). 
+Combine the batched evaluations with the precomputed coefficients to get the <span class="arithmatex">\(i\)</span>-th partial derivative. All axes are processed <strong>in one vectorized call</strong>.</p>
+</blockquote>
+<h3 id="why-a-class-not-just-a-function">Why a <strong>class</strong> (not just a function)?<a class="headerlink" href="#why-a-class-not-just-a-function" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Precomputation &amp; reuse:</strong> offsets and peraxis coefficients depend only on <code>(eps, Ndim, order)</code>. The class <strong>builds them once</strong> and reuses across many calls → less Python overhead in tight loops (optimization, sampling, PDE steps).</li>
+<li><strong>Stateful configuration:</strong> keeps <code>f</code>, <code>Ndim</code>, <code>eps</code>, <code>order</code> together; the result is a <strong>callable object</strong> that plugs cleanly anywhere a function is expected.</li>
+</ul>
+<h3 id="parameters-returns-and-raises_6">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_6" title="Permanent link">&para;</a></h3>
+<p><strong><code>__init__(f, eps, Ndim, order=4)</code></strong></p>
+<ul>
+<li><code>f</code> (<code>callable</code>): scalar field; must accept arrays with last axis of length <code>Ndim</code> (any leading batch axes allowed) and return an array of the same leading shape (scalar per point).</li>
+<li><code>eps</code> (<code>float | array_like</code>): FD step(s). Scalar is broadcast to all axes; or pass a length-<code>Ndim</code> array for peraxis steps.</li>
+<li><code>Ndim</code> (<code>int</code>): dimensionality of the input points.</li>
+<li><code>order</code> (<code>{2,4}</code>): FD accuracy. <code>2</code> uses <span class="arithmatex">\([-1,+1]\)</span> with coefficients <span class="arithmatex">\([-1/2,+1/2]\)</span>; <code>4</code> uses ([-2,-1,+1,+2]/12<code>with coefficients</code>[+1,-8,+8,-1]/12`.</li>
+</ul>
+<p><strong><code>__call__(x, *args, **kwargs)</code></strong></p>
+<ul>
+<li><code>x</code> (<code>array_like</code>, shape <code>(..., Ndim)</code>): evaluation points (1 or many).</li>
+<li>Returns <code>grad</code> (<code>np.ndarray</code>, shape <code>(..., Ndim)</code>): gradient <span class="arithmatex">\(\nabla f(x)\)</span>.</li>
+<li>Any extra <code>*args/**kwargs</code> are forwarded to <code>f</code>.</li>
+</ul>
+<p><strong>Raises / Assumptions</strong></p>
+<ul>
+<li><code>ValueError</code> if <code>order ∉ {2,4}</code>, if <code>eps</code> is not scalar or <code>(Ndim,)</code>, if <code>x</code>’s last axis ≠ <code>Ndim</code>, or if <code>Ndim</code> is inconsistent.</li>
+<li><code>f</code> must be <strong>vectorized</strong> enough to broadcast over the added stencil axes; the class constructs inputs of shape <code>(..., order, Ndim, Ndim)</code> and expects outputs <code>(..., order, Ndim)</code> (scalar per displaced point).</li>
+</ul>
+<h3 id="notes_1">Notes<a class="headerlink" href="#notes_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Accuracy vs. step size:</strong> truncation error decreases with smaller <code>eps</code>, but round off grows pick <code>eps</code> consistent with the scale of <code>x</code> and <code>f</code> (a common rule of thumb: start near <span class="arithmatex">\(\sqrt{\varepsilon_\text{mach}} \times \text{scale}\)</span> for order-2, and somewhat larger for order-4).</li>
+<li><strong>Anisotropic steps:</strong> use an <code>eps</code> vector to reflect different physical scales per axis.</li>
+<li><strong>Performance/memory:</strong> very large <code>Ndim</code> or huge batches may increase temporary array sizes; if needed, evaluate in tiles.</li>
+</ul>
+<h3 id="when-to-use-and-examples_5">When to use and Examples<a class="headerlink" href="#when-to-use-and-examples_5" title="Permanent link">&para;</a></h3>
+<p>Use when you need a <strong>drop-in gradient</strong> for a black-box scalar function (e.g., potentials <span class="arithmatex">\(V(\phi)\)</span> in multi-field models, without deriving/maintaining analytic gradients. It’s especially handy inside <strong>optimizers</strong>, <strong>line searches</strong>, or <strong>field evolution</strong> steps).</p>
+<p>see the full test script in <a href="/tests/helper_functions/Numerical_derivatives.py">tests/helper_functions/Numerical_derivatives</a> for more</p>
+<p><strong>Examples</strong></p>
+<ul>
+<li>
+<p><strong>Gradient of <span class="arithmatex">\(V(x,y)=\sin(x)*\cos(y) [order=4]\)</span></strong>
+<img alt="Gradient of sin(x)cos(y)" src="../assets/derivative_7.png" /></p>
+</li>
+<li>
+<p><strong>Gradient field for intuition</strong>
+<img alt="Gradient field of sin(x)cos(y)" src="../assets/derivative_8.png" /></p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 7: Gradient on V(x,y) = sin(x) * cos(y) (order=4) ===</span>
+<span class="sd">Grid: 101x101, eps=1e-4 (per axis), order=4</span>
+<span class="sd">Max |grad error| = 4.145e-12,  Mean |grad error| = 1.757e-12</span>
+<span class="sd">Notes: O(h^3) at edges</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<ul>
+<li><strong>Convergence with eps (1D)</strong>
+<img alt="Convergence with eps 1D" src="../assets/derivative_10.png" /></li>
+</ul>
+<p><div class="highlight"><pre><span></span><code><span class="c1"># Convergence is faster with higher order, as expected</span>
+</code></pre></div>
+- <strong>Physical example: Electrostatic Field</strong>
+<img alt="Eletrostatic field" src="../assets/derivative_11.png" /></p>
+<ul>
+<li><strong>Physical example: 2D anisotropic harmonic oscillator</strong>
+<img alt="2D anisotropic oscillator" src="../assets/derivative_13.png" /></li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 11: Electrostatic potential (softened) and field via gradientFunction ===</span>
+<span class="sd">Rel. error stats away from charges: max=1.394e-09, mean=2.493e-11</span>
+
+<span class="sd">=== Test 12 (bonus): 2D anisotropic harmonic oscillator with rkqs and ∇V ===</span>
+<span class="sd">Energy stats: Emin=1.000000, Emax=1.000001, ΔE=6.510e-07```</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 13: Expected error cases (gradient) ===</span>
+<span class="sd">Invalid order (gradientFunction): order must be 2 or 4</span>
+<span class="sd">Wrong eps shape (gradientFunction): `eps` must be scalar or have shape (2,)</span>
+<span class="sd">x last axis mismatch (gradientFunction): Last axis of x must have length Ndim=2</span>
+<span class="sd">Non-scalar f (gradientFunction): ValueError(&#39;operands could not be broadcast together with shapes (4,4,2,2) (4,2) &#39;)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+<h2 id="hessianfunction-callable-class"><code>hessianFunction</code> (callable class)<a class="headerlink" href="#hessianfunction-callable-class" title="Permanent link">&para;</a></h2>
+<h3 id="signature_8">Signature<a class="headerlink" href="#signature_8" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">hessianFunction</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">eps</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">Ndim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span> <span class="o">...</span>
+</code></pre></div>
+<h3 id="purpose_8">Purpose<a class="headerlink" href="#purpose_8" title="Permanent link">&para;</a></h3>
+<p>Build a <strong>callable Hessian operator</strong> for a scalar field <span class="arithmatex">\(f:\mathbb{R}^N\!\to\!\mathbb{R}\)</span> using <strong>finite differences</strong> of <strong>order 2 or 4</strong> with <strong>per-axis steps</strong> <code>eps</code>.
+Once constructed, <code>hessianFunction(...)</code> acts like a function: <code>hf(x) → H(x)</code> with shape <code>(..., Ndim, Ndim)</code>.</p>
+<blockquote>
+<p>Intuition (how entries are formed):
+• <strong>Diagonal</strong> terms <span class="arithmatex">\(H_{ii}\)</span> use <strong>1D second-derivative</strong> stencils along axis <span class="arithmatex">\(i\)</span> (order-2: 3-point; order-4: 5-point).
+• <strong>Off-diagonal</strong> terms <span class="arithmatex">\(H_{ij}\)</span> with <span class="arithmatex">\(i\neq j\)</span> use the <strong>tensor product of two first-derivative stencils</strong> (one in <span class="arithmatex">\(i\)</span>, one in <span class="arithmatex">\(j\)</span>), i.e.</p>
+<div class="arithmatex">\[
+\frac{\partial^2 f}{\partial x_i\,\partial x_j}(x)
+\;\approx\;
+\sum_{a,b}\frac{c^{(1)}_a}{\varepsilon_i}\,\frac{c^{(1)}_b}{\varepsilon_j}\;
+f\!\big(x + a\,\varepsilon_i\,\hat e_i + b\,\varepsilon_j\,\hat e_j\big),
+\]</div>
+<p>where <span class="arithmatex">\(c^{(1)}\)</span> are the central-difference coefficients of order 2 or 4. The class <strong>precomputes</strong> all shifts and weights and then evaluates <code>f</code> in <strong>batched</strong> fashion.</p>
+</blockquote>
+<h3 id="why-a-class-not-just-a-function_1">Why a <strong>class</strong> (not just a function)?<a class="headerlink" href="#why-a-class-not-just-a-function_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Precomputation &amp; reuse:</strong> shifts/weights depend only on <code>(eps, Ndim, order)</code>. The class builds them <strong>once</strong> and reuses across many calls → less overhead in inner loops (optimizers, Newton steps, variational solvers).</li>
+<li><strong>Stateful configuration:</strong> keeps <code>f</code>, <code>Ndim</code>, <code>eps</code>, <code>order</code> together; exposes a clean <strong>callable</strong> API.</li>
+<li><strong>Vectorized batching:</strong> each diagonal/off-diagonal block is evaluated by feeding a whole bundle of shifted points to <code>f</code> at once, then combining with the stored weights.</li>
+<li><strong>Symmetry by construction:</strong> it sets <span class="arithmatex">\(H_{ij}\!=\!H_{ji}\)</span> after computing <span class="arithmatex">\(i&gt;j\)</span>.</li>
+</ul>
+<h3 id="parameters-returns-and-raises_7">Parameters, returns and Raises<a class="headerlink" href="#parameters-returns-and-raises_7" title="Permanent link">&para;</a></h3>
+<p><strong><code>__init__(f, eps, Ndim, order=4)</code></strong></p>
+<ul>
+<li><code>f</code> (<code>callable</code>): scalar field; must accept arrays with last axis size <code>Ndim</code> (any leading batch dims allowed) and return a scalar per point (same leading shape).</li>
+<li><code>eps</code> (<code>float | array_like</code>): FD step size(s). Scalar broadcasts to all axes; or pass a length-<code>Ndim</code> array for anisotropic steps.</li>
+<li><code>Ndim</code> (<code>int</code>): dimensionality of the input points.</li>
+<li><code>order</code> (<code>{2,4}</code>): finite-difference accuracy (order-2 or order-4 central stencils).</li>
+</ul>
+<p><strong><code>__call__(x, *args, **kwargs)</code></strong></p>
+<ul>
+<li><code>x</code> (<code>array_like</code>, shape <code>(..., Ndim)</code>): evaluation points.</li>
+<li>Returns <code>H</code> (<code>np.ndarray</code>, shape <code>(..., Ndim, Ndim)</code>): the Hessian at <code>x</code>.</li>
+<li>Any extra <code>*args/**kwargs</code> are forwarded to <code>f</code>.</li>
+</ul>
+<p><strong>Raises / Assumptions</strong></p>
+<ul>
+<li><code>ValueError</code> if <code>order ∉ {2,4}</code>, if <code>eps</code> is not scalar or <code>(Ndim,)</code>, or if <code>x</code>’s last axis ≠ <code>Ndim</code>.</li>
+</ul>
+<h3 id="notes_2">Notes<a class="headerlink" href="#notes_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Stencils used:</strong>
+  • Order-2: first-deriv offsets <span class="arithmatex">\([-1,+1]\)</span> with coeffs <span class="arithmatex">\([-1/2,+1/2]\)</span>; second-deriv offsets <span class="arithmatex">\([-1,0,+1]\)</span> with coeffs <span class="arithmatex">\([1,-2,1]\)</span>.
+  • Order-4: first-deriv offsets <span class="arithmatex">\([-2,-1,+1,+2]\)</span> with coeffs <span class="arithmatex">\([+1,-8,+8,-1]/12\)</span>; second-deriv offsets <span class="arithmatex">\([-2,-1,0,+1,+2]\)</span> with coeffs <span class="arithmatex">\([-1,16,-30,16,-1]/12\)</span>.</li>
+<li><strong>Work per call (per point):</strong> roughly <span class="arithmatex">\(\sum_i m_2\)</span> (diagonals) + <span class="arithmatex">\(\sum_{i&gt;j} m_1^2\)</span> (off-diagonals) function evaluations, where <span class="arithmatex">\(m_1\)</span> and <span class="arithmatex">\(m_2\)</span> are the first/second-derivative stencil lengths (2 or 4 → <span class="arithmatex">\(m_1=2,4\)</span>; <span class="arithmatex">\(m_2=3,5\)</span>). These are <strong>batched</strong> per block to reduce Python overhead.</li>
+<li><strong>Accuracy vs step size:</strong> smaller <code>eps</code> reduces truncation error but increases round-off sensitivity; pick <code>eps</code> commensurate with scales of <code>x</code> and <code>f</code>.</li>
+<li><strong>Anisotropic physics:</strong> per-axis <code>eps</code> is useful when coordinates have different natural scales.</li>
+</ul>
+<h3 id="when-to-use-and-examples_6">When to use and Examples<a class="headerlink" href="#when-to-use-and-examples_6" title="Permanent link">&para;</a></h3>
+<p>Use when you need a <strong>drop-in Hessian</strong> for a black-box scalar potential—e.g., multi-field potentials <span class="arithmatex">\(V(\phi)\)</span> in phase-transition scans—without deriving analytic second derivatives. Useful in <strong>Newton/Quasi-Newton</strong> methods, curvature analysis, and stability checks.</p>
+<p>see the full test script in <a href="/tests/helper_functions/Numerical_derivatives.py">tests/helper_functions/Numerical_derivatives</a> for more</p>
+<p><strong>Examples</strong></p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 8: Hessian exactness on quadratic form (order=4) ===</span>
+<span class="sd">Max |H - A| = 1.426e-06,  Mean |H - A| = 7.628e-08</span>
+<span class="sd">Expected: near machine precision for smooth quadratics with small eps.</span>
+<span class="sd">=== Test 9: Hessian with mixed terms (order=4) ===</span>
+<span class="sd">Grid 60x60, eps=[1e-4,3e-4]: max |H_num - H_ex| = 7.461e-07</span>
+<span class="sd">=== Test 13: Expected error cases (hessian) ===</span>
+<span class="sd">Invalid order (hessianFunction): order must be 2 or 4</span>
+<span class="sd">Non-scalar f (hessianFunction): ValueError(&#39;operands could not be broadcast together with shapes (4,16,2) (16,) &#39;)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax-config.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

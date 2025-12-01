@@ -1,0 +1,2267 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../Exact_Thermal_Integrals/">
+      
+      
+        <link rel="next" href="../Approx_Thermal_Integrals/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Spline Thermal Integrals - CosmoTransitions (modernized)</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#spline-thermal-integrals-jb-jf" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-header__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosmoTransitions (modernized)
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Spline Thermal Integrals
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-nav__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CosmoTransitions (modernized)
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap & Flowchart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples (Core modules)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples (Core modules)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_tunneling1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling 1D full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_1" id="__nav_5_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helper Functions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Helper Functions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Miscellaneous_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Miscellaneous Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Numerical_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Integration Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Numerical_derivatives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Derivatives Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/interpolation_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interpolation Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Finite Temperature (One loop corrections)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Finite Temperature (One loop corrections)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Exact_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spline Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spline Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#spline-thermal-integrals-j_f" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spline Thermal Integrals (J_f)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Spline Thermal Integrals (J_f)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jf_spline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jf_spline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Jf_spline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_ensure_jf_spline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _ensure_Jf_spline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_ensure_Jf_spline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_build_jf_dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _build_Jf_dataset
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_build_Jf_dataset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_load_jf_cache-_save_jf_cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _load_Jf_cache / _save_Jf_cache
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_load_Jf_cache / _save_Jf_cache">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signatures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signatures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose-brief" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose (brief)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reproducibility-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducibility &amp; Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spline-thermal-integrals-j_b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spline Thermal Integrals (J_b)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Spline Thermal Integrals (J_b)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jb_spline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jb_spline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Jb_spline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#returns_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spline-construction-caching-same-pattern-as-jf_spline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spline construction &amp; caching (same pattern as Jf_spline)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spline-thermal-integrals-j_b-j_f-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spline Thermal Integrals (\(J_b, J_f\)) — Tests
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Spline Thermal Integrals (\(J_b, J_f\)) — Tests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-1-spline-vs-exact-for-xin010" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 1 — Spline vs exact for (\(x\in[0,10]\))
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-2-derivatives-partial-jpartial-spline-vs-exact-via-chain-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 2 — Derivatives: ( $\partial J/\partial θ $) (spline) vs exact via chain rule
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-3-compatibility-with-helper_functionsnbspl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 3 — Compatibility with helper_functions.Nbspl
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes-plotting-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes &amp; plotting details
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Approx_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Approx Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Short_Hand_Jb%26Jf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Short Hand for All Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling (1D)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tunneling (1D)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tunneling1D/single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Field functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tunneling1D/tests_single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of SF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Transition Finder
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../transitionFinder/transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../transitionFinder/tests_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of TF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generic Potential
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Generic Potential
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generic_potential/generic_potential/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Potential Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#spline-thermal-integrals-j_f" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spline Thermal Integrals (J_f)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Spline Thermal Integrals (J_f)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jf_spline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jf_spline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Jf_spline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_ensure_jf_spline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _ensure_Jf_spline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_ensure_Jf_spline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_build_jf_dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _build_Jf_dataset
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_build_Jf_dataset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_load_jf_cache-_save_jf_cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _load_Jf_cache / _save_Jf_cache
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="_load_Jf_cache / _save_Jf_cache">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signatures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signatures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose-brief" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose (brief)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reproducibility-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducibility &amp; Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spline-thermal-integrals-j_b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spline Thermal Integrals (J_b)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Spline Thermal Integrals (J_b)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jb_spline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jb_spline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Jb_spline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#signature_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#returns_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spline-construction-caching-same-pattern-as-jf_spline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spline construction &amp; caching (same pattern as Jf_spline)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spline-thermal-integrals-j_b-j_f-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spline Thermal Integrals (\(J_b, J_f\)) — Tests
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Spline Thermal Integrals (\(J_b, J_f\)) — Tests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-1-spline-vs-exact-for-xin010" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 1 — Spline vs exact for (\(x\in[0,10]\))
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-2-derivatives-partial-jpartial-spline-vs-exact-via-chain-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 2 — Derivatives: ( $\partial J/\partial θ $) (spline) vs exact via chain rule
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-3-compatibility-with-helper_functionsnbspl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test 3 — Compatibility with helper_functions.Nbspl
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes-plotting-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes &amp; plotting details
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="spline-thermal-integrals-jb-jf">Spline Thermal Integrals (Jb, Jf)<a class="headerlink" href="#spline-thermal-integrals-jb-jf" title="Permanent link">&para;</a></h1>
+<p>The advantage of these functions is that, after creating a spline from the exact function's placement points, 
+we can quickly obtain a value for any desired point x on the curve without having to go through the integration process directly required by the exact method.
+Furthermore, we can expect good compatibility between the values. This is one of the spline's main uses.</p>
+<hr />
+<h2 id="spline-thermal-integrals-j_f">Spline Thermal Integrals (J_f)<a class="headerlink" href="#spline-thermal-integrals-j_f" title="Permanent link">&para;</a></h2>
+<h3 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h3>
+<p>Provide a <strong>fast, differentiable surrogate</strong> for the exact fermionic thermal integral</p>
+<div class="arithmatex">\[J_f(\theta)\equiv J_f\bigl(x^2\bigr)\quad \theta=(m/T)^2\in\mathbb{R}\]</div>
+<p>by fitting a <strong>cubic B-spline</strong> to samples of the exact function <span class="arithmatex">\((J_f(\theta))\)</span> on a <strong>non-uniform grid</strong>.
+The spline preserves the <strong>legacy API/behavior</strong>:</p>
+<ul>
+<li>Input is <strong>(<span class="arithmatex">\(\theta=x^2\)</span>)</strong> (not (x)); (<span class="arithmatex">\(\theta\)</span>) can be <strong>negative</strong> (imaginary (x) branch).</li>
+<li>For (<span class="arithmatex">\(\theta &lt; \theta_{\min}\)</span>): returns the <strong>clamped</strong> value <span class="arithmatex">\((J_f(\theta_{\min}))\)</span>.</li>
+<li>For (<span class="arithmatex">\(\theta &gt; \theta_{\max}\)</span>): returns <strong>0</strong> (and its derivatives 0), matching the physical larg -mass suppression in the legacy code.</li>
+<li>Supports <strong>derivatives w.r.t. (<span class="arithmatex">\(\theta\)</span>)</strong> via <code>n</code> (uses <code>BSpline.derivative(n)</code>).</li>
+</ul>
+<p><strong>Domain used:</strong>
+(<span class="arithmatex">\(\theta_{\min} = -6.82200203,\quad \theta_{\max} = 1.35\times 10^3.\)</span>)</p>
+<blockquote>
+<p>Notes:
+* The spline is built from <code>Jf_exact2(theta)</code> (exact quadrature) and cached to disk for reproducibility/speed.
+* Physically meaningful inputs here are <strong>real (<span class="arithmatex">\(\theta\)</span>)</strong>. A complex and real (x) (thus complex (<span class="arithmatex">\(\theta\)</span>)) has no direct meaning in this spline API—use the exact routines if you need analytic continuation details.</p>
+</blockquote>
+<hr />
+<h3 id="jf_spline"><code>Jf_spline</code><a class="headerlink" href="#jf_spline" title="Permanent link">&para;</a></h3>
+<h4 id="signature">Signature<a class="headerlink" href="#signature" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="n">Jf_spline</span><span class="p">(</span><span class="n">X</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+<h4 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>X</code> (<code>float | array_like</code>): Input <strong>theta</strong> values (<span class="arithmatex">\(\theta=(m/T)^2\)</span>). Scalar-in → scalar-out.</li>
+<li><code>n</code> (<code>int</code>, default <code>0</code>): Derivative <strong>order w.r.t. (\theta)</strong> (0 for the function value, 1 for first derivative, etc).</li>
+</ul>
+<h4 id="returns">Returns<a class="headerlink" href="#returns" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><code>out</code> (<code>float | ndarray</code>): <span class="arithmatex">\((J_f(\theta))\)</span> (or its (n)-th (<span class="arithmatex">\(\theta\)</span>)-derivative) evaluated by the spline.
+  Behavior outside the fit domain:</p>
+</li>
+<li>
+<p>If (<span class="arithmatex">\(\theta &lt; \theta_{\min}\)</span>): returns the <strong>constant</strong> value at <span class="arithmatex">\((\theta_{\min})\)</span>.</p>
+</li>
+<li>If (<span class="arithmatex">\(\theta &gt; \theta_{\max}\)</span>): returns <strong>0.0</strong> (derivatives also 0.0), per legacy behavior.</li>
+</ul>
+<h4 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Backend: <code>scipy.interpolate.BSpline</code> (created via <code>make_interp_spline(..., k=3)</code>).</li>
+<li>The grid is <strong>denser</strong> near (<span class="arithmatex">\(\theta\le 0\)</span>) and small positive (<span class="arithmatex">\(\theta\)</span>), and <strong>sparser</strong> on the large-(<span class="arithmatex">\(\theta\)</span>) tail.</li>
+<li>Accuracy is typically at the <strong>few × <span class="arithmatex">\(10^{-6}–10^{-8}\)</span></strong> level relative to the exact integral over the intended domain (depends on the internal grid sizes).</li>
+</ul>
+<hr />
+<h3 id="_ensure_jf_spline"><code>_ensure_Jf_spline</code><a class="headerlink" href="#_ensure_jf_spline" title="Permanent link">&para;</a></h3>
+<h4 id="signature_1">Signature<a class="headerlink" href="#signature_1" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="n">_ensure_Jf_spline</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">scipy</span><span class="o">.</span><span class="n">interpolate</span><span class="o">.</span><span class="n">BSpline</span>
+</code></pre></div>
+<h4 id="purpose_1">Purpose<a class="headerlink" href="#purpose_1" title="Permanent link">&para;</a></h4>
+<p>Construct (once) and return the <strong>global</strong> <code>BSpline</code> object for <span class="arithmatex">\((J_f(\theta))\)</span>.
+First tries to <strong>load</strong> a cached spline; if not found, it <strong>builds</strong> the dataset with <code>Jf_exact2()</code>, fits a cubic spline, and <strong>saves</strong> the spline parameters to disk.</p>
+<h4 id="notes_1">Notes<a class="headerlink" href="#notes_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li>The cache file (by default) is <code>Jf_spline_v1.npz</code>, containing the <strong>knot vector</strong> <code>t</code>, <strong>coefficients</strong> <code>c</code>, and degree <code>k</code>.</li>
+<li>If the directory is <strong>read-only</strong>, the code silently <strong>skips</strong> saving (still works in-memory).</li>
+</ul>
+<hr />
+<h3 id="_build_jf_dataset"><code>_build_Jf_dataset</code><a class="headerlink" href="#_build_jf_dataset" title="Permanent link">&para;</a></h3>
+<h4 id="signature_2">Signature<a class="headerlink" href="#signature_2" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="n">_build_Jf_dataset</span><span class="p">(</span><span class="n">n_neg</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">420</span><span class="p">,</span> <span class="n">n_pos_lin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">380</span><span class="p">,</span> <span class="n">n_pos_log</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+</code></pre></div>
+<h4 id="purpose_2">Purpose<a class="headerlink" href="#purpose_2" title="Permanent link">&para;</a></h4>
+<p>Generate a <strong>non-uniform theta grid</strong> and its exact values <span class="arithmatex">\((J_f(\theta))\)</span> used to fit the spline.</p>
+<ul>
+<li>Negative branch: <strong>linear</strong> grid on (<span class="arithmatex">\([\theta_{\min}, 0]\)</span>) (dense).</li>
+<li>Positive small: <strong>linear</strong> grid on (<span class="arithmatex">\([0, 50]\)</span>).</li>
+<li>Positive tail: <strong>log</strong> grid on <span class="arithmatex">\((50, \theta_{\max}])\)</span>.</li>
+</ul>
+<p>Returns <code>(theta, y)</code> with <code>y = Jf_exact2(theta)</code>.</p>
+<hr />
+<h3 id="_load_jf_cache-_save_jf_cache"><code>_load_Jf_cache</code> / <code>_save_Jf_cache</code><a class="headerlink" href="#_load_jf_cache-_save_jf_cache" title="Permanent link">&para;</a></h3>
+<h4 id="signatures">Signatures<a class="headerlink" href="#signatures" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="n">_load_Jf_cache</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+<span class="n">_save_Jf_cache</span><span class="p">(</span><span class="n">theta</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">coeffs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+<h4 id="purpose-brief">Purpose (brief)<a class="headerlink" href="#purpose-brief" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>_load_Jf_cache</code>: try to <strong>load</strong> a previously saved spline <code>(t, c, k)</code>. Returns <code>None</code> if not available.</li>
+<li><code>_save_Jf_cache</code>: best-effort <strong>save</strong> of spline parameters to disk so subsequent runs are instantaneous.</li>
+</ul>
+<hr />
+<h3 id="reproducibility-performance">Reproducibility &amp; Performance<a class="headerlink" href="#reproducibility-performance" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The spline is deterministic given the internal grid sizes and the exact integrator tolerances (in <code>Jf_exact2</code>).</li>
+<li>First build takes <strong>~seconds</strong> (quadrature over a few hundred points), thereafter <strong>~milliseconds</strong> per call thanks to evaluation of a cubic B-spline (and its derivatives).</li>
+</ul>
+<hr />
+<h2 id="spline-thermal-integrals-j_b">Spline Thermal Integrals (J_b)<a class="headerlink" href="#spline-thermal-integrals-j_b" title="Permanent link">&para;</a></h2>
+<h3 id="purpose_3">Purpose<a class="headerlink" href="#purpose_3" title="Permanent link">&para;</a></h3>
+<p>Provide a <strong>fast, differentiable surrogate</strong> for the exact bosonic thermal integral
+<span class="arithmatex">\((J_b(\theta) \equiv J_b(x^2))\)</span> with (<span class="arithmatex">\(\theta=(m/T)^2\in\mathbb{R}\)</span>), by fitting a <strong>cubic B-spline</strong> to samples of the exact function <span class="arithmatex">\((J_b(\theta))\)</span> on a <strong>non-uniform grid</strong>.
+The spline preserves the <strong>legacy API/behavior</strong>:</p>
+<ul>
+<li>Input is <strong>(<span class="arithmatex">\(\theta=x^2\)</span>)</strong> (not (x)); (<span class="arithmatex">\(\theta\)</span>) may be <strong>negative</strong> (imaginary-mass branch handled via the exact routine during fitting).</li>
+<li>For (<span class="arithmatex">\(\theta &lt; \theta_{\min}\)</span>): return the <strong>clamped</strong> value <span class="arithmatex">\((J_b(\theta_{\min}))\)</span>.</li>
+<li>For (<span class="arithmatex">\(\theta &gt; \theta_{\max}\)</span>): return <strong>0.0</strong> (and derivatives 0.0), matching the legacy tail suppression.</li>
+<li>Support <strong>derivatives w.r.t. <span class="arithmatex">\((\theta)\)</span></strong> via parameter <code>n</code> (uses <code>BSpline.derivative(n)</code>).</li>
+</ul>
+<p><strong>Domain used (legacy-compatible):</strong>
+(<span class="arithmatex">\(\displaystyle \theta_{\min} = -3.72402637,\qquad \theta_{\max} = 1.41\times 10^3.\)</span>)</p>
+<blockquote>
+<p>Physically meaningful inputs here are <strong>real (<span class="arithmatex">\(\theta\)</span>)</strong>. Complex (x) (thus complex (<span class="arithmatex">\(\theta\)</span>)) is not used in this spline API; for analytic-continuation details use the <strong>exact</strong> routines.</p>
+</blockquote>
+<hr />
+<h3 id="jb_spline"><code>Jb_spline</code><a class="headerlink" href="#jb_spline" title="Permanent link">&para;</a></h3>
+<h4 id="signature_3">Signature<a class="headerlink" href="#signature_3" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="n">Jb_spline</span><span class="p">(</span><span class="n">X</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+</code></pre></div>
+<h4 id="parameters_1">Parameters<a class="headerlink" href="#parameters_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>X</code> (<code>float | array_like</code>): Input <strong>theta</strong> values (<span class="arithmatex">\(\theta=(m/T)^2\)</span>). Scalar-in → scalar-out.</li>
+<li><code>n</code> (<code>int</code>, default <code>0</code>): Derivative <strong>order w.r.t. <span class="arithmatex">\((\theta)\)</span></strong> (0 for the function value, 1 for first derivative, etc.).</li>
+</ul>
+<h4 id="returns_1">Returns<a class="headerlink" href="#returns_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p><code>out</code> (<code>float | ndarray</code>): <span class="arithmatex">\((J_b(\theta))\)</span> (or its (n)-th (<span class="arithmatex">\(\theta\)</span>)-derivative) evaluated by the spline.
+  Outside the fitted domain:</p>
+</li>
+<li>
+<p>If (<span class="arithmatex">\(\theta &lt; \theta_{\min}\)</span>): returns the <strong>constant</strong> value at (<span class="arithmatex">\(\theta_{\min}\)</span>).</p>
+</li>
+<li>If (<span class="arithmatex">\(\theta &gt; \theta_{\max}\)</span>): returns <strong>0.0</strong> (derivatives also 0.0), per legacy behavior.</li>
+</ul>
+<h4 id="notes_2">Notes<a class="headerlink" href="#notes_2" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Backend: <code>scipy.interpolate.BSpline</code> (created via <code>make_interp_spline(..., k=3)</code>).</li>
+<li>The grid used for fitting is <strong>denser</strong> near (<span class="arithmatex">\(\theta\le 0\)</span>) and small positive (<span class="arithmatex">\(\theta\)</span>), and <strong>sparser</strong> on the large-(<span class="arithmatex">\(\theta\)</span>) tail.</li>
+<li>Choice of (<span class="arithmatex">\(\theta_{\min}\)</span>) coincides with the <strong>minimum</strong> of (<span class="arithmatex">\(J_b\)</span>), so the clamp at the left boundary plus the vanishing right tail makes the evaluated curve <strong>monotonic increasing</strong> and (<span class="arithmatex">\(C^1\)</span>)-continuous (matching the legacy intent).</li>
+</ul>
+<hr />
+<h3 id="spline-construction-caching-same-pattern-as-jf_spline">Spline construction &amp; caching (same pattern as <em>Jf_spline</em>)<a class="headerlink" href="#spline-construction-caching-same-pattern-as-jf_spline" title="Permanent link">&para;</a></h3>
+<p>The internal helpers follow the <strong>same design</strong> as for <code>Jf_spline</code>:</p>
+<ul>
+<li><strong>Dataset build</strong>: generate a <strong>non-uniform</strong> <span class="arithmatex">\((\theta)\)</span> grid
+  (linear on (<span class="arithmatex">\([\theta_{\min},0]\)</span>), linear on (<span class="arithmatex">\([0,50]\)</span>), logarithmic on <span class="arithmatex">\(((50,\theta_{\max}]))\)</span> and compute <strong>ground-truth</strong> values via <code>Jb_exact2(theta)</code>.
+  <em>(Function: <code>_build_Jb_dataset</code>.)</em></li>
+<li><strong>Spline fit</strong>: build a <strong>cubic interpolating spline</strong> (<code>make_interp_spline</code>) with <code>extrapolate=False</code>.
+  <em>(Created inside <code>_ensure_Jb_spline</code>.)</em></li>
+<li><strong>Caching</strong>: first try to <strong>load</strong> a cached spline <code>(t, c, k)</code> from
+  <code>Jb_spline_v1.npz</code> under <code>spline_data_path</code>; if not present, <strong>fit</strong> and then <strong>save</strong> best-effort.
+  <em>(Functions: <code>_load_Jb_cache</code>, <code>_save_Jb_cache</code>, called by <code>_ensure_Jb_spline</code>.)</em></li>
+</ul>
+<p><strong>Performance:</strong> first build takes seconds (due to exact quadrature at a few hundred (\theta) nodes); subsequent runs are <strong>milliseconds</strong> (BSpline evaluation).</p>
+<p><strong>Reproducibility:</strong> the cache pins the fitted spline; if the directory is read-only, the code still works (keeps the spline in memory).</p>
+<hr />
+<h2 id="spline-thermal-integrals-j_b-j_f-tests">Spline Thermal Integrals (<span class="arithmatex">\(J_b, J_f\)</span>) — Tests<a class="headerlink" href="#spline-thermal-integrals-j_b-j_f-tests" title="Permanent link">&para;</a></h2>
+<p>This page documents the verification suite for the <strong>Spline Thermal Integrals</strong>.
+We validate that the spline surrogates <code>Jb_spline(θ)</code> and <code>Jf_spline(θ)</code> (with <span class="arithmatex">\((\theta=x^2=(m/T)^2)\)</span> ) reproduce the <strong>exact</strong> one-loop integrals and their <strong>θ-derivatives</strong>, 
+and that the spline implementation is <strong>consistent</strong> with the B-spline basis from <code>helper_functions.Nbspl</code>.</p>
+<p><strong>Plot styling used below</strong></p>
+<ul>
+<li><strong>Solid</strong>: exact curve (as a function of (x), with (<span class="arithmatex">\(θ=x^2\)</span>)).</li>
+<li><strong>Dashed</strong>: spline curve.</li>
+<li><strong>Dots</strong>: collocation nodes (subset with (<span class="arithmatex">\(x\le 10\)</span>)) used to fit the spline.</li>
+<li>see <a href="/tests/finiteT/Spline_Thermal_Integrals.py">tests/finiteT/Spline_Thermal_Integrals</a> for more</li>
+</ul>
+<p>We also print simple error metrics for quick checks.</p>
+<hr />
+<h3 id="test-1-spline-vs-exact-for-xin010">Test 1 — Spline vs exact for (<span class="arithmatex">\(x\in[0,10]\)</span>)<a class="headerlink" href="#test-1-spline-vs-exact-for-xin010" title="Permanent link">&para;</a></h3>
+<p>Compare <code>Jb_spline(θ=x^2)</code> and <code>Jf_spline(θ=x^2)</code> against <code>Jb_exact(x)</code> and <code>Jf_exact(x)</code> on the same (x)-grid.</p>
+<p><strong>Expectation:</strong> curves overlap within quadrature/spline noise; max absolute error across the grid should be small.</p>
+<p><strong>Boson <span class="arithmatex">\((J_b)\)</span>: exact vs spline (with nodes)</strong></p>
+<p><img alt="J_b exact vs spline" src="../assets/Spline_1.png" /></p>
+<p><strong>Fermion <span class="arithmatex">\((J_f)\)</span>: exact vs spline (with nodes)</strong></p>
+<p><img alt="J_f exact vs spline" src="../assets/Spline_2.png" /></p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 1: Spline vs Exact for x ∈ [0, 10] ===</span>
+<span class="sd">Max |J_b (spline) - J_b (exact)| over x∈[0,10]: 1.180e-03</span>
+<span class="sd">Max |J_f (spline) - J_f (exact)| over x∈[0,10]: 4.638e-05</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="test-2-derivatives-partial-jpartial-spline-vs-exact-via-chain-rule">Test 2 — Derivatives: ( $\partial J/\partial θ $) (spline) vs exact via chain rule<a class="headerlink" href="#test-2-derivatives-partial-jpartial-spline-vs-exact-via-chain-rule" title="Permanent link">&para;</a></h3>
+<p>The spline returns derivatives with respect to (θ). We compare against the exact derivative with respect to (x) using the chain rule:</p>
+<div class="arithmatex">\[\frac{\partial J}{\partial θ} = \frac{\partial J}{\partial x}\frac{\partial x}{\partial θ} = 
+\frac{1}{2\sqrt{θ}},\frac{\partial J}{\partial x}
+\quad(\text{with } x=\sqrt{θ} θ&gt;0)\]</div>
+<p>We avoid (x=0) (singularity in (1/(2x))) and take (<span class="arithmatex">\(x\in(10^{-3},10]\)</span>).</p>
+<p><strong>Expectation:</strong> close agreement; small deviations can appear near the very small-(x) end where the chain rule magnifies numerical noise.</p>
+<p><strong>Boson (<span class="arithmatex">\(dJ_b/dθ\)</span>): exact vs spline (with nodes)</strong></p>
+<p><img alt="dJ_b/dtheta exact vs spline" src="../assets/Spline_3.png" /></p>
+<p><strong>Fermion (<span class="arithmatex">\(dJ_f\)</span>/dθ): exact vs spline (with nodes)</strong></p>
+<p><img alt="dJ_f/dtheta exact vs spline" src="../assets/Spline_4.png" /></p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 2: Derivatives — spline dJ/dtheta vs exact (chain rule) ===</span>
+<span class="sd">Max |dJ_b/dθ (spline) - dJ_b/dθ (exact)| over x∈(1e-3,10]: 3.156e-02</span>
+<span class="sd">Max |dJ_f/dθ (spline) - dJ_f/dθ (exact)| over x∈(1e-3,10]: 1.240e-03</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="test-3-compatibility-with-helper_functionsnbspl">Test 3 — Compatibility with <code>helper_functions.Nbspl</code><a class="headerlink" href="#test-3-compatibility-with-helper_functionsnbspl" title="Permanent link">&para;</a></h3>
+<p>We reconstruct the spline value using the B-spline basis:</p>
+<div class="arithmatex">\[s(θ) = \sum_i c_i,N_{i,k}(θ)\]</div>
+<p>where (t) (knots), (c) (coefficients) and (k) (degree) come from the fitted <code>BSpline</code>. We evaluate
+<code>Nbspl(t, θ, k) @ c</code> and compare to the direct <code>J*_spline(θ)</code> evaluation for (<span class="arithmatex">\(θ\in[0,100]\)</span>).</p>
+<p><strong>Expectation:</strong> the two evaluations should match to near machine precision.</p>
+<p><strong>Boson (<span class="arithmatex">\(J_b\)</span>): BSpline vs Nbspl reconstruction</strong></p>
+<p><img alt="J_b spline vs Nbspl spline" src="../assets/Spline_5.png" /></p>
+<p><strong>Fermion (<span class="arithmatex">\(J_f\)</span>): BSpline vs Nbspl reconstruction</strong></p>
+<p><img alt="J_f spline vs Nbspl spline" src="../assets/Spline_6.png" /></p>
+<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">=== Test 3: Compatibility with helper_functions.Nbspl ===</span>
+<span class="sd">Max |J_f (spline) - J_f (Nbspl rebuild)| on θ∈[0,100]: 4.441e-16</span>
+<span class="sd">Max |J_b (spline) - J_b (Nbspl rebuild)| on θ∈[0,100]: 2.220e-16</span>
+<span class="sd">&quot;&quot;&quot;</span>
+</code></pre></div>
+<hr />
+<h3 id="notes-plotting-details">Notes &amp; plotting details<a class="headerlink" href="#notes-plotting-details" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Input to the splines is always (<span class="arithmatex">\(θ=x^2\)</span>). For Tests 1–2, we <strong>limit the x-axis to ([0,10])</strong> and <strong>filter the node dots</strong> to (<span class="arithmatex">\(x\le 10\)</span>) to avoid automatic axis expansion by far-right collocation nodes (which can reach (<span class="arithmatex">\(x\sim\sqrt{θ_{\max}}\)</span>)).</li>
+<li>Left boundary handling is <strong>clamp</strong> at (<span class="arithmatex">\(θ_{\min}\)</span>); right boundary is <strong>zero</strong> for (<span class="arithmatex">\(θ&gt;θ_{\max}\)</span>), matching the legacy API (this is visible only if you probe beyond the fitted domain).</li>
+<li><code>Jf_exact(x)</code> returns complex (legacy); in the plots we show its <strong>real part</strong>, which is the physically relevant branch for real (x).</li>
+</ul>
+<hr />
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax-config.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

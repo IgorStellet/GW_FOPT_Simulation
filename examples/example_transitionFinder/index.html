@@ -1,0 +1,2607 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../example_tunneling1D/">
+      
+      
+        <link rel="next" href="../../modules/helper_functions/Miscellaneous_functions/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>Transition Finder full example - CosmoTransitions (modernized)</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#example_transitionfindermd" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="CosmoTransitions (modernized)" class="md-header__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosmoTransitions (modernized)
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Transition Finder full example
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="CosmoTransitions (modernized)" class="md-nav__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CosmoTransitions (modernized)
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap & Flowchart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples (Core modules)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples (Core modules)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../example_tunneling1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling 1D full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder full example
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-model-1d-landauginzburg-finite-t-potential" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The model: 1D Landau–Ginzburg finite-T potential
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-minimal-interface-to-transitionfinder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. The minimal interface to transitionFinder
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. The minimal interface to transitionFinder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-what-transitionfinder-actually-needs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 What transitionFinder actually needs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-potential-and-derivatives-1d-but-vector-friendly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Potential and derivatives: 1D but vector-friendly
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-block-a-building-phases-with-tracemultimin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Block A – Building phases with traceMultiMin
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Block A – Building phases with traceMultiMin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-seeds-where-to-start-tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Seeds: where to start tracing?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-tracing-parameters-what-really-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Tracing parameters: what really matters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-block-b-critical-temperatures-and-nucleation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Block B – Critical temperatures and nucleation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Block B – Critical temperatures and nucleation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-critical-temperatures-findcriticaltemperatures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Critical temperatures: findCriticalTemperatures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-nucleation-findalltransitions-and-nuclcriterion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Nucleation: findAllTransitions and nuclCriterion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-marrying-t_textcrit-and-t_n" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Marrying (T_{\text{crit}}) and (T_n)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-minimal-recipe-using-transitionfinder-with-your-own-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Minimal recipe: using transitionFinder with your own model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-the-four-examples-ad" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. The four examples A–D
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. The four examples A–D">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-example-a-potential-snapshots-at-low-and-high-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Example A – Potential snapshots at low and high T
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-example-b-t_textspin-t_textcrit-and-t_n" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Example B – (T_{\text{spin}}), (T_{\text{crit}}) and (T_n)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-example-c-evolution-of-minima-and-curvature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Example C – Evolution of minima and curvature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-where-to-go-from-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Where to go from here?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-final-summary-and-how-to-read-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Final summary and how to read it
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-checklist-parameters-you-actually-want-to-touch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Checklist: parameters you actually want to touch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Checklist: parameters you actually want to touch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tracing-block-a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tracing (Block A)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nucleation-block-b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nucleation (Block B)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Images
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_1" id="__nav_5_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helper Functions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Helper Functions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/helper_functions/Miscellaneous_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Miscellaneous Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/helper_functions/Numerical_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Integration Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/helper_functions/Numerical_derivatives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Derivatives Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/helper_functions/interpolation_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interpolation Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Finite Temperature (One loop corrections)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Finite Temperature (One loop corrections)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/finiteT/Exact_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/finiteT/Spline_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spline Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/finiteT/Approx_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Approx Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/finiteT/Short_Hand_Jb%26Jf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Short Hand for All Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling (1D)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tunneling (1D)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/tunneling1D/single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Field functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/tunneling1D/tests_single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of SF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Transition Finder
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/transitionFinder/transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/transitionFinder/tests_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of TF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generic Potential
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Generic Potential
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/generic_potential/generic_potential/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Potential Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-model-1d-landauginzburg-finite-t-potential" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The model: 1D Landau–Ginzburg finite-T potential
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-minimal-interface-to-transitionfinder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. The minimal interface to transitionFinder
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. The minimal interface to transitionFinder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-what-transitionfinder-actually-needs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 What transitionFinder actually needs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-potential-and-derivatives-1d-but-vector-friendly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 Potential and derivatives: 1D but vector-friendly
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-block-a-building-phases-with-tracemultimin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Block A – Building phases with traceMultiMin
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Block A – Building phases with traceMultiMin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-seeds-where-to-start-tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 Seeds: where to start tracing?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-tracing-parameters-what-really-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 Tracing parameters: what really matters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-block-b-critical-temperatures-and-nucleation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Block B – Critical temperatures and nucleation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Block B – Critical temperatures and nucleation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-critical-temperatures-findcriticaltemperatures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Critical temperatures: findCriticalTemperatures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-nucleation-findalltransitions-and-nuclcriterion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 Nucleation: findAllTransitions and nuclCriterion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-marrying-t_textcrit-and-t_n" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Marrying (T_{\text{crit}}) and (T_n)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-minimal-recipe-using-transitionfinder-with-your-own-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Minimal recipe: using transitionFinder with your own model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-the-four-examples-ad" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. The four examples A–D
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. The four examples A–D">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-example-a-potential-snapshots-at-low-and-high-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 Example A – Potential snapshots at low and high T
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-example-b-t_textspin-t_textcrit-and-t_n" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 Example B – (T_{\text{spin}}), (T_{\text{crit}}) and (T_n)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-example-c-evolution-of-minima-and-curvature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 Example C – Evolution of minima and curvature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-where-to-go-from-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 Where to go from here?
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-final-summary-and-how-to-read-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Final summary and how to read it
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-checklist-parameters-you-actually-want-to-touch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Checklist: parameters you actually want to touch
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Checklist: parameters you actually want to touch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tracing-block-a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tracing (Block A)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nucleation-block-b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nucleation (Block B)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Images
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="example_transitionfindermd"><code>example_transitionFinder.md</code><a class="headerlink" href="#example_transitionfindermd" title="Permanent link">&para;</a></h1>
+<p>Pedagogical showcase for<br />
+<code>CosmoTransitions.transitionFinder</code> with a 1D Landau–Ginzburg potential.</p>
+<p>This example is meant to do for <strong><code>transitionFinder</code></strong> what
+<code>example_tunneling1D.py</code> does for <strong><code>tunneling1D</code></strong>:</p>
+<blockquote>
+<p>Take you from the <strong>bare potential</strong> <span class="arithmatex">\(V(\phi, T)\)</span> all the way to<br />
+a <strong>coherent thermal history</strong> with<br />
+- traced phases,<br />
+- critical (degeneracy) temperatures,<br />
+- spinodal points, and<br />
+- the nucleation temperature <span class="arithmatex">\(T_n\)</span> that satisfies <span class="arithmatex">\(S(T_n)/T_n \simeq 140\)</span>.</p>
+</blockquote>
+<p>Everything is intentionally kept <strong>1D</strong> in field space so that every plot
+can be read in a glance. The logic, however, is exactly what you would use in a
+real multi-field model.</p>
+<hr />
+<h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<p>From the root of the repository:</p>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>docs/examples/example_transitionFinder.py
+<span class="sb">````</span>
+
+What<span class="w"> </span>you<span class="w"> </span>will<span class="w"> </span>get:
+
+<span class="m">1</span>.<span class="w"> </span>A<span class="w"> </span>**configuration<span class="w"> </span>block**<span class="w"> </span>summarizing<span class="w"> </span>all<span class="w"> </span>model<span class="w"> </span>and<span class="w"> </span>numerical<span class="w"> </span>parameters.
+
+<span class="m">2</span>.<span class="w"> </span>A<span class="w"> </span>**Block<span class="w"> </span>A**<span class="w"> </span>section:
+
+<span class="w">   </span>*<span class="w"> </span>seeds<span class="w"> </span>used<span class="w"> </span>to<span class="w"> </span>start<span class="w"> </span>the<span class="w"> </span>tracing<span class="p">;</span>
+<span class="w">   </span>*<span class="w"> </span>phases<span class="w"> </span>traced<span class="w"> </span>with<span class="w"> </span><span class="sb">`</span>traceMultiMin<span class="sb">`</span><span class="w"> </span>and<span class="w"> </span>cleaned<span class="w"> </span>with<span class="w"> </span><span class="sb">`</span>removeRedundantPhases<span class="sb">`</span>.
+
+<span class="m">3</span>.<span class="w"> </span>A<span class="w"> </span>**Block<span class="w"> </span>B**<span class="w"> </span>section:
+
+<span class="w">   </span>*<span class="w"> </span>critical<span class="w"> </span>temperatures<span class="w"> </span>from<span class="w"> </span><span class="sb">`</span>findCriticalTemperatures<span class="sb">`</span><span class="p">;</span>
+<span class="w">   </span>*<span class="w"> </span>nucleation<span class="w"> </span>temperatures<span class="w"> </span>and<span class="w"> </span>actions<span class="w"> </span>from<span class="w"> </span><span class="sb">`</span>findAllTransitions<span class="sb">`</span>
+<span class="w">     </span><span class="o">(</span>internally<span class="w"> </span>calling<span class="w"> </span><span class="sb">`</span>tunnelFromPhase<span class="sb">`</span><span class="w"> </span>and<span class="w"> </span>the<span class="w"> </span>bounce<span class="w"> </span>solvers<span class="o">)</span>.
+
+<span class="m">4</span>.<span class="w"> </span>Three<span class="w"> </span>plotted<span class="w"> </span>examples:
+
+<span class="w">   </span>*<span class="w"> </span>**Example<span class="w"> </span>A**<span class="w"> </span>–<span class="w"> </span>Potential<span class="w"> </span>snapshots<span class="w"> </span>at<span class="w"> </span>low<span class="w"> </span>and<span class="w"> </span>high<span class="w"> </span>T.
+<span class="w">   </span>*<span class="w"> </span>**Example<span class="w"> </span>B**<span class="w"> </span>–<span class="w"> </span><span class="nv">$T_</span><span class="o">{</span><span class="se">\t</span>ext<span class="o">{</span>spin<span class="o">}}</span>$,<span class="w"> </span><span class="nv">$T_</span><span class="o">{</span><span class="se">\t</span>ext<span class="o">{</span>crit<span class="o">}}</span>$,<span class="w"> </span><span class="nv">$T_</span><span class="o">{</span><span class="se">\t</span>ext<span class="o">{</span>nuc<span class="o">}}</span>$
+<span class="w">     </span>with<span class="w"> </span>V<span class="o">(</span><span class="se">\p</span>hi,<span class="w"> </span>T<span class="o">)</span><span class="w"> </span>at<span class="w"> </span>those<span class="w"> </span>special<span class="w"> </span>temperatures.
+<span class="w">   </span>*<span class="w"> </span>**Example<span class="w"> </span>C**<span class="w"> </span>–<span class="w"> </span>Evolution<span class="w"> </span>of<span class="w"> </span>the<span class="w"> </span>minima<span class="w"> </span>$<span class="se">\p</span>hi_<span class="o">{</span><span class="se">\m</span>in<span class="o">}(</span>T<span class="o">)</span>$<span class="w"> </span>and<span class="w"> </span>the
+<span class="w">     </span>curvature<span class="w"> </span><span class="nv">$m</span>^2<span class="o">(</span>T<span class="o">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="se">\p</span>artial^2<span class="w"> </span>V<span class="w"> </span>/<span class="w"> </span><span class="se">\p</span>artial<span class="w"> </span><span class="se">\p</span>hi^2$<span class="w"> </span>along<span class="w"> </span>each<span class="w"> </span>phase.
+
+<span class="m">5</span>.<span class="w"> </span>A<span class="w"> </span>**final<span class="w"> </span>compact<span class="w"> </span>summary**<span class="w"> </span>with<span class="w"> </span>all<span class="w"> </span>key<span class="w"> </span>numbers:
+<span class="w">   </span><span class="nv">$T_n</span>,<span class="w"> </span>T_<span class="o">{</span><span class="se">\t</span>ext<span class="o">{</span>crit<span class="o">}}</span>,<span class="w"> </span>S<span class="o">(</span>T_n<span class="o">)</span>$<span class="w"> </span>and<span class="w"> </span><span class="nv">$S</span><span class="o">(</span>T_n<span class="o">)</span>/T_n$.
+
+All<span class="w"> </span>figures<span class="w"> </span>are<span class="w"> </span>saved<span class="w"> </span>under:
+
+<span class="sb">```</span>text
+docs/examples/assets_transitionFinder/
+<span class="w">    </span>figA_&lt;<span class="k">case</span>&gt;.png
+<span class="w">    </span>figB_&lt;<span class="k">case</span>&gt;.png
+<span class="w">    </span>figC_phi_&lt;<span class="k">case</span>&gt;.png
+<span class="w">    </span>figC_m2_&lt;<span class="k">case</span>&gt;.png
+</code></pre></div>
+<p>where <code>&lt;case&gt;</code> is <code>LG1D</code> by default.</p>
+<hr />
+<h2 id="1-the-model-1d-landauginzburg-finite-t-potential">1. The model: 1D Landau–Ginzburg finite-T potential<a class="headerlink" href="#1-the-model-1d-landauginzburg-finite-t-potential" title="Permanent link">&para;</a></h2>
+<p>The whole example is built around a textbook finite-temperature
+Landau–Ginzburg potential in one scalar field:</p>
+<div class="arithmatex">\[
+V(\phi, T) = D(T^2 - T_0^2)\phi^2 - ET\phi^3 + \frac{\lambda}{4}\phi^4.
+\]</div>
+<p>In the script, the parameters are:</p>
+<div class="highlight"><pre><span></span><code># Model parameters: simple Landau–Ginzburg finite-T potential
+D: float = 0.1
+E: float = 0.02
+lambda_: float = 0.1
+T0: float = 100.0
+</code></pre></div>
+<p>Physical interpretation (schematically):</p>
+<ul>
+<li><code>D</code>, <code>λ</code> control the <strong>quadratic</strong> and <strong>quartic</strong> pieces → overall shape.</li>
+<li><code>E</code> controls the <strong>cubic</strong> term → strength of the barrier between phases.</li>
+<li><code>T0</code> is the temperature where the <strong>quadratic coefficient</strong> changes sign,
+  setting the rough scale for symmetry restoration.</li>
+</ul>
+<p>In the example, we work over a temperature interval:</p>
+<div class="highlight"><pre><span></span><code>T_LOW:  float = 0.0
+T_HIGH: float = 200.0
+</code></pre></div>
+<p>and a field range for scans/plots:</p>
+<div class="highlight"><pre><span></span><code>PHI_MIN: float = -5.0
+PHI_MAX: float =  5.0
+N_PHI:   int   = 1000
+</code></pre></div>
+<hr />
+<h2 id="2-the-minimal-interface-to-transitionfinder">2. The minimal interface to <code>transitionFinder</code><a class="headerlink" href="#2-the-minimal-interface-to-transitionfinder" title="Permanent link">&para;</a></h2>
+<h3 id="21-what-transitionfinder-actually-needs">2.1 What <code>transitionFinder</code> actually needs<a class="headerlink" href="#21-what-transitionfinder-actually-needs" title="Permanent link">&para;</a></h3>
+<p>At the core, <code>transitionFinder</code> wants <strong>two kinds of information</strong>:</p>
+<ol>
+<li>
+<p>For <strong>tracing minima as a function of T</strong> (Block A):</p>
+</li>
+<li>
+<p>a scalar free-energy density
+     <code>f(x, T)</code>;</p>
+</li>
+<li>its mixed derivative
+     <code>d2f_dxdt(x, T) = ∂/∂T (∂f/∂x)</code>;</li>
+<li>
+<p>its Hessian
+     <code>d2f_dx2(x, T)  = ∂²f/∂x²</code>.</p>
+</li>
+<li>
+<p>For <strong>tunneling and critical temperatures</strong> (Block B/C):</p>
+</li>
+<li>
+<p>the potential (or free energy) itself
+     <code>V(x, T)</code>;</p>
+</li>
+<li>its gradient with respect to the fields
+     <code>dV(x, T)</code>.</li>
+</ol>
+<p>In our 1D example we simply take:</p>
+<div class="highlight"><pre><span></span><code>def free_energy(x: np.ndarray, T: float) -&gt; float:
+    return float(V(x, T))
+</code></pre></div>
+<p>so “free energy” and “potential” coincide.</p>
+<hr />
+<h3 id="22-potential-and-derivatives-1d-but-vector-friendly">2.2 Potential and derivatives: 1D but vector-friendly<a class="headerlink" href="#22-potential-and-derivatives-1d-but-vector-friendly" title="Permanent link">&para;</a></h3>
+<p>The showcase potential <code>V</code> is written in a way that:</p>
+<ul>
+<li>works with <strong>scalar</strong> φ for simple plots,</li>
+<li>and also with <strong>batched</strong> inputs of shape <code>(n, 1)</code> for
+  <code>findApproxLocalMin</code> inside <code>traceMultiMin</code>.</li>
+</ul>
+<div class="highlight"><pre><span></span><code>def V(phi: np.ndarray | float, T: float) -&gt; np.ndarray | float:
+    phi_arr = np.asarray(phi, dtype=float)
+
+    if phi_arr.ndim == 0:
+        phi_val = phi_arr                  # scalar
+    elif phi_arr.ndim == 1:
+        # 1D field space: treat as array of φ values
+        phi_val = phi_arr                  # shape (n,)
+    elif phi_arr.ndim == 2:
+        # batched samples: (n_samples, 1)
+        if phi_arr.shape[1] != 1:
+            raise ValueError(&quot;For batched evaluation, use shape (n_samples, 1).&quot;)
+        phi_val = phi_arr[:, 0]
+    else:
+        raise ValueError(f&quot;Unsupported phi shape {phi_arr.shape} for this test potential.&quot;)
+
+    V_val = (
+        D * (T**2 - T0**2) * phi_val**2
+        - E * T * phi_val**3
+        + 0.25 * lambda_ * phi_val**4
+    )
+    return V_val
+</code></pre></div>
+<p>The first derivative (gradient) is:</p>
+<div class="arithmatex">\[
+\frac{\partial V}{\partial \phi}
+= 2D(T^2 - T_0^2)\phi - 3ET\phi^2 + \lambda\phi^3.
+\]</div>
+<p>In code, with shapes chosen to be compatible with both
+<code>transitionFinder</code> and <code>tunneling1D</code>:</p>
+<div class="highlight"><pre><span></span><code>def dV(phi: np.ndarray | float, T: float) -&gt; np.ndarray:
+    phi_arr = np.asarray(phi, dtype=float)
+
+    if phi_arr.ndim == 0:
+        phi_val = phi_arr
+        dV_val = (
+            2.0 * D * (T**2 - T0**2) * phi_val
+            - 3.0 * E * T * phi_val**2
+            + lambda_ * phi_val**3
+        )
+        return np.array([dV_val], dtype=float)
+
+    if phi_arr.ndim == 1:
+        if phi_arr.size != 1:
+            raise ValueError(&quot;This showcase gradient assumes a single scalar field.&quot;)
+        phi_val = phi_arr[0]
+        dV_val = (
+            2.0 * D * (T**2 - T0**2) * phi_val
+            - 3.0 * E * T * phi_val**2
+            + lambda_ * phi_val**3
+        )
+        return np.array([dV_val], dtype=float)
+
+    if phi_arr.ndim == 2:
+        if phi_arr.shape[1] != 1:
+            raise ValueError(&quot;For batched evaluation, use shape (n_samples, 1).&quot;)
+        phi_val = phi_arr[:, 0]
+        dV_val = (
+            2.0 * D * (T**2 - T0**2) * phi_val
+            - 3.0 * E * T * phi_val**2
+            + lambda_ * phi_val**3
+        )
+        return dV_val.reshape(-1, 1)
+
+    raise ValueError(f&quot;Unsupported phi shape {phi_arr.shape} in dV.&quot;)
+</code></pre></div>
+<p>The second derivative entering the Hessian is:</p>
+<div class="arithmatex">\[
+\frac{\partial^2 V}{\partial \phi^2}
+= 2D(T^2 - T_0^2) - 6ET\phi + 3\lambda\phi^2.
+\]</div>
+<div class="highlight"><pre><span></span><code>def d2V_dphi2(phi: np.ndarray | float, T: float) -&gt; np.ndarray | float:
+    phi_arr = np.asarray(phi, dtype=float)
+    m2 = 2.0 * D * (T**2 - T0**2) - 6.0 * E * T * phi_arr + 3.0 * lambda_ * phi_arr**2
+    return m2
+</code></pre></div>
+<p>From this we build the mixed derivative and Hessian required by
+<code>traceMinimum</code> / <code>traceMultiMin</code>:</p>
+<div class="highlight"><pre><span></span><code>def free_energy(x: np.ndarray, T: float) -&gt; float:
+    # In this 1D example, x is a length-1 array with x[0] = φ
+    return float(V(x, T))
+
+
+def d2f_dxdt(x: np.ndarray, T: float) -&gt; np.ndarray:
+    # ∂/∂T (∂V/∂φ) = 4D T φ - 3E φ²
+    x_arr = np.atleast_1d(np.asarray(x, dtype=float))
+    if x_arr.size != 1:
+        raise ValueError(&quot;d2f_dxdt assumes a single scalar field.&quot;)
+    phi = x_arr[0]
+    val = 4.0 * D * T * phi - 3.0 * E * phi**2
+    return np.array([val], dtype=float)
+
+
+def d2f_dx2(x: np.ndarray, T: float) -&gt; np.ndarray:
+    # 1×1 Hessian containing ∂²V/∂φ²
+    x_arr = np.atleast_1d(np.asarray(x, dtype=float))
+    if x_arr.size != 1:
+        raise ValueError(&quot;d2f_dx2 assumes a single scalar field.&quot;)
+    phi = x_arr[0]
+    m2 = d2V_dphi2(phi, T)
+    return np.array([[float(m2)]], dtype=float)
+</code></pre></div>
+<blockquote>
+<p><strong>Take-away:</strong>
+To plug your own model into <code>transitionFinder</code>, you need to provide
+exactly these five callbacks: <code>V</code>, <code>dV</code>, <code>free_energy</code>, <code>d2f_dxdt</code>, <code>d2f_dx2</code>.
+Everything else in the example is there to make the physics transparent.</p>
+</blockquote>
+<hr />
+<h2 id="3-block-a-building-phases-with-tracemultimin">3. Block A – Building phases with <code>traceMultiMin</code><a class="headerlink" href="#3-block-a-building-phases-with-tracemultimin" title="Permanent link">&para;</a></h2>
+<h3 id="31-seeds-where-to-start-tracing">3.1 Seeds: where to start tracing?<a class="headerlink" href="#31-seeds-where-to-start-tracing" title="Permanent link">&para;</a></h3>
+<p>We construct simple seeds by scanning the potential at fixed T:</p>
+<div class="highlight"><pre><span></span><code>def scan_minimum_1D(T: float) -&gt; float:
+    phi_grid = np.linspace(PHI_MIN, PHI_MAX, N_PHI)
+    V_vals   = np.asarray(V(phi_grid, T), dtype=float)
+    idx_min  = int(np.argmin(V_vals))
+    return float(phi_grid[idx_min])
+</code></pre></div>
+<p>Then we pick:</p>
+<div class="highlight"><pre><span></span><code># High-T symmetric-phase seed
+T_seed_high = 180.0
+phi_high    = scan_minimum_1D(T_seed_high)
+
+# Low-T broken-phase seed
+T_seed_low  = 20.0
+phi_low     = scan_minimum_1D(T_seed_low)
+
+seeds = [
+    (np.array([phi_high], dtype=float), T_seed_high),
+    (np.array([phi_low],  dtype=float), T_seed_low),
+]
+</code></pre></div>
+<p>When you run the script you will see:</p>
+<div class="highlight"><pre><span></span><code>[Seeds] Initial seed points for traceMultiMin:
+  (T = 180.000, phi =   ... )  V = ...
+  (T =  20.000, phi =   ... )  V = ...
+</code></pre></div>
+<p>Idea:</p>
+<ul>
+<li>One seed for the <strong>symmetric minimum</strong> at high T (around <span class="arithmatex">\(\phi \approx 0\)</span>).</li>
+<li>One seed for the <strong>broken minimum</strong> at low T <span class="arithmatex">\(|(\phi)| &gt; 0\)</span>.</li>
+<li><code>traceMultiMin</code> plus the internal <code>findApproxLocalMin</code> will figure out
+  additional branches if needed.</li>
+</ul>
+<hr />
+<h3 id="32-tracing-parameters-what-really-matters">3.2 Tracing parameters: what really matters<a class="headerlink" href="#32-tracing-parameters-what-really-matters" title="Permanent link">&para;</a></h3>
+<p>Core numerical knobs:</p>
+<div class="highlight"><pre><span></span><code># traceMultiMin / traceMinimum controls
+DELTA_X_TARGET: float = 0.05   # target step in field space
+DTSTART_FRAC:   float = 1e-4   # dtstart as fraction of (T_HIGH - T_LOW)
+TJUMP_FRAC:     float = 1e-4   # temperature jump between traces
+</code></pre></div>
+<p>They are interpreted as:</p>
+<ul>
+<li>
+<p><code>DELTA_X_TARGET</code> – the <strong>target displacement in field space</strong> between
+  consecutive accepted points on the branch. Smaller → more points in T,
+  smoother phases, but more work.</p>
+</li>
+<li>
+<p><code>DTSTART_FRAC</code> – the <strong>initial step size in T</strong>, as a fraction of
+  <code>(T_HIGH - T_LOW)</code>. The effective <code>dtstart</code> is:</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>dt_scale   = T_HIGH - T_LOW
+dtstart_abs = DTSTART_FRAC * dt_scale
+</code></pre></div>
+<ul>
+<li><code>TJUMP_FRAC</code> – how far in T to jump beyond the last point of a trace
+  to look for <strong>new phases</strong> using <code>findApproxLocalMin</code>.</li>
+</ul>
+<p>These are passed directly to <code>traceMultiMin</code>:</p>
+<div class="highlight"><pre><span></span><code>phases = TF.traceMultiMin(
+    f=free_energy,
+    d2f_dxdt=d2f_dxdt,
+    d2f_dx2=d2f_dx2,
+    points=seeds,
+    tLow=T_LOW,
+    tHigh=T_HIGH,
+    deltaX_target=DELTA_X_TARGET,
+    # given as fractions; rescaled internally to absolute ΔT
+    dtstart=DTSTART_FRAC,
+    tjump=TJUMP_FRAC,
+    single_trace_args={
+        &quot;dtabsMax&quot;: 20.0,
+        &quot;dtfracMax&quot;: 0.25,
+        &quot;dtmin&quot;: 1e-4,
+        &quot;minratio&quot;: 1e-2,
+    },
+    local_min_args={&quot;n&quot;: 200, &quot;edge&quot;: 0.05},
+)
+</code></pre></div>
+<p><code>single_trace_args</code> are forwarded to <strong><code>traceMinimum</code></strong>:</p>
+<ul>
+<li><code>dtabsMax</code>, <code>dtfracMax</code> – ceiling on the step size in T, both in absolute
+  and relative terms.</li>
+<li><code>dtmin</code> – minimal |ΔT| before the trace is considered stalled.</li>
+<li><code>minratio</code> – criterion for Hessian degeneracy (when the phase “dies”).</li>
+</ul>
+<p><code>local_min_args</code> go to <code>findApproxLocalMin</code> and control how densely we scan
+for hidden minima along straight segments in field space.</p>
+<p>After tracing we clean duplicates:</p>
+<div class="highlight"><pre><span></span><code>phases_mut = dict(phases)
+TF.removeRedundantPhases(f=free_energy, phases=phases_mut)
+phases_clean = dict(phases_mut)
+</code></pre></div>
+<p>The script prints a compact summary:</p>
+<div class="highlight"><pre><span></span><code>[Block A] Phases after removeRedundantPhases: N
+  Phase 0: T in [T_min, T_max]  phi in [φ_min, φ_max]  (N_points support points)
+  ...
+</code></pre></div>
+<blockquote>
+<p><strong>If you only care about phases:</strong>
+Up to here you already have the full <strong>phase structure</strong> encoded in the
+<code>Phase</code> objects returned by <code>traceMultiMin</code>.</p>
+</blockquote>
+<hr />
+<h2 id="4-block-b-critical-temperatures-and-nucleation">4. Block B – Critical temperatures and nucleation<a class="headerlink" href="#4-block-b-critical-temperatures-and-nucleation" title="Permanent link">&para;</a></h2>
+<p>Once the phases exist, Block B asks:</p>
+<ol>
+<li><strong>Where are different phases degenerate in free energy?</strong></li>
+<li><strong>When does tunneling actually become efficient?</strong></li>
+</ol>
+<h3 id="41-critical-temperatures-findcriticaltemperatures">4.1 Critical temperatures: <code>findCriticalTemperatures</code><a class="headerlink" href="#41-critical-temperatures-findcriticaltemperatures" title="Permanent link">&para;</a></h3>
+<p>Minimal usage:</p>
+<div class="highlight"><pre><span></span><code>crit_transitions = TF.findCriticalTemperatures(
+    phases_clean,
+    V,
+    start_high=False,
+)
+</code></pre></div>
+<p>Each entry in <code>crit_transitions</code> is a dictionary with:</p>
+<ul>
+<li><code>"Tcrit"</code> – critical temperature where two phases are degenerate;</li>
+<li><code>"high_phase"</code>, <code>"low_phase"</code> – keys of the corresponding <code>Phase</code> objects;</li>
+<li><code>"high_vev"</code>, <code>"low_vev"</code> – VEVs at (T_{\text{crit}});</li>
+<li><code>"trantype" = 1</code> (by construction).</li>
+</ul>
+<p>The example prints something like:</p>
+<div class="highlight"><pre><span></span><code>[Critical temperatures] Found 1 degeneracy points.
+  # 1: Tcrit =  98.123  high_phase = 0, low_phase = 1
+</code></pre></div>
+<p>Interpretation:</p>
+<ul>
+<li>The high-T branch is stable above <code>Tcrit</code>.</li>
+<li>Below <code>Tcrit</code>, the low-T branch is energetically favored.</li>
+</ul>
+<hr />
+<h3 id="42-nucleation-findalltransitions-and-nuclcriterion">4.2 Nucleation: <code>findAllTransitions</code> and <code>nuclCriterion</code><a class="headerlink" href="#42-nucleation-findalltransitions-and-nuclcriterion" title="Permanent link">&para;</a></h3>
+<p>The nucleation criterion used in the example is the standard</p>
+<div class="arithmatex">\[\frac{S(T)}{T} \simeq 140\]</div>
+<p>implemented as:</p>
+<div class="highlight"><pre><span></span><code>TARGET_S_OVER_T: float = 140.0
+
+def nuclCriterion(S: float, T: float, target: float = TARGET_S_OVER_T) -&gt; float:
+    return S / (T + 1e-100) - target
+</code></pre></div>
+<p>and passed to <code>findAllTransitions</code> via <code>tunnelFromPhase_args</code>:</p>
+<div class="highlight"><pre><span></span><code>tunnel_args = {
+    &quot;Ttol&quot;: 1e-2,
+    &quot;maxiter&quot;: 80,
+    &quot;phitol&quot;: 1e-6,
+    &quot;overlapAngle&quot;: 45.0,
+    &quot;nuclCriterion&quot;: nuclCriterion,
+    &quot;verbose&quot;: False,
+    &quot;fullTunneling_params&quot;: {},
+}
+
+full_transitions = TF.findAllTransitions(
+    phases_clean,
+    V,
+    dV,
+    tunnelFromPhase_args=tunnel_args,
+)
+</code></pre></div>
+<p>What these arguments control:</p>
+<ul>
+<li><code>Ttol</code> – absolute tolerance on the nucleation temperature (root finder);</li>
+<li><code>maxiter</code> – maximum number of function evaluations;</li>
+<li><code>phitol</code> – tolerance in the <strong>local</strong> minimizations at fixed T;</li>
+<li><code>overlapAngle</code> – prune target phases whose directions in field space
+  are too aligned with each other (irrelevant in 1D but useful in
+  multi-field models);</li>
+<li><code>nuclCriterion</code> – your condition for “efficient nucleation”;</li>
+<li><code>fullTunneling_params</code> – forwarded to <code>pathDeformation.fullTunneling</code>,
+  when available.</li>
+</ul>
+<p>Each element of <code>full_transitions</code> is a dictionary with keys:</p>
+<ul>
+<li><code>"Tnuc"</code> – nucleation temperature;</li>
+<li><code>"low_vev"</code>, <code>"high_vev"</code> – minima connected by the bounce;</li>
+<li><code>"low_phase"</code>, <code>"high_phase"</code> – keys of the corresponding phases;</li>
+<li><code>"action"</code> – Euclidean action (S(T_n));</li>
+<li><code>"instanton"</code> – backend-dependent instanton object;</li>
+<li><code>"trantype" = 1</code> (first-order).</li>
+</ul>
+<p>If no tunneling solution is found, <code>full_transitions</code> is empty and the
+script warns you.</p>
+<hr />
+<h3 id="43-marrying-t_textcrit-and-t_n">4.3 Marrying (T_{\text{crit}}) and (T_n)<a class="headerlink" href="#43-marrying-t_textcrit-and-t_n" title="Permanent link">&para;</a></h3>
+<p>The last piece of Block B is:</p>
+<div class="highlight"><pre><span></span><code>TF.addCritTempsForFullTransitions(
+    phases_clean,
+    crit_transitions,
+    full_transitions,
+)
+</code></pre></div>
+<p>This analyzes the <strong>graph of phases</strong>, their <strong>critical transitions</strong>, and
+the <strong>supercooled transitions</strong> returned by <code>findAllTransitions</code> in order
+to attach, to each nucleation transition, the <strong>corresponding critical
+temperature</strong> (if one exists) under the key <code>"crit_trans"</code>.</p>
+<p>From that point on, a single <code>tdict</code> in <code>full_transitions</code> gives you:</p>
+<ul>
+<li><code>Tcrit</code> through <code>tdict["crit_trans"]["Tcrit"]</code> (if any),</li>
+<li><code>Tnuc</code>  through <code>tdict["Tnuc"]</code>,</li>
+<li>their associated phases and VEVs.</li>
+</ul>
+<hr />
+<h2 id="5-minimal-recipe-using-transitionfinder-with-your-own-model">5. Minimal recipe: using <code>transitionFinder</code> with your own model<a class="headerlink" href="#5-minimal-recipe-using-transitionfinder-with-your-own-model" title="Permanent link">&para;</a></h2>
+<p>If you want the <strong>shortest possible checklist</strong>, here it is:</p>
+<ol>
+<li><strong>Write your model:</strong></li>
+</ol>
+<div class="highlight"><pre><span></span><code>def V(x: np.ndarray, T: float) -&gt; float: ...
+def dV(x: np.ndarray, T: float) -&gt; np.ndarray: ...
+</code></pre></div>
+<ol>
+<li><strong>Wrap it for Block A:</strong></li>
+</ol>
+<div class="highlight"><pre><span></span><code>def free_energy(x, T): return float(V(x, T))
+def d2f_dxdt(x, T):    # ∂/∂T (∂V/∂x)
+    ...
+def d2f_dx2(x, T):     # Hessian w.r.t. x
+    ...
+</code></pre></div>
+<ol>
+<li><strong>Choose seeds (field values and temperatures) where you are sure
+   there is a minimum:</strong></li>
+</ol>
+<div class="highlight"><pre><span></span><code>seeds = [
+    (x_seed1, T_seed1),
+    (x_seed2, T_seed2),
+    ...
+]
+</code></pre></div>
+<ol>
+<li><strong>Trace phases:</strong></li>
+</ol>
+<div class="highlight"><pre><span></span><code>phases = TF.traceMultiMin(
+    free_energy,
+    d2f_dxdt,
+    d2f_dx2,
+    points=seeds,
+    tLow=T_LOW,
+    tHigh=T_HIGH,
+    deltaX_target=DELTA_X_TARGET,
+)
+TF.removeRedundantPhases(f=free_energy, phases=phases)
+</code></pre></div>
+<ol>
+<li><strong>Critical temperatures:</strong></li>
+</ol>
+<div class="highlight"><pre><span></span><code>crit_transitions = TF.findCriticalTemperatures(phases, V)
+</code></pre></div>
+<ol>
+<li><strong>Nucleation temperatures:</strong></li>
+</ol>
+<div class="highlight"><pre><span></span><code>full_transitions = TF.findAllTransitions(
+    phases,
+    V,
+    dV,
+    tunnelFromPhase_args={&quot;nuclCriterion&quot;: nuclCriterion},
+)
+TF.addCritTempsForFullTransitions(phases, crit_transitions, full_transitions)
+</code></pre></div>
+<p>The example script does all of this, but with extra diagnostics, prints and
+plots so that you can <strong>see</strong> what is going on.</p>
+<hr />
+<h2 id="6-the-four-examples-ad">6. The four examples A–D<a class="headerlink" href="#6-the-four-examples-ad" title="Permanent link">&para;</a></h2>
+<h3 id="61-example-a-potential-snapshots-at-low-and-high-t">6.1 Example A – Potential snapshots at low and high T<a class="headerlink" href="#61-example-a-potential-snapshots-at-low-and-high-t" title="Permanent link">&para;</a></h3>
+<p>Function: <code>example_A_potential_snapshots(case)</code></p>
+<p>What it does:</p>
+<ul>
+<li>
+<p>Plots <span class="arithmatex">\(V(\phi, T)\)</span> at:</p>
+</li>
+<li>
+<p><code>T_lo = 0.0</code>,</p>
+</li>
+<li>
+<p><code>T_hi = 200.0</code>.</p>
+</li>
+<li>
+<p>Marks the minima obtained by a crude scan (<code>scan_minimum_1D</code>).</p>
+</li>
+</ul>
+<p>Physically:</p>
+<ul>
+<li>At very high T, only the <strong>symmetric minimum</strong> near <span class="arithmatex">\(\phi \simeq 0\)</span> survives.</li>
+<li>At very low T, the <strong>broken minimum</strong> appears at <span class="arithmatex">\(|\phi| &gt; 0\)</span>.</li>
+</ul>
+<p>This is the “zeroth-order picture”: what phases exist at the extremes
+of the thermal history.</p>
+<hr />
+<h3 id="62-example-b-t_textspin-t_textcrit-and-t_n">6.2 Example B – (T_{\text{spin}}), (T_{\text{crit}}) and (T_n)<a class="headerlink" href="#62-example-b-t_textspin-t_textcrit-and-t_n" title="Permanent link">&para;</a></h3>
+<p>Function: <code>example_B_transition_temperatures(...)</code></p>
+<p>Steps:</p>
+<ol>
+<li>
+<p>Pick the “main” first-order transition:</p>
+</li>
+<li>
+<p>the one with <strong>largest</strong> nucleation temperature among <code>full_transitions</code>.</p>
+</li>
+<li>
+<p>Extract characteristic temperatures:</p>
+</li>
+<li>
+<p><code>T_spin(high phase)</code> – lowest T where the <strong>high-T phase</strong> is still traced
+     (symmetric minimum disappears below this).</p>
+</li>
+<li><code>T_crit</code> – degeneracy temperature attached by
+     <code>addCritTempsForFullTransitions</code> (if available).</li>
+<li><code>T_nuc</code> – nucleation temperature from <code>findAllTransitions</code>.</li>
+<li>
+<p><code>T_spin(low phase)</code> – highest T where the <strong>low-T phase</strong> first appears
+     (broken minimum ceases to exist above this).</p>
+</li>
+<li>
+<p>Print them in a compact table, together with:</p>
+</li>
+<li>
+<p>the action <span class="arithmatex">\(S(T_n)\)</span>,</p>
+</li>
+<li>
+<p>the ratio <span class="arithmatex">\(S(T_n)/T_n\)</span> and the target <code>TARGET_S_OVER_T</code>.</p>
+</li>
+<li>
+<p>Plot four panels of <span class="arithmatex">\(V(\phi, T)\)</span>, one for each characteristic T:</p>
+</li>
+<li>
+<p>high-phase spinodal,</p>
+</li>
+<li>critical,</li>
+<li>nucleation,</li>
+<li>low-phase spinodal.</li>
+</ol>
+<p>In each panel, the φ-range is chosen <strong>adaptively</strong> so that the relevant
+minima sit nicely inside the x-axis, and the corresponding minima are
+marked with different markers (high-phase vs low-phase branch).</p>
+<hr />
+<h3 id="63-example-c-evolution-of-minima-and-curvature">6.3 Example C – Evolution of minima and curvature<a class="headerlink" href="#63-example-c-evolution-of-minima-and-curvature" title="Permanent link">&para;</a></h3>
+<p>Function: <code>example_C_minima_evolution(...)</code></p>
+<p>This example is about <strong>seeing the phases breathe</strong> as the Universe cools.</p>
+<p>For each <code>Phase</code> in <code>phases</code>:</p>
+<ul>
+<li>sample its <strong>temperature grid</strong> <code>phase.T</code>;</li>
+<li>extract the <strong>field values</strong> at the minimum <code>phase.X[:, 0]</code>;</li>
+<li>compute the curvature <span class="arithmatex">\(m^2(T) = \partial^2 V / \partial \phi^2\)</span> at each
+  of those points.</li>
+</ul>
+<p>We then produce <strong>two figures</strong>:</p>
+<ol>
+<li>
+<p>A combined figure with <strong>two stacked panels</strong>:</p>
+</li>
+<li>
+<p>Top: <span class="arithmatex">\(\phi_{\min}(T)\)</span> for all phases (each phase as a colored line).</p>
+</li>
+<li>Bottom: <span class="arithmatex">\(m^2(T)\)</span> along the same phases, with horizontal line at <code>m² = 0</code>.</li>
+</ol>
+<p>On both panels we mark:</p>
+<ul>
+<li><code>T_spin(high)</code>,</li>
+<li><code>T_crit</code>,</li>
+<li><code>T_nuc</code>,</li>
+<li><code>T_spin(low)</code>,</li>
+</ul>
+<p>whenever they are available.</p>
+<p>This lets you <strong>visually track</strong> how the minimum moves in φ and how the
+   curvature goes to zero at the spinodals.</p>
+<ol>
+<li>A second figure with only <span class="arithmatex">\(m^2(T)\)</span>, but <strong>zoomed</strong> in the interval between
+   the two spinodals (plus a small margin). This is your “magnifying glass”
+   for the region where the phase becomes metastable and then unstable.</li>
+</ol>
+<hr />
+<h3 id="64-where-to-go-from-here">6.4 Where to go from here?<a class="headerlink" href="#64-where-to-go-from-here" title="Permanent link">&para;</a></h3>
+<p>There is no dedicated others examples, like <code>example_D</code> yet, but the idea
+is to encourage the next steps of de CosmoTransition code. Here are a few natural
+directions that we need to do:</p>
+<ul>
+<li>
+<p><strong>Move beyond 1D.</strong>
+  Replace the single scalar with a genuine multi-field potential and
+  turn on the <code>pathDeformation</code> backend. In that regime the pruning controlled
+  by <code>overlapAngle</code> becomes very useful.</p>
+</li>
+<li>
+<p><strong>Gravitational waves</strong>
+    Build the gravitational waves params of the transition and see how strong they
+    are, how is the respective power spectrum and save all the relevant params for
+    the FOPT</p>
+</li>
+<li><strong>Scan over model parameters.</strong>
+  Loop over different <code>(D, E, λ, T0)</code> and record how
+  <span class="arithmatex">\(T_{\text{crit}}, T_n, S(T_n)/T_n\)</span> shift.
+  This is essentially a 1D “phase diagram” in parameter space, especially if we want to see
+ which params effects how strong de FOPT really is.</li>
+</ul>
+<p>The current example is designed to be a clean <strong>starting point</strong> for
+these explorations.</p>
+<hr />
+<h2 id="7-final-summary-and-how-to-read-it">7. Final summary and how to read it<a class="headerlink" href="#7-final-summary-and-how-to-read-it" title="Permanent link">&para;</a></h2>
+<p>At the end of <code>run_all</code>, we build a compact <code>summary</code> dictionary:</p>
+<div class="highlight"><pre><span></span><code>summary = {
+    &quot;model&quot;: {...},
+    &quot;tracing&quot;: {...},
+    &quot;nucleation&quot;: {...},
+    &quot;phases&quot;: {
+        &quot;0&quot;: {&quot;T_min&quot;: ..., &quot;T_max&quot;: ..., &quot;phi_min&quot;: ..., &quot;phi_max&quot;: ..., &quot;n_points&quot;: ...},
+        ...
+    },
+    &quot;transitions&quot;: [
+        {
+            &quot;high_phase&quot;: &quot;...&quot;,
+            &quot;low_phase&quot;:  &quot;...&quot;,
+            &quot;Tnuc&quot;:       ...,
+            &quot;S_Tn&quot;:       ...,
+            &quot;S_over_Tn&quot;:  ...,
+            &quot;Tcrit&quot;:      ... or None,
+        },
+        ...
+    ],
+}
+</code></pre></div>
+<p>and print it with <code>print_final_summary(summary)</code>.</p>
+<p>Typical output:</p>
+<div class="highlight"><pre><span></span><code>Final compact summary (temperatures and actions)
+===============================================
+
+  Transition #1: 0 → 1
+    Tnuc        =   ...
+    Tcrit       =   ...
+    S(Tn)       =   ...
+    S(Tn)/Tn    =   ... (target = 140.0)
+
+  (All parameters controlling the behaviour of the example are listed
+   at the beginning of the run in print_configuration().)
+</code></pre></div>
+<p>This is the “one-look” view of your thermal history: which phase you start in,
+which phase you end up in, the key temperatures, and how well the nucleation
+condition is satisfied.</p>
+<hr />
+<h2 id="8-checklist-parameters-you-actually-want-to-touch">8. Checklist: parameters you actually want to touch<a class="headerlink" href="#8-checklist-parameters-you-actually-want-to-touch" title="Permanent link">&para;</a></h2>
+<p>When adapting this example to your own model, the most important knobs are:</p>
+<h3 id="model">Model<a class="headerlink" href="#model" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>D</code>, <code>E</code>, <code>lambda_</code>, <code>T0</code> (or whatever defines your potential)</li>
+<li><code>T_LOW</code>, <code>T_HIGH</code> – the temperature window where you expect interesting
+  physics.</li>
+</ul>
+<h3 id="tracing-block-a">Tracing (Block A)<a class="headerlink" href="#tracing-block-a" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>DELTA_X_TARGET</code> – smaller → more points in T, smoother phases.</li>
+<li><code>DTSTART_FRAC</code>   – how aggressively you start stepping in T.</li>
+<li><code>TJUMP_FRAC</code>     – how far you jump in T to search for new phases.</li>
+<li>
+<p><code>single_trace_args</code> – especially:</p>
+</li>
+<li>
+<p><code>dtmin</code> – too small and you might prematurely stop a trace;</p>
+</li>
+<li><code>minratio</code> – controls when the Hessian is considered singular.</li>
+</ul>
+<h3 id="nucleation-block-b">Nucleation (Block B)<a class="headerlink" href="#nucleation-block-b" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>TARGET_S_OVER_T</code> or more generally <code>nuclCriterion</code>.</li>
+<li><code>Ttol</code>, <code>maxiter</code> – precision and robustness of the search for <span class="arithmatex">\(T_n\)</span>.</li>
+<li><code>phitol</code> – local minimization tolerance at fixed T.</li>
+<li><code>overlapAngle</code> – only relevant for multi-field potentials.</li>
+</ul>
+<hr />
+<h2 id="9-conclusion">9. Conclusion<a class="headerlink" href="#9-conclusion" title="Permanent link">&para;</a></h2>
+<p><code>example_transitionFinder.py</code> is designed as a <strong>bridge</strong> between the abstract
+API of <code>CosmoTransitions.transitionFinder</code> and what a cosmologist actually wants
+to know:</p>
+<ul>
+<li><em>Which phases exist as the Universe cools?</em></li>
+<li><em>When do they become degenerate?</em></li>
+<li><em>When does tunneling really start to happen?</em></li>
+<li><em>How do the minima and curvatures behave near the spinodals?</em></li>
+</ul>
+<p>By keeping the potential 1D and fully analytic, every plot and every number
+can be checked by hand if you wish. Once you are happy with how
+<code>traceMultiMin</code>, <code>findCriticalTemperatures</code> and <code>findAllTransitions</code> behave in
+this controlled environment, you can safely upgrade to your full model and
+re-use exactly the same logic.</p>
+<p>--</p>
+<h2 id="10-images">10. Images<a class="headerlink" href="#10-images" title="Permanent link">&para;</a></h2>
+<p><img alt="A1" src="../assets_transitionFinder/figA_LG1D.png" /></p>
+<p><img alt="B" src="../assets_transitionFinder/figB_LG1D.png" /></p>
+<p><img alt="C1" src="../assets_transitionFinder/figC_m2_LG1D.png" /></p>
+<p><img alt="C2" src="../assets_transitionFinder/figC_phi_LG1D.png" /></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+        <script src="../../javascripts/mathjax-config.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
