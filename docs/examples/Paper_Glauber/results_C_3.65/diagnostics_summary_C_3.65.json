@@ -30,5 +30,20 @@
   "Tn_from_transitionFinder_GeV": 81.12279519400462,
   "Tc_from_transitionFinder_GeV": 93.75920484635198,
   "T_spinodal_high_GeV": 67.53680468751028,
-  "T_spinodal_low_GeV": 102.86448242187375
+  "T_spinodal_low_GeV": 102.86448242187375,
+  "gw_T_star_GeV": 81.12279519400462,
+  "gw_alpha": 0.023517917105228516,
+  "gw_beta_over_H": 133078.86654074927,
+  "gw_R_star_times_H": 2.2010886110351105e-05,
+  "gw_Gamma_Tstar_GeV4": 7.198599192646134e-52,
+  "gw_dT_for_beta_GeV": 1.6224559038800925,
+  "gw_f_sw_peak_Hz": 2.0736410482788954,
+  "gw_f_turb_peak_Hz": 2.946753068606851,
+  "gw_f_coll_peak_Hz": 0.41351555407199014,
+  "gw_g_star": 106.75,
+  "gw_v_w": 1.0,
+  "omega_sw_peak": 7.520396860561381e-21,
+  "omega_turb_peak": 5.466811081797493e-22,
+  "omega_coll_peak": 0.0,
+  "omega_tot_peak": 7.999154900963856e-21
 }

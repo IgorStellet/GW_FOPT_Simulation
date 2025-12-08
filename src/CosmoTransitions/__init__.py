@@ -20,4 +20,6 @@ from .transitionFinder import (traceMinimum, _traceMinimum_rval, Phase, traceMul
                                _maxTCritForPhase, tunnelFromPhase, secondOrderTrans, findAllTransitions, findCriticalTemperatures,
                                addCritTempsForFullTransitions, )
 
+from .gravitational_Waves import GravitationalWaveCalculator
+
 __version__ = "0.1.0"

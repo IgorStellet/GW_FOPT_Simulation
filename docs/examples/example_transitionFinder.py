@@ -30,7 +30,6 @@ Everything is kept 1D for clarity, but the logic is directly generalizable
 to multi-field models.
 """
 
-from __future__ import annotations
 
 import os
 from typing import Any, Dict, Hashable, List, Mapping, MutableMapping, Sequence, Tuple, Optional

@@ -488,10 +488,10 @@ class GravitationalWaveCalculator:
         dVdT_low = float(self.dVdT(x_low, T_val))
 
         # Energy densities in each phase
-        rho_high = V_high - T_val * dVdT_high
-        rho_low = V_low - T_val * dVdT_low
+        rho_high = V_high - 1/4 * T_val * dVdT_high
+        rho_low = V_low -  1/4 * T_val * dVdT_low
 
-        delta_rho = rho_low - rho_high
+        delta_rho = np.abs(rho_high - rho_low)
 
         # Radiation energy density
         rho_rad = (np.pi**2 / 30.0) * g_star * T_val**4
@@ -917,7 +917,7 @@ class GravitationalWaveCalculator:
         if kappa_turb is None:
             # If the user did not provide epsilon, adopt a mild default 5%.
             if epsilon is None:
-                epsilon = 0.05
+                epsilon = 1
             epsilon = float(epsilon)
             if epsilon < 0.0 or epsilon > 1.0:
                 raise ValueError(
@@ -1366,3 +1366,150 @@ class GravitationalWaveCalculator:
             "coll": omega_coll,
             "total": omega_total,
         }
+
+    def nucleation_rate(
+        self,
+        T: float,
+        *,
+        A_scale: float = 1.0,
+        use_linde_prefactor: bool = True,
+    ) -> float:
+        r"""
+        Thermal bubble nucleation rate :math:`\Gamma(T)` in natural units.
+
+        We adopt the standard semi-classical expression for the decay rate
+        per unit volume in the O(3) finite-temperature regime:
+
+        .. math::
+
+            \Gamma(T) \;\simeq\; A(T)\, e^{-S_3(T)/T},
+
+        where :math:`S_3(T)` is the three-dimensional Euclidean action of
+        the bounce. By default we use the Linde prefactor
+
+        .. math::
+
+            A_{\rm Linde}(T)
+            \;\approx\;
+            \left[\frac{S_3(T)}{2\pi T}\right]^{3/2} T^4,
+
+        which captures the leading contribution from fluctuations around the
+        saddle-point configuration. As an alternative, one may choose the
+        simpler ansatz
+
+        .. math::
+
+            A(T) \approx A_{\rm scale}\, T^4,
+
+        which is sometimes sufficient for order-of-magnitude estimates.
+
+        Parameters
+        ----------
+        T : float
+            Temperature at which :math:`\Gamma(T)` is evaluated. Must lie
+            within the overlapping temperature range of the two phases.
+        A_scale : float, optional
+            Overall dimensionless rescaling of the prefactor. When
+            ``use_linde_prefactor=True``, this multiplies
+            :math:`A_{\rm Linde}(T)`. When ``use_linde_prefactor=False``,
+            we instead use :math:`A(T) = A_{\rm scale}\,T^4`.
+            Default is ``1.0``.
+        use_linde_prefactor : bool, optional
+            If ``True`` (default), use the Linde prefactor
+            :math:`A_{\rm Linde}(T)`. If ``False``, use the simpler
+            :math:`A(T) = A_{\rm scale}\,T^4`.
+
+        Returns
+        -------
+        float
+            The nucleation rate :math:`\Gamma(T)` in natural units
+            (GeV\ :sup:`4` if ``T`` is in GeV).
+
+        Raises
+        ------
+        ValueError
+            If ``A_scale <= 0``.
+        RuntimeError
+            If the bounce action :math:`S_3(T)` cannot be computed
+            (e.g. no barrier or no stable phase at the requested T).
+        """
+        T_val = float(T)
+        self._check_temperature_inside_range(T_val)
+
+        if A_scale <= 0.0:
+            raise ValueError("nucleation_rate: A_scale must be positive.")
+
+        S3 = self._S3_at_T(T_val)
+        S_over_T = S3 / T_val
+
+        if use_linde_prefactor:
+            # Linde's thermal prefactor
+            prefactor = (
+                (S3 / (2.0 * np.pi * T_val)) ** 1.5
+                * T_val**4
+            )
+        else:
+            # Simple T^4 prefactor
+            prefactor = A_scale * T_val**4
+            A_scale = 1.0  # already absorbed, avoid double-counting below
+
+        Gamma = A_scale * prefactor * np.exp(-S_over_T)
+        return float(Gamma)
+
+    def bubble_radius_over_H(
+        self,
+        beta_over_H: float,
+        v_w: float = 1.0,
+    ) -> float:
+        r"""
+        Characteristic bubble size :math:`R_*` in units of the Hubble radius.
+
+        We define :math:`R_*` as the mean bubble separation (or typical
+        bubble radius at collision) and relate it to the parameter
+        :math:`\beta` via the commonly used approximation
+
+        .. math::
+
+            R_* \;\simeq\; \frac{(8\pi)^{1/3}\, v_w}{\beta},
+
+        where :math:`v_w` is the bubble wall velocity. Multiplying both
+        sides by :math:`H_*` and using :math:`\beta/H_*`, we obtain
+
+        .. math::
+
+            R_* H_* \;\simeq\;
+            \frac{(8\pi)^{1/3}\, v_w}{\beta/H_*}.
+
+        This method returns the dimensionless quantity :math:`R_* H_*`,
+        i.e. the characteristic bubble size measured in units of the
+        Hubble radius :math:`H_*^{-1}`.
+
+        Parameters
+        ----------
+        beta_over_H : float
+            Dimensionless ratio :math:`\beta/H_*` evaluated at the
+            relevant temperature (typically :math:`T_*` for GW production).
+        v_w : float, optional
+            Bubble wall velocity as a fraction of the speed of light.
+            Default is ``1.0``.
+
+        Returns
+        -------
+        float
+            The dimensionless bubble size :math:`R_* H_* =
+            R_*/H_*^{-1}`.
+
+        Raises
+        ------
+        ValueError
+            If ``beta_over_H <= 0`` or ``v_w <= 0``.
+        """
+        beta_over_H = float(beta_over_H)
+        v_w = float(v_w)
+
+        if beta_over_H <= 0.0:
+            raise ValueError("bubble_radius_over_H: beta_over_H must be positive.")
+        if v_w <= 0.0:
+            raise ValueError("bubble_radius_over_H: v_w must be positive.")
+
+        return float((8.0 * np.pi) ** (1.0 / 3.0) * v_w / beta_over_H)
