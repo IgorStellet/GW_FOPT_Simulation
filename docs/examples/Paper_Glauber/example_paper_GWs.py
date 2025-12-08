@@ -2395,7 +2395,7 @@ def example_O_gravitational_wave_spectrum(
     # ------------------------------------------------------------------
     # GW spectrum on a log-spaced frequency grid
     # ------------------------------------------------------------------
-    f_min, f_max = 1e-4, 1e5  # Hz, as you requested
+    f_min, f_max = 1e-3, 1e5  # mHz
     f_arr = np.logspace(np.log10(f_min), np.log10(f_max), int(n_freq))
 
     spectra = gw_calc.omega_total_h2(
@@ -2449,7 +2449,7 @@ def example_O_gravitational_wave_spectrum(
     if _has_signal(omega_tot):
         ax1.plot(f_arr, omega_tot, lw=2.2, label=r"total", linestyle="--")
 
-    ax1.set_xlabel(r"$f$  [Hz]")
+    ax1.set_xlabel(r"$f$  [mHz]")
     ax1.set_ylabel(r"$h^2 \Omega_{\rm GW}(f)$")
     ax1.set_title("Example O – GW spectrum components (log–log)")
     ax1.grid(True, which="both", alpha=0.3)
@@ -2494,7 +2494,7 @@ def example_O_gravitational_wave_spectrum(
         if np.isfinite(f_peak) and f_min < f_peak < f_max:
             ax2.axvline(f_peak, linestyle=":", linewidth=1.2)
 
-    ax2.set_xlabel(r"$f$  [Hz]")
+    ax2.set_xlabel(r"$f$  [mHz]")
     ax2.set_ylabel(r"$h^2 \Omega_{\rm GW}(f)$")
     ax2.set_title("Example O – total GW spectrum (log–log)")
     ax2.grid(True, which="both", alpha=0.3)
@@ -2923,7 +2923,6 @@ def run_all(case: str = "paper",
 # -----------------------------------------------------------------------------
 # Script entry
 # -----------------------------------------------------------------------------
-
 """
 if __name__ == "__main__":
     C = 3.65

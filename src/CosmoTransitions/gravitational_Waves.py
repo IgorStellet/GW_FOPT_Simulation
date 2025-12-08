@@ -561,7 +561,7 @@ class GravitationalWaveCalculator:
             raise ValueError("_f_sw_peak: v_w must be positive.")
 
         # 1.9×10^{-2} mHz = 1.9×10^{-5} Hz
-        prefactor_hz = 1.9e-5  # Hz
+        prefactor_hz = 1.9e-2  # mHz
 
         return (
             prefactor_hz
@@ -793,7 +793,7 @@ class GravitationalWaveCalculator:
             raise ValueError("_f_turb_peak: v_w must be positive.")
 
         # 2.7 × 10^{-2} mHz = 2.7 × 10^{-5} Hz
-        prefactor_hz = 2.7e-5  # Hz
+        prefactor_hz = 2.7e-2  # mHz
 
         return (
             prefactor_hz
@@ -1019,7 +1019,7 @@ class GravitationalWaveCalculator:
         if v_w <= 0.0:
             raise ValueError("_f_coll_peak: v_w must be positive.")
 
-        prefactor_hz = 16.5e-6  # Hz
+        prefactor_hz = 16.5e-3  # mHz
 
         velocity_factor = 0.62 / (1.8 - 0.1 * v_w + v_w**2)
 
