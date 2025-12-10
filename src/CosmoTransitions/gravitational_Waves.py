@@ -27,7 +27,8 @@ import numpy.typing as npt
 
 from .transitionFinder import Phase, _solve_bounce
 
-__all__ = ["GravitationalWaveCalculator"]
+__all__ = ["GravitationalWaveCalculator", "gw_f_coll_peak", "gw_f_sw_peak", "gw_f_turb_peak", "gw_omega_coll_h2",
+            "gw_h_star_Hz", "gw_omega_turb_h2", "gw_omega_sw_h2", "gw_omega_total_h2"]
 
 
 class GravitationalWaveCalculator:
@@ -1513,3 +1514,441 @@ class GravitationalWaveCalculator:
             raise ValueError("bubble_radius_over_H: v_w must be positive.")
 
         return float((8.0 * np.pi) ** (1.0 / 3.0) * v_w / beta_over_H)
+
+# ----------------------------------------------------------------------------
+# Stateless helpers: GW spectra from effective parameters only
+# ----------------------------------------------------------------------------
+# These functions reproduce the formulas used in the class methods
+# omega_sw_h2, omega_turb_h2, omega_coll_h2 and omega_total_h2, but they do
+# NOT require an instance of GravitationalWaveCalculator.  They work directly
+# with (alpha, beta/H*, T_*, g_*, v_w).
+
+
+
+
+def gw_f_sw_peak(
+    beta_over_H: float,
+    T_star: float,
+    g_star: float,
+    v_w: float,
+) -> float:
+    """Peak frequency of the sound-wave component, in Hz."""
+    beta_over_H = float(beta_over_H)
+    T_star = float(T_star)
+    g_star = float(g_star)
+    v_w = float(v_w)
+
+    if beta_over_H <= 0.0:
+        raise ValueError("gw_f_sw_peak: beta_over_H must be positive.")
+    if T_star <= 0.0:
+        raise ValueError("gw_f_sw_peak: T_star must be positive (in GeV).")
+    if g_star <= 0.0:
+        raise ValueError("gw_f_sw_peak: g_star must be positive.")
+    if v_w <= 0.0:
+        raise ValueError("gw_f_sw_peak: v_w must be positive.")
+
+    # Mesmo prefactor usado no método _f_sw_peak da classe
+    # (comentário original: 1.9×10^{-2} mHz = 1.9×10^{-5} Hz)
+    prefactor_hz = 1.9e-2  # mHz, ver nota sobre unidades
+
+    return (
+        prefactor_hz
+        * (beta_over_H)
+        * (T_star / 100.0)
+        * (g_star / 100.0) ** (1.0 / 6.0)
+        / v_w
+    )
+
+
+def gw_omega_sw_h2(
+    f: npt.ArrayLike,
+    *,
+    alpha: float,
+    beta_over_H: float,
+    T_star: float,
+    g_star: float,
+    v_w: float = 1.0,
+    shape: Optional[
+        Callable[[npt.NDArray[np.float64], float], npt.NDArray[np.float64]]
+    ] = None,
+    y_sup: Optional[float] = None,
+    kappa_sw: Optional[float] = None,
+) -> npt.NDArray[np.float64]:
+    """Stateless version of the sound-wave spectrum h^2 Ω_sw(f)."""
+    f_arr = np.asarray(f, dtype=float)
+    alpha = float(alpha)
+    beta_over_H = float(beta_over_H)
+    T_star = float(T_star)
+    g_star = float(g_star)
+    v_w = float(v_w)
+
+    if alpha <= 0.0:
+        raise ValueError("gw_omega_sw_h2: alpha must be positive.")
+    if beta_over_H <= 0.0:
+        raise ValueError("gw_omega_sw_h2: beta_over_H must be positive.")
+    if T_star <= 0.0:
+        raise ValueError("gw_omega_sw_h2: T_star must be positive (in GeV).")
+    if g_star <= 0.0:
+        raise ValueError("gw_omega_sw_h2: g_star must be positive.")
+    if v_w <= 0.0:
+        raise ValueError("gw_omega_sw_h2: v_w must be positive.")
+
+    if kappa_sw is None:
+        kappa_sw = alpha / (0.73 + 0.83 * np.sqrt(alpha) + alpha)
+    kappa_sw = float(kappa_sw)
+
+    if y_sup is None:
+        U_f = np.sqrt(0.75 * kappa_sw * alpha / (1.0 + alpha))
+        tau_sw_Hstar = (8.0 * np.pi) ** (1.0 / 3.0) * v_w / (
+            beta_over_H * U_f
+        )
+        y_sup = float(min(1.0, tau_sw_Hstar))
+    y_sup = float(y_sup)
+    if y_sup <= 0.0:
+        raise ValueError("gw_omega_sw_h2: y_sup must be positive if provided.")
+
+    f_peak = gw_f_sw_peak(
+        beta_over_H=beta_over_H,
+        T_star=T_star,
+        g_star=g_star,
+        v_w=v_w,
+    )
+
+    if shape is None:
+        x = f_arr / f_peak
+        S = x**3 * (7.0 / (4.0 + 3.0 * x**2)) ** (7.0 / 2.0)
+    else:
+        S = np.asarray(shape(f_arr, f_peak), dtype=float)
+
+    amp_peak = (
+        2.65e-6
+        * (v_w / beta_over_H)
+        * (kappa_sw * alpha / (1.0 + alpha)) ** 2
+        * (100.0 / g_star) ** (1.0 / 3.0)
+        * y_sup
+    )
+
+    return amp_peak * S
+
+
+def gw_h_star_Hz(T_star: float, g_star: float) -> float:
+    """Hubble frequency today corresponding to the transition epoch, in Hz."""
+    T_star = float(T_star)
+    g_star = float(g_star)
+
+    if T_star <= 0.0:
+        raise ValueError("gw_h_star_Hz: T_star must be positive (in GeV).")
+    if g_star <= 0.0:
+        raise ValueError("gw_h_star_Hz: g_star must be positive.")
+
+    prefactor_hz = 1.65e-5  # Hz, igual ao _h_star_Hz da classe
+
+    return (
+        prefactor_hz
+        * (T_star / 100.0)
+        * (g_star / 100.0) ** (1.0 / 6.0)
+    )
+
+
+def gw_f_turb_peak(
+    beta_over_H: float,
+    T_star: float,
+    g_star: float,
+    v_w: float,
+) -> float:
+    """Peak frequency of the turbulent component, in Hz."""
+    beta_over_H = float(beta_over_H)
+    T_star = float(T_star)
+    g_star = float(g_star)
+    v_w = float(v_w)
+
+    if beta_over_H <= 0.0:
+        raise ValueError("gw_f_turb_peak: beta_over_H must be positive.")
+    if T_star <= 0.0:
+        raise ValueError("gw_f_turb_peak: T_star must be positive (in GeV).")
+    if g_star <= 0.0:
+        raise ValueError("gw_f_turb_peak: g_star must be positive.")
+    if v_w <= 0.0:
+        raise ValueError("gw_f_turb_peak: v_w must be positive.")
+
+    # Mesmo prefactor usado no _f_turb_peak da classe
+    prefactor_hz = 2.7e-2  # mHz, ver nota sobre unidades
+
+    return (
+        prefactor_hz
+        * (beta_over_H)
+        * (T_star / 100.0)
+        * (g_star / 100.0) ** (1.0 / 6.0)
+        / v_w
+    )
+
+
+def gw_omega_turb_h2(
+    f: npt.ArrayLike,
+    *,
+    alpha: float,
+    beta_over_H: float,
+    T_star: float,
+    g_star: float,
+    v_w: float = 1.0,
+    kappa_turb: Optional[float] = None,
+    epsilon: Optional[float] = None,
+    shape: Optional[
+        Callable[[npt.NDArray[np.float64], float], npt.NDArray[np.float64]]
+    ] = None,
+) -> npt.NDArray[np.float64]:
+    """Stateless version of the turbulence spectrum h^2 Ω_turb(f)."""
+    f_arr = np.asarray(f, dtype=float)
+    alpha = float(alpha)
+    beta_over_H = float(beta_over_H)
+    T_star = float(T_star)
+    g_star = float(g_star)
+    v_w = float(v_w)
+
+    if alpha <= 0.0:
+        raise ValueError("gw_omega_turb_h2: alpha must be positive.")
+    if beta_over_H <= 0.0:
+        raise ValueError("gw_omega_turb_h2: beta_over_H must be positive.")
+    if T_star <= 0.0:
+        raise ValueError("gw_omega_turb_h2: T_star must be positive (in GeV).")
+    if g_star <= 0.0:
+        raise ValueError("gw_omega_turb_h2: g_star must be positive.")
+    if v_w <= 0.0:
+        raise ValueError("gw_omega_turb_h2: v_w must be positive.")
+
+    if kappa_turb is None:
+        if epsilon is None:
+            epsilon = 1.0
+        epsilon = float(epsilon)
+        if epsilon < 0.0 or epsilon > 1.0:
+            raise ValueError(
+                "gw_omega_turb_h2: epsilon should lie in [0, 1] if provided."
+            )
+        kappa_sw_eff = alpha / (0.73 + 0.83 * np.sqrt(alpha) + alpha)
+        kappa_turb = epsilon * kappa_sw_eff
+
+    kappa_turb = float(kappa_turb)
+    if kappa_turb < 0.0:
+        raise ValueError("gw_omega_turb_h2: kappa_turb must be non-negative.")
+
+    f_peak = gw_f_turb_peak(
+        beta_over_H=beta_over_H,
+        T_star=T_star,
+        g_star=g_star,
+        v_w=v_w,
+    )
+    h_star = gw_h_star_Hz(T_star=T_star, g_star=g_star)
+
+    if shape is None:
+        x = f_arr / f_peak
+        S = x**3 / (
+            (1.0 + x) ** (11.0 / 3.0)
+            * (1.0 + 8.0 * np.pi * f_arr / h_star)
+        )
+    else:
+        S = np.asarray(shape(f_arr, f_peak), dtype=float)
+
+    amp_peak = (
+        3.35e-4
+        * (v_w / beta_over_H)
+        * (kappa_turb * alpha / (1.0 + alpha)) ** 1.5
+        * (100.0 / g_star) ** (1.0 / 3.0)
+    )
+
+    return amp_peak * S
+
+
+def gw_f_coll_peak(
+    beta_over_H: float,
+    T_star: float,
+    g_star: float,
+    v_w: float,
+) -> float:
+    """Peak frequency of the collision (envelope) component, in Hz."""
+    beta_over_H = float(beta_over_H)
+    T_star = float(T_star)
+    g_star = float(g_star)
+    v_w = float(v_w)
+
+    if beta_over_H <= 0.0:
+        raise ValueError("gw_f_coll_peak: beta_over_H must be positive.")
+    if T_star <= 0.0:
+        raise ValueError("gw_f_coll_peak: T_star must be positive (in GeV).")
+    if g_star <= 0.0:
+        raise ValueError("gw_f_coll_peak: g_star must be positive.")
+    if v_w <= 0.0:
+        raise ValueError("gw_f_coll_peak: v_w must be positive.")
+
+    prefactor_hz = 16.5e-3  # mHz
+
+    velocity_factor = 0.62 / (1.8 - 0.1 * v_w + v_w**2)
+
+    return (
+        prefactor_hz
+        * velocity_factor
+        * beta_over_H
+        * (T_star / 100.0)
+        * (g_star / 100.0) ** (1.0 / 6.0)
+    )
+
+
+def gw_omega_coll_h2(
+    f: npt.ArrayLike,
+    *,
+    alpha: float,
+    beta_over_H: float,
+    T_star: float,
+    g_star: float,
+    v_w: float = 1.0,
+    shape: Optional[
+        Callable[[npt.NDArray[np.float64], float], npt.NDArray[np.float64]]
+    ] = None,
+    kappa_coll: Optional[float] = None,
+    delta_factor: Optional[float] = None,
+) -> npt.NDArray[np.float64]:
+    """Stateless version of the collision (envelope) spectrum h^2 Ω_coll(f)."""
+    f_arr = np.asarray(f, dtype=float)
+    alpha = float(alpha)
+    beta_over_H = float(beta_over_H)
+    T_star = float(T_star)
+    g_star = float(g_star)
+    v_w = float(v_w)
+
+    if alpha <= 0.0:
+        raise ValueError("gw_omega_coll_h2: alpha must be positive.")
+    if beta_over_H <= 0.0:
+        raise ValueError("gw_omega_coll_h2: beta_over_H must be positive.")
+    if T_star <= 0.0:
+        raise ValueError("gw_omega_coll_h2: T_star must be positive (in GeV).")
+    if g_star <= 0.0:
+        raise ValueError("gw_omega_coll_h2: g_star must be positive.")
+    if v_w <= 0.0:
+        raise ValueError("gw_omega_coll_h2: v_w must be positive.")
+
+    if kappa_coll is None:
+        kappa_coll = 0.0
+    kappa_coll = float(kappa_coll)
+    if kappa_coll < 0.0:
+        raise ValueError("gw_omega_coll_h2: kappa_coll cannot be negative.")
+
+    if delta_factor is None:
+        delta_factor = 0.11 * v_w**3 / (0.42 + v_w**2)
+    delta_factor = float(delta_factor)
+    if delta_factor < 0.0:
+        raise ValueError("gw_omega_coll_h2: delta_factor cannot be negative.")
+
+    f_peak = gw_f_coll_peak(
+        beta_over_H=beta_over_H,
+        T_star=T_star,
+        g_star=g_star,
+        v_w=v_w,
+    )
+
+    if shape is None:
+        x = f_arr / f_peak
+        S = 3.8 * x**2.8 / (1.0 + 2.8 * x**3.8)
+    else:
+        S = np.asarray(shape(f_arr, f_peak), dtype=float)
+
+    amp_peak = (
+        1.67e-5
+        * delta_factor
+        * (1.0 / beta_over_H**2)
+        * (kappa_coll * alpha / (1.0 + alpha)) ** 2
+        * (100.0 / g_star) ** (1.0 / 3.0)
+    )
+
+    return amp_peak * S
+
+
+def gw_omega_total_h2(
+    f: npt.ArrayLike,
+    *,
+    alpha: float,
+    beta_over_H: float,
+    T_star: float,
+    g_star: float,
+    v_w: float = 1.0,
+    include_sw: bool = True,
+    include_turb: bool = True,
+    include_coll: bool = True,
+    shape_sw: Optional[
+        Callable[[npt.NDArray[np.float64], float], npt.NDArray[np.float64]]
+    ] = None,
+    shape_turb: Optional[
+        Callable[[npt.NDArray[np.float64], float], npt.NDArray[np.float64]]
+    ] = None,
+    shape_coll: Optional[
+        Callable[[npt.NDArray[np.float64], float], npt.NDArray[np.float64]]
+    ] = None,
+    y_sup_sw: Optional[float] = None,
+    kappa_sw: Optional[float] = None,
+    kappa_turb: Optional[float] = None,
+    epsilon_turb: Optional[float] = None,
+    kappa_coll: Optional[float] = None,
+    delta_factor_coll: Optional[float] = None,
+) -> dict[str, npt.NDArray[np.float64]]:
+    """
+    Stateless combined GW spectrum (sound + turbulence + collisions).
+
+    Returns a dict with keys: "sw", "turb", "coll", "total".
+    """
+    f_arr = np.asarray(f, dtype=float)
+
+    omega_sw = np.zeros_like(f_arr, dtype=float)
+    omega_turb = np.zeros_like(f_arr, dtype=float)
+    omega_coll = np.zeros_like(f_arr, dtype=float)
+
+    if include_sw:
+        omega_sw = gw_omega_sw_h2(
+            f_arr,
+            alpha=alpha,
+            beta_over_H=beta_over_H,
+            T_star=T_star,
+            g_star=g_star,
+            v_w=v_w,
+            shape=shape_sw,
+            y_sup=y_sup_sw,
+            kappa_sw=kappa_sw,
+        )
+
+    if include_turb:
+        turb_kwargs: dict[str, Any] = dict(
+            alpha=alpha,
+            beta_over_H=beta_over_H,
+            T_star=T_star,
+            g_star=g_star,
+            v_w=v_w,
+            shape=shape_turb,
+        )
+        if kappa_turb is not None:
+            turb_kwargs["kappa_turb"] = kappa_turb
+        if epsilon_turb is not None:
+            turb_kwargs["epsilon"] = epsilon_turb
+
+        omega_turb = gw_omega_turb_h2(f_arr, **turb_kwargs)
+
+    if include_coll:
+        coll_kwargs: dict[str, Any] = dict(
+            alpha=alpha,
+            beta_over_H=beta_over_H,
+            T_star=T_star,
+            g_star=g_star,
+            v_w=v_w,
+            shape=shape_coll,
+        )
+        if kappa_coll is not None:
+            coll_kwargs["kappa_coll"] = kappa_coll
+        if delta_factor_coll is not None:
+            coll_kwargs["delta_factor"] = delta_factor_coll
+
+        omega_coll = gw_omega_coll_h2(f_arr, **coll_kwargs)
+
+    omega_total = omega_sw + omega_turb + omega_coll
+
+    return {
+        "sw": omega_sw,
+        "turb": omega_turb,
+        "coll": omega_coll,
+        "total": omega_total,
+    }
