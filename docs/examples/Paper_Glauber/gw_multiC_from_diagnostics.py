@@ -130,7 +130,7 @@ def lisa_sensitivity(f: np.ndarray) -> np.ndarray:
     """Curva de sensibilidade mock para LISA."""
     return broken_power_law_sensitivity(
         f=f,
-        f_ref=3e-3,      # ~ alguns mHz
+        f_ref=3,
         omega_min=1e-12, # mínimo em Ω_GW
         slope_low=4.0,
         slope_high=1.5,
@@ -141,7 +141,7 @@ def bbo_sensitivity(f: np.ndarray) -> np.ndarray:
     """Curva de sensibilidade mock para BBO."""
     return broken_power_law_sensitivity(
         f=f,
-        f_ref=0.3,       # ~ 0.1–1 Hz
+        f_ref=300,       # ~ 0.1–1 Hz
         omega_min=1e-17,
         slope_low=3.0,
         slope_high=2.0,
@@ -152,7 +152,7 @@ def decigo_sensitivity(f: np.ndarray) -> np.ndarray:
     """Curva de sensibilidade mock para DECIGO."""
     return broken_power_law_sensitivity(
         f=f,
-        f_ref=0.2,
+        f_ref=200,
         omega_min=3e-18,
         slope_low=3.0,
         slope_high=2.0,
