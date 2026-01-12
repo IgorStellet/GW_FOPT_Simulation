@@ -25,7 +25,7 @@ import numpy.typing as npt
 
 # Import the modernized class
 from CosmoTransitions import SingleFieldInstanton
-from CosmoTransitions.gravitational_Waves import GravitationalWaveCalculator
+from CosmoTransitions.gravitational_Waves import GravitationalWaveCalculator, lisa_sensitivity_s_pis, decigo_sensitivity_s_pis, bbo_sensitivity_s_pis
 from CosmoTransitions import deriv14, gradientFunction, hessianFunction
 from CosmoTransitions import Jb, Jf
 from CosmoTransitions import Phase
@@ -991,9 +991,10 @@ def example_A_fig1_multiC(Cs=( -5.0, 0.0, 3.65, 3.75, 3.83, 4.14, 5.0 ),
     plt.title(f"Zero-T potential, Λ = {Lambda:.0f} GeV (Fig.1-like)")
     plt.grid(True, alpha=0.25)
     plt.legend()
-    plt.tight_layout(); plt.show()
+    plt.tight_layout();
     suffix = f"_{tag}" if tag else ""
     savefig(fig, save_dir, f"figA{suffix}")
+    plt.close()
 
 # -----------------------------------------------------------------------------
 # Example B
@@ -1040,9 +1041,10 @@ def example_B_paper_potential_with_inset(C=3, Lambda=1000.0,
     axins.tick_params(labelsize=8)
     mark_inset(ax, axins, loc1=3, loc2=4, fc="none", ec="#666", lw=1.0, alpha=0.85)
 
-    plt.tight_layout(); plt.show()
+    plt.tight_layout();
     suffix = f"_{tag}" if tag else ""
     savefig(fig, save_dir, f"figB{suffix}")
+    plt.close()
 
 
 
@@ -1283,9 +1285,9 @@ def example_C_transition_summary(
         ax.legend(unique.values(), unique.keys(), fontsize=8, loc="upper right")
 
     fig.tight_layout()
-    plt.show()
     suffix = f"_{tag}" if tag else ""
     savefig(fig, save_dir, f"figC{suffix}")
+    plt.close()
 
     print(f"[Example C] Saved figure: {tag}")
     return summary
@@ -1410,8 +1412,8 @@ def example_D_phi_min_and_mass2_vs_T(
             ax.axvline(T_spin_low, linestyle=":", linewidth=1.0)
 
     fig.tight_layout()
-    plt.show()
     savefig(fig, save_dir, f"figD{suffix}")
+    plt.close()
 
     print(f"[Example D] Saved figure (overlap): {tag}")
 
@@ -1440,8 +1442,8 @@ def example_D_phi_min_and_mass2_vs_T(
     ax_full.legend(fontsize=8, loc="best")
     ax_full.grid(True, alpha=0.3)
     fig_full.tight_layout()
-    plt.show()
     savefig(fig_full, save_dir, f"figD_full{suffix}")
+    plt.close()
 
     print(f"[Example D] Saved figure (full range): {tag}")
 
@@ -1563,9 +1565,9 @@ def example_E_deltaV_vs_T(
 
 
     fig.tight_layout()
-    plt.show()
     suffix = f"_{tag}" if tag else ""
     savefig(fig, save_dir, f"figE{suffix}")
+    plt.close()
     print(f"[Example E] Saved figure: {tag}")
 
     summary["example_E"] = dict(
@@ -1676,9 +1678,9 @@ def example_F_phase_history_map(
     ax.set_xlim(float(start_phase.T[-1]), float(last_phase.T[0]))
 
     fig.tight_layout()
-    plt.show()
     suffix = f"_{tag}" if tag else ""
     savefig(fig, save_dir, f"figF{suffix}")
+    plt.close()
 
     print(f"[Example F ] Saved figure: {tag}")
     summary["example_F"] = dict(segments=segments)
@@ -1785,11 +1787,11 @@ def example_G_T_scan(
     ax.set_title(fr"Temperature sweep at $C={C}$, $\Lambda={Lambda:.0f}$ GeV")
     ax.grid(True, alpha=0.25)
     ax.legend(ncol=2, fontsize=9)
-    plt.tight_layout(); plt.show()
+    plt.tight_layout();
 
     suffix = f"_{tag}" if tag else ""
     savefig(fig, save_dir, f"figG{suffix}")
-
+    plt.close()
     summary["example_G"] = dict(T_list=T_list)
     return summary
 
@@ -1902,8 +1904,8 @@ def example_H_potential_geometry(inst: SingleFieldInstanton,
     ax2.grid(True, alpha=0.3)
     ax2.legend(loc="best", ncol=2)
     plt.tight_layout()
-    plt.show()
     savefig(fig2, save_dir, f"figH2{suffix}")
+    plt.close()
 
 # -----------------------------------------------------------------------------
 # Example I
@@ -1964,9 +1966,10 @@ def example_I_local_quadratic_at_phi0(inst: SingleFieldInstanton,
     plt.title(r"Near $r\!\approx\!0$ — exact small-$r$ solution")
     plt.xlabel("r"); plt.ylabel("value")
     plt.grid(True, alpha=0.3); plt.legend(loc="best")
-    plt.tight_layout(); plt.show()
+    plt.tight_layout();
     suffix = f"_{tag}" if tag else ""
     savefig(fig, save_dir, f"figI{suffix}")
+    plt.close()
 
 
 # -----------------------------------------------------------------------------
@@ -2026,9 +2029,9 @@ def example_J_inverted_path(inst: SingleFieldInstanton,
     ax1.grid(True, alpha=0.3)
     ax1.legend(loc="best")
     plt.tight_layout()
-    plt.show()
     suffix = f"_{tag}" if tag else ""
     savefig(fig1, save_dir, f"figJ{suffix}")
+    plt.close()
 
 # -----------------------------------------------------------------------------
 # Example K
@@ -2061,9 +2064,9 @@ def example_K_phi_of_r(inst: SingleFieldInstanton,
     ax.grid(True, alpha=0.3)
     ax.legend(loc="best", ncol=2)
     plt.tight_layout()
-    plt.show()
     suffix = f"_{tag}" if tag else ""
     savefig(fig, save_dir, f"figK{suffix}")
+    plt.close()
 
 # -----------------------------------------------------------------------------
 # Example L
@@ -2140,9 +2143,9 @@ def example_L_spherical_maps(inst: SingleFieldInstanton,
         ax1.text(0, r_wall+0.5*rscale, "thickness", color="w", ha="center", va="bottom", fontsize=9)
                         #+0.1*(r.max()-r.min())
     plt.tight_layout()
-    plt.show()
     suffix = f"_{tag}" if tag else ""
     savefig(fig1, save_dir, f"figL1{suffix}")
+    plt.close()
 
     # --- 3D surface at t=0 ---
     fig2 = plt.figure(figsize=(7.2, 6.0))
@@ -2154,9 +2157,9 @@ def example_L_spherical_maps(inst: SingleFieldInstanton,
     ax2.set_xlabel("x"); ax2.set_ylabel("y"); ax2.set_zlabel(r"\phi")
     ax2.set_title(r"3D view of \phi(x,y) at t=z=0")
     plt.tight_layout()
-    plt.show()
     suffix = f"_{tag}" if tag else ""
     savefig(fig2, save_dir, f"figL2{suffix}")
+    plt.close()
 
 # -----------------------------------------------------------------------------
 # Example M
@@ -2226,9 +2229,9 @@ def example_M_ode_terms(inst: SingleFieldInstanton,
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax.legend(lines1+lines2, labels1+labels2, loc="lower right", ncol=2)
     plt.tight_layout()
-    plt.show()
     suffix = f"_{tag}" if tag else ""
     savefig(fig, save_dir, f"figM{suffix}")
+    plt.close()
 
 # -----------------------------------------------------------------------------
 # Example N
@@ -2313,9 +2316,10 @@ def example_N_action_and_beta(inst: SingleFieldInstanton,
     ax2.grid(True, alpha=0.3)
     ax2.legend(loc="best")
 
-    plt.tight_layout(); plt.show()
+    plt.tight_layout();
     suffix = f"_{tag}" if tag else ""
     savefig(fig, save_dir, f"figN{suffix}")
+    plt.close()
 
 
 # -----------------------------------------------------------------------------
@@ -2433,6 +2437,11 @@ def example_O_gravitational_wave_spectrum(
     def _has_signal(arr: np.ndarray) -> bool:
         return np.any(arr > 0.0)
 
+    # Detector PIS curves (s-channel), f in mHz
+    omega_LISA = lisa_sensitivity_s_pis(f_arr )
+    omega_DECIGO = decigo_sensitivity_s_pis(f_arr)
+    omega_BBO = bbo_sensitivity_s_pis(f_arr)
+
     # ------------------------------------------------------------------
     # Figure O1: components + total (log–log)
     # ------------------------------------------------------------------
@@ -2455,8 +2464,8 @@ def example_O_gravitational_wave_spectrum(
     ax1.grid(True, which="both", alpha=0.3)
     ax1.legend(loc="best", fontsize=9)
     fig1.tight_layout()
-    plt.show()
     savefig(fig1, save_dir, f"figO1{suffix}")
+    plt.close()
 
     # ------------------------------------------------------------------
     # Figure O2: total only + vertical lines at peak frequencies
@@ -2477,6 +2486,11 @@ def example_O_gravitational_wave_spectrum(
     fig2, ax2 = plt.subplots(figsize=(7.5, 5.0))
     ax2.set_xscale("log")
     ax2.set_yscale("log")
+
+    #  LISA red, DECIGO orange, BBO yellow
+    ax2.plot(f_arr, omega_LISA, color="red",    lw=1.8, label="LISA")
+    ax2.plot(f_arr, omega_DECIGO, color="orange", lw=1.8, label="DECIGO")
+    ax2.plot(f_arr, omega_BBO, color="yellow",  lw=1.8, label="BBO")
 
     if _has_signal(omega_tot2):
         ax2.plot(f_arr, omega_tot2, lw=2.2,color="purple", label=r"total, $\epsilon_{\rm turb}=0$")
@@ -2500,8 +2514,8 @@ def example_O_gravitational_wave_spectrum(
     ax2.grid(True, which="both", alpha=0.3)
     ax2.legend(loc="best", fontsize=9)
     fig2.tight_layout()
-    plt.show()
     savefig(fig2, save_dir, f"figO2{suffix}")
+    plt.close()
     print(f"[Example O] Saved figures figO1{suffix}.png and figO2{suffix}.png")
     return summary
 
@@ -2923,7 +2937,7 @@ def run_all(case: str = "paper",
 # -----------------------------------------------------------------------------
 # Script entry
 # -----------------------------------------------------------------------------
-"""
+
 if __name__ == "__main__":
     C = 3.65
     #run paper potential
@@ -2946,6 +2960,8 @@ if __name__ == "__main__":
         Tn_maxiter= 80,
         save_dir=f"results_C_{C}",        # "results"
     )
+
+
 """
 C_list = [3.65, 3.75, 3.83]
 
@@ -2969,3 +2985,4 @@ for C in C_list:
         Tn_maxiter= 100,
         save_dir=f"results_C_{C}",        # "results"
     )
+"""

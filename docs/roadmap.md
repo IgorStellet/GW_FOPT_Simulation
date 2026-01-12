@@ -43,19 +43,19 @@ gantt
     Fixes and Adjustments           :done,2025-10-02, 4d
     
     section Phase 2: Tunneling 1D Module
-    Modify/tests Tunneling1D.py     :done,2025-10-07, 12d
+    Modify & tests Tunneling1D.py     :done,2025-10-07, 12d
     Examples Tunneling1D.py         :done,2025-10-20, 3d
     
     section Phase 3: Transtions Finder Module
-    Modify/tests transitionFinder.py :done,2025-10-24, 12d      
+    Modify & tests transitionFinder.py :done,2025-10-24, 12d      
     Examples transitionFinder        :done,2025-11-06, 3d
     
     section Phase 4: Generic Potential Module
-    Modify/tests generic_potential.py  :2025-11-10, 12d
+    Modify & tests generic_potential.py  :2025-11-10, 12d
     Examples generic_potential.py      :2025-11-25, 5d
     
     section Phase 5: Extras (Optional)
-    Additional Plots                :2025-12-01, 10d
+    Additional Plots (GW's)            :done, 2025-12-01, 10d
     Multi-field Solution            :2025-12-10, 10d
     Final Optimizations             :2025-12-10, 10d
 ```
@@ -89,10 +89,10 @@ gantt
   - Test modernized `generic_potential.py`
   - Run all old examples and validate cosistency between versions
 
-- [ ] **Phase 5** *(optional)*: Extensions
-  - Update plotting, add energy density and other figures useful for paper/thesis and other parameters
-  - New plot types (e.g., direct GW spectrum, GW energy density vs T, etc.) 
-  - Modernize multi-field plotting codes `mult_field_plotting.py` and `path_deformation.py`
+- [x] **Phase 5** *(optional)*: Extensions (GW's spectra)
+  - [x] Update plotting, add energy density and other figures useful for paper/thesis and other parameters
+  - [x] New plot types (e.g., direct GW spectrum, GW energy density vs T, etc.) 
+
 ---
 
 ```mermaid

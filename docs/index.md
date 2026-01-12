@@ -23,6 +23,9 @@ The main explanation of the codes used and all images can be found in the [examp
 ### Tunneling 1D
   - Single Field Instaton → [example_single_field.md](examples/example_tunneling1D.md)
 
+### Transition Finder
+  - TF example → [example_transitionFinder.md](examples/example_transitionFinder.md)
+
 
 ## Index of all functions
 
@@ -47,6 +50,17 @@ The main explanation of the codes used and all images can be found in the [examp
 ### transitionFinder Functions
   - Transition Finder Complete: [modules/transitionFinder/](modules/transitionFinder/transitionFinder.md)
   - Tests of TF functions: [modules/transitionFinder/tests_](modules/transitionFinder/tests_transitionFinder.md)
+
+### generic_potential Functions
+  - Generic Potential Complete: [modules/generic_potential/](modules/generic_potential/generic_potential.md)
+  - Example using of GP functions: 
+
+### gravitational_Waves Functions
+  - Gravitational Waves Complete: [modules/generic_potential/](modules/gravitational_Waves/gravitational_Waves.md)
+  - Example using of GW functions: 
+
+
+
 
 
 ---

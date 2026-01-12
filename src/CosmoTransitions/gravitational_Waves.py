@@ -28,7 +28,7 @@ import numpy.typing as npt
 from .transitionFinder import Phase, _solve_bounce
 
 __all__ = ["GravitationalWaveCalculator", "gw_f_coll_peak", "gw_f_sw_peak", "gw_f_turb_peak", "gw_omega_coll_h2",
-            "gw_h_star_Hz", "gw_omega_turb_h2", "gw_omega_sw_h2", "gw_omega_total_h2"]
+            "gw_h_star_Hz", "gw_omega_turb_h2", "gw_omega_sw_h2", "gw_omega_total_h2", "lisa_sensitivity_s_pis", "bbo_sensitivity_s_pis", "decigo_sensitivity_s_pis"]
 
 
 class GravitationalWaveCalculator:
@@ -1952,3 +1952,85 @@ def gw_omega_total_h2(
         "coll": omega_coll,
         "total": omega_total,
     }
+
+
+# ---------------------------------------------------------------------------
+# Detector sensitivity curves (PIS, s-channel) from arXiv:2002.04615
+# Frequency convention: f is in mHz, so x_s = f/(1 mHz) = f numerically.
+# ---------------------------------------------------------------------------
+
+def _pisc_poly_sum(f_mHz: np.ndarray, terms: list[tuple[float, float]], scale: float) -> np.ndarray:
+    """
+    Utility: compute  scale * Σ_i c_i * x^{p_i}, where x = f_mHz.
+
+    Parameters
+    ----------
+    f_mHz : ndarray
+        Frequency array in mHz.
+    terms : list of (coefficient, power)
+        Polynomial-like list in x = f_mHz.
+    scale : float
+        Overall multiplicative scale (e.g. 1e-14 in the paper).
+
+    Returns
+    -------
+    ndarray
+        PIS curve h^2 Omega_sens,PIS(f) for the chosen detector/channel.
+    """
+    x = np.asarray(f_mHz, dtype=float)  # x_s = f_s / (1 mHz)
+    out = np.zeros_like(x, dtype=float)
+    for c, p in terms:
+        out += c * x**p
+    return scale * out
+
+
+def lisa_sensitivity_s_pis(f_mHz: np.ndarray) -> np.ndarray:
+    """
+    LISA PIS (s-channel) sensitivity curve: Eq. (3.18) of arXiv:2002.04615.
+
+    Returns h^2 Omega_sens,PIS(f) as a function of f in mHz.
+    """
+    terms = [
+        (3.58e-3, -4.0),
+        (3.26e-1, -3.0),
+        (1.20e0, -2.0),
+        (2.48e0, -1.0),
+        (2.85e-1, +1.0),
+        (1.81e-2, +2.0),
+        (1.50e-3, +3.0),
+    ]
+    return _pisc_poly_sum(f_mHz, terms, scale=1e-14)
+
+
+def decigo_sensitivity_s_pis(f_mHz: np.ndarray) -> np.ndarray:
+    """
+    DECIGO PIS (s-channel) sensitivity curve: Eq. (3.24) of arXiv:2002.04615.
+
+    Returns h^2 Omega_sens,PIS(f) as a function of f in mHz.
+    """
+    terms = [
+        (3.82e-1, -4.0),
+        (2.26e0, -1.5),
+        (1.10e-3,  0.0),
+        (2.56e-6, +1.0),
+        (2.91e-8, +2.0),
+        (7.54e-12, +3.0),
+    ]
+    return _pisc_poly_sum(f_mHz, terms, scale=1e-14)
+
+
+def bbo_sensitivity_s_pis(f_mHz: np.ndarray) -> np.ndarray:
+    """
+    BBO PIS (s-channel) sensitivity curve: Eq. (3.30) of arXiv:2002.04615.
+
+    Returns h^2 Omega_sens,PIS(f) as a function of f in mHz.
+    """
+    terms = [
+        (1.77e-1, -4.0),
+        (1.06e0, -1.5),
+        (1.35e-4,  0.0),
+        (2.23e-6, +1.0),
+        (1.29e-9, +2.0),
+        (2.99e-12, +3.0),
+    ]
+    return _pisc_poly_sum(f_mHz, terms, scale=1e-14)

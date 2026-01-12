@@ -63,4 +63,6 @@ nav:
         - Tests of TF functions: modules/transitionFinder/tests_transitionFinder.md
     - Generic Potential:
         - Potential Functions: modules/generic_potential/generic_potential.md
+    - Gravitational Waves (new):
+        - GW's spectra Functions: modules/gravitational_Waves/gravitational_Waves.md
 docs_dir: docs

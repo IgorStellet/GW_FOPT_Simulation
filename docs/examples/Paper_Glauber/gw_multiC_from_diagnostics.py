@@ -1,9 +1,10 @@
 # gw_multiC_from_diagnostics.py
+# (only the sensitivity part is changed; everything else kept consistent, but translated to English)
 
 import json
 import os
 from dataclasses import dataclass
-from typing import Dict, Any, Sequence
+from typing import Any, Dict, Sequence
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,7 +13,7 @@ from CosmoTransitions import gw_omega_total_h2
 
 C_LIST_DEFAULT: Sequence[float] = (3.65, 3.75, 3.83)
 
-# Grade de frequências e limites dos eixos
+# Frequency grid (NOTE: mHz, not Hz)
 F_MIN = 1e-3   # mHz
 F_MAX = 1e5    # mHz
 N_FREQ = 800
@@ -23,7 +24,7 @@ Y_MAX = 1e-9
 
 @dataclass
 class GWParams:
-    """Parâmetros efetivos para o espectro de ondas gravitacionais."""
+    """Effective parameters used to build the GW spectrum."""
     alpha: float
     beta_over_H: float
     T_star: float
@@ -34,47 +35,40 @@ class GWParams:
 
 
 # ---------------------------------------------------------------------------
-# I/O helpers: ler os JSONs do diagnostics_summary
+# I/O helpers: read diagnostics_summary JSON files
 # ---------------------------------------------------------------------------
 
-def load_diagnostics_for_C(
-    C: float,
-    base_results_dir: str = ".",
-) -> Dict[str, Any]:
+def load_diagnostics_for_C(C: float, base_results_dir: str = ".") -> Dict[str, Any]:
     """
-    Carrega o diagnostics_summary_C_<C>.json para um dado C.
+    Load diagnostics_summary_C_<C>.json for a given C.
 
-    Espera encontrar o arquivo em:
+    Expected path:
         <base_results_dir>/results_C_<C>/diagnostics_summary_C_<C>.json
     """
     folder = os.path.join(base_results_dir, f"results_C_{C}")
     fname = os.path.join(folder, f"diagnostics_summary_C_{C}.json")
     if not os.path.isfile(fname):
-        raise FileNotFoundError(
-            f"Could not find diagnostics file for C={C}: {fname}"
-        )
+        raise FileNotFoundError(f"Could not find diagnostics file for C={C}: {fname}")
     with open(fname, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def extract_gw_params(di: Dict[str, Any], C_value: float) -> GWParams:
     """
-    Extrai (alpha, beta/H, T*, g*, v_w) do dicionário de diagnostics.
+    Extract (alpha, beta/H, T*, g*, v_w) from the diagnostics dictionary.
 
-    Usa diretamente os campos escritos pelo gather_diagnostics.
+    Uses the fields written by your gather_diagnostics routine.
     """
     alpha = float(di.get("gw_alpha", np.nan))
     beta_over_H = float(di.get("gw_beta_over_H", np.nan))
 
-    # T_* preferencial (do transitionFinder / GWCalculator)
     T_star = float(di.get("gw_T_star_GeV", np.nan))
     if not np.isfinite(T_star):
-        # fallback: temperatura do SingleFieldInstanton, se existir
         T_star = float(di.get("temperature_GeV", np.nan))
 
     g_star = float(di.get("gw_g_star", np.nan))
     if not np.isfinite(g_star):
-        g_star = 106.75  # padrão EW
+        g_star = 106.75
 
     v_w = float(di.get("gw_v_w", np.nan))
     if not np.isfinite(v_w) or v_w <= 0.0:
@@ -85,6 +79,7 @@ def extract_gw_params(di: Dict[str, Any], C_value: float) -> GWParams:
             f"Invalid GW parameters for C={C_value}: "
             f"alpha={alpha}, beta_over_H={beta_over_H}, T_star={T_star}"
         )
+
     Lambda = float(di.get("Lambda_GeV", np.nan))
 
     return GWParams(
@@ -94,120 +89,140 @@ def extract_gw_params(di: Dict[str, Any], C_value: float) -> GWParams:
         g_star=g_star,
         v_w=v_w,
         C_value=C_value,
-        Lambda = Lambda
+        Lambda=Lambda,
     )
 
 
-
 # ---------------------------------------------------------------------------
-# Curvas de sensibilidade "mock" para LISA, BBO e DECIGO
-# (broken power law em Ω_GW)
+# Detector sensitivity curves (PIS, s-channel) from arXiv:2002.04615
+# Frequency convention: f is in mHz, so x_s = f/(1 mHz) = f numerically.
 # ---------------------------------------------------------------------------
 
-def broken_power_law_sensitivity(
-    f: np.ndarray,
-    f_ref: float,
-    omega_min: float,
-    slope_low: float,
-    slope_high: float,
-) -> np.ndarray:
+def _pisc_poly_sum(f_mHz: np.ndarray, terms: list[tuple[float, float]], scale: float) -> np.ndarray:
     """
-    Sensibilidade do tipo power-law quebrada.
+    Utility: compute  scale * Σ_i c_i * x^{p_i}, where x = f_mHz.
 
-    Abaixo de f_ref: Ω ~ f^{-slope_low};
-    acima de f_ref: Ω ~ f^{+slope_high},
-    com Omega_min em f_ref.
+    Parameters
+    ----------
+    f_mHz : ndarray
+        Frequency array in mHz.
+    terms : list of (coefficient, power)
+        Polynomial-like list in x = f_mHz.
+    scale : float
+        Overall multiplicative scale (e.g. 1e-14 in the paper).
+
+    Returns
+    -------
+    ndarray
+        PIS curve h^2 Omega_sens,PIS(f) for the chosen detector/channel.
     """
-    x = f / f_ref
-    sens = np.empty_like(f)
-    mask_low = x < 1.0
-    sens[mask_low] = omega_min * x[mask_low] ** (-slope_low)
-    sens[~mask_low] = omega_min * x[~mask_low] ** (slope_high)
-    return sens
+    x = np.asarray(f_mHz, dtype=float)  # x_s = f_s / (1 mHz)
+    out = np.zeros_like(x, dtype=float)
+    for c, p in terms:
+        out += c * x**p
+    return scale * out
 
 
-def lisa_sensitivity(f: np.ndarray) -> np.ndarray:
-    """Curva de sensibilidade mock para LISA."""
-    return broken_power_law_sensitivity(
-        f=f,
-        f_ref=3,
-        omega_min=1e-12, # mínimo em Ω_GW
-        slope_low=4.0,
-        slope_high=1.5,
-    )
+def lisa_sensitivity_s_pis(f_mHz: np.ndarray) -> np.ndarray:
+    """
+    LISA PIS (s-channel) sensitivity curve: Eq. (3.18) of arXiv:2002.04615.
+
+    Returns h^2 Omega_sens,PIS(f) as a function of f in mHz.
+    """
+    terms = [
+        (3.58e-3, -4.0),
+        (3.26e-1, -3.0),
+        (1.20e0, -2.0),
+        (2.48e0, -1.0),
+        (2.85e-1, +1.0),
+        (1.81e-2, +2.0),
+        (1.50e-3, +3.0),
+    ]
+    return _pisc_poly_sum(f_mHz, terms, scale=1e-14)
 
 
-def bbo_sensitivity(f: np.ndarray) -> np.ndarray:
-    """Curva de sensibilidade mock para BBO."""
-    return broken_power_law_sensitivity(
-        f=f,
-        f_ref=300,       # ~ 0.1–1 Hz
-        omega_min=1e-17,
-        slope_low=3.0,
-        slope_high=2.0,
-    )
+def decigo_sensitivity_s_pis(f_mHz: np.ndarray) -> np.ndarray:
+    """
+    DECIGO PIS (s-channel) sensitivity curve: Eq. (3.24) of arXiv:2002.04615.
+
+    Returns h^2 Omega_sens,PIS(f) as a function of f in mHz.
+    """
+    terms = [
+        (3.82e-1, -4.0),
+        (2.26e0, -1.5),
+        (1.10e-3,  0.0),
+        (2.56e-6, +1.0),
+        (2.91e-8, +2.0),
+        (7.54e-12, +3.0),
+    ]
+    return _pisc_poly_sum(f_mHz, terms, scale=1e-14)
 
 
-def decigo_sensitivity(f: np.ndarray) -> np.ndarray:
-    """Curva de sensibilidade mock para DECIGO."""
-    return broken_power_law_sensitivity(
-        f=f,
-        f_ref=200,
-        omega_min=3e-18,
-        slope_low=3.0,
-        slope_high=2.0,
-    )
+def bbo_sensitivity_s_pis(f_mHz: np.ndarray) -> np.ndarray:
+    """
+    BBO PIS (s-channel) sensitivity curve: Eq. (3.30) of arXiv:2002.04615.
+
+    Returns h^2 Omega_sens,PIS(f) as a function of f in mHz.
+    """
+    terms = [
+        (1.77e-1, -4.0),
+        (1.06e0, -1.5),
+        (1.35e-4,  0.0),
+        (2.23e-6, +1.0),
+        (1.29e-9, +2.0),
+        (2.99e-12, +3.0),
+    ]
+    return _pisc_poly_sum(f_mHz, terms, scale=1e-14)
 
 
 # ---------------------------------------------------------------------------
-# Rotina principal: multi-C + LISA/BBO/DECIGO em um único gráfico
+# Main plot: multi-C + LISA/BBO/DECIGO in one figure
 # ---------------------------------------------------------------------------
+
 def plot_multiC_spectra_from_diagnostics(
     C_list: Sequence[float] = C_LIST_DEFAULT,
     base_results_dir: str = ".",
     save_dir: str | None = "figs_multiC",
     filename: str = "fig_GW_multiC",
-):
+) -> None:
     """
-    Figura única com:
-      - bandas de h^2 Ω_tot(f) para cada C (ε_turb=0 → borda inferior,
-        ε_turb=1 → borda superior, região hachurada/filled entre elas);
-      - curvas de sensibilidade mock de LISA, BBO e DECIGO.
+    Single figure with:
+      - multi-C h^2 Omega_tot(f) bands (filled between eps_turb=0 and eps_turb=1);
+      - PIS sensitivity curves (s-channel) for LISA, DECIGO, BBO from 2002.04615.
 
-    Convenção visual:
-      - curva cheia: ε_turb = 0;
-      - curva tracejada: ε_turb = 1.
-
-    Tudo construído APENAS a partir dos diagnostics_summary_C_<C>.json.
+    Visual convention:
+      - solid line: epsilon_turb = 0
+      - dashed line: epsilon_turb = 1
+    Frequency convention:
+      - f is in mHz everywhere (both signal and sensitivity curves).
     """
-    # Grade de frequências
-    f = np.logspace(np.log10(F_MIN), np.log10(F_MAX), N_FREQ)
+    f = np.logspace(np.log10(F_MIN), np.log10(F_MAX), N_FREQ)  # mHz
 
     fig, ax = plt.subplots(figsize=(8.0, 5.6))
     ax.set_xscale("log")
     ax.set_yscale("log")
 
-    # Mapa de cores por valor de C
-    # C = 3.83 -> roxo; 3.75 -> azul; 3.65 -> verde
+    # Color map by C value:
+    # C=3.83 -> purple, C=3.75 -> blue, C=3.65 -> green
     color_map = {
-        3.83: "#9467bd",  # roxo
-        3.75: "#1f77b4",  # azul
-        3.65: "#2ca02c",  # verde
+        3.83: "#9467bd",
+        3.75: "#1f77b4",
+        3.65: "#2ca02c",
     }
 
-    # Loop nos C's
+    Lambda_last = np.nan
+
     for idx, C in enumerate(C_list):
         di = load_diagnostics_for_C(C, base_results_dir=base_results_dir)
-
         params = extract_gw_params(di, C_value=C)
+
         alpha_val = params.alpha
         beta_over_H = params.beta_over_H
         T_star = params.T_star
         g_star = params.g_star
         v_w = params.v_w
-        Lambda = params.Lambda
+        Lambda_last = params.Lambda
 
-        # ε_turb = 0 e 1
         spectra_eps0 = gw_omega_total_h2(
             f=f,
             alpha=alpha_val,
@@ -220,7 +235,6 @@ def plot_multiC_spectra_from_diagnostics(
             include_coll=True,
             epsilon_turb=0.0,
         )
-
         spectra_eps1 = gw_omega_total_h2(
             f=f,
             alpha=alpha_val,
@@ -234,106 +248,72 @@ def plot_multiC_spectra_from_diagnostics(
             epsilon_turb=1.0,
         )
 
-        omega_tot_0 = spectra_eps0["total"]  # ε_turb = 0 (curva cheia)
-        omega_tot_1 = spectra_eps1["total"]  # ε_turb = 1 (tracejada)
+        omega0 = spectra_eps0["total"]  # solid
+        omega1 = spectra_eps1["total"]  # dashed
 
-        # Escolhe cor pelo valor de C (com fallback pela ordem, se vier algum C inesperado)
         color = color_map.get(round(C, 2), f"C{idx}")
 
-        # Curva cheia: ε_turb = 0
+        # Solid curve (eps=0): keep label
         ax.plot(
             f,
-            omega_tot_0,
+            omega0,
             color=color,
-            lw=1.2,
+            lw=1.4,
             label=rf"$h^2\Omega_{{\rm tot}}(f),\, C={C:g}$",
         )
-        # Curva tracejada: ε_turb = 1 (sem label na legenda)
+        # Dashed curve (eps=1): no label
         ax.plot(
             f,
-            omega_tot_1,
+            omega1,
             color=color,
             lw=1.2,
             ls="--",
         )
 
-        # Região preenchida entre ε=0 e ε=1
-        omega_low = np.minimum(omega_tot_0, omega_tot_1)
-        omega_high = np.maximum(omega_tot_0, omega_tot_1)
+        # Filled band
         ax.fill_between(
             f,
-            omega_low,
-            omega_high,
+            np.minimum(omega0, omega1),
+            np.maximum(omega0, omega1),
             color=color,
             alpha=0.18,
         )
 
-        # Print rápido dos parâmetros no terminal
         print(
             f"[C={C:g}] alpha={params.alpha:.3g}, "
             f"beta/H*={params.beta_over_H:.3g}, "
             f"T*={params.T_star:.3g} GeV"
         )
 
-    # Curvas de sensibilidade dos detectores
-    omega_LISA = lisa_sensitivity(f)
-    omega_BBO = bbo_sensitivity(f)
-    omega_DECIGO = decigo_sensitivity(f)
+    # Detector PIS curves (s-channel), f in mHz
+    omega_LISA = lisa_sensitivity_s_pis(f)
+    omega_DECIGO = decigo_sensitivity_s_pis(f)
+    omega_BBO = bbo_sensitivity_s_pis(f)
 
-    # LISA: vermelho
-    ax.plot(
-        f,
-        omega_LISA,
-        color="red",
-        lw=1.8,
-        ls="-",
-        label="LISA",
-    )
-    # DECIGO: laranja
-    ax.plot(
-        f,
-        omega_DECIGO,
-        color="orange",
-        lw=1.8,
-        ls="-",
-        label="DECIGO",
-    )
-    # BBO: amarelo
-    ax.plot(
-        f,
-        omega_BBO,
-        color="yellow",
-        lw=1.8,
-        ls="-",
-        label="BBO",
-    )
+    # Colors requested: LISA red, DECIGO orange, BBO yellow
+    ax.plot(f, omega_LISA, color="red",    lw=1.8, label="LISA")
+    ax.plot(f, omega_DECIGO, color="orange", lw=1.8, label="DECIGO")
+    ax.plot(f, omega_BBO, color="yellow",  lw=1.8, label="BBO")
 
     ax.set_xlim(F_MIN, F_MAX)
     ax.set_ylim(Y_MIN, Y_MAX)
 
-    ax.set_xlabel(r"$f$  [Hz]")
+    ax.set_xlabel(r"$f$  [mHz]")
     ax.set_ylabel(r"$h^2 \Omega_{\rm GW}(f)$")
-    ax.set_title(fr"Multi-$C$ GW spectra from diagnostics + LISA/BBO/DECIGO ($\Lambda=$ {Lambda})")
+    ax.set_title(fr"Multi-$C$ GW spectra + LISA/DECIGO/BBO (PIS, s-channel)  ($\Lambda={Lambda_last:g}$ GeV)")
     ax.grid(True, which="both", alpha=0.3)
 
-    # Remover entradas duplicadas da legenda (mantém só detectores + curvas cheias)
+    # Legend: keep only detectors + solid curves (already true: dashed have no label)
     handles, labels = ax.get_legend_handles_labels()
     unique = {}
     for h, lbl in zip(handles, labels):
         if lbl not in unique:
             unique[lbl] = h
-    ax.legend(
-        unique.values(),
-        unique.keys(),
-        fontsize=8,
-        loc="center right",
-        ncol=2,
-    )
+    ax.legend(unique.values(), unique.keys(), fontsize=8, loc="center right", ncol=2)
 
     plt.tight_layout()
     plt.show()
 
-    # Salvar figura
     if save_dir is not None:
         os.makedirs(save_dir, exist_ok=True)
         outpath = os.path.join(save_dir, f"{filename}.png")
@@ -341,16 +321,10 @@ def plot_multiC_spectra_from_diagnostics(
         print(f"[plot_multiC] Saved figure to: {outpath}")
 
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
-
 if __name__ == "__main__":
-    # Basta rodar este script depois de já ter rodado o run_all
-    # para os mesmos valores de C em C_LIST_DEFAULT.
     plot_multiC_spectra_from_diagnostics(
         C_list=C_LIST_DEFAULT,
-        base_results_dir=".",      # ajuste se seus results_* estiverem em outro lugar
+        base_results_dir=".",
         save_dir="results",
-        filename="fig_GW_multiC_LISA_BBO_DECIGO",
+        filename="fig_GW_multiC_LISA_DECIGO_BBO_PIS_s_channel_mHz",
     )

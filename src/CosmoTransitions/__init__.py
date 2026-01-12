@@ -21,7 +21,7 @@ from .transitionFinder import (traceMinimum, _traceMinimum_rval, Phase, traceMul
                                addCritTempsForFullTransitions, )
 
 from .gravitational_Waves import (GravitationalWaveCalculator, gw_f_coll_peak, gw_f_sw_peak, gw_f_turb_peak, gw_omega_coll_h2,
-                                  gw_h_star_Hz, gw_omega_turb_h2, gw_omega_sw_h2, gw_omega_total_h2)
+                                  gw_h_star_Hz, gw_omega_turb_h2, gw_omega_sw_h2, gw_omega_total_h2, lisa_sensitivity_s_pis, bbo_sensitivity_s_pis, decigo_sensitivity_s_pis,)
 
 
 __version__ = "0.1.0"
