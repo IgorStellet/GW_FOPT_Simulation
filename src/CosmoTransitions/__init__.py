@@ -23,5 +23,9 @@ from .transitionFinder import (traceMinimum, _traceMinimum_rval, Phase, traceMul
 from .gravitational_Waves import (GravitationalWaveCalculator, gw_f_coll_peak, gw_f_sw_peak, gw_f_turb_peak, gw_omega_coll_h2,
                                   gw_h_star_Hz, gw_omega_turb_h2, gw_omega_sw_h2, gw_omega_total_h2, lisa_sensitivity_s_pis, bbo_sensitivity_s_pis, decigo_sensitivity_s_pis,)
 
+from .generic_potential import (PotentialDerivatives, scalar_to_vector_potential_1d, build_finite_T_derivatives, ensure_dir,
+                                savefig, tee_stdout, build_phi_grid, _extract_params_from_V, _build_phases_and_transitions,
+                                _spinodal_data_for_phase, _closest_spinodal_to_T, _build_gw_calculator_from_summary,
+                                _compute_gw_scales_from_calculator, compute_profile, gather_diagnostics, save_diagnostics_summary,)
 
 __version__ = "0.1.0"
