@@ -140,7 +140,7 @@ for several values of the measure parameter $C$, at fixed $\Lambda$.
 **Insert figure here:**
 - `figA_<tag>.png`
 
-> ![figA](/docs/examples/Paper_Glauber/results_C_3.65/figA_paper.png)
+> ![figA](Paper_Glauber/results_C_3.65/figA_paper.png)
 
 ---
 
@@ -168,7 +168,7 @@ $$
 - whether the deformation can influence the barrier region relevant for the transition.
 
 
-> ![figB](/docs/examples/Paper_Glauber/results_C_3.65/figB_paper.png)
+> ![figB](Paper_Glauber/results_C_3.65/figB_paper.png)
 
 ---
 
@@ -197,7 +197,7 @@ and extracts:
 - does the ordering $T_{\rm sp}^{\rm high} \gtrsim T_c \gtrsim T_n \gtrsim T_{\rm sp}^{\rm low}$ make sense for this model.
 
 
-> ![figC](/docs/examples/Paper_Glauber/results_C_3.65/figC_paper.png)
+> ![figC](Paper_Glauber/results_C_3.65/figC_paper.png)
 
 ---
 
@@ -226,9 +226,9 @@ This example makes the two phases “visible” as functions of temperature:
 
 
 
-> ![figD](/docs/examples/Paper_Glauber/results_C_3.65/figD_paper.png)
+> ![figD](Paper_Glauber/results_C_3.65/figD_paper.png)
 
-> ![figD](/docs/examples/Paper_Glauber/results_C_3.65/figD_full_paper.png)
+> ![figD](Paper_Glauber/results_C_3.65/figD_full_paper.png)
 
 ---
 
@@ -253,7 +253,7 @@ evaluated at the two minima.
 - monotonic trends consistent with supercooling.
 
 
-> ![figA](/docs/examples/Paper_Glauber/results_C_3.65/figE_paper.png)
+> ![figA](Paper_Glauber/results_C_3.65/figE_paper.png)
 
 ---
 
@@ -273,7 +273,7 @@ This is a compact “cartoon” of the thermal history:
 - sanity-check: starting phase at high $T$, ending phase at low $T$.
 
 
-> ![figF](/docs/examples/Paper_Glauber/results_C_3.65/figF_paper.png)
+> ![figF](Paper_Glauber/results_C_3.65/figF_paper.png)
 
 ---
 
@@ -297,7 +297,7 @@ below $T_n$, near spinodals, at $T_n$, at $T_c$, etc.
 
 
 
-> ![figG](/docs/examples/Paper_Glauber/results_C_3.65/figG_paper.png)
+> ![figG](Paper_Glauber/results_C_3.65/figG_paper.png)
 
 ---
 
@@ -319,9 +319,9 @@ This example plots:
 - display the key points that define the barrier and scales.
 
 
-> ![figH1](/docs/examples/Paper_Glauber/results_C_3.65/figH1_paper.png)
+> ![figH1](Paper_Glauber/results_C_3.65/figH1_paper.png)
 
-> ![figH2](/docs/examples/Paper_Glauber/results_C_3.65/figH2_paper.png)
+> ![figH2](Paper_Glauber/results_C_3.65/figH2_paper.png)
 
 ---
 
@@ -341,7 +341,7 @@ small-$r$ behavior around $\phi_0$.
 - check that the interior fill is not producing unphysical artifacts.
 
 
-> ![figI](/docs/examples/Paper_Glauber/results_C_3.65/figI_paper.png)
+> ![figI](Paper_Glauber/results_C_3.65/figI_paper.png)
 
 ---
 
@@ -359,7 +359,7 @@ from the starting point $\phi_0$ toward the false vacuum.
   starting near the true side and asymptoting to the false vacuum.
 
 
-> ![figJ](/docs/examples/Paper_Glauber/results_C_3.65/figJ_paper.png)
+> ![figJ](Paper_Glauber/results_C_3.65/figJ_paper.png)
 
 ---
 
@@ -378,7 +378,7 @@ This plots the actual bounce solution $\phi(r)$ and highlights:
 - visually confirm the profile goes from true-like inside to false-like outside.
 
 
-> ![figK](/docs/examples/Paper_Glauber/results_C_3.65/figK_paper.png)
+> ![figK](Paper_Glauber/results_C_3.65/figK_paper.png)
 
 ---
 
@@ -397,9 +397,9 @@ This is the “make it real” plot:
 - connect the O(3) bounce profile to an actual nucleated bubble at an initial time slice.
 
 
-> ![figL1](/docs/examples/Paper_Glauber/results_C_3.65/figL1_paper.png)
+> ![figL1](Paper_Glauber/results_C_3.65/figL1_paper.png)
 
-> ![figL2](/docs/examples/Paper_Glauber/results_C_3.65/figL2_paper.png)
+> ![figL2](Paper_Glauber/results_C_3.65/figL2_paper.png)
 
 ---
 
@@ -427,7 +427,7 @@ and overlays $V(\phi(r))$ on a secondary axis.
 - make the ODE mechanics transparent.
 
 
-> ![figM](/docs/examples/Paper_Glauber/results_C_3.65/figM_paper.png)
+> ![figM](Paper_Glauber/results_C_3.65/figM_paper.png)
 
 ---
 ### Example N — Action diagnostics and $\beta$ proxies
@@ -454,7 +454,7 @@ It also prints $\beta_{\rm eff}$ proxies from different geometric diagnostics.
 
 
 
-> ![figN](/docs/examples/Paper_Glauber/results_C_3.65/figN_paper.png)
+> ![figN](Paper_Glauber/results_C_3.65/figN_paper.png)
 
 
 ---
@@ -493,10 +493,10 @@ over a wide frequency range, plotting:
 - `figO1_<tag>.png`
 - `figO2_<tag>.png`
 
-> ![figO1](/docs/examples/Paper_Glauber/results_C_3.65/figO1_paper.png)
+> ![figO1](Paper_Glauber/results_C_3.65/figO1_paper.png)
 
 
-> ![figO2](/docs/examples/Paper_Glauber/results_C_3.65/figO2_paper.png)
+> ![figO2](Paper_Glauber/results_C_3.65/figO2_paper.png)
 
 ---
 
@@ -530,7 +530,7 @@ over a wide frequency range, plotting:
 
 Figure with some different values of C's:
 
-> ![figO2](/docs/examples/Paper_Glauber/results/fig_GW_multiC_LISA_DECIGO_BBO_PIS_s_channel_mHz.png)
+> ![figO2](Paper_Glauber/results/fig_GW_multiC_LISA_DECIGO_BBO_PIS_s_channel_mHz.png)
 
 
 ---
