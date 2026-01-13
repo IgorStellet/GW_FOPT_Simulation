@@ -44,6 +44,7 @@ nav:
   - Examples (Core modules):
       - Tunneling 1D full example: examples/example_tunneling1D.md
       - Transition Finder full example: examples/example_transitionFinder.md
+      - Gravitattional Waves & Generic Potential full examples: examples/example_paper.md
   - Modules:
     - Helper Functions:
         - Miscellaneous Functions: modules/helper_functions/Miscellaneous_functions.md
@@ -65,4 +66,6 @@ nav:
         - Potential Functions: modules/generic_potential/generic_potential.md
     - Gravitational Waves (new):
         - GW's spectra Functions: modules/gravitational_Waves/gravitational_Waves.md
+  - Codes:
+      - Paper Function measure: examples/Paper_Glauber/example_paper_GW's.py
 docs_dir: docs

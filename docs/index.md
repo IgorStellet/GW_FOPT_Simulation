@@ -26,6 +26,9 @@ The main explanation of the codes used and all images can be found in the [examp
 ### Transition Finder
   - TF example → [example_transitionFinder.md](examples/example_transitionFinder.md)
 
+### Generic Potential & Gravitational Waves
+  - GP & GW example → [docs/examples/example_paper](examples/example_paper.md)
+
 
 ## Index of all functions
 
@@ -53,11 +56,11 @@ The main explanation of the codes used and all images can be found in the [examp
 
 ### generic_potential Functions
   - Generic Potential Complete: [modules/generic_potential/](modules/generic_potential/generic_potential.md)
-  - Example using of GP functions: 
+  - Example using of GP functions: [docs/examples/example_paper](examples/example_paper.md)
 
 ### gravitational_Waves Functions
   - Gravitational Waves Complete: [modules/generic_potential/](modules/gravitational_Waves/gravitational_Waves.md)
-  - Example using of GW functions: 
+  - Example using of GW functions: [docs/examples/example_paper](examples/example_paper.md)
 
 
 

@@ -26,14 +26,15 @@ Therefore, this project aims to deliver substantial improvements to the original
 
 ---
 
-## 🚦 Project status
+## 🚦 Project status (All done)
 
 - **Phase 0** (planning): ✅ done  
 - **Phase 1** (modifying auxiliar functions): ✅ done  
 - **Phase 1.5** (Test, docs & validation of auxiliar functions ): ✅ done
 - **Phase 2** (modifying & examples tunneling1D): : ✅ done
 - **Phase 3** (modifying & examples transitionFinder): ✅ done
-- **Phase 4** (modifying & examples gravitationalWaves (new)): in progress — see [Roadmap](docs/roadmap.md)
+- **Phase 4**: (modifying & examples generic_potential): ✅ done
+- **Phase 5** (modifying & examples gravitationalWaves (new)): ✅ done
 
 ---
 
@@ -100,3 +101,7 @@ Thanks to **Felipe Tovar Falciano** for advising and guidance.
 Thanks to the community for feedback, issues, and suggestions.
 
 ---
+
+## My thesis potential
+
+Soon...

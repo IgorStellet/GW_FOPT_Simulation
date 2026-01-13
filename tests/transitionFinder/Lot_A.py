@@ -195,7 +195,7 @@ def _find_broken_minimum(T: float, phi_guess: float = 1.0) -> float:
     """
 
     def V_scalar(phi: float) -> float:
-        return float(V(np.array([phi], dtype=float), T))
+        return V(np.array([phi]), T)
 
     result = optimize.fmin(V_scalar, x0=phi_guess, disp=False)
     phi_min = float(result[0])
@@ -643,7 +643,7 @@ def test_blockA_5_traceMultiMin_and_Phase_structure():
             phi_guess = float(np.atleast_1d(phi_spline)[0])
 
             def V_scalar(phi: float) -> float:
-                return float(V(np.array([phi], dtype=float), T_s))
+                return V(np.array([phi], dtype=float), T_s)
 
             phi_min = float(optimize.fmin(V_scalar, phi_guess, disp=False)[0])
             diff = abs(phi_min - phi_guess)

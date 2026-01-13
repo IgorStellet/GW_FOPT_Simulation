@@ -51,13 +51,13 @@ gantt
     Examples transitionFinder        :done,2025-11-06, 3d
     
     section Phase 4: Generic Potential Module
-    Modify & tests generic_potential.py  :2025-11-10, 12d
-    Examples generic_potential.py      :2025-11-25, 5d
+    Modify & tests generic_potential.py  :done, 2025-11-10, 12d
+    Examples generic_potential.py      :done, 2025-11-25, 5d
     
     section Phase 5: Extras (Optional)
     Additional Plots (GW's)            :done, 2025-12-01, 10d
-    Multi-field Solution            :2025-12-10, 10d
-    Final Optimizations             :2025-12-10, 10d
+    Multi-field Solution            :done, 2025-12-10, 10d
+    Final Optimizations             :done, 2025-12-10, 10d
 ```
 
 
@@ -84,10 +84,10 @@ gantt
   - [x] Refactor `transtionFinder.py` 
   - [x] Test modernized `transtionFinder.py`
 
-- [ ] **Phase 4**: Generic Potential Core Module  
-  - Refactor `generic_potential.py` 
-  - Test modernized `generic_potential.py`
-  - Run all old examples and validate cosistency between versions
+- [x] **Phase 4**: Generic Potential Core Module  
+  - [x] Refactor `generic_potential.py` 
+  - [x] Test modernized `generic_potential.py`
+  - [x] Run all old examples and validate cosistency between versions
 
 - [x] **Phase 5** *(optional)*: Extensions (GW's spectra)
   - [x] Update plotting, add energy density and other figures useful for paper/thesis and other parameters

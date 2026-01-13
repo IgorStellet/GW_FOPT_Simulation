@@ -207,7 +207,7 @@ def _find_broken_minimum(T: float, phi_guess: float = 1.0) -> float:
     """
 
     def V_scalar(phi: float) -> float:
-        return float(V(np.array([phi], dtype=float), T))
+        return V(np.array([phi], dtype=float), T)
 
     result = optimize.fmin(V_scalar, x0=phi_guess, disp=False)
     phi_min = float(result[0])

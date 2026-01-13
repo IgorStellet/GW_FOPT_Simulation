@@ -2010,7 +2010,7 @@ if __name__ == "__main__":
     run_all(
         case="paper",
         C=C,
-        Lambda=1000.0,
+        Lambda=4000.0,
         finiteT=True,
         include_daisy=True,
         xguess=None,
