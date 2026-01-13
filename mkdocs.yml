@@ -67,5 +67,5 @@ nav:
     - Gravitational Waves (new):
         - GW's spectra Functions: modules/gravitational_Waves/gravitational_Waves.md
   - Codes:
-      - Paper Function measure: examples/Paper_Glauber/example_paper_GW's.py
+      - Paper Function measure: examples/Paper_Glauber/example_paper_GWs.py
 docs_dir: docs
