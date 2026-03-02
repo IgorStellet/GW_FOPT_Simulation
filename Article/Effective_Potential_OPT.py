@@ -1,12 +1,18 @@
 # -----------------------------------------------------------------------------
 # Complete, end-to-end demo for SingleFieldInstanton; Transition_Finder & GW's
 # -----------------------------------------------------------------------------
-# First Order Phase transitions with only daisy anda changing higgs mass
+# What this script provides
+# ------------------------
+# Ten cohesive figures/examples (A....) that take you from the potential geometry, to
+# initial conditions, to the final bounce profile and physically meaningful params
+# Reproducing also article potential: Cosmological phase transitions from the functional
+# measure (another example test ).
 
 # -----------------------------------------------------------------------------
 import os
 import math
 from typing import Tuple, Optional, Callable, Dict, Any, Mapping
+from dataclasses import dataclass
 from functools import partial
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
@@ -14,7 +20,7 @@ from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 import numpy as np
 from numpy.typing import ArrayLike
 import matplotlib.pyplot as plt
-from scipy import interpolate, integrate
+from scipy import interpolate, integrate, optimize
 
 # Import the modernized class
 from CosmoTransitions import SingleFieldInstanton
@@ -31,10 +37,10 @@ np.set_printoptions(precision=6, suppress=True)
 # -----------------------------------------------------------------------------
 # Potentials used at the paper
 # -----------------------------------------------------------------------------
-_VEW = 246.0
 
 # --- Masses and vev in GeV ---
-_MH  = 60
+_VEW = 246.0
+_MH  = 125
 _MW  = 80.36
 _MZ  = 91.19
 _MT  = 173.1
@@ -45,25 +51,311 @@ _nW, _nZ, _nt = 6.0, 3.0, 12.0
 
 # --- Couplings g_i = m_i / v and Constants ---
 
+_gW, _gZ, _gt = _MW/_VEW, _MZ/_VEW, _MT/_VEW
 _64pi2 = 64.0 * np.pi**2
 _8pi2  = 8.0  * np.pi**2
+
+
+@dataclass(frozen=True)
+class OPTParams:
+    """
+    Parameters for the scalar OPT effective potential (delta=1).
+
+    Notes
+    -----
+    This assumes the standard OPT definition Omega^2 = m^2 + eta^2.
+    """
+    m2: float          # can be negative for SSB
+    lam: float         # quartic coupling
+    M: float           # renormalization scale (GeV)
+
+    # numerical controls
+    omega2_floor: float = 1e-18
+    max_expand: int = 50
+    expand_factor: float = 4.0
+
+    # root solver tolerances
+    root_xtol: float = 1e-12
+    root_rtol: float = 1e-10
+    root_maxiter: int = 200
+
+    # finite-diff for h3 = dJb/d(y^2)
+    dy2_eps_rel: float = 1e-5
+    dy2_eps_abs: float = 1e-8
+
+    # cache key rounding (helps a LOT when derivatives call phi±eps, T±eps)
+    cache_round_phi: int = 10
+    cache_round_T: int = 10
+
+
+class OPTGapSolver:
+    """
+    Solve the PMS (gap) equation for Omega^2(phi, T), with caching.
+
+    We solve for Omega^2 > 0:
+        eta^2 = Omega^2 - m^2
+
+    Gap equation (your collaborator's Eq. gapeta, with delta=1) becomes:
+
+        (Omega^2 - m^2) = (lam/3) phi^2
+                          + lam/(24 pi^2) * [ 16 T^2 h3(y,0) - Omega^2 (L + 1) ]
+
+    where:
+        y = Omega / T
+        L = ln(M^2 / Omega^2)
+        h3(y,0) = dJb(y)/d(y^2)
+    """
+    def __init__(self, params: OPTParams, *, Jb_func: Callable = Jb):
+        self.p = params
+        self.Jb = Jb_func
+
+        self._cache: Dict[Tuple[float, float], float] = {}
+        self._last_T: Optional[float] = None
+        self._last_omega2: Optional[float] = None
+
+    def _key(self, phi: float, T: float) -> Tuple[float, float]:
+        return (round(float(phi), self.p.cache_round_phi),
+                round(float(T), self.p.cache_round_T))
+
+    # --- thermal h-functions at r=0 (bosonic) ---
+    def h5e(self, y: float) -> float:
+        # At r=0: h5e(y,0) = -(1/8) * Jb(y)  (because the (r -> -r) doubles the log)
+        return -0.125 * float(self.Jb(float(y), approx="exact"))
+
+    def h3e(self, y: float) -> float:
+        # At r=0: h3e(y,0) = dJb/d(y^2)
+        y = float(y)
+        if not np.isfinite(y) or y <= 0.0:
+            return 0.0
+        y2 = y * y
+        eps = max(self.p.dy2_eps_abs, self.p.dy2_eps_rel * max(1.0, y2))
+        y2p = y2 + eps
+        y2m = max(y2 - eps, 0.0)
+        Jp = float(self.Jb(math.sqrt(y2p), approx="exact"))
+        Jm = float(self.Jb(math.sqrt(y2m), approx="exact"))
+        return (Jp - Jm) / (y2p - y2m)
+
+    # --- PMS equation in Omega^2 ---
+    def _gap_F(self, omega2: float, phi: float, T: float) -> float:
+        p = self.p
+        omega2 = float(omega2)
+
+        # Guard
+        if omega2 <= p.omega2_floor or not np.isfinite(omega2):
+            return float("inf")
+
+        L = math.log((p.M * p.M) / omega2)
+        if T > 0.0:
+            y = math.sqrt(omega2) / T
+            h3 = self.h3e(y)
+            term_th = 16.0 * (T * T) * h3
+        else:
+            term_th = 0.0
+
+        rhs = (p.lam / 3.0) * (phi * phi) + (p.lam / (24.0 * math.pi**2)) * (term_th - omega2 * (L + 1.0))
+        # Equation: omega2 - m2 = rhs  ->  F = (omega2 - m2) - rhs
+        return (omega2 - p.m2) - rhs
+
+    def solve_omega2(self, phi: float, T: float) -> float:
+        """
+        Return Omega^2(phi,T) solving PMS, with caching.
+        """
+        phi = float(phi)
+        T = float(T)
+
+        k = self._key(phi, T)
+        if k in self._cache:
+            return self._cache[k]
+
+        p = self.p
+
+        # Warm-start guess
+        if self._last_T is not None and abs(T - self._last_T) < 1e-12 and self._last_omega2 is not None:
+            x0 = float(self._last_omega2)
+        else:
+            # Generic scale guess: keep it positive and not too tiny
+            x0 = max(p.omega2_floor,
+                     abs(p.m2) + (p.lam / 3.0) * phi * phi + (2.0 * math.pi * T)**2 * 0.05)
+
+        # First try: secant (fast, no bracket)
+        try:
+            sol = optimize.root_scalar(
+                lambda x: self._gap_F(x, phi, T),
+                method="secant",
+                x0=x0,
+                x1=x0 * 1.02 + p.omega2_floor,
+                maxiter=p.root_maxiter,
+                rtol=p.root_rtol,
+            )
+            if sol.converged and sol.root > p.omega2_floor and np.isfinite(sol.root):
+                omega2 = float(sol.root)
+                self._cache[k] = omega2
+                self._last_T = T
+                self._last_omega2 = omega2
+                return omega2
+        except Exception:
+            pass
+
+        # Robust fallback: expand a bracket and use brentq
+        lo = max(p.omega2_floor, x0 / 10.0)
+        hi = max(p.omega2_floor * 10.0, x0 * 10.0)
+
+        f_lo = self._gap_F(lo, phi, T)
+        f_hi = self._gap_F(hi, phi, T)
+
+        n = 0
+        while np.sign(f_lo) == np.sign(f_hi) and n < p.max_expand:
+            hi *= p.expand_factor
+            f_hi = self._gap_F(hi, phi, T)
+            n += 1
+
+        if np.sign(f_lo) == np.sign(f_hi):
+            raise RuntimeError(
+                f"OPT PMS: could not bracket a root for Omega^2 at (phi={phi}, T={T}). "
+                f"Try adjusting initial guesses / expand limits."
+            )
+
+        sol = optimize.root_scalar(
+            lambda x: self._gap_F(x, phi, T),
+            method="brentq",
+            bracket=(lo, hi),
+            xtol=p.root_xtol,
+            rtol=p.root_rtol,
+            maxiter=p.root_maxiter,
+        )
+        if not sol.converged:
+            raise RuntimeError(f"OPT PMS: brentq did not converge at (phi={phi}, T={T}).")
+
+        omega2 = float(sol.root)
+        self._cache[k] = omega2
+        self._last_T = T
+        self._last_omega2 = omega2
+        return omega2
+
+
+def V_opt_scalar(
+    phi: np.ndarray | float,
+    T: np.ndarray | float | None = None,
+    *,
+    finiteT: bool = True,
+    include_daisy: bool = False,
+    daisy_func: Callable[[np.ndarray, float], np.ndarray] | None = None,
+    params: OPTParams,
+    solver: OPTGapSolver,
+) -> np.ndarray:
+    """
+    OPT effective potential (delta=1) for a single scalar background field phi.
+
+    This implements exactly the formula you sent (optveffdelta1) with delta=1.
+    The variational parameter eta is eliminated by solving the PMS equation
+    for each (phi, T), i.e. Omega^2(phi,T) -> eta^2 = Omega^2 - m^2.
+
+    Parameters
+    ----------
+    phi : array_like
+        Background field value(s).
+    T : float or array_like
+        Temperature(s) in GeV. Required if finiteT=True.
+    finiteT : bool
+        If False, thermal pieces are set to zero but the OPT vacuum pieces remain.
+    include_daisy : bool
+        Optional extra daisy/ring term (for comparisons). By default off.
+    daisy_func : callable or None
+        If provided and include_daisy=True, adds daisy_func(phi_array, T_scalar) to V.
+        (You control the physics; OPT + daisy may double count.)
+    """
+    phi = np.asarray(phi, dtype=float)
+
+    if finiteT and T is None:
+        raise ValueError("V_opt_scalar: finiteT=True requires a temperature T (GeV).")
+
+    if not finiteT:
+        # Allow calling at T=None or T=0 for vacuum pieces
+        T_arr = np.zeros_like(phi, dtype=float)
+    else:
+        T_arr = np.asarray(T, dtype=float)
+        phi, T_arr = np.broadcast_arrays(phi, T_arr)
+
+    out = np.empty_like(phi, dtype=float)
+    p = params
+
+    # Flatten loop (root solve is scalar anyway); cache+warmstart makes this viable.
+    phi_f = phi.ravel()
+    T_f = T_arr.ravel()
+
+    for i in range(phi_f.size):
+        ph = float(phi_f[i])
+        Ti = float(T_f[i])
+
+        omega2 = solver.solve_omega2(ph, Ti)  # PMS solution
+        omega4 = omega2 * omega2
+        eta2 = omega2 - p.m2
+        L = math.log((p.M * p.M) / omega2)
+
+        if finiteT and Ti > 0.0:
+            y = math.sqrt(omega2) / Ti
+            h3 = solver.h3e(y)
+            h5 = solver.h5e(y)
+        else:
+            h3 = 0.0
+            h5 = 0.0
+
+        # --- Assemble V_eff^{OPT} (delta=1), exactly as in your expression ---
+        V = 0.0
+
+        # tree
+        V += 0.5 * p.m2 * ph * ph
+        V += (p.lam / 24.0) * ph**4
+
+        # - delta Omega^4/(64pi^2) (2L + 3) with delta=1
+        V += -(omega4 / (64.0 * math.pi**2)) * (2.0 * L + 3.0)
+
+        # - (512 T^4)/(64 pi^2) h5e
+        V += -(512.0 * (Ti**4) / (64.0 * math.pi**2)) * h5
+
+        # - eta^2 T^2/pi^2 h3e
+        V += -(eta2 * (Ti**2) / (math.pi**2)) * h3
+
+        # + eta^2 Omega^2/(16 pi^2) (L + 1)
+        V += +(eta2 * omega2 / (16.0 * math.pi**2)) * (L + 1.0)
+
+        # - (lambda phi^2)/(48 pi^2) [ Omega^2(L+1) - 16 T^2 h3 ]
+        V += -(p.lam * ph * ph / (48.0 * math.pi**2)) * (omega2 * (L + 1.0) - 16.0 * (Ti**2) * h3)
+
+        # + (lambda Omega^4)/(768 pi^4) (1 + L)^2
+        V += +(p.lam * omega4 / (768.0 * math.pi**4)) * (1.0 + L)**2
+
+        # + (lambda T^2 h3)/(24 pi^4) [ 8 T^2 h3 - (L+1) Omega^2 ]
+        V += +(p.lam * (Ti**2) * h3 / (24.0 * math.pi**4)) * (8.0 * (Ti**2) * h3 - (L + 1.0) * omega2)
+
+        out.ravel()[i] = V
+
+    # Optional daisy term (user-supplied)
+    if include_daisy:
+        if daisy_func is None:
+            raise ValueError("include_daisy=True requires daisy_func(phi, T).")
+        # If T is array, apply elementwise (simple and safe)
+        if out.shape == ():
+            out = out + float(daisy_func(np.asarray(phi, dtype=float), float(np.asarray(T_arr))))
+        else:
+            # vectorize user daisy over broadcasted arrays
+            out = out + np.vectorize(lambda ph, Ti: float(daisy_func(np.asarray(ph), float(Ti))))(phi, T_arr)
+
+    return out.reshape(phi.shape)
 
 
 def V_paper(phi: np.ndarray | float, T: np.ndarray | float | None=None ,
             finiteT: bool =False,
             include_daisy: bool= True,
-            vev: float | None = None,
-            _mh: float | None = None,
             real_cont: bool= False) -> np.ndarray:
     """
-    Zero-temperature effective potential with modified functional measure.
-    optional finite-temperature corrections (your Eq. 21).
+    Zero-temperature effective potential with .....
+    optional finite-temperature corrections .
 
     Parameters
     ----------
     phi : array_like
         Higgs radial field ϕ (GeV).
-
 
     Notes
     -----
@@ -79,13 +371,10 @@ def V_paper(phi: np.ndarray | float, T: np.ndarray | float | None=None ,
         exactly as in the paper.
     """
     phi = np.asarray(phi, dtype=float)
-    v   = _VEW if (vev is None) else float (vev)
-    higgs_mass = _MH if (_mh is None) else float (_mh)
-
-    _gW, _gZ, _gt = _MW / v , _MZ / v, _MT / v
+    v   = _VEW
 
     # Tree
-    V_tree = (higgs_mass**2)/(8.0*v**2) * (phi**2 - v**2)**2
+    V_tree = (_MH**2)/(8.0*v**2) * (phi**2 - v**2)**2
 
     # One-loop CW-like piece (W, Z, top); M_i(ϕ)=g_i ϕ and n_i as below.
 
@@ -94,11 +383,9 @@ def V_paper(phi: np.ndarray | float, T: np.ndarray | float | None=None ,
         log_phi = np.where(phi != 0.0, np.log((phi**2)/(v**2)), 0.0)
     common_bracket = (phi**4)*(log_phi - 1.5) + 2.0*(phi**2)*(v**2)
     pref = 1/_64pi2
-
     V_loops = pref * (
         _nW*(_gW**4) + _nZ*(_gZ**4) - _nt*(_gt**4)
     ) * common_bracket
-
 
 
     V0 = V_tree + V_loops
@@ -131,7 +418,7 @@ def V_paper(phi: np.ndarray | float, T: np.ndarray | float | None=None ,
     DV_daisy = 0.0
     if include_daisy:
         # paper’s effective g^2 (dimensionless)
-        g2 = 4*(_MW**2+_MZ**2) /(3*(v**2))
+        g2 = 4*(_MW**2+_MZ**2) /(3*(_VEW**2))
 
         # build m_L^2
         mL2_phi = 0.25 * g2 *(absphi**2)
@@ -191,65 +478,79 @@ def make_inst( V: Callable,
 # -----------------------------------------------------------------------------
 # Example A
 # -----------------------------------------------------------------------------
-def example_A_fig1_multiVEV(
-    _mhs=(30, 50.0, 70.0, 80.0),
-    phi_max=600,
-    save_dir: Optional[str] = None,
-    tag: str = "",
-):
-    """
-    Fig.A: plot [V(phi,0)-V(0,0)] for several choices of vev (VEW).
-    This is now consistent with the 'no measure deformation' baseline.
-    """
-    phi_axis = np.linspace(0.0, phi_max, 1400)
+
+
+# Esse exemplo deve ser refeito, com uma figura do potencial para diversos valores de algum parâmetro
+"""
+def example_A_fig1_multi(Cs=( -5.0, 0.0, 3.65, 3.75, 3.83, 4.14, 5.0 ),
+                          Lambda=1000.0, phi_max=300.0,
+                          save_dir: Optional[str] = None, tag: str = ""):
+                          
+    
+    Fig.1-like comparison: plot [V(φ,0)-V(0,0)] for several C at fixed Λ.
+    Highlights C=0 and C=3.7. Draws V=0 line.
+
+    ϕ_axis = np.linspace(0.0, phi_max, 1400)
+    V0_by_C = {}
 
     fig = plt.figure(figsize=(7.6, 4.8))
-    for mh in _mhs:
-        V0 = V_paper(0.0, finiteT=False, _mh=mh)
-        Vn = V_paper(phi_axis, finiteT=False, _mh=mh) - V0
-        plt.plot(phi_axis, Vn, lw=2.0, label=f"Higg mass= {mh:g} GeV")
+    for C in Cs:
+        cutoff = (Lambda/np.sqrt(C))*0.995 if C > 0 else phi_max
+        ϕ = ϕ_axis[ϕ_axis <= cutoff]
+        V0 = V_paper(0.0, C=C, Lambda=Lambda, finiteT=False)
+        Vn = V_paper(ϕ,  C=C, Lambda=Lambda, finiteT=False) - V0
+        V0_by_C[C] = V0
+
+        style = dict(lw=2, zorder=3) if (C==0.0 or abs(C-3.7)<1e-12) else dict(lw=1.6, alpha=0.9, zorder=2)
+        ls = "--" if C==0.0 or C==4.14 else "-"
+        plt.plot(ϕ, Vn, ls=ls, label=f"C={C:g}", **style)
 
     plt.axhline(0.0, color="#444", lw=1.0, ls="--", label="V=0")
-    plt.xlabel("ϕ  [GeV]")
-    plt.ylabel("V(ϕ,T=0) − V(0,T=0)  [GeV⁴]")
-    plt.title("Zero-T potential for different vev values")
+    plt.axvline(_VEW, color="#888", lw=1.0, ls=":", label="ϕ = v")
+    plt.xlabel("ϕ  [GeV]"); plt.ylabel("V(ϕ,T=0) − V(0,T=0)  [GeV⁴]")
+    plt.title(f"Zero-T potential, Λ = {Lambda:.0f} GeV (Fig.1-like)")
     plt.grid(True, alpha=0.25)
     plt.legend()
-    plt.tight_layout()
+    plt.tight_layout();
     suffix = f"_{tag}" if tag else ""
     savefig(fig, save_dir, f"figA{suffix}")
     plt.close()
 
+"""
 
 # -----------------------------------------------------------------------------
 # Example B
 # -----------------------------------------------------------------------------
-def example_B_paper_potential_with_inset(
-    save_dir: Optional[str] = None,
-    tag: str = "",
-):
-    """
-    Plot V(φ,0) - V(0,0) up to φ≈650 GeV with an inset up to 300 GeV.
 
-    NOTE: The functional-measure deformation (C-dependent branch point) was removed.
-    This figure is now a pure SM-like (tree + CW + thermal optional elsewhere) baseline.
-    """
-    phi_max_main  = 600.0
-    phi_max_inset = 300.0
+# Esse exemplo deve ser refeito, com uma figura do potencial mostrando que há uma barreira no infinito
+
+"""
+def example_B_paper_potential_with_inset(C=3, Lambda=1000.0,
+                                         save_dir: Optional[str] = None, tag: str = ""):
+    
+    Plot V_paper(φ) - V(0) up to φ≈650 GeV, showing both sides of the log singularity
+    via real_cont=True (ln|1-t|). Inset: zoom up to φ=300 GeV, tick numbers only.
+    
+    # Domain limits
+    phi_cap = (Lambda/np.sqrt(C)) if C > 0 else np.inf
+    phi_max_main  = min(650.0, np.inf if not np.isfinite(phi_cap) else 4*phi_cap)  # allow showing both sides
+    phi_max_inset = min(300.0, phi_max_main)
 
     φ = np.linspace(0.0, phi_max_main, 4000)
-    V_main = V_paper(φ,  finiteT=False)
-    V0     = V_paper(0.0, finiteT=False)
+    V_main = V_paper(φ, C=C, Lambda=Lambda, finiteT=False, real_cont=True)
+    V0     = V_paper(0.0, C=C, Lambda=Lambda, finiteT=False, real_cont=True)
     V_shift = V_main - V0
 
     fig, ax = plt.subplots(figsize=(7.8, 5.0))
-    ax.plot(φ, V_shift, lw=2.2, label=rf"$Higg mass={_MH:.0f}$ GeV")
+    ax.plot(φ, V_shift, lw=2.2, label=rf"$C={C}$, $\Lambda={Lambda:.0f}$ GeV")
     ax.axhline(0.0, color="#888", lw=1.0, ls="--", label="V=0")
 
+    if np.isfinite(phi_cap):
+        ax.axvline(phi_cap, color="#aa0000", lw=1.2, ls="--", label=r"$\phi_\star=\Lambda/\sqrt{C}$")
+
     ax.set_xlim(0.0, phi_max_main)
-    ax.set_xlabel(r"$\phi$ [GeV]")
-    ax.set_ylabel(r"$V(\phi)-V(0)$ [GeV$^4$]")
-    ax.set_title("Baseline potential (no measure deformation) — Fig.B")
+    ax.set_xlabel(r"$\phi$ [GeV]"); ax.set_ylabel(r"$V(\phi)-V(0)$ [GeV$^4$]")
+    ax.set_title("Paper potential (real-part continuation) — Fig.1 style")
     ax.grid(True, alpha=0.25)
     ax.legend(loc="best")
 
@@ -264,12 +565,13 @@ def example_B_paper_potential_with_inset(
     axins.grid(True, alpha=0.2)
     axins.tick_params(labelsize=8)
     mark_inset(ax, axins, loc1=3, loc2=4, fc="none", ec="#666", lw=1.0, alpha=0.85)
-    plt.tight_layout()
+
+    plt.tight_layout();
     suffix = f"_{tag}" if tag else ""
     savefig(fig, save_dir, f"figB{suffix}")
     plt.close()
 
-
+"""
 
 #####################################################
 # FINITE TEMPERATURE PLOTS
@@ -919,7 +1221,7 @@ def example_F_phase_history_map(
 def example_G_T_scan(
     summary: Dict[str, Any],
     *,
-    phi_max: float = 600.0,
+    phi_max: float = 300.0,
     save_dir: Optional[str] = None,
     shift_ref: str = "V0",
     tag: str = "",
@@ -927,14 +1229,15 @@ def example_G_T_scan(
     """
     Example G (finite T):
 
-    Plot V(φ,T) − V_ref(T) for a few characteristic temperatures:
-      - near 0,
-      - spinodal(high), T_n, T_c, spinodal(low) when available.
-
-    NOTE: No measure deformation → no φ_cap = Λ/√C cutoff.
+    Plot V(φ,T) − V_ref(T) for four temperatures:
+      - one bellow T_nuc,
+      - T_nuc,
+      - T_c,
+      - above T_c.
     """
     assert shift_ref in ("V0", "Vv"), "shift_ref must be 'V0' or 'Vv'."
     v = _VEW
+    eps = 0.97
 
     key_T = summary.get("key_temperatures", {}) or {}
     T_n = float(key_T.get("Tn", np.nan))
@@ -943,24 +1246,26 @@ def example_G_T_scan(
     T_spin_high = key_T.get("T_spinodal_high_phase", None)
     T_spin_low = key_T.get("T_spinodal_low_phase", None)
 
+    T_list: list[float] = []
+
     if np.isfinite(T_n):
-        T_list = [0.1]
-        if T_spin_high is not None:
-            T_list.append(float(T_spin_high))
-        T_list.append(T_n)
-        if np.isfinite(T_c):
-            T_list.append(T_c)
-        if T_spin_low is not None:
-            T_list.append(float(T_spin_low))
+        T_list = [0.1, T_spin_high, T_n, T_c, T_spin_low]
+
     else:
+        # fallback
         T_list = [60.0, 80.0, 100.0, 120.0]
 
+    # sort
     T_list = sorted({float(T) for T in T_list if T > 0.0})
 
-    ϕ = np.linspace(0.0, phi_max, 2200)
+    phi_cap = np.inf
+    phi_max_eff = phi_max
 
+    ϕ = np.linspace(0.0, phi_max_eff, 2200)
+
+    # --- helper: quick broken-minimum locator at this T (grid search) ---
     def _phi_true_at_T(T: float) -> float:
-        grid = np.linspace(0.0, phi_max, 3001)
+        grid = np.linspace(0.0, phi_max_eff, 3001)
         Vg = V_paper(grid, finiteT=True, T=T)
         idx = np.nanargmin(Vg)
         return float(grid[idx])
@@ -968,18 +1273,22 @@ def example_G_T_scan(
     fig, ax = plt.subplots(figsize=(7.8, 5.0))
     colors = plt.cm.viridis(np.linspace(0.1, 0.9, len(T_list)))
 
-    print("\n[G] Temperature sweep diagnostics")
+    print("\n[G] Temperature sweep diagnostics (0,T_spin_hight, T_n, T_c, T_spin_low)")
     print("    T [GeV]   phi_true(T) [GeV]   V(phi_true,T)-V(0,T) [GeV^4]   V(v,T)-V(0,T) [GeV^4]")
     print("    --------  -------------------  ------------------------------  ----------------------")
 
     for T, col in zip(T_list, colors):
         VϕT = V_paper(ϕ, finiteT=True, T=T)
         V0T = float(V_paper(0.0, finiteT=True, T=T))
-        VvT = float(V_paper(v,   finiteT=True, T=T))
+        VvT = float(V_paper(v,  finiteT=True, T=T))
 
-        Vshift = (VϕT - V0T) if shift_ref == "V0" else (VϕT - VvT)
+        if shift_ref == "V0":
+            Vshift = VϕT - V0T
+        else:  # 'Vv'
+            Vshift = VϕT - VvT
 
-        ax.plot(ϕ, Vshift, color=col, lw=1.9, label=f"T = {T:g} GeV")
+        lw, ls, z = (2.2, "-", 3) if T in (min(T_list), max(T_list)) else (1.8, "-", 2)
+        ax.plot(ϕ, Vshift, color=col, lw=lw, ls=ls, label=f"T = {T:g} GeV", zorder=z)
 
         phi_true_T = _phi_true_at_T(T)
         V_true_T   = float(V_paper(phi_true_T, finiteT=True, T=T))
@@ -989,13 +1298,12 @@ def example_G_T_scan(
     ax.axvline(v,   color="#888", lw=1.0, ls=":",  label="ϕ = v")
 
     ylabel = r"$V(\phi,T)-V(0,T)$" if shift_ref == "V0" else r"$V(\phi,T)-V(v,T)$"
-    ax.set_xlim(0.0, phi_max)
-    ax.set_xlabel(r"$\phi$ [GeV]")
-    ax.set_ylabel(ylabel + r"  [GeV$^4$]")
-    ax.set_title(fr"Temperature sweep (no measure deformation), $Higgs_mass={_MH:.0f}$ GeV")
+    ax.set_xlim(0.0, phi_max_eff)
+    ax.set_xlabel(r"$\phi$ [GeV]"); ax.set_ylabel(ylabel + r"  [GeV$^4$]")
+    ax.set_title(fr"Temperature sweep at $....algo$ GeV")
     ax.grid(True, alpha=0.25)
     ax.legend(ncol=2, fontsize=9)
-    plt.tight_layout()
+    plt.tight_layout();
 
     suffix = f"_{tag}" if tag else ""
     savefig(fig, save_dir, f"figG{suffix}")
@@ -1800,10 +2108,10 @@ def run_all(case: str = "paper",
 
     ############################ Zero Temperature #########################################
     # A): multi-C Fig.1-like comparison (highlights C=0 and your default C)
-    example_A_fig1_multiVEV(phi_max=600.0, save_dir=save_dir,tag=tag,)
+    #example_A_fig1_multiC(Cs=(-5.0, 0.0, 3.65, 3.75, 3.83, 4.14, 5.0),  Lambda=1000, phi_max=300.0, save_dir=save_dir,tag=tag,)
 
     # B): paper-like potential with inset & real continuation (fig2)
-    example_B_paper_potential_with_inset( save_dir=save_dir, tag=tag,)
+    #example_B_paper_potential_with_inset(C=3, Lambda=1000,save_dir=save_dir, tag=tag,)
 
 
     ########################### Finite Temperature #####################################
@@ -1836,7 +2144,7 @@ def run_all(case: str = "paper",
     summary = example_F_phase_history_map(summary, save_dir=save_dir, tag=tag)
 
     # G): Temperature sweep focusing on (T_below, T_n, T_c, T_above)
-    summary = example_G_T_scan(summary, phi_max=300.0,
+    summary = example_G_T_scan(summary,phi_max=300.0,
                                save_dir=save_dir, shift_ref="V0", tag=tag,)
 
 
@@ -1937,7 +2245,7 @@ def run_all(case: str = "paper",
     )
     # consolidated table
     di = gather_diagnostics(inst, profile, label=label, transition_summary=summary)
-    save_diagnostics_summary(di, save_dir, basename=f"diagnostics_summary_{_MH}", fmt="json")
+    save_diagnostics_summary(di, save_dir, basename=f"diagnostics_summary_T_Test", fmt="json")
 
     print("=== Showcase complete. ===")
     if save_dir:
@@ -1949,7 +2257,7 @@ def run_all(case: str = "paper",
 # -----------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    #run only daisy
+    #run paper potential
     run_all(
         case="paper",
         finiteT=True,
@@ -1957,7 +2265,7 @@ if __name__ == "__main__":
         xguess=None,
         phitol=1e-5,
         npoints=800,
-        thinCutoff=0.001,
+        thinCutoff=0.0001,
         phi_scan_range = None,
         T_min=5.0,
         T_max=200.0,
@@ -1966,7 +2274,6 @@ if __name__ == "__main__":
         nuclCriterion=None,
         Tn_Ttol= 1e-3,
         Tn_maxiter= 80,
-        save_dir=f"results_MH_{_MH}",        # "results"
+        save_dir=f"results_T_Test",        # "results"
     )
-
 
