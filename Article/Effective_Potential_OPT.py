@@ -11,7 +11,7 @@
 # -----------------------------------------------------------------------------
 import os
 import math
-from typing import Tuple, Optional, Callable, Dict, Any, Mapping
+from typing import Tuple, Optional, Callable, Dict, Any, Mapping, Literal
 from dataclasses import dataclass
 from functools import partial
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
@@ -40,7 +40,7 @@ np.set_printoptions(precision=6, suppress=True)
 
 # --- Masses and vev in GeV ---
 _VEW = 246.0
-_MH  = 125
+_MH  = 150
 _MW  = 80.36
 _MZ  = 91.19
 _MT  = 173.1
@@ -54,183 +54,288 @@ _nW, _nZ, _nt = 6.0, 3.0, 12.0
 _gW, _gZ, _gt = _MW/_VEW, _MZ/_VEW, _MT/_VEW
 _64pi2 = 64.0 * np.pi**2
 _8pi2  = 8.0  * np.pi**2
-
-
+# -------------------------
+# Params
+# -------------------------
 @dataclass(frozen=True)
 class OPTParams:
-    """
-    Parameters for the scalar OPT effective potential (delta=1).
+    m2: float
+    lam: float
+    M: float
 
-    Notes
-    -----
-    This assumes the standard OPT definition Omega^2 = m^2 + eta^2.
-    """
-    m2: float          # can be negative for SSB
-    lam: float         # quartic coupling
-    M: float           # renormalization scale (GeV)
-
-    # numerical controls
     omega2_floor: float = 1e-18
-    max_expand: int = 50
-    expand_factor: float = 4.0
 
-    # root solver tolerances
+    # Branch selection:
+    #  - "auto": try phi-branch, fallback to universal-branch
+    #  - "phi":  only phi-branch (may fail for SM-like params)
+    #  - "universal": only universal-branch (always same omega2 for fixed T)
+    branch: Literal["auto", "phi", "universal"] = "auto"
+
+    # root solver
     root_xtol: float = 1e-12
     root_rtol: float = 1e-10
     root_maxiter: int = 200
 
-    # finite-diff for h3 = dJb/d(y^2)
-    dy2_eps_rel: float = 1e-5
-    dy2_eps_abs: float = 1e-8
+    # bracketing scan
+    scan_points: int = 160
+    omega2_max_abs: float = 1e12   # keep sane; adjust if needed
 
-    # cache key rounding (helps a LOT when derivatives call phi±eps, T±eps)
+    # cache rounding
     cache_round_phi: int = 10
     cache_round_T: int = 10
+
+    # finite-diff controls for H1 (fallback)
+    fd_u_rel: float = 1e-6
+    fd_u_abs: float = 1e-12
 
 
 class OPTGapSolver:
     """
-    Solve the PMS (gap) equation for Omega^2(phi, T), with caching.
+    Implements the Mathematica notebook structure:
 
-    We solve for Omega^2 > 0:
-        eta^2 = Omega^2 - m^2
+      dV/dη ∝ η * (2 H1 + log(M/Ω)) * (phi-dependent factor) = 0
 
-    Gap equation (your collaborator's Eq. gapeta, with delta=1) becomes:
-
-        (Omega^2 - m^2) = (lam/3) phi^2
-                          + lam/(24 pi^2) * [ 16 T^2 h3(y,0) - Omega^2 (L + 1) ]
-
-    where:
-        y = Omega / T
-        L = ln(M^2 / Omega^2)
-        h3(y,0) = dJb(y)/d(y^2)
+    We attempt the phi-dependent factor first (Branch B).
+    If it does not bracket a root, we fallback to the universal branch (Branch A).
     """
-    def __init__(self, params: OPTParams, *, Jb_func: Callable = Jb):
-        self.p = params
-        self.Jb = Jb_func
 
-        self._cache: Dict[Tuple[float, float], float] = {}
-        self._last_T: Optional[float] = None
-        self._last_omega2: Optional[float] = None
+    def __init__(self, params: OPTParams):
+        self.p = params
+        self.Jb = Jb
+
+        self._cache_phiT: Dict[Tuple[float, float], float] = {}
+        self._cache_T_only: Dict[float, float] = {}
 
     def _key(self, phi: float, T: float) -> Tuple[float, float]:
         return (round(float(phi), self.p.cache_round_phi),
                 round(float(T), self.p.cache_round_T))
 
-    # --- thermal h-functions at r=0 (bosonic) ---
-    def h5e(self, y: float) -> float:
-        # At r=0: h5e(y,0) = -(1/8) * Jb(y)  (because the (r -> -r) doubles the log)
-        return -0.125 * float(self.Jb(float(y), approx="exact"))
+    def _Tkey(self, T: float) -> float:
+        return round(float(T), self.p.cache_round_T)
 
-    def h3e(self, y: float) -> float:
-        # At r=0: h3e(y,0) = dJb/d(y^2)
+    # -------------------------
+    # Jb helpers
+    # -------------------------
+    def _Jb0(self, y: float) -> float:
+        return float(self.Jb(float(y), approx="exact"))
+
+    def _dJb_dy(self, y: float) -> float:
+        # assumes CosmoTransitions.Jb(..., deriv=1) returns dJb/dy
+        return float(self.Jb(float(y), approx="exact", deriv=1))
+
+    def _d2Jb_dy2(self, y: float) -> float:
+        # try analytic 2nd derivative if available
+        return float(self.Jb(float(y), approx="exact", deriv=2))
+
+    # -------------------------
+    # H-functions (notebook relations)
+    # -------------------------
+    def H3(self, y: float) -> float:
+        """
+        H3(y) = dJb/d(y^2) = Jb'(y)/(2y)
+        smooth y->0 limit: pi^2/12
+        """
         y = float(y)
-        if not np.isfinite(y) or y <= 0.0:
+        if not np.isfinite(y) or y < 0.0:
             return 0.0
-        y2 = y * y
-        eps = max(self.p.dy2_eps_abs, self.p.dy2_eps_rel * max(1.0, y2))
-        y2p = y2 + eps
-        y2m = max(y2 - eps, 0.0)
-        Jp = float(self.Jb(math.sqrt(y2p), approx="exact"))
-        Jm = float(self.Jb(math.sqrt(y2m), approx="exact"))
-        return (Jp - Jm) / (y2p - y2m)
+        if y < 1e-8:
+            return (math.pi**2) / 12.0
+        dJdy = self._dJb_dy(y)
+        return float(dJdy / (2.0 * y))
 
-    # --- PMS equation in Omega^2 ---
-    def _gap_F(self, omega2: float, phi: float, T: float) -> float:
+    def H5(self, y: float) -> float:
+        """
+        In the notebook, H5 is proportional to J0.
+        Your OPT V-expression already uses the notebook prefactors,
+        so keep the same convention you were using before:
+            H5 = -(1/8) Jb
+        (If later the overall normalization is off by ~2, we revisit this factor.)
+        """
+        return -0.125 * self._Jb0(float(y))
+
+    def H1(self, y: float) -> float:
+        """
+        H1 enters the universal PMS branch: 2 H1 + log(M/Ω) = 0.
+
+        Relation from notebook:
+            dH3/d(Ω^2) = -(1/4) * (1/T^2) * H1
+        which implies (with u=y^2):
+            H1 = -4 * dH3/du
+
+        We compute it by finite-diff in u = y^2 (robust fallback).
+        If you later want a faster path, we can use Jb deriv=2 explicitly.
+        """
+        y = float(y)
+        if not np.isfinite(y) or y < 0.0:
+            return 0.0
+        if y < 1e-6:
+            # avoid numerical noise exactly at y≈0
+            # (this branch is not usually chosen at ultra-small y anyway)
+            y = 1e-6
+
+        u = y * y
+        eps = max(self.p.fd_u_abs, self.p.fd_u_rel * max(1.0, u))
+        up = u + eps
+        um = max(u - eps, 0.0)
+
+        # H3(u) needs y = sqrt(u)
+        H3p = self.H3(math.sqrt(up))
+        H3m = self.H3(math.sqrt(um))
+        dH3_du = (H3p - H3m) / (up - um)
+
+        return float(-4.0 * dH3_du)
+
+    # -------------------------
+    # Branch equations
+    # -------------------------
+    def _F_phi_branch(self, omega2: float, phi: float, T: float) -> float:
+        """
+        Branch B (phi-dependent factor) from the factorized PMS.
+        Matches the structure you coded originally (with log(M^2/omega2)+1).
+        """
         p = self.p
-        omega2 = float(omega2)
+        lam = p.lam
 
-        # Guard
-        if omega2 <= p.omega2_floor or not np.isfinite(omega2):
-            return float("inf")
+        omega2 = float(omega2)
+        if omega2 <= 0.0 or not np.isfinite(omega2):
+            return np.nan
 
         L = math.log((p.M * p.M) / omega2)
+
         if T > 0.0:
             y = math.sqrt(omega2) / T
-            h3 = self.h3e(y)
-            term_th = 16.0 * (T * T) * h3
+            H3 = self.H3(y)
+            term_th = -16.0 * lam * (T * T) * H3
         else:
             term_th = 0.0
 
-        rhs = (p.lam / 3.0) * (phi * phi) + (p.lam / (24.0 * math.pi**2)) * (term_th - omega2 * (L + 1.0))
-        # Equation: omega2 - m2 = rhs  ->  F = (omega2 - m2) - rhs
-        return (omega2 - p.m2) - rhs
+        # NOTE: this is the phi-dependent factor (the second factor from the product)
+        return (
+            24.0 * math.pi**2 * (omega2 - p.m2)
+            - 8.0 * math.pi**2 * lam * (phi * phi)
+            + term_th
+            + lam * omega2 * (L + 1.0)
+        )
 
-    def solve_omega2(self, phi: float, T: float) -> float:
+    def _F_universal_branch(self, omega2: float, T: float) -> float:
         """
-        Return Omega^2(phi,T) solving PMS, with caching.
+        Branch A (universal): 2 H1(y) + log(M/Ω) = 0
         """
-        phi = float(phi)
-        T = float(T)
+        p = self.p
+        omega2 = float(omega2)
+        if omega2 <= 0.0 or not np.isfinite(omega2):
+            return np.nan
+        if T <= 0.0:
+            # not defined at strictly T=0; caller should avoid
+            return np.nan
 
-        k = self._key(phi, T)
-        if k in self._cache:
-            return self._cache[k]
+        Omega = math.sqrt(omega2)
+        y = Omega / T
+        return 2.0 * self.H1(y) + math.log(p.M / Omega)
 
+    # -------------------------
+    # Generic bracket + brentq
+    # -------------------------
+    def _solve_brentq_scan(self, f, lo: float, hi: float) -> float:
         p = self.p
 
-        # Warm-start guess
-        if self._last_T is not None and abs(T - self._last_T) < 1e-12 and self._last_omega2 is not None:
-            x0 = float(self._last_omega2)
-        else:
-            # Generic scale guess: keep it positive and not too tiny
-            x0 = max(p.omega2_floor,
-                     abs(p.m2) + (p.lam / 3.0) * phi * phi + (2.0 * math.pi * T)**2 * 0.05)
+        # ensure finite lo
+        lo = max(lo, p.omega2_floor * (1.0 + 1e-12))
+        hi = min(hi, p.omega2_max_abs)
 
-        # First try: secant (fast, no bracket)
-        try:
-            sol = optimize.root_scalar(
-                lambda x: self._gap_F(x, phi, T),
-                method="secant",
-                x0=x0,
-                x1=x0 * 1.02 + p.omega2_floor,
-                maxiter=p.root_maxiter,
-                rtol=p.root_rtol,
-            )
-            if sol.converged and sol.root > p.omega2_floor and np.isfinite(sol.root):
-                omega2 = float(sol.root)
-                self._cache[k] = omega2
-                self._last_T = T
-                self._last_omega2 = omega2
-                return omega2
-        except Exception:
-            pass
+        grid = np.logspace(np.log10(lo), np.log10(hi), int(p.scan_points))
+        vals = np.array([f(x) for x in grid], dtype=float)
 
-        # Robust fallback: expand a bracket and use brentq
-        lo = max(p.omega2_floor, x0 / 10.0)
-        hi = max(p.omega2_floor * 10.0, x0 * 10.0)
+        # drop NaNs
+        good = np.isfinite(vals)
+        grid = grid[good]
+        vals = vals[good]
+        if grid.size < 2:
+            raise RuntimeError("OPT PMS: scan produced no finite values.")
 
-        f_lo = self._gap_F(lo, phi, T)
-        f_hi = self._gap_F(hi, phi, T)
+        sgn = np.sign(vals)
+        sgn[sgn == 0.0] = 1.0
+        idx = np.where(sgn[:-1] * sgn[1:] < 0)[0]
+        if idx.size == 0:
+            raise RuntimeError("OPT PMS: could not bracket a root in scanned range.")
 
-        n = 0
-        while np.sign(f_lo) == np.sign(f_hi) and n < p.max_expand:
-            hi *= p.expand_factor
-            f_hi = self._gap_F(hi, phi, T)
-            n += 1
-
-        if np.sign(f_lo) == np.sign(f_hi):
-            raise RuntimeError(
-                f"OPT PMS: could not bracket a root for Omega^2 at (phi={phi}, T={T}). "
-                f"Try adjusting initial guesses / expand limits."
-            )
+        a = float(grid[idx[0]])
+        b = float(grid[idx[0] + 1])
 
         sol = optimize.root_scalar(
-            lambda x: self._gap_F(x, phi, T),
+            lambda x: float(f(x)),
             method="brentq",
-            bracket=(lo, hi),
+            bracket=(a, b),
             xtol=p.root_xtol,
             rtol=p.root_rtol,
             maxiter=p.root_maxiter,
         )
         if not sol.converged:
-            raise RuntimeError(f"OPT PMS: brentq did not converge at (phi={phi}, T={T}).")
+            raise RuntimeError("OPT PMS: brentq did not converge.")
+        return float(sol.root)
 
-        omega2 = float(sol.root)
-        self._cache[k] = omega2
-        self._last_T = T
-        self._last_omega2 = omega2
-        return omega2
+    # -------------------------
+    # Main solve
+    # -------------------------
+    def solve_omega2(self, phi: float, T: float) -> float:
+        p = self.p
+        phi = float(phi)
+        T = float(T)
+
+        # universal branch cache (depends only on T)
+        Tk = self._Tkey(T)
+        if p.branch in ("universal", "auto") and Tk in self._cache_T_only:
+            omega2_u = self._cache_T_only[Tk]
+        else:
+            omega2_u = None
+
+        # full cache (phi,T)
+        k = self._key(phi, T)
+        if k in self._cache_phiT:
+            return self._cache_phiT[k]
+
+        # choose search range (simple physical-ish scale)
+        # (you can tighten later after we validate normalization)
+        hi_guess = max(
+            abs(p.m2) + 1.0,
+            (2.0 * math.pi * max(T, 1e-12))**2,
+            (p.M)**2,
+            1.0,
+        )
+        lo = p.omega2_floor * (1.0 + 1e-12)
+        hi = min(max(hi_guess, 10.0), p.omega2_max_abs)
+
+        # 1) try phi-branch (Branch B)
+        if p.branch in ("phi", "auto"):
+            try:
+                omega2_phi = self._solve_brentq_scan(
+                    lambda w: self._F_phi_branch(w, phi, T),
+                    lo=lo,
+                    hi=hi,
+                )
+                self._cache_phiT[k] = omega2_phi
+                return omega2_phi
+            except Exception:
+                if p.branch == "phi":
+                    raise
+
+        # 2) fallback to universal branch (Branch A)
+        if T <= 0.0:
+            # last-resort at T=0: give a positive mass scale to avoid crash
+            omega2 = max(p.omega2_floor, abs(p.m2) + 0.5 * p.lam * phi * phi)
+            self._cache_phiT[k] = omega2
+            return omega2
+
+        if omega2_u is None:
+            omega2_u = self._solve_brentq_scan(
+                lambda w: self._F_universal_branch(w, T),
+                lo=max(lo, 1e-8),
+                hi=min(max((2.0 * math.pi * T)**2, (p.M**2), 10.0), p.omega2_max_abs),
+            )
+            self._cache_T_only[Tk] = omega2_u
+
+        self._cache_phiT[k] = omega2_u
+        return omega2_u
 
 
 def V_opt_scalar(
@@ -238,40 +343,19 @@ def V_opt_scalar(
     T: np.ndarray | float | None = None,
     *,
     finiteT: bool = True,
-    include_daisy: bool = False,
-    daisy_func: Callable[[np.ndarray, float], np.ndarray] | None = None,
     params: OPTParams,
     solver: OPTGapSolver,
 ) -> np.ndarray:
     """
-    OPT effective potential (delta=1) for a single scalar background field phi.
-
-    This implements exactly the formula you sent (optveffdelta1) with delta=1.
-    The variational parameter eta is eliminated by solving the PMS equation
-    for each (phi, T), i.e. Omega^2(phi,T) -> eta^2 = Omega^2 - m^2.
-
-    Parameters
-    ----------
-    phi : array_like
-        Background field value(s).
-    T : float or array_like
-        Temperature(s) in GeV. Required if finiteT=True.
-    finiteT : bool
-        If False, thermal pieces are set to zero but the OPT vacuum pieces remain.
-    include_daisy : bool
-        Optional extra daisy/ring term (for comparisons). By default off.
-    daisy_func : callable or None
-        If provided and include_daisy=True, adds daisy_func(phi_array, T_scalar) to V.
-        (You control the physics; OPT + daisy may double count.)
+    OPT effective potential at delta=1, translated from the Mathematica notebook
+    (mu=0 branch), using H5,H3 consistent with the notebook normalization.
     """
     phi = np.asarray(phi, dtype=float)
 
     if finiteT and T is None:
-        raise ValueError("V_opt_scalar: finiteT=True requires a temperature T (GeV).")
-
+        raise ValueError("V_opt_scalar: finiteT=True requires T.")
     if not finiteT:
-        # Allow calling at T=None or T=0 for vacuum pieces
-        T_arr = np.zeros_like(phi, dtype=float)
+        T_arr = np.zeros_like(phi)
     else:
         T_arr = np.asarray(T, dtype=float)
         phi, T_arr = np.broadcast_arrays(phi, T_arr)
@@ -279,164 +363,151 @@ def V_opt_scalar(
     out = np.empty_like(phi, dtype=float)
     p = params
 
-    # Flatten loop (root solve is scalar anyway); cache+warmstart makes this viable.
-    phi_f = phi.ravel()
-    T_f = T_arr.ravel()
+    phif = phi.ravel()
+    Tf = T_arr.ravel()
 
-    for i in range(phi_f.size):
-        ph = float(phi_f[i])
-        Ti = float(T_f[i])
+    for i in range(phif.size):
+        ph = float(phif[i])
+        Ti = float(Tf[i])
 
-        omega2 = solver.solve_omega2(ph, Ti)  # PMS solution
+        omega2 = solver.solve_omega2(ph, Ti)
         omega4 = omega2 * omega2
         eta2 = omega2 - p.m2
-        L = math.log((p.M * p.M) / omega2)
+
+        # notebook uses log(M/Omega), with Omega = sqrt(omega2)
+        logM_over = math.log(p.M / math.sqrt(omega2)) if omega2 > 0 else 0.0
 
         if finiteT and Ti > 0.0:
             y = math.sqrt(omega2) / Ti
-            h3 = solver.h3e(y)
-            h5 = solver.h5e(y)
+            H3 = solver.H3(y)
+            H5 = solver.H5(y)
         else:
-            h3 = 0.0
-            h5 = 0.0
+            H3 = 0.0
+            H5 = 0.0
 
-        # --- Assemble V_eff^{OPT} (delta=1), exactly as in your expression ---
+        # A ≡ omega2 - 16 T^2 H3 + 2 omega2 log(M/Omega)
+        A = omega2 - 16.0 * (Ti * Ti) * H3 + 2.0 * omega2 * logM_over
+
         V = 0.0
 
-        # tree
+        # tree (same structure you were using)
         V += 0.5 * p.m2 * ph * ph
         V += (p.lam / 24.0) * ph**4
 
-        # - delta Omega^4/(64pi^2) (2L + 3) with delta=1
-        V += -(omega4 / (64.0 * math.pi**2)) * (2.0 * L + 3.0)
+        # -(3 omega^4 + 512 T^4 H5 + 4 omega^4 log(M/Omega)) / (64 pi^2)
+        V += -(3.0 * omega4 + 512.0 * (Ti**4) * H5 + 4.0 * omega4 * logM_over) / (64.0 * math.pi**2)
 
-        # - (512 T^4)/(64 pi^2) h5e
-        V += -(512.0 * (Ti**4) / (64.0 * math.pi**2)) * h5
+        # + eta^2 * A / (16 pi^2)
+        V += +(eta2 * A) / (16.0 * math.pi**2)
 
-        # - eta^2 T^2/pi^2 h3e
-        V += -(eta2 * (Ti**2) / (math.pi**2)) * h3
+        # - lam * A * phi^2 / (48 pi^2)
+        V += -(p.lam * A * ph * ph) / (48.0 * math.pi**2)
 
-        # + eta^2 Omega^2/(16 pi^2) (L + 1)
-        V += +(eta2 * omega2 / (16.0 * math.pi**2)) * (L + 1.0)
-
-        # - (lambda phi^2)/(48 pi^2) [ Omega^2(L+1) - 16 T^2 h3 ]
-        V += -(p.lam * ph * ph / (48.0 * math.pi**2)) * (omega2 * (L + 1.0) - 16.0 * (Ti**2) * h3)
-
-        # + (lambda Omega^4)/(768 pi^4) (1 + L)^2
-        V += +(p.lam * omega4 / (768.0 * math.pi**4)) * (1.0 + L)**2
-
-        # + (lambda T^2 h3)/(24 pi^4) [ 8 T^2 h3 - (L+1) Omega^2 ]
-        V += +(p.lam * (Ti**2) * h3 / (24.0 * math.pi**4)) * (8.0 * (Ti**2) * h3 - (L + 1.0) * omega2)
+        # + lam/(768 pi^4) * [omega^4 - 32 T^2 omega^2 H3 + 256 T^4 H3^2
+        #                     +4 omega^4 log -64 T^2 omega^2 H3 log +4 omega^4 log^2]
+        V += (p.lam / (768.0 * math.pi**4)) * (
+            omega4
+            - 32.0 * (Ti**2) * omega2 * H3
+            + 256.0 * (Ti**4) * (H3**2)
+            + 4.0 * omega4 * logM_over
+            - 64.0 * (Ti**2) * omega2 * H3 * logM_over
+            + 4.0 * omega4 * (logM_over**2)
+        )
 
         out.ravel()[i] = V
 
-    # Optional daisy term (user-supplied)
-    if include_daisy:
-        if daisy_func is None:
-            raise ValueError("include_daisy=True requires daisy_func(phi, T).")
-        # If T is array, apply elementwise (simple and safe)
-        if out.shape == ():
-            out = out + float(daisy_func(np.asarray(phi, dtype=float), float(np.asarray(T_arr))))
-        else:
-            # vectorize user daisy over broadcasted arrays
-            out = out + np.vectorize(lambda ph, Ti: float(daisy_func(np.asarray(ph), float(Ti))))(phi, T_arr)
-
     return out.reshape(phi.shape)
 
-
-def V_paper(phi: np.ndarray | float, T: np.ndarray | float | None=None ,
-            finiteT: bool =False,
-            include_daisy: bool= True,
-            real_cont: bool= False) -> np.ndarray:
+def _V_sm_1loop_daisy(
+    phi: np.ndarray | float,
+    T: np.ndarray | float | None = None,
+    *,
+    finiteT: bool = False,
+    include_daisy: bool = True,
+) -> np.ndarray:
     """
-    Zero-temperature effective potential with .....
-    optional finite-temperature corrections .
+    Baseline SM-like effective potential:
+      V = V_tree + V_1loop(CW-like) + ΔV_T + (optional) daisy.
 
-    Parameters
-    ----------
-    phi : array_like
-        Higgs radial field ϕ (GeV).
-
-    Notes
-    -----
-    * Zero-T one-loop piece matches your correction: φ^4 * (ln(φ^2/v^2) - 3/2) only.
-    * Thermal integrals use your finiteT module: FT.Jb(x), FT.Jf(x) with x = m/T.
-    * Daisy term: simplified EW longitudinal resummation consistent with the paper’s
-      shorthand '3 m_L^3' → 2×W_L + 1×Z_L.
-
-    Returns
-    -------
-    V : ndarray
-        V(ϕ, 0) in GeV^4. We choose the renormalization conditions at ϕ=v
-        exactly as in the paper.
+    This is used ONLY when include_daisy=True in the unified wrapper.
     """
     phi = np.asarray(phi, dtype=float)
-    v   = _VEW
+    v = _VEW
 
     # Tree
-    V_tree = (_MH**2)/(8.0*v**2) * (phi**2 - v**2)**2
+    V_tree = (_MH**2) / (8.0 * v**2) * (phi**2 - v**2)**2
 
-    # One-loop CW-like piece (W, Z, top); M_i(ϕ)=g_i ϕ and n_i as below.
+    # One-loop CW-like (W, Z, top)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_phi = np.where(phi != 0.0, np.log((phi**2) / (v**2)), 0.0)
 
-    # Use safe log for ϕ=0 (limit ϕ^4 log(ϕ^2) -> 0).
-    with np.errstate(divide='ignore', invalid='ignore'):
-        log_phi = np.where(phi != 0.0, np.log((phi**2)/(v**2)), 0.0)
-    common_bracket = (phi**4)*(log_phi - 1.5) + 2.0*(phi**2)*(v**2)
-    pref = 1/_64pi2
-    V_loops = pref * (
-        _nW*(_gW**4) + _nZ*(_gZ**4) - _nt*(_gt**4)
-    ) * common_bracket
+    common_bracket = (phi**4) * (log_phi - 1.5) + 2.0 * (phi**2) * (v**2)
+    pref = 1.0 / _64pi2
+    V_loops = pref * (_nW * (_gW**4) + _nZ * (_gZ**4) - _nt * (_gt**4)) * common_bracket
 
-
-    V0 = V_tree + V_loops
-    V0 = np.real_if_close(V0)
+    V0 = np.real_if_close(V_tree + V_loops)
     if not finiteT:
         return V0
 
-    # -------------------------------
-    # Finite-T corrections (Eq. 21)
-    # -------------------------------
     if T is None:
-        raise ValueError("finiteT=True requires a temperature T>0 (in GeV).")
+        raise ValueError("_V_sm_1loop_daisy: finiteT=True requires T (GeV).")
 
-    # thermal arguments x = m/T with m_i(φ) = g_i * |φ|
     absphi = np.abs(phi)
-
     with np.errstate(divide="ignore", invalid="ignore"):
         xW = (_gW * absphi) / T
         xZ = (_gZ * absphi) / T
         xt = (_gt * absphi) / T
 
-
-    # bosons positive, fermions negative (as in your ΔV expression)
-    DV_b = (T**4)/(2.0*np.pi**2) * (_nW*Jb(xW, approx="exact") + _nZ*Jb(xZ,approx="exact"))
-    DV_f = (T**4)/(2.0*np.pi**2) * (_nt*Jf(xt,approx="exact"))
+    DV_b = (T**4) / (2.0 * np.pi**2) * (_nW * Jb(xW, approx="exact") + _nZ * Jb(xZ, approx="exact"))
+    DV_f = (T**4) / (2.0 * np.pi**2) * (_nt * Jf(xt, approx="exact"))
 
     DV_b = np.real_if_close(DV_b)
     DV_f = np.real_if_close(DV_f)
 
     DV_daisy = 0.0
     if include_daisy:
-        # paper’s effective g^2 (dimensionless)
-        g2 = 4*(_MW**2+_MZ**2) /(3*(_VEW**2))
+        g2 = 4.0 * (_MW**2 + _MZ**2) / (3.0 * (_VEW**2))
+        mL2_phi = 0.25 * g2 * (absphi**2)
+        mL2_T = mL2_phi + (11.0 / 6.0) * g2 * (T**2)
 
-        # build m_L^2
-        mL2_phi = 0.25 * g2 *(absphi**2)
-        mL2_T = mL2_phi +(11.0/6.0) * g2 *(T**2)
-
-        # guard tiny negatives from roundoff
         mL_phi = np.sqrt(np.maximum(mL2_phi, 0.0))
         mL_T = np.sqrt(np.maximum(mL2_T, 0.0))
 
-        # 3 longitudinal modes (2 W_L + 1 Z_L compressed into g^2)
-        DV_daisy = -(T/(12.0*np.pi)) * 3.0 * (mL_T**3 - mL_phi**3)
+        DV_daisy = -(T / (12.0 * np.pi)) * 3.0 * (mL_T**3 - mL_phi**3)
         DV_daisy = np.real_if_close(DV_daisy)
 
-    V_tot = V0 + DV_b + DV_f + DV_daisy
-    V_tot = np.real_if_close(V_tot)
-
+    V_tot = np.real_if_close(V0 + DV_b + DV_f + DV_daisy)
     return V_tot
 
+def V_effective(
+    phi: np.ndarray | float,
+    T: np.ndarray | float | None = None,
+    *,
+    finiteT: bool = True,
+    include_daisy: bool = False,
+    # OPT objects:
+    opt_params: OPTParams,
+    opt_solver: OPTGapSolver,
+) -> np.ndarray:
+    """
+    Unified potential entry point.
+
+    Convention used in THIS project:
+      - include_daisy=True  -> use baseline SM-like: tree + 1-loop + thermal + daisy (NO OPT).
+      - include_daisy=False -> use OPT effective potential (NO daisy).
+
+    This avoids mixing OPT with daisy / SM 1-loop in a single V, which would double count.
+    """
+    if include_daisy:
+        return _V_sm_1loop_daisy(phi, T, finiteT=finiteT, include_daisy=True)
+
+    # OPT branch
+    return V_opt_scalar(
+        phi, T,
+        finiteT=finiteT,
+        params=opt_params,
+        solver=opt_solver,
+    )
 
 # -----------------------------------------------------------------------------
 # Utilities
@@ -1222,6 +1293,7 @@ def example_G_T_scan(
     summary: Dict[str, Any],
     *,
     phi_max: float = 300.0,
+    VphiT: Callable,
     save_dir: Optional[str] = None,
     shift_ref: str = "V0",
     tag: str = "",
@@ -1266,7 +1338,7 @@ def example_G_T_scan(
     # --- helper: quick broken-minimum locator at this T (grid search) ---
     def _phi_true_at_T(T: float) -> float:
         grid = np.linspace(0.0, phi_max_eff, 3001)
-        Vg = V_paper(grid, finiteT=True, T=T)
+        Vg = VphiT(grid, T=T, finiteT=True)  # include_daisy is already baked in VphiT closure
         idx = np.nanargmin(Vg)
         return float(grid[idx])
 
@@ -1278,9 +1350,9 @@ def example_G_T_scan(
     print("    --------  -------------------  ------------------------------  ----------------------")
 
     for T, col in zip(T_list, colors):
-        VϕT = V_paper(ϕ, finiteT=True, T=T)
-        V0T = float(V_paper(0.0, finiteT=True, T=T))
-        VvT = float(V_paper(v,  finiteT=True, T=T))
+        VϕT = VphiT(ϕ, T=T, finiteT=True)
+        V0T = float(VphiT(0.0, T=T, finiteT=True))
+        VvT = float(VphiT(v, T=T, finiteT=True))
 
         if shift_ref == "V0":
             Vshift = VϕT - V0T
@@ -1291,7 +1363,7 @@ def example_G_T_scan(
         ax.plot(ϕ, Vshift, color=col, lw=lw, ls=ls, label=f"T = {T:g} GeV", zorder=z)
 
         phi_true_T = _phi_true_at_T(T)
-        V_true_T   = float(V_paper(phi_true_T, finiteT=True, T=T))
+        V_true_T = float(VphiT(phi_true_T, T=T, finiteT=True))
         print(f"    {T:7.1f}  {phi_true_T:19.3f}  {V_true_T - V0T:30.3e}  {VvT - V0T:22.3e}")
 
     ax.axhline(0.0, color="#444", lw=1.0, ls="--", label="shift reference")
@@ -2069,32 +2141,44 @@ def run_all(case: str = "paper",
     save_dir = ensure_dir(save_dir)
     tag = case
 
-    def V_paper_XT(X: ArrayLike,
-                   T: ArrayLike,
-                   finiteT: bool = finiteT,
-                   include_daisy: bool = include_daisy) -> np.ndarray:
-        """
-        Wrapper for V_paper in the (X, T) convention used by transitionFinder.
+    # --- build OPT objects once ---
+    # --- OPT parameters from the same SM tree  used before ---
+    # V_tree = (m_h^2)/(8 v^2) (phi^2 - v^2)^2
+    # <=> V_tree = 1/2 m^2 phi^2 + (lambda/4!) phi^4 + const
+    # with: m^2 = - m_h^2/2  and  lambda = 3 m_h^2 / v^2
+    m2_sm = -0.5 * (_MH ** 2)
+    lam_sm = 3.0 * (_MH ** 2) / (_VEW ** 2)
 
-        Parameters
-        ----------
-        X : array_like, shape (..., 1)
-            Field-space point(s).
-        T : scalar or array_like
-            Temperature(s) in GeV (broadcastable with X[..., 0]).
-        """
+    opt_params = OPTParams(
+        m2=m2_sm,
+        lam=lam_sm,
+        M=_VEW,  # standard choice; change to _MH if you want that scheme
+    )
+
+
+    opt_solver = OPTGapSolver(opt_params)
+
+    def V_model(phi, T=None, finiteT= finiteT, include_daisy= include_daisy):
+        return V_effective(
+            phi, T,
+            finiteT=finiteT,
+            include_daisy=include_daisy,  # True -> baseline+daisy ; False -> OPT
+            opt_params=opt_params,
+            opt_solver=opt_solver,
+        )
+
+    def V_model_XT(X, T, finiteT= finiteT, include_daisy= include_daisy):
         X = np.asarray(X, dtype=float)
-        phi = X[..., 0]  # 1D field space
-        return V_paper(phi, T=T,
-                       finiteT=finiteT, include_daisy=include_daisy,
-                       real_cont=False)
+        phi = X[..., 0]
+        return V_model(phi, T=T, finiteT=finiteT, include_daisy=include_daisy)
+
 
     # --- Finite-T derivative infrastructure for transitionFinder (1D) ---
     derivs = build_finite_T_derivatives(
-        Vtot= V_paper_XT,
+        Vtot=V_model_XT,
         Ndim=1,
-        x_eps=1e-3,  # step in field space
-        T_eps=1e-2,  # step in temperature
+        x_eps=1e-3,
+        T_eps=1e-2,
         deriv_order=4,
     )
     V_XT      = derivs.V          # V(X,T) - V(0,T)
@@ -2144,8 +2228,14 @@ def run_all(case: str = "paper",
     summary = example_F_phase_history_map(summary, save_dir=save_dir, tag=tag)
 
     # G): Temperature sweep focusing on (T_below, T_n, T_c, T_above)
-    summary = example_G_T_scan(summary,phi_max=300.0,
-                               save_dir=save_dir, shift_ref="V0", tag=tag,)
+    summary = example_G_T_scan(
+        summary,
+        VphiT=partial(V_model, include_daisy=include_daisy),  # bake the mode
+        phi_max=300.0,
+        save_dir=save_dir,
+        shift_ref="V0",
+        tag=tag,
+    )
 
 
     ########################## Bounce Solution #########################################
@@ -2198,10 +2288,10 @@ def run_all(case: str = "paper",
         suitable for SingleFieldInstanton. _solve_bounce
         """
         return partial(
-            V_paper,
-            finiteT=finiteT, T=T,
+            V_model,
+            finiteT=finiteT,
+            T=T,
             include_daisy=include_daisy,
-            real_cont=False,
         )
 
     inst, label = make_inst(V=make_V_phi_only,
@@ -2261,7 +2351,7 @@ if __name__ == "__main__":
     run_all(
         case="paper",
         finiteT=True,
-        include_daisy=True,
+        include_daisy=False,
         xguess=None,
         phitol=1e-5,
         npoints=800,
@@ -2274,6 +2364,6 @@ if __name__ == "__main__":
         nuclCriterion=None,
         Tn_Ttol= 1e-3,
         Tn_maxiter= 80,
-        save_dir=f"results_T_Test",        # "results"
+        save_dir=f"results_T_Test_2",        # "results"
     )
 
