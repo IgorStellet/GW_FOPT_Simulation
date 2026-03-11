@@ -1,5 +1,5 @@
 """
-opt_potential.py
+OPT.py
 ================
 
 Objective
