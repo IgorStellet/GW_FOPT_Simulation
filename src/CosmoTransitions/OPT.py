@@ -92,6 +92,44 @@ except Exception:
 # ============================================================================
 # 1. Model parameters and numerical options
 # ============================================================================
+@dataclass(frozen=True)
+class OPTPhaseState:
+    """
+    Stationary phase solution of the OPT effective potential.
+
+    Parameters
+    ----------
+    branch : {"symmetric", "broken"}
+        Name of the branch.
+    T : float
+        Temperature.
+    mu : float
+        Chemical potential.
+    phi : float
+        Field value of the stationary point.
+    phi2 : float
+        Squared field value.
+    eta2 : float
+        Variational mass squared.
+    veff : float
+        Effective potential evaluated at the stationary point.
+    F_eta : float
+        Residual of the eta-gap equation at the solution.
+    F_phi : float
+        Residual of the factored phi-stationary equation at the solution.
+        For the symmetric branch this is stored as np.nan because the
+        factored broken-branch residual is not the relevant quantity at phi=0.
+    """
+    branch: Literal["symmetric", "broken"]
+    T: float
+    mu: float
+    phi: float
+    phi2: float
+    eta2: float
+    veff: float
+    F_eta: float
+    F_phi: float
+
 
 @dataclass(frozen=True)
 class OPTModelParams:
@@ -978,30 +1016,19 @@ def _eta2_physical_lower_bound(
 
     return float(lower + safety)
 
-
-def solve_eta2_given_phi(
+#################################################################
+def _default_eta2_seed(
     phi: float,
     T: float,
     mu: float,
-    eta2_seed: float,
     params: OPTModelParams,
     thermal: ThermalOptions,
-    solver: SolverOptions,
 ) -> float:
     """
-    Solve the physical gap equation for eta^2 at fixed (phi, T, mu).
+    Build a deterministic default seed for eta^2.
 
-    This is the key low-level solver needed to construct the on-shell
-    potential V_eff(phi; T, mu).
-
-    Strategy
-    --------
-    We solve strictly on the real axis and enforce the physical eta^2 domain
-    implied by the active backend. The solver uses:
-
-    1. a local bracket search around the provided seed;
-    2. a robust Brent solve once a sign change is found;
-    3. a wider fallback scan if the local search fails.
+    This is not meant to be a physical statement by itself. It is only a
+    robust numerical starting point when the user does not provide a seed.
 
     Parameters
     ----------
@@ -1011,31 +1038,412 @@ def solve_eta2_given_phi(
         Temperature.
     mu : float
         Chemical potential.
-    eta2_seed : float
-        Initial guess for eta^2.
     params : OPTModelParams
         Model parameters.
     thermal : ThermalOptions
         Thermal backend options.
-    solver : SolverOptions
-        Root-finding configuration.
 
     Returns
     -------
     float
-        Physical real root eta^2(phi, T, mu).
-
-    Raises
-    ------
-    RuntimeError
-        If no real physical root can be bracketed/found.
-    ValueError
-        If the input values are invalid.
+        A positive eta^2 seed safely inside the physical domain.
     """
     phi = float(phi)
     T = float(T)
     mu = float(mu)
-    eta2_seed = float(eta2_seed)
+
+    eta2_min = _eta2_physical_lower_bound(mu, params, thermal)
+
+    thermal_scale = max(1.0, 0.25 * T**2)
+    field_scale = 0.5 * abs(params.lam) * phi**2
+    mass_scale = abs(params.m2) + mu**2
+
+    guess = eta2_min + thermal_scale + field_scale + mass_scale + 1e-6
+    return float(max(guess, eta2_min + 1e-6))
+
+
+def _default_phi2_seed(
+    mu: float,
+    params: OPTModelParams,
+    floor: float = 1e-4,
+) -> float:
+    """
+    Build a deterministic default seed for phi^2 on the broken branch.
+
+    The estimate is based on the tree-level broken minimum of
+
+        V_tree(phi) = 1/2 (m2 - mu^2) phi^2 + lam/24 phi^4,
+
+    which gives
+
+        phi^2 ~ 6 (mu^2 - m2) / lam
+
+    whenever the quadratic coefficient favors symmetry breaking.
+
+    Parameters
+    ----------
+    mu : float
+        Chemical potential.
+    params : OPTModelParams
+        Model parameters.
+    floor : float, optional
+        Minimum positive seed.
+
+    Returns
+    -------
+    float
+        Positive seed for phi^2.
+    """
+    mu = float(mu)
+    lam = float(params.lam)
+
+    if not np.isfinite(mu):
+        raise ValueError(f"`mu` must be finite, got mu={mu!r}.")
+    if not np.isfinite(lam):
+        raise ValueError(f"`params.lam` must be finite, got lam={lam!r}.")
+    if lam == 0.0:
+        raise ValueError("`params.lam` must be nonzero to build a broken-branch seed.")
+
+    tree_phi2 = 6.0 * max(mu**2 - params.m2, 0.0) / abs(lam)
+    return float(max(floor, tree_phi2, 1.0))
+
+def _build_eta2_search_grid(
+    eta2_min: float,
+    center: float,
+    upper: float,
+    n_near: int = 500,
+    n_far: int = 700,
+) -> np.ndarray:
+    """
+    Build a search grid for eta^2 with extra resolution near the physical lower bound.
+    """
+    eta2_min = float(eta2_min)
+    center = float(center)
+    upper = float(upper)
+
+    if upper <= eta2_min:
+        upper = eta2_min + 1.0
+
+    near_span = max(1.0, 2.0 * max(center - eta2_min, 1e-8))
+    near = eta2_min + np.geomspace(1e-12, near_span, int(n_near))
+
+    far_start = max(near[-1], eta2_min + 1e-6)
+    if upper <= far_start:
+        far = np.array([far_start], dtype=float)
+    else:
+        far = np.linspace(far_start, upper, int(n_far), dtype=float)
+
+    grid = np.unique(np.concatenate([near, far]))
+    return grid
+
+
+def _deduplicate_eta2_roots(
+    roots: list[float],
+    rel_tol: float = 1e-8,
+) -> list[float]:
+    """
+    Remove numerically duplicated eta^2 roots.
+    """
+    if not roots:
+        return []
+
+    roots_sorted = sorted(float(r) for r in roots if np.isfinite(r))
+    unique_roots: list[float] = [roots_sorted[0]]
+
+    for root in roots_sorted[1:]:
+        scale = max(1.0, abs(root), abs(unique_roots[-1]))
+        if abs(root - unique_roots[-1]) > rel_tol * scale:
+            unique_roots.append(root)
+
+    return unique_roots
+
+
+def _find_eta2_root_candidates(
+    phi: float,
+    T: float,
+    mu: float,
+    eta2_reference: float | None,
+    params: OPTModelParams,
+    thermal: ThermalOptions,
+    solver: SolverOptions,
+) -> list[float]:
+    """
+    Find physical real candidate roots of the eta-gap equation.
+
+    Strategy
+    --------
+    1. Try a local search around a reference point.
+    2. If needed, perform a broader scan on an adaptive eta^2 grid.
+    3. If needed, try a few secant solves.
+    """
+    phi = float(phi)
+    T = float(T)
+    mu = float(mu)
+
+    eta2_min = _eta2_physical_lower_bound(mu, params, thermal)
+    center = (
+        float(eta2_reference)
+        if eta2_reference is not None and np.isfinite(eta2_reference)
+        else _default_eta2_seed(phi, T, mu, params, thermal)
+    )
+    center = max(center, eta2_min + 1e-10)
+
+    residual_tol = max(1e-8, 10.0 * np.sqrt(solver.root_tol))
+
+    def f_eta(e2: float) -> float:
+        e2 = float(e2)
+        if e2 <= eta2_min:
+            return np.nan
+        try:
+            return float(eta_gap_residual(phi, e2, T, mu, params, thermal))
+        except ValueError:
+            return np.nan
+
+    candidates: list[float] = []
+
+    # --------------------------------------------------
+    # 1. Local search around the reference point
+    # --------------------------------------------------
+    f_center = f_eta(center)
+    if np.isfinite(f_center) and abs(f_center) < residual_tol:
+        return [float(center)]
+
+    step = max(1e-3, 0.05 * max(1.0, center))
+    n_local = max(12, solver.max_iter // 8)
+
+    for _ in range(n_local):
+        left = max(eta2_min + 1e-10, center - step)
+        right = center + step
+
+        f_left = f_eta(left)
+        f_right = f_eta(right)
+
+        if np.isfinite(f_left) and np.isfinite(f_center) and f_left * f_center < 0.0:
+            sol = root_scalar(
+                f_eta,
+                bracket=(left, center),
+                method="brentq",
+                xtol=solver.root_tol,
+                maxiter=solver.max_iter,
+            )
+            if sol.converged:
+                candidates.append(float(sol.root))
+                break
+
+        if np.isfinite(f_center) and np.isfinite(f_right) and f_center * f_right < 0.0:
+            sol = root_scalar(
+                f_eta,
+                bracket=(center, right),
+                method="brentq",
+                xtol=solver.root_tol,
+                maxiter=solver.max_iter,
+            )
+            if sol.converged:
+                candidates.append(float(sol.root))
+                break
+
+        step *= 1.8
+
+    if candidates:
+        return _deduplicate_eta2_roots(candidates)
+
+    # --------------------------------------------------
+    # 2. Global adaptive scan
+    # --------------------------------------------------
+    upper = max(center + 10.0, eta2_min + 20.0)
+
+    for _ in range(8):
+        x_grid = _build_eta2_search_grid(
+            eta2_min=eta2_min,
+            center=center,
+            upper=upper,
+            n_near=max(500, 2 * solver.max_iter),
+            n_far=max(700, 3 * solver.max_iter),
+        )
+
+        f_grid = np.array([f_eta(x) for x in x_grid], dtype=float)
+
+        for i in range(len(x_grid) - 1):
+            x0 = float(x_grid[i])
+            x1 = float(x_grid[i + 1])
+            f0 = float(f_grid[i])
+            f1 = float(f_grid[i + 1])
+
+            if np.isfinite(f0) and abs(f0) < residual_tol:
+                candidates.append(x0)
+
+            if np.isfinite(f0) and np.isfinite(f1) and f0 * f1 < 0.0:
+                try:
+                    sol = root_scalar(
+                        f_eta,
+                        bracket=(x0, x1),
+                        method="brentq",
+                        xtol=solver.root_tol,
+                        maxiter=solver.max_iter,
+                    )
+                    if sol.converged:
+                        candidates.append(float(sol.root))
+                except Exception:
+                    pass
+
+        if np.isfinite(f_grid[-1]) and abs(f_grid[-1]) < residual_tol:
+            candidates.append(float(x_grid[-1]))
+
+        candidates = _deduplicate_eta2_roots(candidates)
+        if candidates:
+            return candidates
+
+        upper = eta2_min + 2.5 * (upper - eta2_min) + 5.0
+
+    # --------------------------------------------------
+    # 3. Final secant fallback
+    # --------------------------------------------------
+    secant_pairs = [
+        (eta2_min + 1e-10, max(center, eta2_min + 1e-5)),
+        (max(center, eta2_min + 1e-6), max(center + 0.25, eta2_min + 1e-4)),
+        (max(center, eta2_min + 1e-4), max(center + 1.0, eta2_min + 1e-3)),
+        (max(center, eta2_min + 1e-2), max(center + 5.0, eta2_min + 1e-1)),
+    ]
+
+    for x0, x1 in secant_pairs:
+        try:
+            sol = root_scalar(
+                f_eta,
+                x0=float(x0),
+                x1=float(x1),
+                method="secant",
+                xtol=solver.root_tol,
+                maxiter=solver.max_iter,
+            )
+        except Exception:
+            continue
+
+        if not sol.converged:
+            continue
+
+        root_val = float(sol.root)
+        if not np.isfinite(root_val):
+            continue
+        if root_val <= eta2_min:
+            continue
+
+        f_root = f_eta(root_val)
+        if np.isfinite(f_root) and abs(f_root) < residual_tol:
+            candidates.append(root_val)
+
+    return _deduplicate_eta2_roots(candidates)
+
+
+def _eta2_root_is_disconnected(
+    candidate: float,
+    reference: float | None,
+    T: float,
+    phi: float,
+) -> bool:
+    """
+    Heuristic continuity check used to reject clearly disconnected eta^2 roots.
+
+    In the Mathematica notebook the relevant eta branch is followed by
+    continuation. When that branch disappears, a global search may jump to a
+    remote large-eta solution that is not continuously connected to the branch
+    being tracked. Such jumps are precisely what can destroy the broken phase
+    and incorrectly favor the symmetric branch.
+
+    The present check is intentionally conservative: only simultaneously large
+    absolute and relative jumps are rejected.
+    """
+    if reference is None:
+        return False
+
+    reference = float(reference)
+    candidate = float(candidate)
+    T = float(T)
+    phi = float(phi)
+
+    if not np.isfinite(reference) or reference <= 0.0:
+        return False
+    if not np.isfinite(candidate) or candidate <= 0.0:
+        return True
+
+    abs_jump = abs(candidate - reference)
+    rel_jump = max(candidate / reference, reference / candidate)
+
+    abs_cap = max(25.0, 5.0 + 2.0 * T + 2.0 * abs(phi))
+    rel_cap = 25.0
+
+    return bool(abs_jump > abs_cap and rel_jump > rel_cap)
+
+
+def _select_eta2_root_candidate(
+    candidates: list[float],
+    phi: float,
+    T: float,
+    mu: float,
+    eta2_reference: float | None,
+    params: OPTModelParams,
+    thermal: ThermalOptions,
+) -> float:
+    """
+    Select one candidate eta^2 root.
+
+    Selection rule
+    --------------
+    1. If a reference seed is available, prefer the candidate closest to it.
+    2. Reject candidates that are clearly disconnected from that reference.
+    3. Without a reference, choose the smallest physical real root.
+
+    The last rule is deliberate: for seedless calls, picking the smallest root
+    is much closer to the continuation logic used in the Mathematica notebook
+    than minimizing the off-shell potential over eta^2, which tends to favor
+    remote large-eta solutions.
+    """
+    if not candidates:
+        raise RuntimeError("No eta^2 candidates were supplied for selection.")
+
+    clean = sorted(float(c) for c in candidates if np.isfinite(c))
+    if not clean:
+        raise RuntimeError("All eta^2 candidates were non-finite.")
+
+    if eta2_reference is not None and np.isfinite(eta2_reference):
+        ordered = sorted(clean, key=lambda x: abs(float(x) - float(eta2_reference)))
+        for cand in ordered:
+            if not _eta2_root_is_disconnected(cand, eta2_reference, T, phi):
+                return float(cand)
+        raise RuntimeError(
+            "All candidate eta^2 roots are disconnected from the supplied reference. "
+            f"reference={eta2_reference}, candidates={ordered}."
+        )
+
+    return float(clean[0])
+
+
+#################################################################
+
+
+def solve_eta2_given_phi(
+    phi: float,
+    T: float,
+    mu: float,
+    eta2_seed: float | None = None,
+    params: OPTModelParams = OPTModelParams(),
+    thermal: ThermalOptions = ThermalOptions(),
+    solver: SolverOptions = SolverOptions(),
+) -> float:
+    """
+    Solve the physical gap equation for eta^2 at fixed (phi, T, mu).
+
+    This public version supports a seedless workflow:
+    if `eta2_seed` is omitted, the routine builds a deterministic reference
+    point and then searches globally for physical real candidates.
+    """
+    phi = float(phi)
+    T = float(T)
+    mu = float(mu)
+
+    if eta2_seed is not None:
+        eta2_seed = float(eta2_seed)
+        if not np.isfinite(eta2_seed):
+            raise ValueError(f"`eta2_seed` must be finite when provided, got {eta2_seed!r}.")
 
     if not np.isfinite(phi):
         raise ValueError(f"`phi` must be finite, got phi={phi!r}.")
@@ -1043,8 +1451,6 @@ def solve_eta2_given_phi(
         raise ValueError(f"`T` must be finite, got T={T!r}.")
     if not np.isfinite(mu):
         raise ValueError(f"`mu` must be finite, got mu={mu!r}.")
-    if not np.isfinite(eta2_seed):
-        raise ValueError(f"`eta2_seed` must be finite, got eta2_seed={eta2_seed!r}.")
     if T <= 0.0:
         raise ValueError(f"`T` must be strictly positive, got T={T}.")
     if solver.root_tol <= 0.0:
@@ -1054,139 +1460,61 @@ def solve_eta2_given_phi(
 
     eta2_min = _eta2_physical_lower_bound(mu, params, thermal)
 
-    def f_eta(e2: float) -> float:
-        e2 = float(e2)
-        if e2 <= eta2_min:
-            return np.nan
-        try:
-            value = eta_gap_residual(phi, e2, T, mu, params, thermal)
-        except ValueError:
-            return np.nan
-        return float(value)
+    eta2_reference = (
+        eta2_seed
+        if eta2_seed is not None
+        else _default_eta2_seed(phi, T, mu, params, thermal)
+    )
+    eta2_reference = max(float(eta2_reference), eta2_min + 1e-10)
 
-    # Start near the provided seed but always inside the physical domain.
-    center = max(eta2_seed, eta2_min + 1e-10)
-    f_center = f_eta(center)
-
-    if np.isfinite(f_center) and abs(f_center) < max(1e-10, solver.root_tol):
-        return float(center)
-
-    # --------------------------------------------------
-    # Local bracket search around the seed
-    # --------------------------------------------------
-    bracket = None
-    step = max(1e-3, 0.05 * max(1.0, center))
-
-    n_local = max(12, solver.max_iter // 8)
-    for _ in range(n_local):
-        left = max(eta2_min + 1e-8, center - step)
-        right = center + step
-
-        f_left = f_eta(left)
-        f_right = f_eta(right)
-
-        if np.isfinite(f_left) and np.isfinite(f_center) and f_left * f_center <= 0.0:
-            bracket = (left, center)
-            break
-
-        if np.isfinite(f_center) and np.isfinite(f_right) and f_center * f_right <= 0.0:
-            bracket = (center, right)
-            break
-
-        step *= 1.6
-
-    # --------------------------------------------------
-    # Wider fallback scan if the local search fails
-    # --------------------------------------------------
-    if bracket is None:
-        upper = max(center + step, eta2_min + 20.0)
-
-        # Use a grid clustered near the physical lower bound, where the root
-        # may live in delicate cases.
-        offsets = np.geomspace(1e-12, max(upper - eta2_min, 1.0), max(600, 4 * solver.max_iter))
-        x_grid = eta2_min + offsets
-
-        x_prev = x_grid[0]
-        f_prev = f_eta(x_prev)
-
-        for x_now in x_grid[1:]:
-            f_now = f_eta(x_now)
-            if np.isfinite(f_prev) and np.isfinite(f_now) and f_prev * f_now <= 0.0:
-                bracket = (x_prev, x_now)
-                break
-            x_prev = x_now
-            f_prev = f_now
-
-    residual_tol = max(1e-8, 10.0 * np.sqrt(solver.root_tol))
-
-    if bracket is None:
-        secant_pairs = [
-            (max(center, eta2_min + 1e-12), center + max(1e-4, 0.01 * max(1.0, center))),
-            (eta2_min + 1e-10, max(center, eta2_min + 1e-6)),
-            (max(center, eta2_min + 1e-8), max(center + 0.1, eta2_min + 1e-4)),
-            (max(center, eta2_min + 1e-6), max(center + 1.0, eta2_min + 1e-3)),
-        ]
-
-        for x0, x1 in secant_pairs:
-            try:
-                sol_sec = root_scalar(
-                    f_eta,
-                    x0=float(x0),
-                    x1=float(x1),
-                    method="secant",
-                    xtol=solver.root_tol,
-                    maxiter=solver.max_iter,
-                )
-            except Exception:
-                continue
-
-            if not sol_sec.converged:
-                continue
-
-            eta2_root = float(sol_sec.root)
-            if not np.isfinite(eta2_root):
-                continue
-            if eta2_root <= eta2_min:
-                continue
-
-            f_root = f_eta(eta2_root)
-            if np.isfinite(f_root) and abs(f_root) < residual_tol:
-                return eta2_root
-
-        raise RuntimeError(
-            "Could not find a physical real eta^2 root. "
-            f"Inputs: phi={phi}, T={T}, mu={mu}, eta2_seed={eta2_seed}, "
-            f"eta2_min={eta2_min}."
-        )
-
-    sol = root_scalar(
-        f_eta,
-        bracket=bracket,
-        method="brentq",
-        xtol=solver.root_tol,
-        maxiter=solver.max_iter,
+    candidates = _find_eta2_root_candidates(
+        phi=phi,
+        T=T,
+        mu=mu,
+        eta2_reference=eta2_reference,
+        params=params,
+        thermal=thermal,
+        solver=solver,
     )
 
-    if not sol.converged:
+    if not candidates:
         raise RuntimeError(
-            "Brent root solve for eta^2 did not converge. "
-            f"Inputs: phi={phi}, T={T}, mu={mu}, bracket={bracket}."
+            "Could not find a physical real eta^2 root. "
+            f"Inputs: phi={phi}, T={T}, mu={mu}, "
+            f"eta2_seed={eta2_seed}, eta2_min={eta2_min}."
         )
 
-    eta2_root = float(sol.root)
+    eta2_root = _select_eta2_root_candidate(
+        candidates=candidates,
+        phi=phi,
+        T=T,
+        mu=mu,
+        eta2_reference=eta2_seed,
+        params=params,
+        thermal=thermal,
+    )
+
     if eta2_root <= eta2_min:
         raise RuntimeError(
-            f"Found eta^2 root outside the physical domain: eta2={eta2_root}, "
-            f"eta2_min={eta2_min}."
+            f"Selected eta^2 root outside the physical domain: "
+            f"eta2={eta2_root}, eta2_min={eta2_min}."
         )
 
-    f_root = f_eta(eta2_root)
-    if not np.isfinite(f_root):
+    if eta2_seed is not None and _eta2_root_is_disconnected(eta2_root, eta2_seed, T, phi):
         raise RuntimeError(
-            f"Eta-gap residual became non-finite at the computed root eta2={eta2_root}."
+            "The eta^2 solve jumped to a disconnected root. "
+            f"seed={eta2_seed}, selected={eta2_root}, phi={phi}, T={T}, mu={mu}."
         )
 
-    return eta2_root
+    f_root = eta_gap_residual(phi, eta2_root, T, mu, params, thermal)
+    residual_tol = max(1e-8, 10.0 * np.sqrt(solver.root_tol))
+    if not np.isfinite(f_root) or abs(f_root) >= residual_tol:
+        raise RuntimeError(
+            "Selected eta^2 root does not satisfy the requested residual level. "
+            f"eta2={eta2_root}, F_eta={f_root:.3e}, tol={residual_tol:.3e}."
+        )
+
+    return float(eta2_root)
 
 
 def solve_stationary_system(
@@ -1370,20 +1698,18 @@ def solve_stationary_system(
 # ============================================================================
 # 6. Branch solvers from section 2 logic
 # ============================================================================
-
 def solve_symmetric_branch(
     T: float,
     mu: float,
-    eta2_seed: float,
-    params: OPTModelParams,
-    thermal: ThermalOptions,
-    solver: SolverOptions,
+    eta2_seed: float | None = None,
+    params: OPTModelParams = OPTModelParams(),
+    thermal: ThermalOptions = ThermalOptions(),
+    solver: SolverOptions = SolverOptions(),
 ) -> float:
     """
     Solve the symmetric branch, defined by phi = 0.
 
-    This corresponds to the section 2 strategy where only the eta-gap
-    equation is solved on the symmetric phase.
+    This public version is seedless by default.
 
     Parameters
     ----------
@@ -1391,8 +1717,8 @@ def solve_symmetric_branch(
         Temperature.
     mu : float
         Chemical potential.
-    eta2_seed : float
-        Initial guess for eta^2.
+    eta2_seed : float or None, optional
+        Optional eta^2 reference for continuity. If None, an internal default is used.
     params : OPTModelParams
         Model parameters.
     thermal : ThermalOptions
@@ -1404,24 +1730,19 @@ def solve_symmetric_branch(
     -------
     float
         Physical eta^2 solution on the symmetric branch.
-
-    Raises
-    ------
-    RuntimeError
-        If the branch solve does not converge to a valid symmetric solution.
-    ValueError
-        If the input values are invalid.
     """
     T = float(T)
     mu = float(mu)
-    eta2_seed = float(eta2_seed)
+
+    if eta2_seed is not None:
+        eta2_seed = float(eta2_seed)
+        if not np.isfinite(eta2_seed):
+            raise ValueError(f"`eta2_seed` must be finite when provided, got {eta2_seed!r}.")
 
     if not np.isfinite(T):
         raise ValueError(f"`T` must be finite, got T={T!r}.")
     if not np.isfinite(mu):
         raise ValueError(f"`mu` must be finite, got mu={mu!r}.")
-    if not np.isfinite(eta2_seed):
-        raise ValueError(f"`eta2_seed` must be finite, got eta2_seed={eta2_seed!r}.")
     if T <= 0.0:
         raise ValueError(f"`T` must be strictly positive, got T={T}.")
 
@@ -1457,17 +1778,17 @@ def solve_symmetric_branch(
 def solve_broken_branch(
     T: float,
     mu: float,
-    eta2_seed: float,
-    phi2_seed: float,
-    params: OPTModelParams,
-    thermal: ThermalOptions,
-    solver: SolverOptions,
+    eta2_seed: float | None = None,
+    phi2_seed: float | None = None,
+    params: OPTModelParams = OPTModelParams(),
+    thermal: ThermalOptions = ThermalOptions(),
+    solver: SolverOptions = SolverOptions(),
 ) -> tuple[float, float]:
     """
     Solve the broken branch using the coupled system for (eta^2, phi^2).
 
-    This follows the section 2 logic for the phase with nonzero order
-    parameter.
+    This public version is seedless by default. If no seeds are provided,
+    deterministic internal seeds are constructed automatically.
 
     Parameters
     ----------
@@ -1475,10 +1796,10 @@ def solve_broken_branch(
         Temperature.
     mu : float
         Chemical potential.
-    eta2_seed : float
-        Initial guess for eta^2.
-    phi2_seed : float
-        Initial guess for phi^2.
+    eta2_seed : float or None, optional
+        Initial eta^2 seed. If None, an internal default is built.
+    phi2_seed : float or None, optional
+        Initial phi^2 seed. If None, an internal default is built.
     params : OPTModelParams
         Model parameters.
     thermal : ThermalOptions
@@ -1490,41 +1811,72 @@ def solve_broken_branch(
     -------
     tuple[float, float]
         (eta2, phi2) on the broken branch.
-
-    Raises
-    ------
-    RuntimeError
-        If the branch solve does not converge to a valid broken-branch solution.
-    ValueError
-        If the input values are invalid.
     """
     T = float(T)
     mu = float(mu)
-    eta2_seed = float(eta2_seed)
-    phi2_seed = float(phi2_seed)
 
     if not np.isfinite(T):
         raise ValueError(f"`T` must be finite, got T={T!r}.")
     if not np.isfinite(mu):
         raise ValueError(f"`mu` must be finite, got mu={mu!r}.")
-    if not np.isfinite(eta2_seed):
-        raise ValueError(f"`eta2_seed` must be finite, got eta2_seed={eta2_seed!r}.")
-    if not np.isfinite(phi2_seed):
-        raise ValueError(f"`phi2_seed` must be finite, got phi2_seed={phi2_seed!r}.")
     if T <= 0.0:
         raise ValueError(f"`T` must be strictly positive, got T={T}.")
+    if solver.root_tol <= 0.0:
+        raise ValueError(f"`solver.root_tol` must be > 0, got {solver.root_tol}.")
+    if solver.max_iter <= 0:
+        raise ValueError(f"`solver.max_iter` must be > 0, got {solver.max_iter}.")
 
-    # Keep the initial phi^2 seed on the broken side.
-    phi2_seed = max(phi2_seed, 1e-8)
+    if phi2_seed is None:
+        phi2_seed = _default_phi2_seed(mu, params)
+    else:
+        phi2_seed = float(phi2_seed)
+        if not np.isfinite(phi2_seed):
+            raise ValueError(f"`phi2_seed` must be finite when provided, got {phi2_seed!r}.")
+
+    phi2_seed = max(float(phi2_seed), 1e-8)
+
+    if eta2_seed is None:
+        eta2_seed = _default_eta2_seed(
+            phi=float(np.sqrt(phi2_seed)),
+            T=T,
+            mu=mu,
+            params=params,
+            thermal=thermal,
+        )
+    else:
+        eta2_seed = float(eta2_seed)
+        if not np.isfinite(eta2_seed):
+            raise ValueError(f"`eta2_seed` must be finite when provided, got {eta2_seed!r}.")
 
     residual_tol = max(1e-8, 10.0 * np.sqrt(solver.root_tol))
+    eta2_floor = _eta2_physical_lower_bound(mu, params, thermal) + 1e-6
 
-    trial_seeds = [
-        (eta2_seed, phi2_seed),
-        (max(eta2_seed, _eta2_physical_lower_bound(mu, params, thermal) + 1e-6), max(phi2_seed, 0.1)),
-        (max(1.10 * eta2_seed, _eta2_physical_lower_bound(mu, params, thermal) + 1e-6), max(2.0 * phi2_seed, 0.5)),
-        (max(0.95 * eta2_seed, _eta2_physical_lower_bound(mu, params, thermal) + 1e-6), max(0.5 * phi2_seed, 0.05)),
+    phi2_trials = [
+        phi2_seed,
+        max(0.25 * phi2_seed, 1e-4),
+        max(0.50 * phi2_seed, 1e-4),
+        max(1.50 * phi2_seed, 1e-4),
+        max(2.00 * phi2_seed, 1e-4),
+        0.1,
+        1.0,
+        4.0,
+        9.0,
     ]
+
+    trial_seeds: list[tuple[float, float]] = []
+    for p2 in phi2_trials:
+        p2 = max(float(p2), 1e-8)
+        e2_ref = _default_eta2_seed(
+            phi=float(np.sqrt(p2)),
+            T=T,
+            mu=mu,
+            params=params,
+            thermal=thermal,
+        )
+        e2_base = max(float(eta2_seed), e2_ref, eta2_floor)
+
+        for fac in (0.85, 1.00, 1.15):
+            trial_seeds.append((max(fac * e2_base, eta2_floor), p2))
 
     best_candidate = None
     best_norm = np.inf
@@ -1587,6 +1939,176 @@ def solve_broken_branch(
     raise RuntimeError(message)
 
 
+def solve_phase_candidates_at_T(
+    T: float,
+    mu: float,
+    sym_eta2_seed: float | None = None,
+    broken_eta2_seed: float | None = None,
+    broken_phi2_seed: float | None = None,
+    params: OPTModelParams = OPTModelParams(),
+    thermal: ThermalOptions = ThermalOptions(),
+    solver: SolverOptions = SolverOptions(),
+) -> dict[str, OPTPhaseState | None]:
+    """
+    Build the stationary phase candidates at fixed (T, mu).
+
+    The routine attempts both the symmetric and broken branches. If a branch
+    cannot be solved consistently, its entry is returned as None instead of
+    forcing a disconnected or numerically unstable solution.
+    """
+    T = float(T)
+    mu = float(mu)
+
+    sym_state: OPTPhaseState | None = None
+    broken_state: OPTPhaseState | None = None
+
+    try:
+        eta2_sym = solve_symmetric_branch(
+            T=T,
+            mu=mu,
+            eta2_seed=sym_eta2_seed,
+            params=params,
+            thermal=thermal,
+            solver=solver,
+        )
+
+        veff_sym = opt_veff_off_shell(
+            phi=0.0,
+            eta2=eta2_sym,
+            T=T,
+            mu=mu,
+            params=params,
+            thermal=thermal,
+        )
+
+        sym_state = OPTPhaseState(
+            branch="symmetric",
+            T=float(T),
+            mu=float(mu),
+            phi=0.0,
+            phi2=0.0,
+            eta2=float(eta2_sym),
+            veff=float(veff_sym),
+            F_eta=float(eta_gap_residual(0.0, eta2_sym, T, mu, params, thermal)),
+            F_phi=float(np.nan),
+        )
+    except RuntimeError:
+        sym_state = None
+
+    try:
+        eta2_broken, phi2_broken = solve_broken_branch(
+            T=T,
+            mu=mu,
+            eta2_seed=broken_eta2_seed,
+            phi2_seed=broken_phi2_seed,
+            params=params,
+            thermal=thermal,
+            solver=solver,
+        )
+
+        phi_broken_val = float(np.sqrt(phi2_broken))
+        veff_broken_val = opt_veff_off_shell(
+            phi=phi_broken_val,
+            eta2=eta2_broken,
+            T=T,
+            mu=mu,
+            params=params,
+            thermal=thermal,
+        )
+
+        broken_state = OPTPhaseState(
+            branch="broken",
+            T=float(T),
+            mu=float(mu),
+            phi=float(phi_broken_val),
+            phi2=float(phi2_broken),
+            eta2=float(eta2_broken),
+            veff=float(veff_broken_val),
+            F_eta=float(eta_gap_residual(phi_broken_val, eta2_broken, T, mu, params, thermal)),
+            F_phi=float(phi_stationary_residual(phi_broken_val, eta2_broken, T, mu, params, thermal)),
+        )
+    except RuntimeError:
+        broken_state = None
+
+    return {
+        "symmetric": sym_state,
+        "broken": broken_state,
+    }
+
+
+def solve_physical_phase_at_T(
+    T: float,
+    mu: float,
+    sym_eta2_seed: float | None = None,
+    broken_eta2_seed: float | None = None,
+    broken_phi2_seed: float | None = None,
+    params: OPTModelParams = OPTModelParams(),
+    thermal: ThermalOptions = ThermalOptions(),
+    solver: SolverOptions = SolverOptions(),
+) -> OPTPhaseState:
+    """
+    Return the physical stationary phase at fixed (T, mu).
+
+    Seedless autonomous mode
+    ------------------------
+    When all seeds are omitted, the routine does *not* hard-code any critical
+    temperature or branch switch. Instead it reconstructs a small temperature
+    context around the requested T and uses the same continuation logic as
+    `trace_physical_phases_over_T(...)`:
+
+    - broken branch traced from low to high temperature;
+    - symmetric branch traced from high to low temperature;
+    - physical phase selected as the available stationary branch with the
+      lowest effective potential at the requested temperature.
+
+    This mirrors the Mathematica notebook strategy much better than an isolated
+    one-shot comparison of seedless stationary candidates at a single T.
+
+    Returns
+    -------
+    OPTPhaseState
+        Physical stationary phase.
+    """
+    T = float(T)
+    mu = float(mu)
+
+    if (
+        sym_eta2_seed is None
+        and broken_eta2_seed is None
+        and broken_phi2_seed is None
+    ):
+        try:
+            return _solve_physical_phase_from_temperature_context(
+                T=T,
+                mu=mu,
+                params=params,
+                thermal=thermal,
+                solver=solver,
+            )
+        except RuntimeError:
+            pass
+
+    candidates = solve_phase_candidates_at_T(
+        T=T,
+        mu=mu,
+        sym_eta2_seed=sym_eta2_seed,
+        broken_eta2_seed=broken_eta2_seed,
+        broken_phi2_seed=broken_phi2_seed,
+        params=params,
+        thermal=thermal,
+        solver=solver,
+    )
+
+    available = [state for state in candidates.values() if state is not None]
+    if not available:
+        raise RuntimeError(
+            f"No stationary phase candidates could be constructed at T={T}, mu={mu}."
+        )
+
+    return min(available, key=lambda state: state.veff)
+
+
+
 # ============================================================================
 # 7. On-shell potential layer
 # ============================================================================
@@ -1595,10 +2117,10 @@ def veff_on_shell(
     phi: float,
     T: float,
     mu: float,
-    eta2_seed: float,
-    params: OPTModelParams,
-    thermal: ThermalOptions,
-    solver: SolverOptions,
+    eta2_seed: float | None = None,
+    params: OPTModelParams = OPTModelParams(),
+    thermal: ThermalOptions = ThermalOptions(),
+    solver: SolverOptions = SolverOptions(),
 ) -> tuple[float, float]:
     """
     Evaluate the on-shell effective potential at fixed phi:
@@ -1607,41 +2129,21 @@ def veff_on_shell(
 
     by solving eta^2(phi, T, mu) first.
 
-    Parameters
-    ----------
-    phi : float
-        Background field value.
-    T : float
-        Temperature.
-    mu : float
-        Chemical potential.
-    eta2_seed : float
-        Initial guess for eta^2.
-    params : OPTModelParams
-        Model parameters.
-    thermal : ThermalOptions
-        Thermal backend options.
-    solver : SolverOptions
-        Root-finding configuration.
+    This public version is seedless by default.
 
     Returns
     -------
     tuple[float, float]
-        (veff, eta2), where
-        - veff is the on-shell effective potential at the requested phi,
-        - eta2 is the gap-equation solution used in the evaluation.
-
-    Raises
-    ------
-    RuntimeError
-        If the eta-gap solve fails.
-    ValueError
-        If the inputs are invalid.
+        (veff, eta2).
     """
     phi = float(phi)
     T = float(T)
     mu = float(mu)
-    eta2_seed = float(eta2_seed)
+
+    if eta2_seed is not None:
+        eta2_seed = float(eta2_seed)
+        if not np.isfinite(eta2_seed):
+            raise ValueError(f"`eta2_seed` must be finite when provided, got {eta2_seed!r}.")
 
     if not np.isfinite(phi):
         raise ValueError(f"`phi` must be finite, got phi={phi!r}.")
@@ -1649,8 +2151,6 @@ def veff_on_shell(
         raise ValueError(f"`T` must be finite, got T={T!r}.")
     if not np.isfinite(mu):
         raise ValueError(f"`mu` must be finite, got mu={mu!r}.")
-    if not np.isfinite(eta2_seed):
-        raise ValueError(f"`eta2_seed` must be finite, got eta2_seed={eta2_seed!r}.")
     if T <= 0.0:
         raise ValueError(f"`T` must be strictly positive, got T={T}.")
 
@@ -1675,61 +2175,45 @@ def veff_on_shell(
 
     return float(veff), float(eta2_sol)
 
-
 def veff_difference_from_origin(
     phi: float,
     T: float,
     mu: float,
-    eta2_seed_phi: float,
-    eta2_seed_zero: float,
-    params: OPTModelParams,
-    thermal: ThermalOptions,
-    solver: SolverOptions,
+    eta2_seed_phi: float | None = None,
+    eta2_seed_zero: float | None = None,
+    params: OPTModelParams = OPTModelParams(),
+    thermal: ThermalOptions = ThermalOptions(),
+    solver: SolverOptions = SolverOptions(),
 ) -> tuple[float, float, float]:
     """
-    Compute the potential difference used in notebook section 3:
+    Compute
 
         Delta V(phi) = V_eff(phi; T, mu) - V_eff(0; T, mu)
 
-    Parameters
-    ----------
-    phi : float
-        Background field value.
-    T : float
-        Temperature.
-    mu : float
-        Chemical potential.
-    eta2_seed_phi : float
-        Initial guess for eta^2 at the requested phi.
-    eta2_seed_zero : float
-        Initial guess for eta^2 at phi = 0.
-    params : OPTModelParams
-        Model parameters.
-    thermal : ThermalOptions
-        Thermal backend options.
-    solver : SolverOptions
-        Root-finding configuration.
+    This public version is seedless by default.
 
     Returns
     -------
     tuple[float, float, float]
-        (dV, eta2_phi, eta2_zero), where
-        - dV = V_eff(phi;T,mu) - V_eff(0;T,mu),
-        - eta2_phi is the gap solution at the requested phi,
-        - eta2_zero is the symmetric-branch gap solution at phi = 0.
-
-    Raises
-    ------
-    RuntimeError
-        If one of the required branch solves fails.
-    ValueError
-        If the inputs are invalid.
+        (dV, eta2_phi, eta2_zero).
     """
     phi = float(phi)
     T = float(T)
     mu = float(mu)
-    eta2_seed_phi = float(eta2_seed_phi)
-    eta2_seed_zero = float(eta2_seed_zero)
+
+    if eta2_seed_phi is not None:
+        eta2_seed_phi = float(eta2_seed_phi)
+        if not np.isfinite(eta2_seed_phi):
+            raise ValueError(
+                f"`eta2_seed_phi` must be finite when provided, got {eta2_seed_phi!r}."
+            )
+
+    if eta2_seed_zero is not None:
+        eta2_seed_zero = float(eta2_seed_zero)
+        if not np.isfinite(eta2_seed_zero):
+            raise ValueError(
+                f"`eta2_seed_zero` must be finite when provided, got {eta2_seed_zero!r}."
+            )
 
     if not np.isfinite(phi):
         raise ValueError(f"`phi` must be finite, got phi={phi!r}.")
@@ -1737,14 +2221,6 @@ def veff_difference_from_origin(
         raise ValueError(f"`T` must be finite, got T={T!r}.")
     if not np.isfinite(mu):
         raise ValueError(f"`mu` must be finite, got mu={mu!r}.")
-    if not np.isfinite(eta2_seed_phi):
-        raise ValueError(
-            f"`eta2_seed_phi` must be finite, got eta2_seed_phi={eta2_seed_phi!r}."
-        )
-    if not np.isfinite(eta2_seed_zero):
-        raise ValueError(
-            f"`eta2_seed_zero` must be finite, got eta2_seed_zero={eta2_seed_zero!r}."
-        )
     if T <= 0.0:
         raise ValueError(f"`T` must be strictly positive, got T={T}.")
 
@@ -1777,77 +2253,48 @@ def veff_difference_from_origin(
     )
 
     dV = veff_phi - veff_zero
-
     return float(dV), float(eta2_phi), float(eta2_zero)
-
 
 # ============================================================================
 # 8. Scans and continuation
 # ============================================================================
-
 def scan_potential(
     phi_grid: np.ndarray,
     T: float,
     mu: float,
-    eta2_seed: float,
-    params: OPTModelParams,
-    thermal: ThermalOptions,
-    solver: SolverOptions,
+    eta2_seed: float | None = None,
+    params: OPTModelParams = OPTModelParams(),
+    thermal: ThermalOptions = ThermalOptions(),
+    solver: SolverOptions = SolverOptions(),
     subtract_origin: bool = True,
 ) -> dict[str, np.ndarray]:
     """
     Scan the on-shell potential over a grid in phi.
 
-    This is the main tool to reproduce the notebook section 3 plot and to
-    build V(phi) for arbitrary fixed T and mu.
+    Numerical strategy
+    ------------------
+    - If `eta2_seed` is provided, sweep through `phi_grid` in the order given,
+      using continuation in the same spirit as the Mathematica notebook.
+    - If `eta2_seed` is omitted, determine the *physical phase at this T
+      autonomously* and use that phase as the anchor of the phi scan.
+      Therefore, low-temperature scans naturally start on the broken branch,
+      while high-temperature scans naturally start on the symmetric branch.
 
-    Expected outputs
+    Important detail
     ----------------
-    - phi grid
-    - V(phi) or Delta V(phi)
-    - eta^2(phi)
-
-    Notes
-    -----
-    The order of `phi_grid` matters when `solver.continuation=True`, because
-    the eta^2 solution found at one point is used as the seed for the next one.
-    This mirrors the continuation logic used in the notebook scans.
-
-    Parameters
-    ----------
-    phi_grid : ndarray
-        One-dimensional grid of field values.
-    T : float
-        Temperature.
-    mu : float
-        Chemical potential.
-    eta2_seed : float
-        Initial guess for eta^2.
-    params : OPTModelParams
-        Model parameters.
-    thermal : ThermalOptions
-        Thermal backend options.
-    solver : SolverOptions
-        Root-finding configuration.
-    subtract_origin : bool, optional
-        If True, return Delta V(phi) = V(phi) - V(0). Otherwise return V(phi).
-
-    Returns
-    -------
-    dict[str, ndarray]
-        Dictionary containing at least:
-        - "phi": input phi grid,
-        - "values": scanned quantity,
-        - "eta2": eta^2(phi),
-        - "quantity": object array with a descriptive label.
-
-        If `subtract_origin=True`, the dictionary also includes:
-        - "eta2_zero": eta^2 at phi = 0 used in the subtraction.
+    When `subtract_origin=True`, the origin value is taken from the *same
+    branch-connected scan* whenever possible. This prevents a low-temperature
+    broken-phase scan from being contaminated by an unrelated large-eta
+    symmetric root at phi=0.
     """
     phi_grid = np.asarray(phi_grid, dtype=float)
     T = float(T)
     mu = float(mu)
-    eta2_seed = float(eta2_seed)
+
+    if eta2_seed is not None:
+        eta2_seed = float(eta2_seed)
+        if not np.isfinite(eta2_seed):
+            raise ValueError(f"`eta2_seed` must be finite when provided, got {eta2_seed!r}.")
 
     if phi_grid.ndim != 1:
         raise ValueError(f"`phi_grid` must be one-dimensional, got shape={phi_grid.shape}.")
@@ -1859,71 +2306,150 @@ def scan_potential(
         raise ValueError(f"`T` must be finite, got T={T!r}.")
     if not np.isfinite(mu):
         raise ValueError(f"`mu` must be finite, got mu={mu!r}.")
-    if not np.isfinite(eta2_seed):
-        raise ValueError(f"`eta2_seed` must be finite, got eta2_seed={eta2_seed!r}.")
     if T <= 0.0:
         raise ValueError(f"`T` must be strictly positive, got T={T}.")
 
-    values = np.empty_like(phi_grid, dtype=float)
+    n = phi_grid.size
+    values_abs = np.empty_like(phi_grid, dtype=float)
     eta2_vals = np.empty_like(phi_grid, dtype=float)
 
-    current_eta2_phi_seed = float(eta2_seed)
-    current_eta2_zero_seed = float(eta2_seed)
-
-    if subtract_origin:
-        eta2_zero_vals = np.empty_like(phi_grid, dtype=float)
-
-        for i, phi in enumerate(phi_grid):
-            dV, eta2_phi, eta2_zero = veff_difference_from_origin(
-                phi=float(phi),
+    if eta2_seed is not None:
+        anchor_index = 0
+        anchor_seed = float(eta2_seed)
+    else:
+        try:
+            anchor_state = solve_physical_phase_at_T(
                 T=T,
                 mu=mu,
-                eta2_seed_phi=current_eta2_phi_seed,
-                eta2_seed_zero=current_eta2_zero_seed,
+                sym_eta2_seed=None,
+                broken_eta2_seed=None,
+                broken_phi2_seed=None,
+                params=params,
+                thermal=thermal,
+                solver=solver,
+            )
+            anchor_seed = float(anchor_state.eta2)
+            anchor_phi = float(anchor_state.phi)
+            anchor_index = int(np.argmin(np.abs(phi_grid - anchor_phi)))
+        except RuntimeError:
+            anchor_index = int(np.argmax(np.abs(phi_grid)))
+            anchor_seed = _default_eta2_seed(
+                phi=float(phi_grid[anchor_index]),
+                T=T,
+                mu=mu,
+                params=params,
+                thermal=thermal,
+            )
+
+    veff0, eta20 = veff_on_shell(
+        phi=float(phi_grid[anchor_index]),
+        T=T,
+        mu=mu,
+        eta2_seed=float(anchor_seed),
+        params=params,
+        thermal=thermal,
+        solver=solver,
+    )
+    values_abs[anchor_index] = float(veff0)
+    eta2_vals[anchor_index] = float(eta20)
+
+    def _scan_step(phi_value: float, primary_seed: float | None, fallback_seed: float | None) -> tuple[float, float]:
+        try:
+            return veff_on_shell(
+                phi=phi_value,
+                T=T,
+                mu=mu,
+                eta2_seed=primary_seed,
+                params=params,
+                thermal=thermal,
+                solver=solver,
+            )
+        except RuntimeError:
+            if fallback_seed is not None and (
+                primary_seed is None or abs(float(fallback_seed) - float(primary_seed)) > 1e-14
+            ):
+                try:
+                    return veff_on_shell(
+                        phi=phi_value,
+                        T=T,
+                        mu=mu,
+                        eta2_seed=float(fallback_seed),
+                        params=params,
+                        thermal=thermal,
+                        solver=solver,
+                    )
+                except RuntimeError:
+                    pass
+
+            return veff_on_shell(
+                phi=phi_value,
+                T=T,
+                mu=mu,
+                eta2_seed=None,
                 params=params,
                 thermal=thermal,
                 solver=solver,
             )
 
-            values[i] = float(dV)
-            eta2_vals[i] = float(eta2_phi)
-            eta2_zero_vals[i] = float(eta2_zero)
+    current_seed = float(eta20)
+    for i in range(anchor_index + 1, n):
+        primary_seed = current_seed if solver.continuation else float(anchor_seed)
+        veff_i, eta2_i = _scan_step(
+            phi_value=float(phi_grid[i]),
+            primary_seed=primary_seed,
+            fallback_seed=float(anchor_seed),
+        )
+        values_abs[i] = float(veff_i)
+        eta2_vals[i] = float(eta2_i)
+        if solver.continuation:
+            current_seed = float(eta2_i)
 
-            if solver.continuation:
-                current_eta2_phi_seed = float(eta2_phi)
-                current_eta2_zero_seed = float(eta2_zero)
+    current_seed = float(eta20)
+    for i in range(anchor_index - 1, -1, -1):
+        primary_seed = current_seed if solver.continuation else float(anchor_seed)
+        veff_i, eta2_i = _scan_step(
+            phi_value=float(phi_grid[i]),
+            primary_seed=primary_seed,
+            fallback_seed=float(anchor_seed),
+        )
+        values_abs[i] = float(veff_i)
+        eta2_vals[i] = float(eta2_i)
+        if solver.continuation:
+            current_seed = float(eta2_i)
 
+    i_zero = int(np.argmin(np.abs(phi_grid)))
+    phi_zero_grid = float(phi_grid[i_zero])
+
+    if np.isclose(phi_zero_grid, 0.0, atol=1e-14):
+        eta2_zero = float(eta2_vals[i_zero])
+        veff_zero = float(values_abs[i_zero])
+    else:
+        veff_zero, eta2_zero = veff_on_shell(
+            phi=0.0,
+            T=T,
+            mu=mu,
+            eta2_seed=float(eta2_vals[i_zero]),
+            params=params,
+            thermal=thermal,
+            solver=solver,
+        )
+
+    if subtract_origin:
+        values = values_abs - veff_zero
         return {
             "phi": phi_grid.copy(),
             "values": values,
             "eta2": eta2_vals,
-            "eta2_zero": eta2_zero_vals,
+            "eta2_zero": np.full_like(phi_grid, float(eta2_zero), dtype=float),
             "quantity": np.array(["deltaV"], dtype=object),
             "subtract_origin": np.array([True], dtype=bool),
             "T": np.array([T], dtype=float),
             "mu": np.array([mu], dtype=float),
         }
 
-    for i, phi in enumerate(phi_grid):
-        veff, eta2_phi = veff_on_shell(
-            phi=float(phi),
-            T=T,
-            mu=mu,
-            eta2_seed=current_eta2_phi_seed,
-            params=params,
-            thermal=thermal,
-            solver=solver,
-        )
-
-        values[i] = float(veff)
-        eta2_vals[i] = float(eta2_phi)
-
-        if solver.continuation:
-            current_eta2_phi_seed = float(eta2_phi)
-
     return {
         "phi": phi_grid.copy(),
-        "values": values,
+        "values": values_abs,
         "eta2": eta2_vals,
         "quantity": np.array(["veff"], dtype=object),
         "subtract_origin": np.array([False], dtype=bool),
@@ -2090,54 +2616,335 @@ def trace_branches_over_T(
         "mu": np.array([mu], dtype=float),
     }
 
+def trace_physical_phases_over_T(
+    mu: float,
+    T_grid: np.ndarray,
+    sym_eta2_seed: float | None = None,
+    broken_eta2_seed: float | None = None,
+    broken_phi2_seed: float | None = None,
+    params: OPTModelParams = OPTModelParams(),
+    thermal: ThermalOptions = ThermalOptions(),
+    solver: SolverOptions = SolverOptions(),
+) -> dict[str, np.ndarray]:
+    """
+    Trace the physical OPT phase over temperature.
 
-# ============================================================================
-# 9. Observables
-# ============================================================================
+    Numerical strategy
+    ------------------
+    The symmetric and broken branches are not reconstructed independently at
+    each temperature. Instead, each one is followed by continuation in the
+    spirit of the Mathematica notebook:
+
+    - the symmetric branch is seeded from the highest temperature and traced
+      downward, where disconnected large-eta jumps are rejected;
+    - the broken branch is seeded from the lowest temperature and traced upward
+      until it collapses to the symmetric phase.
+
+    The physical phase at each temperature is then chosen as the available
+    stationary branch with the lowest effective potential.
+    """
+    T_grid = np.asarray(T_grid, dtype=float)
+    mu = float(mu)
+
+    if T_grid.ndim != 1:
+        raise ValueError(f"`T_grid` must be one-dimensional, got shape={T_grid.shape}.")
+    if T_grid.size == 0:
+        raise ValueError("`T_grid` must contain at least one point.")
+    if not np.all(np.isfinite(T_grid)):
+        raise ValueError("`T_grid` must contain only finite values.")
+    if np.any(T_grid <= 0.0):
+        raise ValueError("All temperatures in `T_grid` must be strictly positive.")
+    if not np.isfinite(mu):
+        raise ValueError(f"`mu` must be finite, got mu={mu!r}.")
+
+    if sym_eta2_seed is not None:
+        sym_eta2_seed = float(sym_eta2_seed)
+        if not np.isfinite(sym_eta2_seed):
+            raise ValueError(f"`sym_eta2_seed` must be finite when provided, got {sym_eta2_seed!r}.")
+    if broken_eta2_seed is not None:
+        broken_eta2_seed = float(broken_eta2_seed)
+        if not np.isfinite(broken_eta2_seed):
+            raise ValueError(f"`broken_eta2_seed` must be finite when provided, got {broken_eta2_seed!r}.")
+    if broken_phi2_seed is not None:
+        broken_phi2_seed = float(broken_phi2_seed)
+        if not np.isfinite(broken_phi2_seed):
+            raise ValueError(f"`broken_phi2_seed` must be finite when provided, got {broken_phi2_seed!r}.")
+
+    nT = len(T_grid)
+    order_up = np.argsort(T_grid)
+    order_down = order_up[::-1]
+
+    sym_states: list[OPTPhaseState | None] = [None] * nT
+    broken_states: list[OPTPhaseState | None] = [None] * nT
+
+    current_sym_seed = sym_eta2_seed
+    sym_active = True
+    for idx in order_down:
+        T = float(T_grid[idx])
+        if not sym_active:
+            continue
+        try:
+            eta2_sym_val = solve_symmetric_branch(
+                T=T, mu=mu, eta2_seed=current_sym_seed,
+                params=params, thermal=thermal, solver=solver,
+            )
+            veff_sym_val = opt_veff_off_shell(
+                phi=0.0, eta2=eta2_sym_val, T=T, mu=mu, params=params, thermal=thermal,
+            )
+            sym_states[idx] = OPTPhaseState(
+                branch="symmetric", T=T, mu=float(mu), phi=0.0, phi2=0.0,
+                eta2=float(eta2_sym_val), veff=float(veff_sym_val),
+                F_eta=float(eta_gap_residual(0.0, eta2_sym_val, T, mu, params, thermal)),
+                F_phi=float(np.nan),
+            )
+            if solver.continuation:
+                current_sym_seed = float(eta2_sym_val)
+        except RuntimeError:
+            sym_active = False
+
+    current_broken_eta2_seed = broken_eta2_seed
+    current_broken_phi2_seed = broken_phi2_seed
+    broken_active = True
+    for idx in order_up:
+        T = float(T_grid[idx])
+        if not broken_active:
+            continue
+        try:
+            eta2_broken_val, phi2_broken_val = solve_broken_branch(
+                T=T, mu=mu, eta2_seed=current_broken_eta2_seed, phi2_seed=current_broken_phi2_seed,
+                params=params, thermal=thermal, solver=solver,
+            )
+            phi_broken_val = float(np.sqrt(phi2_broken_val))
+            veff_broken_val = opt_veff_off_shell(
+                phi=phi_broken_val, eta2=eta2_broken_val, T=T, mu=mu, params=params, thermal=thermal,
+            )
+            broken_states[idx] = OPTPhaseState(
+                branch="broken", T=T, mu=float(mu), phi=float(phi_broken_val), phi2=float(phi2_broken_val),
+                eta2=float(eta2_broken_val), veff=float(veff_broken_val),
+                F_eta=float(eta_gap_residual(phi_broken_val, eta2_broken_val, T, mu, params, thermal)),
+                F_phi=float(phi_stationary_residual(phi_broken_val, eta2_broken_val, T, mu, params, thermal)),
+            )
+            if solver.continuation:
+                current_broken_eta2_seed = float(eta2_broken_val)
+                current_broken_phi2_seed = float(phi2_broken_val)
+        except RuntimeError:
+            broken_active = False
+
+    phi_phys = np.empty(nT, dtype=float)
+    phi2_phys = np.empty(nT, dtype=float)
+    eta_phys = np.empty(nT, dtype=float)
+    eta2_phys = np.empty(nT, dtype=float)
+    veff_phys = np.empty(nT, dtype=float)
+    branch_phys = np.empty(nT, dtype=object)
+    is_broken_phys = np.empty(nT, dtype=bool)
+
+    eta2_sym = np.full(nT, np.nan, dtype=float)
+    eta_sym = np.full(nT, np.nan, dtype=float)
+    veff_sym = np.full(nT, np.nan, dtype=float)
+    F_eta_sym = np.full(nT, np.nan, dtype=float)
+
+    broken_exists = np.zeros(nT, dtype=bool)
+    phi_broken = np.full(nT, np.nan, dtype=float)
+    phi2_broken = np.full(nT, np.nan, dtype=float)
+    eta2_broken = np.full(nT, np.nan, dtype=float)
+    eta_broken = np.full(nT, np.nan, dtype=float)
+    veff_broken = np.full(nT, np.nan, dtype=float)
+    F_eta_broken = np.full(nT, np.nan, dtype=float)
+    F_phi_broken = np.full(nT, np.nan, dtype=float)
+
+    for i in range(nT):
+        sym_state = sym_states[i]
+        broken_state = broken_states[i]
+
+        if sym_state is not None:
+            eta2_sym[i] = float(sym_state.eta2)
+            eta_sym[i] = float(np.sqrt(max(sym_state.eta2, 0.0)))
+            veff_sym[i] = float(sym_state.veff)
+            F_eta_sym[i] = float(sym_state.F_eta)
+
+        if broken_state is not None:
+            broken_exists[i] = True
+            phi_broken[i] = float(broken_state.phi)
+            phi2_broken[i] = float(broken_state.phi2)
+            eta2_broken[i] = float(broken_state.eta2)
+            eta_broken[i] = float(np.sqrt(max(broken_state.eta2, 0.0)))
+            veff_broken[i] = float(broken_state.veff)
+            F_eta_broken[i] = float(broken_state.F_eta)
+            F_phi_broken[i] = float(broken_state.F_phi)
+
+        available = [state for state in (sym_state, broken_state) if state is not None]
+        if not available:
+            raise RuntimeError(f"No stationary phase candidates could be constructed at T={T_grid[i]}, mu={mu}.")
+
+        physical_state = min(available, key=lambda state: state.veff)
+        phi_phys[i] = float(physical_state.phi)
+        phi2_phys[i] = float(physical_state.phi2)
+        eta2_phys[i] = float(physical_state.eta2)
+        eta_phys[i] = float(np.sqrt(max(physical_state.eta2, 0.0)))
+        veff_phys[i] = float(physical_state.veff)
+        branch_phys[i] = str(physical_state.branch)
+        is_broken_phys[i] = bool(physical_state.branch == "broken")
+
+    return {
+        "T": T_grid.copy(),
+        "mu": np.array([mu], dtype=float),
+        "branch": branch_phys,
+        "is_broken": is_broken_phys,
+        "phi": phi_phys,
+        "phi2": phi2_phys,
+        "eta": eta_phys,
+        "eta2": eta2_phys,
+        "veff": veff_phys,
+        "eta_sym": eta_sym,
+        "eta2_sym": eta2_sym,
+        "veff_sym": veff_sym,
+        "F_eta_sym": F_eta_sym,
+        "broken_exists": broken_exists,
+        "phi_broken": phi_broken,
+        "phi2_broken": phi2_broken,
+        "eta_broken": eta_broken,
+        "eta2_broken": eta2_broken,
+        "veff_broken": veff_broken,
+        "F_eta_broken": F_eta_broken,
+        "F_phi_broken": F_phi_broken,
+    }
+
+
+def _solve_physical_phase_from_temperature_context(
+    T: float,
+    mu: float,
+    params: OPTModelParams,
+    thermal: ThermalOptions,
+    solver: SolverOptions,
+) -> OPTPhaseState:
+    """
+    Reconstruct the physical phase at one temperature using an automatic
+    temperature context.
+
+    The routine adaptively builds a temperature interval containing the
+    requested T, traces both branches over that interval, and then reads off
+    the physical phase exactly at T. No critical temperature is supplied by
+    hand; the broken-to-symmetric change is inferred from the branch
+    competition itself.
+    """
+    T = float(T)
+    mu = float(mu)
+
+    if T <= 0.0:
+        raise ValueError(f"`T` must be strictly positive, got T={T}.")
+    if not np.isfinite(mu):
+        raise ValueError(f"`mu` must be finite, got mu={mu!r}.")
+
+    base_scale = float(np.sqrt(abs(params.m2) + mu**2 + 1.0))
+    T_low = max(5e-2, min(T, 0.35 * base_scale, 0.35 * T if T > 0.0 else 5e-2, 0.5))
+    T_high = max(T + 1.0, 3.0 * base_scale + 1.0, 4.0)
+
+    last_trace = None
+
+    for _ in range(6):
+        left = np.linspace(T_low, T, 16, dtype=float)
+        right = np.linspace(T, T_high, 16, dtype=float)
+        T_context = np.unique(np.concatenate([left, right, np.array([T], dtype=float)]))
+
+        trace = trace_physical_phases_over_T(
+            mu=mu,
+            T_grid=T_context,
+            params=params,
+            thermal=thermal,
+            solver=solver,
+        )
+        last_trace = trace
+
+        idx = int(np.argmin(np.abs(T_context - T)))
+        top_is_symmetric = str(trace["branch"][-1]) == "symmetric"
+        bottom_has_broken = bool(trace["broken_exists"][0] or trace["branch"][0] == "broken")
+
+        if top_is_symmetric and bottom_has_broken:
+            if str(trace["branch"][idx]) == "symmetric":
+                return OPTPhaseState(
+                    branch="symmetric",
+                    T=float(T),
+                    mu=float(mu),
+                    phi=0.0,
+                    phi2=0.0,
+                    eta2=float(trace["eta2"][idx]),
+                    veff=float(trace["veff"][idx]),
+                    F_eta=float(trace["F_eta_sym"][idx]),
+                    F_phi=float(np.nan),
+                )
+
+            return OPTPhaseState(
+                branch="broken",
+                T=float(T),
+                mu=float(mu),
+                phi=float(trace["phi"][idx]),
+                phi2=float(trace["phi2"][idx]),
+                eta2=float(trace["eta2"][idx]),
+                veff=float(trace["veff"][idx]),
+                F_eta=float(trace["F_eta_broken"][idx]),
+                F_phi=float(trace["F_phi_broken"][idx]),
+            )
+
+        T_low = max(1e-3, 0.5 * T_low)
+        T_high = T_high + max(2.0, 0.5 * T_high)
+
+    if last_trace is None:
+        raise RuntimeError("Automatic temperature-context phase solve produced no trace.")
+
+    idx = int(np.argmin(np.abs(last_trace["T"] - T)))
+    if str(last_trace["branch"][idx]) == "symmetric":
+        return OPTPhaseState(
+            branch="symmetric",
+            T=float(T),
+            mu=float(mu),
+            phi=0.0,
+            phi2=0.0,
+            eta2=float(last_trace["eta2"][idx]),
+            veff=float(last_trace["veff"][idx]),
+            F_eta=float(last_trace["F_eta_sym"][idx]),
+            F_phi=float(np.nan),
+        )
+
+    return OPTPhaseState(
+        branch="broken",
+        T=float(T),
+        mu=float(mu),
+        phi=float(last_trace["phi"][idx]),
+        phi2=float(last_trace["phi2"][idx]),
+        eta2=float(last_trace["eta2"][idx]),
+        veff=float(last_trace["veff"][idx]),
+        F_eta=float(last_trace["F_eta_broken"][idx]),
+        F_phi=float(last_trace["F_phi_broken"][idx]),
+    )
+
 
 def phi_min(
     T: float,
     mu: float,
     phi_grid: np.ndarray,
-    eta2_seed: float,
-    params: OPTModelParams,
-    thermal: ThermalOptions,
-    solver: SolverOptions,
+    eta2_seed: float | None = None,
+    params: OPTModelParams = OPTModelParams(),
+    thermal: ThermalOptions = ThermalOptions(),
+    solver: SolverOptions = SolverOptions(),
 ) -> tuple[float, float]:
     """
     Return the approximate location of the minimum of V(phi) for fixed T and mu.
 
-    The minimum is determined on the supplied discrete phi grid using the
-    on-shell effective potential scan.
-
-    Parameters
-    ----------
-    T : float
-        Temperature.
-    mu : float
-        Chemical potential.
-    phi_grid : ndarray
-        One-dimensional grid of field values.
-    eta2_seed : float
-        Initial guess for eta^2.
-    params : OPTModelParams
-        Model parameters.
-    thermal : ThermalOptions
-        Thermal backend options.
-    solver : SolverOptions
-        Root-finding configuration.
+    This public version is seedless by default.
 
     Returns
     -------
     tuple[float, float]
-        (phi_star, V_star), where
-        - phi_star is the approximate field value of the minimum on the grid,
-        - V_star is the corresponding on-shell potential value.
+        (phi_star, V_star).
     """
     phi_grid = np.asarray(phi_grid, dtype=float)
     T = float(T)
     mu = float(mu)
-    eta2_seed = float(eta2_seed)
+
+    if eta2_seed is not None:
+        eta2_seed = float(eta2_seed)
+        if not np.isfinite(eta2_seed):
+            raise ValueError(f"`eta2_seed` must be finite when provided, got {eta2_seed!r}.")
 
     if phi_grid.ndim != 1:
         raise ValueError(f"`phi_grid` must be one-dimensional, got shape={phi_grid.shape}.")
@@ -2149,8 +2956,6 @@ def phi_min(
         raise ValueError(f"`T` must be finite, got T={T!r}.")
     if not np.isfinite(mu):
         raise ValueError(f"`mu` must be finite, got mu={mu!r}.")
-    if not np.isfinite(eta2_seed):
-        raise ValueError(f"`eta2_seed` must be finite, got eta2_seed={eta2_seed!r}.")
     if T <= 0.0:
         raise ValueError(f"`T` must be strictly positive, got T={T}.")
 
@@ -2175,35 +2980,15 @@ def eta2_solution(
     phi: float,
     T: float,
     mu: float,
-    eta2_seed: float,
-    params: OPTModelParams,
-    thermal: ThermalOptions,
-    solver: SolverOptions,
+    eta2_seed: float | None = None,
+    params: OPTModelParams = OPTModelParams(),
+    thermal: ThermalOptions = ThermalOptions(),
+    solver: SolverOptions = SolverOptions(),
 ) -> float:
     """
     Convenience wrapper returning only the on-shell eta^2(phi, T, mu).
 
-    Parameters
-    ----------
-    phi : float
-        Background field value.
-    T : float
-        Temperature.
-    mu : float
-        Chemical potential.
-    eta2_seed : float
-        Initial guess for eta^2.
-    params : OPTModelParams
-        Model parameters.
-    thermal : ThermalOptions
-        Thermal backend options.
-    solver : SolverOptions
-        Root-finding configuration.
-
-    Returns
-    -------
-    float
-        On-shell eta^2(phi, T, mu).
+    This public version is seedless by default.
     """
     return float(
         solve_eta2_given_phi(
@@ -2360,6 +3145,57 @@ def Tc_pt(mu: float, params: OPTModelParams) -> float:
     return float(np.sqrt(Tc2))
 
 
+def physical_eta2(
+    T: float,
+    mu: float,
+    sym_eta2_seed: float | None = None,
+    broken_eta2_seed: float | None = None,
+    broken_phi2_seed: float | None = None,
+    params: OPTModelParams = OPTModelParams(),
+    thermal: ThermalOptions = ThermalOptions(),
+    solver: SolverOptions = SolverOptions(),
+) -> float:
+    """
+    Return the physical eta^2(T, mu), defined from the true stationary phase.
+    """
+    state = solve_physical_phase_at_T(
+        T=T,
+        mu=mu,
+        sym_eta2_seed=sym_eta2_seed,
+        broken_eta2_seed=broken_eta2_seed,
+        broken_phi2_seed=broken_phi2_seed,
+        params=params,
+        thermal=thermal,
+        solver=solver,
+    )
+    return float(state.eta2)
+
+
+def physical_eta(
+    T: float,
+    mu: float,
+    sym_eta2_seed: float | None = None,
+    broken_eta2_seed: float | None = None,
+    broken_phi2_seed: float | None = None,
+    params: OPTModelParams = OPTModelParams(),
+    thermal: ThermalOptions = ThermalOptions(),
+    solver: SolverOptions = SolverOptions(),
+) -> float:
+    """
+    Return the physical eta(T, mu), defined as sqrt(eta^2_phys).
+    """
+    eta2_val = physical_eta2(
+        T=T,
+        mu=mu,
+        sym_eta2_seed=sym_eta2_seed,
+        broken_eta2_seed=broken_eta2_seed,
+        broken_phi2_seed=broken_phi2_seed,
+        params=params,
+        thermal=thermal,
+        solver=solver,
+    )
+    return float(np.sqrt(max(eta2_val, 0.0)))
+
 # ============================================================================
 # 10. Plotting and notebook reproduction helpers
 # ============================================================================
@@ -2369,54 +3205,26 @@ def reproduce_section3_scan(
     dphi: float = 0.01,
     T: float = 4.733359332047422 + 0.027,
     mu: float = 0.5,
-    eta2_seed: float = 2.1214029070500127,
+    eta2_seed: float | None = 2.1214029070500127,
     params: OPTModelParams | None = None,
     thermal: ThermalOptions | None = None,
     solver: SolverOptions | None = None,
     subtract_origin: bool = True,
 ) -> dict[str, np.ndarray]:
     """
-    Convenience helper to reproduce the final section 3 scan with the same
-    numerical values used in the notebook by default.
+    Convenience helper to reproduce the final section 3 scan.
 
-    This function is also intentionally generic: the user may change T, mu,
-    the phi-range, the step size, or the numerical options to study other
-    scans with the same workflow.
-
-    Parameters
-    ----------
-    phi_max : float, optional
-        Maximum absolute field value. The scan is performed on
-        [-phi_max, +phi_max].
-    dphi : float, optional
-        Field step.
-    T : float, optional
-        Temperature. Default reproduces the notebook section 3 choice.
-    mu : float, optional
-        Chemical potential. Default reproduces the notebook section 3 choice.
-    eta2_seed : float, optional
-        Initial eta^2 seed.
-    params : OPTModelParams, optional
-        Model parameters. If None, use default notebook-like values.
-    thermal : ThermalOptions, optional
-        Thermal backend options. If None, default to the notebook high-T
-        backend used in section 3.
-    solver : SolverOptions, optional
-        Solver options. If None, use a robust continuation-friendly default.
-    subtract_origin : bool, optional
-        If True, return Delta V(phi) = V(phi) - V(0). If False, return V(phi).
-
-    Returns
-    -------
-    dict[str, ndarray]
-        Output of `scan_potential(...)`, enriched with metadata describing
-        the scan configuration.
+    This public version is seedless by default.
     """
     phi_max = float(phi_max)
     dphi = float(dphi)
     T = float(T)
     mu = float(mu)
-    eta2_seed = float(eta2_seed)
+
+    if eta2_seed is not None:
+        eta2_seed = float(eta2_seed)
+        if not np.isfinite(eta2_seed):
+            raise ValueError(f"`eta2_seed` must be finite when provided, got {eta2_seed!r}.")
 
     if not np.isfinite(phi_max) or phi_max <= 0.0:
         raise ValueError(f"`phi_max` must be finite and > 0, got phi_max={phi_max!r}.")
@@ -2426,8 +3234,6 @@ def reproduce_section3_scan(
         raise ValueError(f"`T` must be finite and > 0, got T={T!r}.")
     if not np.isfinite(mu):
         raise ValueError(f"`mu` must be finite, got mu={mu!r}.")
-    if not np.isfinite(eta2_seed):
-        raise ValueError(f"`eta2_seed` must be finite, got eta2_seed={eta2_seed!r}.")
 
     if params is None:
         params = OPTModelParams()
@@ -2458,10 +3264,12 @@ def reproduce_section3_scan(
 
     scan_data["phi_max"] = np.array([phi_max], dtype=float)
     scan_data["dphi"] = np.array([dphi], dtype=float)
-    scan_data["eta2_seed"] = np.array([eta2_seed], dtype=float)
+    scan_data["eta2_seed"] = np.array(
+        [np.nan if eta2_seed is None else float(eta2_seed)],
+        dtype=float,
+    )
 
     return scan_data
-
 
 def plot_potential_scan(
     scan_data: dict[str, np.ndarray],

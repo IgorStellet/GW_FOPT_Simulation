@@ -1,4 +1,3 @@
-
 # OPT Effective Potential Module
 
 ## Overview

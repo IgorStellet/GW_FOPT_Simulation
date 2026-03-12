@@ -33,6 +33,7 @@ from .OPT import (OPTModelParams, SolverOptions, ThermalOptions, effective_mass_
     h_e_odd, H1_notebook_highT, H3_notebook_highT, H5_notebook_highT, H3_ct_mu0, H5_ct_mu0, H3, H5, opt_veff_off_shell,
     eta_gap_residual, phi_stationary_residual, solve_eta2_given_phi, solve_stationary_system, solve_symmetric_branch,
     solve_broken_branch, veff_on_shell, veff_difference_from_origin, scan_potential, trace_branches_over_T, phi_min,
-    eta2_solution, Tc_opt, Tc_pt, reproduce_section3_scan, plot_potential_scan, plot_branches, )
+    eta2_solution, Tc_opt, Tc_pt, reproduce_section3_scan, plot_potential_scan, plot_branches,   OPTPhaseState,
+    solve_phase_candidates_at_T, solve_physical_phase_at_T,physical_eta, physical_eta2, trace_physical_phases_over_T,)
 
 __version__ = "0.1.0"
