@@ -166,11 +166,7 @@ def build_opt_model_params(common: CommonModelParameters) -> OPTModelParams:
 # -----------------------------------------------------------------------------
 def _daisy_tree_potential(phi: np.ndarray, common: CommonModelParameters) -> np.ndarray:
     phi = np.asarray(phi, dtype=float)
-    return (
-        0.5 * (common.opt_m2 - common.mu**2) * phi**2
-        + (common.opt_lam / 24.0) * phi**4
-    )
-
+    return (common.mh**2) / (8.0 * common.vev**2) * (phi**2 - common.vev**2)**2
 
 def _cw_like_zeroT_loops(phi: np.ndarray, common: CommonModelParameters) -> np.ndarray:
     phi = np.asarray(phi, dtype=float)
@@ -2044,7 +2040,7 @@ def run_all(
     Tn_maxiter: int = 80,
     # shared model input
     vev: float = 246.0,
-    mh: float = 80.0,
+    mh: float = 50.0,
     mw: float = 80.36,
     mz: float = 91.19,
     mt: float = 173.1,
@@ -2194,24 +2190,25 @@ def run_all(
         tag=tag,
     )
 
-    example_A_compare_daisy_and_opt_at_key_temperatures(
-        summary,
-        common=common,
-        opt_thermal=opt_thermal,
-        opt_solver=opt_solver,
-        comparison=comparison,
-        save_dir=save_dir,
-        tag=tag,
-    )
-    example_B_compare_daisy_and_opt_with_inset(
-        summary,
-        common=common,
-        opt_thermal=opt_thermal,
-        opt_solver=opt_solver,
-        comparison=comparison,
-        save_dir=save_dir,
-        tag=tag,
-    )
+
+    #example_A_compare_daisy_and_opt_at_key_temperatures(
+    #    summary,
+    #    common=common,
+    #    opt_thermal=opt_thermal,
+    #    opt_solver=opt_solver,
+    #    comparison=comparison,
+    #    save_dir=save_dir,
+    #    tag=tag,
+    #)
+    #example_B_compare_daisy_and_opt_with_inset(
+    #    summary,
+    #    common=common,
+    #    opt_thermal=opt_thermal,
+    #    opt_solver=opt_solver,
+    #    comparison=comparison,
+    #    save_dir=save_dir,
+    #    tag=tag,
+    #)
 
     main_transition = summary.get("main_transition")
     phases = summary.get("phases", {})
@@ -2290,7 +2287,7 @@ def run_all(
 
 if __name__ == "__main__":
     run_all(
-        potential_kind="daisy",
+        potential_kind="opt",
         finiteT=True,
         mu=0,
         xguess=None,
@@ -2299,11 +2296,11 @@ if __name__ == "__main__":
         thinCutoff=1e-4,
         phi_scan_range=None,
         T_min=5.0,
-        T_max=200.0,
+        T_max=90.0,
         deltaX_target=0.05,
         n_T_seeds=2,
         nuclCriterion=None,
         Tn_Ttol=1e-3,
         Tn_maxiter=80,
-        save_dir="results_cleaned_daisy_mh_80",
+        save_dir="results_cleaned_daisy_opt_50",
     )

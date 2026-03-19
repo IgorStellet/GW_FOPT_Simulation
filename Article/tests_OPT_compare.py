@@ -35,7 +35,10 @@ Part 2
    - physical phase
    - grid minimum
    - local minima found on the grid
-6. Plot V(phi) and mark the relevant points.
+6. Save the calculated V(phi) table.
+7. If a reference phi-Veff table is provided, compare point-by-point and save a
+   comparison table.
+8. Plot V(phi) and mark the relevant points.
 
 Updated behavior expected from OPT.py
 -------------------------------------
@@ -111,6 +114,12 @@ PART2_CONFIG = {
     "phi_max": 0.6,
     "dphi": 0.01,
     "potential_figure_filename": "potential_scan.png",
+    "scan_table_filename": "potential_scan_table.csv",
+    "reference_table_path": Path("veff_points.csv"),
+    "comparison_table_filename": "potential_scan_comparison.csv",
+    "phi_match_tol": 1e-12,
+    "abs_tol": 1e-10,
+    "rel_tol": 1e-8,
 }
 
 
@@ -118,8 +127,10 @@ PART2_CONFIG = {
 # Small helpers
 # ============================================================================
 
+
 def ensure_output_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
+
 
 
 def make_temperature_grid(T_min: float, T_max: float, dT: float) -> np.ndarray:
@@ -135,6 +146,7 @@ def make_temperature_grid(T_min: float, T_max: float, dT: float) -> np.ndarray:
         raise ValueError(f"dT must be > 0, got dT={dT}.")
 
     return np.arange(T_min, T_max + 0.5 * dT, dT, dtype=float)
+
 
 
 def make_phi_grid(phi_min: float, phi_max: float, dphi: float) -> np.ndarray:
@@ -154,6 +166,7 @@ def make_phi_grid(phi_min: float, phi_max: float, dphi: float) -> np.ndarray:
     return np.arange(phi_min, phi_max + 0.5 * dphi, dphi, dtype=float)
 
 
+
 def find_discrete_local_minima(phi: np.ndarray, values: np.ndarray) -> list[tuple[float, float]]:
     phi = np.asarray(phi, dtype=float)
     values = np.asarray(values, dtype=float)
@@ -171,6 +184,7 @@ def find_discrete_local_minima(phi: np.ndarray, values: np.ndarray) -> list[tupl
             minima.append((float(phi[i]), float(values[i])))
 
     return minima
+
 
 
 def save_physical_eta_table(
@@ -225,6 +239,175 @@ def save_physical_eta_table(
         writer.writerows(rows)
 
 
+
+def save_phi_veff_table(filepath: Path, phi: np.ndarray, veff: np.ndarray) -> None:
+    phi = np.asarray(phi, dtype=float)
+    veff = np.asarray(veff, dtype=float)
+
+    if phi.ndim != 1 or veff.ndim != 1:
+        raise ValueError("phi and veff must be one-dimensional.")
+    if phi.size != veff.size:
+        raise ValueError("phi and veff must have the same length.")
+
+    with open(filepath, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["phi", "veff_calc"])
+        writer.writerows(zip(phi, veff))
+
+
+
+def load_reference_phi_veff_table(filepath: Path) -> tuple[np.ndarray, np.ndarray]:
+    if not filepath.exists():
+        raise FileNotFoundError(f"Reference table not found: {filepath}")
+
+    data = np.genfromtxt(filepath, delimiter=",", dtype=float)
+
+    if data.ndim == 1:
+        data = data.reshape(1, -1)
+
+    if data.shape[1] < 2:
+        raise ValueError(
+            f"Reference table must have at least two columns (phi, veff). Got shape {data.shape}."
+        )
+
+    # Handle files with header by removing non-finite first row(s), if any.
+    finite_mask = np.isfinite(data[:, 0]) & np.isfinite(data[:, 1])
+    data = data[finite_mask]
+
+    if data.size == 0:
+        raise ValueError(f"Reference table {filepath} has no valid numeric rows.")
+
+    phi_ref = np.asarray(data[:, 0], dtype=float)
+    veff_ref = np.asarray(data[:, 1], dtype=float)
+    return phi_ref, veff_ref
+
+
+
+def build_phi_veff_comparison(
+    phi_calc: np.ndarray,
+    veff_calc: np.ndarray,
+    phi_ref: np.ndarray,
+    veff_ref: np.ndarray,
+    *,
+    phi_match_tol: float,
+) -> dict[str, np.ndarray]:
+    phi_calc = np.asarray(phi_calc, dtype=float)
+    veff_calc = np.asarray(veff_calc, dtype=float)
+    phi_ref = np.asarray(phi_ref, dtype=float)
+    veff_ref = np.asarray(veff_ref, dtype=float)
+
+    if phi_calc.ndim != 1 or veff_calc.ndim != 1:
+        raise ValueError("Calculated phi and veff arrays must be one-dimensional.")
+    if phi_ref.ndim != 1 or veff_ref.ndim != 1:
+        raise ValueError("Reference phi and veff arrays must be one-dimensional.")
+    if phi_calc.size != veff_calc.size:
+        raise ValueError("Calculated phi and veff arrays must have the same length.")
+    if phi_ref.size != veff_ref.size:
+        raise ValueError("Reference phi and veff arrays must have the same length.")
+
+    matched_phi_calc: list[float] = []
+    matched_veff_calc: list[float] = []
+    matched_phi_ref: list[float] = []
+    matched_veff_ref: list[float] = []
+    delta_abs_list: list[float] = []
+    delta_rel_list: list[float] = []
+
+    for phi_target, veff_target in zip(phi_ref, veff_ref):
+        distances = np.abs(phi_calc - phi_target)
+        idx = int(np.argmin(distances))
+        if distances[idx] > phi_match_tol:
+            continue
+
+        phi_here = float(phi_calc[idx])
+        veff_here = float(veff_calc[idx])
+        delta_abs = veff_here - float(veff_target)
+        scale = max(abs(float(veff_target)), 1e-30)
+        delta_rel = delta_abs / scale
+
+        matched_phi_calc.append(phi_here)
+        matched_veff_calc.append(veff_here)
+        matched_phi_ref.append(float(phi_target))
+        matched_veff_ref.append(float(veff_target))
+        delta_abs_list.append(delta_abs)
+        delta_rel_list.append(delta_rel)
+
+    return {
+        "phi_calc": np.asarray(matched_phi_calc, dtype=float),
+        "veff_calc": np.asarray(matched_veff_calc, dtype=float),
+        "phi_ref": np.asarray(matched_phi_ref, dtype=float),
+        "veff_ref": np.asarray(matched_veff_ref, dtype=float),
+        "delta_abs": np.asarray(delta_abs_list, dtype=float),
+        "delta_rel": np.asarray(delta_rel_list, dtype=float),
+    }
+
+
+
+def save_phi_veff_comparison_table(filepath: Path, comparison: dict[str, np.ndarray]) -> None:
+    with open(filepath, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            [
+                "phi_calc",
+                "veff_calc",
+                "phi_ref",
+                "veff_ref",
+                "delta_abs",
+                "delta_rel",
+            ]
+        )
+        writer.writerows(
+            zip(
+                np.asarray(comparison["phi_calc"], dtype=float),
+                np.asarray(comparison["veff_calc"], dtype=float),
+                np.asarray(comparison["phi_ref"], dtype=float),
+                np.asarray(comparison["veff_ref"], dtype=float),
+                np.asarray(comparison["delta_abs"], dtype=float),
+                np.asarray(comparison["delta_rel"], dtype=float),
+            )
+        )
+
+
+
+def summarize_phi_veff_comparison(
+    comparison: dict[str, np.ndarray],
+    *,
+    abs_tol: float,
+    rel_tol: float,
+) -> dict[str, float | int]:
+    delta_abs = np.abs(np.asarray(comparison["delta_abs"], dtype=float))
+    delta_rel = np.abs(np.asarray(comparison["delta_rel"], dtype=float))
+
+    if delta_abs.size == 0:
+        return {
+            "n_compared": 0,
+            "max_abs": float("nan"),
+            "mean_abs": float("nan"),
+            "rms_abs": float("nan"),
+            "max_rel": float("nan"),
+            "mean_rel": float("nan"),
+            "n_within_abs_tol": 0,
+            "n_within_rel_tol": 0,
+            "n_within_both": 0,
+        }
+
+    within_abs = delta_abs <= abs_tol
+    within_rel = delta_rel <= rel_tol
+    within_both = within_abs & within_rel
+
+    return {
+        "n_compared": int(delta_abs.size),
+        "max_abs": float(np.max(delta_abs)),
+        "mean_abs": float(np.mean(delta_abs)),
+        "rms_abs": float(np.sqrt(np.mean(delta_abs**2))),
+        "max_rel": float(np.max(delta_rel)),
+        "mean_rel": float(np.mean(delta_rel)),
+        "n_within_abs_tol": int(np.count_nonzero(within_abs)),
+        "n_within_rel_tol": int(np.count_nonzero(within_rel)),
+        "n_within_both": int(np.count_nonzero(within_both)),
+    }
+
+
+
 def estimate_branch_switch_temperature(trace_data: dict[str, np.ndarray]) -> float | None:
     T = np.asarray(trace_data["T"], dtype=float)
     branch = np.asarray(trace_data["branch"], dtype=object)
@@ -238,6 +421,7 @@ def estimate_branch_switch_temperature(trace_data: dict[str, np.ndarray]) -> flo
 # ============================================================================
 # Part 1: physical eta(T) study
 # ============================================================================
+
 
 def run_eta_temperature_study(
     *,
@@ -388,6 +572,7 @@ def run_eta_temperature_study(
 # Part 2: single-temperature potential study
 # ============================================================================
 
+
 def run_single_temperature_potential_study(
     *,
     output_dir: Path,
@@ -400,6 +585,12 @@ def run_single_temperature_potential_study(
     phi_max_value: float,
     dphi: float,
     potential_figure_filename: str,
+    scan_table_filename: str,
+    reference_table_path: Path | None = None,
+    comparison_table_filename: str | None = None,
+    phi_match_tol: float = 1e-12,
+    abs_tol: float = 1e-10,
+    rel_tol: float = 1e-8,
 ) -> dict[str, np.ndarray]:
     ensure_output_dir(output_dir)
 
@@ -498,6 +689,63 @@ def run_single_temperature_potential_study(
     else:
         print("\nNo discrete local minima were identified on the supplied phi grid.")
 
+    scan_table_path = output_dir / scan_table_filename
+    save_phi_veff_table(scan_table_path, phi_vals, V_vals)
+    print("\nSaved calculated phi-Veff table to:")
+    print(f"  {scan_table_path}")
+
+    comparison_summary: dict[str, float | int] | None = None
+    comparison_table_path: Path | None = None
+
+    if reference_table_path is not None:
+        try:
+            phi_ref, veff_ref = load_reference_phi_veff_table(Path(reference_table_path))
+            comparison = build_phi_veff_comparison(
+                phi_calc=phi_vals,
+                veff_calc=V_vals,
+                phi_ref=phi_ref,
+                veff_ref=veff_ref,
+                phi_match_tol=float(phi_match_tol),
+            )
+            comparison_summary = summarize_phi_veff_comparison(
+                comparison,
+                abs_tol=float(abs_tol),
+                rel_tol=float(rel_tol),
+            )
+
+            scan_data["phi_ref"] = comparison["phi_ref"]
+            scan_data["veff_ref"] = comparison["veff_ref"]
+            scan_data["delta_abs"] = comparison["delta_abs"]
+            scan_data["delta_rel"] = comparison["delta_rel"]
+
+            if comparison_table_filename is not None:
+                comparison_table_path = output_dir / comparison_table_filename
+                save_phi_veff_comparison_table(comparison_table_path, comparison)
+
+            print("\nReference phi-Veff comparison:")
+            print(f"  reference file      = {reference_table_path}")
+            print(f"  points compared     = {comparison_summary['n_compared']}")
+            print(f"  max |ΔV|            = {comparison_summary['max_abs']:.12e}")
+            print(f"  mean |ΔV|           = {comparison_summary['mean_abs']:.12e}")
+            print(f"  rms  |ΔV|           = {comparison_summary['rms_abs']:.12e}")
+            print(f"  max relative error  = {comparison_summary['max_rel']:.12e}")
+            print(f"  mean relative error = {comparison_summary['mean_rel']:.12e}")
+            print(
+                "  within tolerances   = "
+                f"{comparison_summary['n_within_both']} / {comparison_summary['n_compared']} "
+                f"(abs_tol={abs_tol:.1e}, rel_tol={rel_tol:.1e})"
+            )
+
+            if comparison_summary["n_compared"] == 0:
+                print("  Warning: no phi points from the reference table matched the scan grid.")
+            elif comparison_table_path is not None:
+                print("\nSaved comparison table to:")
+                print(f"  {comparison_table_path}")
+
+        except Exception as exc:
+            print("\nReference phi-Veff comparison skipped:")
+            print(f"  {exc}")
+
     plt.figure(figsize=(8, 5))
     plt.plot(phi_vals, V_vals, lw=2.0, color="black", label=r"$V_{\mathrm{eff}}(\phi)$")
 
@@ -544,12 +792,21 @@ def run_single_temperature_potential_study(
     print("\nSaved figure to:")
     print(f"  {potential_fig_path}")
 
+    if comparison_summary is not None:
+        scan_data["comparison_n_compared"] = np.asarray([comparison_summary["n_compared"]], dtype=float)
+        scan_data["comparison_max_abs"] = np.asarray([comparison_summary["max_abs"]], dtype=float)
+        scan_data["comparison_mean_abs"] = np.asarray([comparison_summary["mean_abs"]], dtype=float)
+        scan_data["comparison_rms_abs"] = np.asarray([comparison_summary["rms_abs"]], dtype=float)
+        scan_data["comparison_max_rel"] = np.asarray([comparison_summary["max_rel"]], dtype=float)
+        scan_data["comparison_mean_rel"] = np.asarray([comparison_summary["mean_rel"]], dtype=float)
+
     return scan_data
 
 
 # ============================================================================
 # Main
 # ============================================================================
+
 
 def main() -> None:
     ensure_output_dir(OUTPUT_DIR)
@@ -573,6 +830,12 @@ def main() -> None:
         phi_max_value=PART2_CONFIG["phi_max"],
         dphi=PART2_CONFIG["dphi"],
         potential_figure_filename=PART2_CONFIG["potential_figure_filename"],
+        scan_table_filename=PART2_CONFIG["scan_table_filename"],
+        reference_table_path=PART2_CONFIG["reference_table_path"],
+        comparison_table_filename=PART2_CONFIG["comparison_table_filename"],
+        phi_match_tol=PART2_CONFIG["phi_match_tol"],
+        abs_tol=PART2_CONFIG["abs_tol"],
+        rel_tol=PART2_CONFIG["rel_tol"],
     )
 
 
