@@ -2040,7 +2040,7 @@ def run_all(
     Tn_maxiter: int = 80,
     # shared model input
     vev: float = 246.0,
-    mh: float = 50.0,
+    mh: float = 55.0,
     mw: float = 80.36,
     mz: float = 91.19,
     mt: float = 173.1,
@@ -2287,7 +2287,7 @@ def run_all(
 
 if __name__ == "__main__":
     run_all(
-        potential_kind="opt",
+        potential_kind="daisy",
         finiteT=True,
         mu=0,
         xguess=None,
@@ -2295,12 +2295,12 @@ if __name__ == "__main__":
         npoints=800,
         thinCutoff=1e-4,
         phi_scan_range=None,
-        T_min=5.0,
-        T_max=90.0,
+        T_min=0.1,
+        T_max=120,
         deltaX_target=0.05,
         n_T_seeds=2,
         nuclCriterion=None,
         Tn_Ttol=1e-3,
         Tn_maxiter=80,
-        save_dir="results_cleaned_daisy_opt_50",
+        save_dir="results_cleaned_daisy_55",
     )
