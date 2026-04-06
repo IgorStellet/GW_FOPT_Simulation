@@ -2296,7 +2296,7 @@ if __name__ == "__main__":
         thinCutoff=1e-4,
         phi_scan_range=None,
         T_min=5.0,
-        T_max=90.0,
+        T_max=80.0,
         deltaX_target=0.05,
         n_T_seeds=2,
         nuclCriterion=None,
