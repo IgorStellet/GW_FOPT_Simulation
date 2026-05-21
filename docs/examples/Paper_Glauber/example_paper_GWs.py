@@ -121,7 +121,7 @@ def V_paper(phi: np.ndarray | float, T: np.ndarray | float | None=None , C: floa
     poly = ((1.0 - 2.0*t0) * t + 0.5 * t**2) / denom
     V_meas = - (Lambda**4)/_8pi2 * (log_term + poly)
 
-    V0 = V_tree + V_meas # + V_loops
+    V0 = V_tree + V_meas + V_loops
     V0 = np.real_if_close(V0)
     if not finiteT:
         return V0
@@ -165,7 +165,7 @@ def V_paper(phi: np.ndarray | float, T: np.ndarray | float | None=None , C: floa
         DV_daisy = -(T/(12.0*np.pi)) * 3.0 * (mL_T**3 - mL_phi**3)
         DV_daisy = np.real_if_close(DV_daisy)
 
-    V_tot = V0  + DV_daisy  # + DV_b + DV_f
+    V_tot = V0  + DV_daisy  + DV_b + DV_f
     V_tot = np.real_if_close(V_tot)
 
     return V_tot
@@ -2005,7 +2005,7 @@ def run_all(case: str = "paper",
 # -----------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    C = 4
+    C = 3.65
     #run paper potential
     run_all(
         case="paper",
@@ -2025,7 +2025,7 @@ if __name__ == "__main__":
         nuclCriterion=None,
         Tn_Ttol= 1e-3,
         Tn_maxiter= 100,
-        save_dir=f"results_C_sem_fermion_{C}",        # "results"
+        save_dir=f"results_C_{C}",        # "results"
     )
 
 """
