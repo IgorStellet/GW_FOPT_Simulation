@@ -24,7 +24,8 @@ from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
-
+from scipy.integrate import quad
+import math
 
 OUTDIR = Path("figures_chapter2")
 OUTDIR.mkdir(exist_ok=True)
@@ -318,6 +319,193 @@ def fig_landau_first_order_free_energy() -> None:
     plt.close(fig)
 
 
+
+# ----------------------------------------------------------------------
+# Section 2.5 figures
+# ----------------------------------------------------------------------
+def _JB_integrand(x: float, r: float) -> float:
+    """
+    Integrand for J_B(r^2), with r = m/T.
+
+    J_B(r^2) = int_0^inf dx x^2 log(1 - exp[-sqrt(x^2 + r^2)]).
+    """
+    E = math.sqrt(x * x + r * r)
+
+    # The logarithm is integrable at x=0 for r=0, but numerically
+    # log(0) would generate NaN. This branch implements the limiting behavior.
+    if E < 1e-12:
+        return 0.0
+
+    if E < 1e-8:
+        log_term = math.log(E)
+    else:
+        log_term = math.log1p(-math.exp(-E))
+
+    return x * x * log_term
+
+
+def _JF_integrand(x: float, r: float) -> float:
+    """
+    Integrand for J_F(r^2), with r = m/T.
+
+    J_F(r^2) = int_0^inf dx x^2 log(1 + exp[-sqrt(x^2 + r^2)]).
+    """
+    E = math.sqrt(x * x + r * r)
+    return x * x * math.log1p(math.exp(-E))
+
+
+def thermal_JB(r: float) -> float:
+    """
+    Bosonic thermal function as a function of r = m/T.
+    """
+    if abs(r) < 1e-12:
+        return -math.pi**4 / 45.0
+
+    value, _ = quad(
+        _JB_integrand,
+        0.0,
+        80.0,
+        args=(r,),
+        epsabs=1e-9,
+        epsrel=1e-9,
+        limit=200,
+    )
+    return value
+
+
+def thermal_JF(r: float) -> float:
+    """
+    Fermionic thermal function as a function of r = m/T.
+    """
+    if abs(r) < 1e-12:
+        return 7.0 * math.pi**4 / 360.0
+
+    value, _ = quad(
+        _JF_integrand,
+        0.0,
+        80.0,
+        args=(r,),
+        epsabs=1e-9,
+        epsrel=1e-9,
+        limit=200,
+    )
+    return value
+
+
+def fig_thermal_functions_JB_JF() -> None:
+    """
+    Plot the thermal functions J_B and J_F and the corresponding
+    one-degree-of-freedom thermal free-energy contributions.
+
+    Convention:
+        Delta V_T^B / T^4 = + J_B / (2 pi^2)
+        Delta V_T^F / T^4 = - J_F / (2 pi^2)
+    with positive fermionic degeneracy.
+    """
+    r_values = np.logspace(-2, 1.4, 120)  # r = m/T
+
+    JB_values = np.array([thermal_JB(float(r)) for r in r_values])
+    JF_values = np.array([thermal_JF(float(r)) for r in r_values])
+
+    fig, axes = plt.subplots(1, 2, figsize=(11.0, 4.2))
+
+    # Panel 1: mathematical thermal functions.
+    ax = axes[0]
+    ax.semilogx(r_values, JB_values, label=r"$J_B(r^2)$")
+    ax.semilogx(r_values, JF_values, label=r"$J_F(r^2)$")
+    ax.axhline(0.0, linewidth=1.0)
+    ax.set_xlabel(r"$r=m/T$")
+    ax.set_ylabel(r"thermal functions")
+    ax.set_title(r"(a) $J_B$ and $J_F$")
+    ax.legend(frameon=False)
+
+    # Panel 2: actual thermal free-energy contribution per degree of freedom.
+    ax = axes[1]
+    ax.semilogx(
+        r_values,
+        JB_values / (2.0 * math.pi**2),
+        label=r"boson: $J_B/(2\pi^2)$",
+    )
+    ax.semilogx(
+        r_values,
+        -JF_values / (2.0 * math.pi**2),
+        label=r"fermion: $-J_F/(2\pi^2)$",
+    )
+    ax.axhline(0.0, linewidth=1.0)
+    ax.set_xlabel(r"$r=m/T$")
+    ax.set_ylabel(r"$\Delta V_T/T^4$ per degree of freedom")
+    ax.set_title("(b) Contribution to the free energy")
+    ax.legend(frameon=False)
+
+    fig.suptitle("Thermal functions for bosonic and fermionic fields", y=1.03)
+    plt.tight_layout()
+    savefig("fig_2_6_JB_JF_functions")
+    plt.close(fig)
+
+
+# ----------------------------------------------------------------------
+# Section 2.6 figures
+# ----------------------------------------------------------------------
+def _finite_temperature_potential(
+    phi: np.ndarray,
+    T: float,
+    *,
+    D: float,
+    E: float,
+    lam: float,
+    T0: float,
+) -> np.ndarray:
+    """
+    Schematic high-temperature effective potential:
+        V(phi,T) = D (T^2 - T0^2) phi^2 - E T phi^3 + lambda/4 phi^4.
+
+    This is not meant to represent a full numerical model. It is a clean
+    pedagogical potential showing how a cubic thermal term creates a barrier.
+    """
+    return D * (T**2 - T0**2) * phi**2 - E * T * phi**3 + 0.25 * lam * phi**4
+
+
+def fig_finite_temperature_potential() -> None:
+    """
+    Plot a schematic first-order finite-temperature effective potential
+    at T > Tc, T = Tc and T < Tc.
+    """
+    D = 0.18
+    E = 0.04
+    lam = 0.12
+    T0 = 1.0
+
+    Tc = T0 / math.sqrt(1.0 - E**2 / (D * lam))
+    phic = 2.0 * E * Tc / lam
+
+    phi = np.linspace(0.0, 1.6, 900)
+
+    temperatures = [
+        (1.12 * Tc, r"$T>T_c$"),
+        (Tc, r"$T=T_c$"),
+        (0.92 * Tc, r"$T<T_c$"),
+    ]
+
+    fig, ax = plt.subplots(figsize=(7.0, 4.4))
+
+    for T, label in temperatures:
+        V = _finite_temperature_potential(phi, T, D=D, E=E, lam=lam, T0=T0)
+
+        # Normalize by T0^4 only to keep the axis dimensionless.
+        ax.plot(phi, V / T0**4, label=label)
+
+    ax.axhline(0.0, linewidth=1.0)
+    ax.axvline(phic, linestyle=":", linewidth=1.2, label=r"$\phi_c$ at $T_c$")
+
+    ax.set_xlabel(r"scalar background $\phi$")
+    ax.set_ylabel(r"schematic $V_{\rm eff}(\phi,T)$")
+    ax.set_title("Schematic first-order finite-temperature effective potential")
+    ax.legend(frameon=False)
+    ax.set_ylim(-0.04, 0.09)
+
+    savefig("fig_2_7_finite_temperature_potential")
+    plt.close(fig)
+
 def main() -> None:
     setup_matplotlib()
 
@@ -327,7 +515,8 @@ def main() -> None:
     fig_landau_specific_heat_jump()
     fig_landau_susceptibility_optional()
     fig_landau_first_order_free_energy()
-
+    fig_thermal_functions_JB_JF()
+    fig_finite_temperature_potential()
 
 if __name__ == "__main__":
     main()
