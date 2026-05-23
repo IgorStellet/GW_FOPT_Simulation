@@ -506,17 +506,214 @@ def fig_finite_temperature_potential() -> None:
     savefig("fig_2_7_finite_temperature_potential")
     plt.close(fig)
 
+
+# ----------------------------------------------------------------------
+# Section 2.8 figures: Higgs crossover / Mexican hat
+# ----------------------------------------------------------------------
+def _mexican_hat_potential_2d(X, Y, T, *, D=1.1, lam=0.65, T0=1.0):
+    """
+    Schematic O(2)-symmetric Higgs-like finite-temperature potential:
+
+        V(r,T) = D (T^2 - T0^2) r^2 + lambda/4 r^4,
+
+    with r^2 = phi_1^2 + phi_2^2.
+
+    This is a pedagogical potential. It is not meant to reproduce the
+    full Standard Model electroweak crossover quantitatively. Its purpose
+    is to visualize symmetry restoration at high temperature and the
+    Mexican-hat structure at low temperature.
+    """
+    R2 = X**2 + Y**2
+    return D * (T**2 - T0**2) * R2 + 0.25 * lam * R2**2
+
+
+def fig_sm_higgs_mexican_hat_3d() -> None:
+    """
+    Three-panel 3D schematic Higgs potential.
+
+    The panels show:
+        1. high temperature: symmetric minimum at the origin;
+        2. near the transition region: shallow potential;
+        3. low temperature: Mexican-hat structure with degenerate minima.
+
+    The low-temperature panel is intentionally displayed with a stronger
+    vertical contrast so that the Mexican-hat geometry is visually clear.
+    """
+    x = np.linspace(-1.85, 1.85, 180)
+    y = np.linspace(-1.85, 1.85, 180)
+    X, Y = np.meshgrid(x, y)
+
+    temperatures = [
+        (1.28, r"$T>T_c$"),
+        (1.00, r"$T\simeq T_c$"),
+        (0.35, r"$T\ll T_c$"),
+    ]
+
+    fig = plt.figure(figsize=(14.0, 4.7))
+
+    for i, (T, title) in enumerate(temperatures, start=1):
+        ax = fig.add_subplot(1, 3, i, projection="3d")
+
+        V = _mexican_hat_potential_2d(X, Y, T)
+
+        # Shift each panel so that its minimum starts at zero.
+        # This makes the vacuum structure easier to compare visually.
+        V = V - np.min(V)
+
+        # A mild vertical rescaling helps avoid a visually flattened Mexican hat.
+        # The factor is pedagogical and affects only the plot, not the potential.
+        if T < 0.6:
+            V_plot = 1.8 * V
+        else:
+            V_plot = V
+
+        surf = ax.plot_surface(
+            X,
+            Y,
+            V_plot,
+            rstride=3,
+            cstride=3,
+            linewidth=0,
+            antialiased=True,
+            alpha=0.96,
+            cmap="plasma_r",
+        )
+
+        # Mark the origin. At high T it is the minimum; at low T it becomes
+        # the top of the central bump.
+        V_origin = _mexican_hat_potential_2d(
+            np.array([[0.0]]),
+            np.array([[0.0]]),
+            T,
+        )
+        V_origin = float(V_origin - np.min(_mexican_hat_potential_2d(X, Y, T)))
+        if T < 0.6:
+            V_origin *= 1.8
+
+        ax.scatter(
+            [0.0],
+            [0.0],
+            [V_origin],
+            s=32,
+            color="black",
+            depthshade=True,
+        )
+
+        ax.set_title(title, pad=8)
+        ax.set_xlabel(r"$\phi_1$", labelpad=-2)
+        ax.set_ylabel(r"$\phi_2$", labelpad=-2)
+        ax.set_zlabel(r"$V_{\rm eff}$", labelpad=2)
+
+        # Camera angle chosen to resemble the reference image and make the
+        # central bump plus the circular valley visible.
+        ax.view_init(elev=24, azim=-58)
+
+        # Remove tick labels for a cleaner thesis-style schematic figure.
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_zticks([])
+
+        # Make the box less vertically compressed.
+        ax.set_box_aspect((1.35, 1.05, 0.85))
+
+    fig.suptitle(
+        "Schematic thermal evolution of a Higgs-like potential",
+        y=1.03,
+    )
+    plt.tight_layout()
+    savefig("fig_2_8_sm_higgs_mexican_hat_3d")
+    plt.close(fig)
+
+
+# ----------------------------------------------------------------------
+# Section 2.9 figures: first-order temperatures
+# ----------------------------------------------------------------------
+def _fopt_schematic_potential(phi, T, *, D=0.18, E=0.055, lam=0.12, T0=1.0):
+    """
+    Schematic high-temperature first-order potential:
+        V(phi,T) = D (T^2 - T0^2) phi^2 - E T phi^3 + lambda/4 phi^4.
+
+    T0 is also the spinodal temperature of the origin in this simple model.
+    """
+    return D * (T**2 - T0**2) * phi**2 - E * T * phi**3 + 0.25 * lam * phi**4
+
+
+def fig_first_order_temperatures() -> None:
+    """
+    Qualitative figure showing the important temperatures of a first-order
+    phase transition: appearance of the broken minimum, critical temperature,
+    schematic nucleation temperature, spinodal temperature and T=0 limit.
+    """
+    D = 0.18
+    E = 0.055
+    lam = 0.12
+    T0 = 1.0
+
+    # Critical temperature for the quartic-cubic schematic potential.
+    Tc = T0 / math.sqrt(1.0 - E**2 / (D * lam))
+
+    # Temperature where the broken extrema first appear in this toy model.
+    T1 = math.sqrt((8.0 * D * lam * T0**2) / (8.0 * D * lam - 9.0 * E**2))
+
+    # Schematic nucleation temperature: model-dependent in reality.
+    Tn = 0.94 * Tc
+
+    # Spinodal of the origin in this toy model.
+    Tsp = T0
+
+    phi = np.linspace(0.0, 2.2, 1000)
+
+    curves = [
+        (1.06 * T1, r"$T>T_1$", "symmetric only"),
+        (T1, r"$T=T_1$", "broken extrema appear"),
+        (Tc, r"$T=T_c$", "degenerate minima"),
+        (Tn, r"$T=T_n$", "nucleation, schematic"),
+        (Tsp, r"$T=T_{\rm sp}$", "false vacuum loses stability"),
+        (0.0, r"$T=0$", "zero-temperature limit"),
+    ]
+
+    fig, ax = plt.subplots(figsize=(7.2, 4.8))
+
+    for T, label, _ in curves:
+        V = _fopt_schematic_potential(phi, T, D=D, E=E, lam=lam, T0=T0)
+        V = V - V[0]
+        ax.plot(phi, V, label=label)
+
+    ax.axhline(0.0, linewidth=1.0)
+    ax.set_xlabel(r"$|\phi|$")
+    ax.set_ylabel(r"schematic $V_{\rm eff}(\phi,T)-V_{\rm eff}(0,T)$")
+    ax.set_title("Schematic first-order transition: important temperatures")
+    ax.legend(frameon=False, loc="upper right")
+    ax.set_ylim(-0.08, 0.16)
+    ax.set_xlim(0.0, 2.2)
+
+    ax.text(
+        0.05,
+        0.05,
+        r"$T_c$: degenerate minima" "\n"
+        r"$T_n$: transition actually starts" "\n"
+        r"$T_{\rm sp}$: metastable minimum disappears",
+        transform=ax.transAxes,
+        fontsize=10,
+        verticalalignment="bottom",
+    )
+
+    savefig("fig_2_9_first_order_temperatures")
+    plt.close(fig)
+
 def main() -> None:
     setup_matplotlib()
 
-    fig_phase_transition_intuition()
-    fig_landau_second_order_free_energy()
-    fig_landau_order_parameter()
-    fig_landau_specific_heat_jump()
-    fig_landau_susceptibility_optional()
-    fig_landau_first_order_free_energy()
-    fig_thermal_functions_JB_JF()
-    fig_finite_temperature_potential()
+    #fig_phase_transition_intuition()
+    #fig_landau_second_order_free_energy()
+    #fig_landau_order_parameter()
+    #fig_landau_specific_heat_jump()
+    #fig_landau_susceptibility_optional()
+    #fig_landau_first_order_free_energy()
+    #fig_thermal_functions_JB_JF()
+    #fig_finite_temperature_potential()
+    fig_sm_higgs_mexican_hat_3d()
+    fig_first_order_temperatures()
 
 if __name__ == "__main__":
     main()
