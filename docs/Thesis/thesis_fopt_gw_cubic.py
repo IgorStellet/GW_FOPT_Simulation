@@ -3658,7 +3658,7 @@ if __name__ == "__main__":
 
     run_all_examples(
         C=3.83,
-        D=0.5, # D\phi^3 T
+        D=1, # D\phi^3 T
         Lambda=1000.0,
         m_h=DEFAULT_MH,
         use_glauber_measure=False,
