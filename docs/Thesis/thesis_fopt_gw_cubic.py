@@ -3657,18 +3657,18 @@ if __name__ == "__main__":
     # Change only this block to generate a new set of thesis results.
 
     run_all_examples(
-        C=3.65,
+        C=3.83,
         D=0.0,
         Lambda=1000.0,
         m_h=DEFAULT_MH,
-        use_glauber_measure=True,
+        use_glauber_measure=False,
         run_tag=None,
         show=False,
 
         # Finite-temperature scan
         run_finite_temperature=True,
         T_min=5.0,
-        T_max=110.0,
+        T_max=200.0,
         phi_scan_range=(0.0, 300.0),
         n_phi_scan=800,
         n_T_seeds=2,
