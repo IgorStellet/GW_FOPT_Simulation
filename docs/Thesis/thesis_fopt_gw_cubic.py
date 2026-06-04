@@ -976,34 +976,15 @@ def compute_finite_temperature_summary(
         "fullTunneling_params": None,
     }
 
-    summary = _build_phases_and_transitions(
-        problem["V_XT"],
-        problem["dVdphi_XT"],
-        problem["hessV_XT"],
-        problem["dVdT_XT"],
-        problem["dgradT_XT"],
-        T_min=T_min,
-        T_max=T_max,
-        phi_range=phi_scan_range,
-        n_phi_scan=n_phi_scan,
-        n_T_seeds=n_T_seeds,
-        deltaX_target=deltaX_target,
-        tunnelFromPhase_args=tunnelFromPhase_args,
-        nuclCriterion=nucleation_function,
-        Tn_Ttol=Tn_Ttol,
-        Tn_maxiter=Tn_maxiter,
-        verbose=verbose,
-    )
-
-    summary.update(problem)
-    summary["model_parameters"] = {
+    model_parameters = {
         "C": C,
         "D": D,
         "Lambda": Lambda,
         "m_h": m_h,
         "use_glauber_measure": use_glauber_measure,
     }
-    summary["scan_parameters"] = {
+
+    scan_parameters = {
         "T_min": T_min,
         "T_max": T_max,
         "phi_scan_range": phi_scan_range,
@@ -1018,6 +999,68 @@ def compute_finite_temperature_summary(
         "Tn_Ttol": Tn_Ttol,
         "Tn_maxiter": Tn_maxiter,
     }
+
+    try:
+        summary = _build_phases_and_transitions(
+            problem["V_XT"],
+            problem["dVdphi_XT"],
+            problem["hessV_XT"],
+            problem["dVdT_XT"],
+            problem["dgradT_XT"],
+            T_min=T_min,
+            T_max=T_max,
+            phi_range=phi_scan_range,
+            n_phi_scan=n_phi_scan,
+            n_T_seeds=n_T_seeds,
+            deltaX_target=deltaX_target,
+            tunnelFromPhase_args=tunnelFromPhase_args,
+            nuclCriterion=nucleation_function,
+            Tn_Ttol=Tn_Ttol,
+            Tn_maxiter=Tn_maxiter,
+            verbose=verbose,
+        )
+    except ValueError as err:
+        msg = str(err)
+
+        if "array must not contain infs or NaNs" not in msg:
+            raise
+
+        print("\n" + "=" * 76)
+        print("[Finite T warning] Phase tracing failed because the Hessian contained NaN/inf.")
+        print("=" * 76)
+        print("This usually means that the minimizer tried to follow a phase outside")
+        print("the numerically controlled field range.")
+        print("")
+        print(f"  C                   : {C}")
+        print(f"  D                   : {D}")
+        print(f"  Lambda              : {Lambda}")
+        print(f"  use_glauber_measure : {use_glauber_measure}")
+        print(f"  T range             : [{T_min}, {T_max}] GeV")
+        print(f"  phi_scan_range      : {phi_scan_range}")
+        print("")
+        print("No transition summary will be produced, but finite-temperature")
+        print("potential plots such as B4 can still be generated.")
+        print("=" * 76)
+        summary = {
+            **problem,
+            "model_parameters": model_parameters,
+            "scan_parameters": scan_parameters,
+            "T_min": T_min,
+            "T_max": T_max,
+            "phi_range": phi_scan_range,
+            "phases": {},
+            "start_phase_key": None,
+            "start_phase": None,
+            "critical_transitions": [],
+            "full_transitions": [],
+            "main_transition": None,
+            "key_temperatures": {},
+            "transition_error": repr(err),
+        }
+        return summary
+    summary.update(problem)
+    summary["model_parameters"] = model_parameters
+    summary["scan_parameters"] = scan_parameters
 
     main_transition = summary.get("main_transition", None)
     if main_transition is None:
@@ -3515,6 +3558,15 @@ def run_all_examples(
             Tn_maxiter=Tn_maxiter,
             verbose=verbose,
         )
+        # B4 only needs the finite-temperature potential wrapper.
+        # Therefore it can still be produced even when no first-order
+        # transition, Tc, or Tn was found.
+        saved_figures["B4"] = example_B4_potential_at_key_temperatures(
+            finite_temperature_summary,
+            output_dir=output_dir,
+            phi_max=B4_phi_max,
+            show=show,
+        )
 
         if finite_temperature_summary.get("main_transition", None) is not None:
             saved_figures["B1"] = example_B1_temperature_scales(
@@ -3530,12 +3582,6 @@ def run_all_examples(
             saved_figures["B3"] = example_B3_mass2_vs_temperature(
                 finite_temperature_summary,
                 output_dir=output_dir,
-                show=show,
-            )
-            saved_figures["B4"] = example_B4_potential_at_key_temperatures(
-                finite_temperature_summary,
-                output_dir=output_dir,
-                phi_max=B4_phi_max,
                 show=show,
             )
 
@@ -3606,8 +3652,11 @@ def run_all_examples(
                 except Exception as err:
                     print(f"[run_all_examples] GW examples/diagnostics skipped: {err}")
         else:
-            print("[run_all_examples] Finite-temperature plots B1-B4 skipped: no FOPT found.")
-
+            print(
+                "[run_all_examples] No FOPT found. "
+                "B4 was still generated with fallback temperatures; "
+                "B1-B3, B5, bounce and GW plots were skipped."
+            )
     return {
         "output_dir": output_dir,
         "parameters": {
@@ -3657,8 +3706,8 @@ if __name__ == "__main__":
     # Change only this block to generate a new set of thesis results.
 
     run_all_examples(
-        C=3.83,
-        D=1, # D\phi^3 T
+        C=3.65,
+        D=0.1, # D\phi^3 T
         Lambda=1000.0,
         m_h=DEFAULT_MH,
         use_glauber_measure=False,
@@ -3668,8 +3717,8 @@ if __name__ == "__main__":
         # Finite-temperature scan
         run_finite_temperature=True,
         T_min=5.0,
-        T_max=200.0,
-        phi_scan_range=(0.0, 300.0),
+        T_max=500.0,
+        phi_scan_range=(0.0, 800.0),
         n_phi_scan=800,
         n_T_seeds=2,
         deltaX_target=0.1,
@@ -3681,7 +3730,7 @@ if __name__ == "__main__":
         nuclCriterion=thesis_nucleation_criterion,
         Tn_Ttol=1e-3,
         Tn_maxiter=100,
-        B4_phi_max=300.0,
+        B4_phi_max=800.0,
         verbose=True,
 
         # Bounce at T_n
