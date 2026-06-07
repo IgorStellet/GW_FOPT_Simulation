@@ -3709,8 +3709,8 @@ if __name__ == "__main__":
         C=3.65,
         D=0.0, # D\phi^3 T
         Lambda=1000.0,
-        m_h= 60, #DEFAULT_MH,
-        use_glauber_measure=False,
+        m_h= 65, #DEFAULT_MH,
+        use_glauber_measure=True,
         run_tag=None,
         show=False,
 
