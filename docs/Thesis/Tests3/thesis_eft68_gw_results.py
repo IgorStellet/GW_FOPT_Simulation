@@ -37,6 +37,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 import matplotlib.pyplot as plt
+from matplotlib.colors import BoundaryNorm, ListedColormap
 import numpy as np
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 from numpy.typing import ArrayLike
@@ -290,73 +291,6 @@ def _safe_log_mass2(m2: np.ndarray, Q2: float) -> np.ndarray:
     return np.log(np.maximum(np.abs(m2), 1.0e-300) / Q2)
 
 
-def _to_real_array(
-    values: ArrayLike | complex | float,
-    *,
-    name: str = "array",
-    rtol: float = 1.0e-7,
-    atol: float = 1.0e-10,
-) -> np.ndarray:
-    """Return a real array, allowing only numerically tiny imaginary parts.
-
-    Some thermal-integral backends return arrays with complex dtype even when
-    the physical argument is real and the imaginary part is numerically zero.
-    In-place addition into a float array then fails with a casting error.  This
-    helper makes the convention explicit: tiny imaginary roundoff is discarded;
-    a genuinely complex result raises an informative error.
-    """
-
-    arr = np.asarray(values)
-
-    if not np.iscomplexobj(arr):
-        return np.asarray(arr, dtype=float)
-
-    real = np.real(arr)
-    imag = np.imag(arr)
-    finite_imag = np.isfinite(imag)
-    max_imag = float(np.max(np.abs(imag[finite_imag]))) if np.any(finite_imag) else float("inf")
-    real_scale = max(1.0, float(np.nanmax(np.abs(real))) if np.size(real) else 1.0)
-
-    if max_imag > atol + rtol * real_scale:
-        raise ValueError(
-            f"{name} has a non-negligible imaginary part: "
-            f"max|Im|={max_imag:.6e}, scale={real_scale:.6e}."
-        )
-
-    return np.asarray(real, dtype=float)
-
-
-def make_eft68_parameters(
-    *,
-    c6_over_f2_TeV2: float = 2.0,
-    c8_over_f4_TeV4: float = 2.0,
-    f_GeV: float = 1000.0,
-    m_h: float = DEFAULT_MH,
-    v: float = DEFAULT_VEV,
-    m_w: float = DEFAULT_MW,
-    m_z: float = DEFAULT_MZ,
-    m_t: float = DEFAULT_MT,
-    use_glauber_measure: bool = False,
-    C_glauber: float = 0.0,
-    Lambda_glauber: float = 1000.0,
-) -> EFT68Parameters:
-    """Build the EFT parameter container from explicit runner-style inputs."""
-
-    return EFT68Parameters(
-        c6_over_f2_TeV2=c6_over_f2_TeV2,
-        c8_over_f4_TeV4=c8_over_f4_TeV4,
-        f_GeV=f_GeV,
-        m_h=m_h,
-        v=v,
-        m_w=m_w,
-        m_z=m_z,
-        m_t=m_t,
-        use_glauber_measure=use_glauber_measure,
-        C_glauber=C_glauber,
-        Lambda_glauber=Lambda_glauber,
-    )
-
-
 def eft68_tree_potential(phi: ArrayLike | float, params: EFT68Parameters) -> np.ndarray:
     phi_arr = np.asarray(phi, dtype=float)
     return (
@@ -403,19 +337,19 @@ def eft68_field_masses2(
     }
 
 
-def coleman_weinberg_eft68(
+def _coleman_weinberg_raw_eft68(
     phi: ArrayLike | float,
     params: EFT68Parameters,
     *,
     include_scalar_loops: bool = True,
     Q: float | None = None,
 ) -> np.ndarray:
-    """One-loop zero-temperature Coleman-Weinberg piece."""
+    """Raw MS-bar Coleman-Weinberg contribution before zero-T renormalization."""
     phi_arr = np.asarray(phi, dtype=float)
     out = np.zeros_like(phi_arr, dtype=float)
     Q2 = (params.v if Q is None else float(Q)) ** 2
     masses = eft68_field_masses2(phi_arr, params)
-    fields = []
+    fields: list[tuple[str, float, float]] = []
     if include_scalar_loops:
         fields += [("h", N_H, C_SCALAR), ("chi", N_CHI, C_SCALAR)]
     fields += [("W", N_W, C_GAUGE), ("Z", N_Z, C_GAUGE), ("top", N_TOP_CW, C_FERMION)]
@@ -423,6 +357,133 @@ def coleman_weinberg_eft68(
         m2 = np.asarray(masses[key], dtype=float)
         out += n_i * m2**2 * (_safe_log_mass2(m2, Q2) - c_i) / SIXTY_FOUR_PI2
     return out
+
+
+_CW_COUNTERTERM_CACHE: dict[tuple[Any, ...], tuple[float, float, float]] = {}
+
+
+def _params_cache_tuple(params: EFT68Parameters) -> tuple[Any, ...]:
+    """Hashable representation of EFT parameters for small numerical caches."""
+    return (
+        params.c6_over_f2_TeV2,
+        params.c8_over_f4_TeV4,
+        params.f_GeV,
+        params.m_h,
+        params.v,
+        params.m_w,
+        params.m_z,
+        params.m_t,
+        params.use_glauber_measure,
+        params.C_glauber,
+        params.Lambda_glauber,
+    )
+
+
+def zeroT_counterterms_eft68(
+    phi: ArrayLike | float,
+    params: EFT68Parameters,
+    *,
+    include_scalar_loops: bool = True,
+    Q: float | None = None,
+) -> np.ndarray:
+    r"""
+    Counterterms that keep the electroweak vacuum fixed at one loop.
+
+    We add
+
+    .. math::
+
+        V_{\rm CT}(h)=-\frac{\delta\mu^2}{2}h^2+\frac{\delta\lambda}{4}h^4
+        +\delta V_0,
+
+    with the finite renormalization conditions
+
+    .. math::
+
+        \left.\frac{d}{dh}(\Delta V_{\rm CW}+V_{\rm CT})\right|_{h=v}=0,
+        \qquad
+        \left.\frac{d^2}{dh^2}(\Delta V_{\rm CW}+V_{\rm CT})\right|_{h=v}=0.
+
+    This is numerically equivalent to refitting ``mu`` and ``lambda`` so that
+    the full zero-temperature potential still has its minimum at ``v`` and
+    curvature ``m_h^2``.  The constant ``delta V0`` is chosen so that
+    ``V_CT(0)=0``; it does not affect the transition dynamics.
+    """
+
+    phi_arr = np.asarray(phi, dtype=float)
+    Q_value = params.v if Q is None else float(Q)
+    key = (_params_cache_tuple(params), bool(include_scalar_loops), float(Q_value))
+
+    if key not in _CW_COUNTERTERM_CACHE:
+        # A GeV-scale step is stable for the smooth one-loop curves and avoids
+        # roundoff from evaluating the logarithmic masses too close to v.
+        h = max(1.0e-3 * params.v, 1.0e-2)
+
+        def cw_at(x: float) -> float:
+            return float(
+                _coleman_weinberg_raw_eft68(
+                    x,
+                    params,
+                    include_scalar_loops=include_scalar_loops,
+                    Q=Q_value,
+                )
+            )
+
+        v0 = params.v
+        cw_p = (cw_at(v0 + h) - cw_at(v0 - h)) / (2.0 * h)
+        cw_pp = (cw_at(v0 + h) - 2.0 * cw_at(v0) + cw_at(v0 - h)) / h**2
+
+        delta_lambda = (cw_p / v0 - cw_pp) / (2.0 * v0**2)
+        delta_mu2 = cw_p / v0 + delta_lambda * v0**2
+
+        # Keep the additive convention harmless for plots: V_CT(0)=0.
+        delta_V0 = 0.0
+
+        _CW_COUNTERTERM_CACHE[key] = (
+            float(delta_mu2),
+            float(delta_lambda),
+            float(delta_V0),
+        )
+
+    delta_mu2, delta_lambda, delta_V0 = _CW_COUNTERTERM_CACHE[key]
+    return (
+        -0.5 * delta_mu2 * phi_arr**2
+        + 0.25 * delta_lambda * phi_arr**4
+        + delta_V0
+    )
+
+
+def coleman_weinberg_eft68(
+    phi: ArrayLike | float,
+    params: EFT68Parameters,
+    *,
+    include_scalar_loops: bool = True,
+    Q: float | None = None,
+    renormalize_zeroT_loops: bool = True,
+) -> np.ndarray:
+    """
+    One-loop zero-temperature Coleman-Weinberg piece.
+
+    By default the finite zero-temperature counterterms are included.  This is
+    the safest convention for phase-transition scans because the measured
+    zero-temperature input vacuum is not displaced by the loop correction.
+    """
+
+    raw = _coleman_weinberg_raw_eft68(
+        phi,
+        params,
+        include_scalar_loops=include_scalar_loops,
+        Q=Q,
+    )
+    if not renormalize_zeroT_loops:
+        return raw
+
+    return raw + zeroT_counterterms_eft68(
+        phi,
+        params,
+        include_scalar_loops=include_scalar_loops,
+        Q=Q,
+    )
 
 
 def thermal_one_loop_eft68(
@@ -433,19 +494,12 @@ def thermal_one_loop_eft68(
     include_scalar_thermal: bool = True,
     thermal_approx: str = "spline",
 ) -> np.ndarray:
-    """One-loop thermal contribution using the project Jb/Jf wrappers.
+    """
+    One-loop thermal contribution using the project Jb/Jf wrappers.
 
-    Important convention from ``CosmoTransitions.finiteT``
-    -----------------------------------------------------
-    The finite-temperature module already contains the two conventions we need:
-
-    - ``approx='exact'``, ``'low'`` and ``'high'`` expect the mass ratio
-      ``x = m/T``.
-    - ``approx='spline'`` expects ``theta = m^2/T^2`` and is therefore the
-      correct fast backend when scalar curvature masses become negative.
-
-    We do not reimplement Jb or Jf here.  This function only chooses the
-    argument convention required by the existing project API.
+    Convention:
+    - approx='spline': pass theta = m^2/T^2.
+    - exact/low/high: pass x = m/T with the real-part prescription.
     """
 
     if T <= 0.0:
@@ -453,18 +507,16 @@ def thermal_one_loop_eft68(
 
     phi_arr = np.asarray(phi, dtype=float)
     masses = eft68_field_masses2(phi_arr, params)
-    out = np.zeros_like(phi_arr, dtype=np.complex128)
     mode = str(thermal_approx).lower()
+
+    out = np.zeros_like(phi_arr, dtype=np.complex128)
 
     def thermal_argument(m2: np.ndarray) -> np.ndarray:
         m2_arr = np.asarray(m2, dtype=float)
+
         if mode == "spline":
-            # The spline backend is built directly in theta=(m/T)^2 and supports
-            # the negative theta branch used for tachyonic scalar curvatures.
             return m2_arr / T**2
 
-        # The remaining backends expect x=m/T.  For quick non-spline checks we
-        # keep the real-part prescription used in the older examples.
         return np.sqrt(np.maximum(m2_arr, 0.0)) / T
 
     bosons: list[tuple[str, float]] = []
@@ -473,20 +525,30 @@ def thermal_one_loop_eft68(
     bosons += [("W", N_W), ("Z", N_Z)]
 
     for key, n_i in bosons:
-        out = out + n_i * np.asarray(
+        out += n_i * np.asarray(
             Jb(thermal_argument(masses[key]), approx=mode),
             dtype=np.complex128,
         )
 
-    out = out + N_TOP_THERMAL * np.asarray(
+    out += N_TOP_THERMAL * np.asarray(
         Jf(thermal_argument(masses["top"]), approx=mode),
         dtype=np.complex128,
     )
 
-    return _to_real_array(
-        (T**4 / (2.0 * PI2)) * out,
-        name="thermal_one_loop_eft68",
-    )
+    out = (T**4 / (2.0 * PI2)) * out
+    out = np.real_if_close(out)
+
+    if np.iscomplexobj(out):
+        imag_scale = np.nanmax(np.abs(np.imag(out)))
+        real_scale = max(1.0, np.nanmax(np.abs(np.real(out))))
+        if imag_scale > 1.0e-7 * real_scale:
+            raise RuntimeError(
+                "thermal_one_loop_eft68 produced a non-negligible imaginary part. "
+                f"max|Im|={imag_scale:.6e}, scale={real_scale:.6e}"
+            )
+        out = np.real(out)
+
+    return np.asarray(out, dtype=float)
 
 def daisy_gauge_eft68(phi: ArrayLike | float, T: float, params: EFT68Parameters) -> np.ndarray:
     """Optional simplified gauge daisy term, off by default for article reproduction."""
@@ -550,6 +612,7 @@ def V_effective_potential(
     Lambda_glauber: float = 1000.0,
     include_zeroT_loops: bool = True,
     include_scalar_loops: bool = True,
+    renormalize_zeroT_loops: bool = True,
     include_thermal: bool = True,
     include_scalar_thermal: bool = True,
     include_daisy: bool = False,
@@ -585,7 +648,10 @@ def V_effective_potential(
 
     V_tree = eft68_tree_potential(phi_arr, params)
     V_cw = coleman_weinberg_eft68(
-        phi_arr, params, include_scalar_loops=include_scalar_loops
+        phi_arr,
+        params,
+        include_scalar_loops=include_scalar_loops,
+        renormalize_zeroT_loops=renormalize_zeroT_loops,
     ) if include_zeroT_loops else np.zeros_like(phi_arr)
     V_T = thermal_one_loop_eft68(
         phi_arr,
@@ -598,10 +664,7 @@ def V_effective_potential(
     V_measure = glauber_measure_potential(
         phi_arr, params, real_continuation=real_continuation
     ) if include_glauber else np.zeros_like(phi_arr)
-    V_total = _to_real_array(
-        V_tree + V_cw + V_T + V_daisy + V_measure,
-        name="V_effective_potential",
-    )
+    V_total = np.real_if_close(V_tree + V_cw + V_T + V_daisy + V_measure)
 
     if return_terms:
         return {
@@ -616,29 +679,11 @@ def V_effective_potential(
     return np.asarray(V_total, dtype=float)
 
 
-def deltaV(
-    phi: ArrayLike | float,
-    T: float,
-    params: EFT68Parameters | None = None,
-    **kwargs: Any,
-) -> np.ndarray:
-    """Return V(phi,T)-V(0,T).
-
-    This offset is used for plotting and diagnostics.  The TransitionFinder
-    derivatives are still constructed by ``build_finite_T_derivatives`` from the
-    full potential wrapper; subtracting V(0,T) does not change field
-    derivatives.
-    """
-
-    V_phi = _to_real_array(
-        V_effective_potential(phi, T, params, **kwargs),
-        name="deltaV.V_phi",
+def deltaV(phi: ArrayLike | float, T: float, params: EFT68Parameters, **kwargs: Any) -> np.ndarray:
+    """Return V(phi,T)-V(0,T)."""
+    return np.asarray(V_effective_potential(phi, T, params, **kwargs), dtype=float) - float(
+        np.asarray(V_effective_potential(0.0, T, params, **kwargs), dtype=float)
     )
-    V_origin = _to_real_array(
-        V_effective_potential(0.0, T, params, **kwargs),
-        name="deltaV.V_origin",
-    )
-    return V_phi - float(np.asarray(V_origin).reshape(-1)[0])
 
 
 # -----------------------------------------------------------------------------
@@ -743,40 +788,71 @@ def find_extrema_1d(
 
 
 def mean_field_vc_tc(params: EFT68Parameters) -> dict[str, float | None]:
-    """Mean-field analytical estimate using the article's Eq. (2.15) logic."""
+    """
+    Mean-field critical temperature and v_c/T_c.
+
+    This uses the analytic v_c condition, but computes T_c from the
+    degeneracy equation directly. It avoids the unstable complex branch in
+    the previous implementation.
+    """
+
     k6 = params.k6_GeV2
     k8 = params.k8_GeV4
     lam = params.lambda_tree
     a0 = params.a0_mean_field
     mu2 = params.mu2_tree
+
+    if a0 <= 0.0:
+        return {"v_c": None, "T_c": None, "v_c_over_T_c": None}
+
     candidates: list[tuple[float, float]] = []
+
     if abs(k8) > 0.0:
         disc = k6**2 / (9.0 * k8**2) - lam / (3.0 * k8)
+
         if disc >= 0.0:
-            for sgn in (+1.0, -1.0):
-                vc2 = (-2.0 * k6 / (3.0 * k8) + 2.0 * sgn * np.sqrt(disc))
-                if vc2 > 0.0:
-                    bracket = (
-                        2.0 * k6**3 / (27.0 * k8**2)
-                        - k6 * lam / (3.0 * k8)
-                        - 2.0 * sgn * ((k6**2 / (9.0 * k8) - lam / 3.0) ** 1.5) / k8
-                    )
-                    Tc2 = mu2 / a0 - bracket / a0
-                    if Tc2 > 0.0:
-                        candidates.append((float(np.sqrt(vc2)), float(np.sqrt(Tc2))))
+            sqrt_disc = np.sqrt(disc)
+
+            for sign in (+1.0, -1.0):
+                vc2 = -2.0 * k6 / (3.0 * k8) + 2.0 * sign * sqrt_disc
+
+                if vc2 <= 0.0:
+                    continue
+
+                Tc2 = (
+                    mu2
+                    - 0.5 * lam * vc2
+                    - 0.25 * k6 * vc2**2
+                    - 0.125 * k8 * vc2**3
+                ) / a0
+
+                if Tc2 > 0.0:
+                    candidates.append((float(np.sqrt(vc2)), float(np.sqrt(Tc2))))
+
     else:
-        # Dimension-6-only limit from the same mean-field potential.
         if k6 > 0.0 and lam < 0.0:
             vc2 = -lam / k6
-            Tc2 = (mu2 + 0.5 * lam**2 / k6) / a0
+
+            Tc2 = (
+                mu2
+                - 0.5 * lam * vc2
+                - 0.25 * k6 * vc2**2
+            ) / a0
+
             if vc2 > 0.0 and Tc2 > 0.0:
                 candidates.append((float(np.sqrt(vc2)), float(np.sqrt(Tc2))))
+
     if not candidates:
         return {"v_c": None, "T_c": None, "v_c_over_T_c": None}
-    # Prefer candidates inside the EFT domain and positive Tc.
-    valid = [x for x in candidates if x[0] <= params.f_GeV]
+
+    valid = [(vc, Tc) for vc, Tc in candidates if vc <= params.f_GeV]
     vc, Tc = valid[0] if valid else candidates[0]
-    return {"v_c": vc, "T_c": Tc, "v_c_over_T_c": vc / Tc if Tc > 0.0 else None}
+
+    return {
+        "v_c": vc,
+        "T_c": Tc,
+        "v_c_over_T_c": vc / Tc if Tc > 0.0 else None,
+    }
 
 
 # -----------------------------------------------------------------------------
@@ -812,6 +888,7 @@ def build_finite_temperature_problem(
     deriv_order: int = 4,
     include_zeroT_loops: bool = True,
     include_scalar_loops: bool = True,
+    renormalize_zeroT_loops: bool = True,
     include_thermal: bool = True,
     include_scalar_thermal: bool = True,
     include_daisy: bool = False,
@@ -824,6 +901,7 @@ def build_finite_temperature_problem(
             params,
             include_zeroT_loops=include_zeroT_loops,
             include_scalar_loops=include_scalar_loops,
+            renormalize_zeroT_loops=renormalize_zeroT_loops,
             include_thermal=include_thermal,
             include_scalar_thermal=include_scalar_thermal,
             include_daisy=include_daisy,
@@ -909,6 +987,7 @@ def compute_finite_temperature_summary(
     Tn_maxiter: int = 100,
     include_zeroT_loops: bool = True,
     include_scalar_loops: bool = True,
+    renormalize_zeroT_loops: bool = True,
     include_thermal: bool = True,
     include_scalar_thermal: bool = True,
     include_daisy: bool = False,
@@ -925,6 +1004,7 @@ def compute_finite_temperature_summary(
         deriv_order=deriv_order,
         include_zeroT_loops=include_zeroT_loops,
         include_scalar_loops=include_scalar_loops,
+        renormalize_zeroT_loops=renormalize_zeroT_loops,
         include_thermal=include_thermal,
         include_scalar_thermal=include_scalar_thermal,
         include_daisy=include_daisy,
@@ -948,10 +1028,10 @@ def compute_finite_temperature_summary(
         "Tn_maxiter": Tn_maxiter,
         "include_zeroT_loops": include_zeroT_loops,
         "include_scalar_loops": include_scalar_loops,
+        "renormalize_zeroT_loops": renormalize_zeroT_loops,
         "include_thermal": include_thermal,
         "include_scalar_thermal": include_scalar_thermal,
         "include_daisy": include_daisy,
-        "thermal_approx": thermal_approx,
     }
     try:
         summary = _build_phases_and_transitions(
@@ -1069,6 +1149,8 @@ def example_A1_zero_temperature_potential(
     show: bool = False,
     include_zeroT_loops: bool = True,
     include_glauber: bool | None = None,
+    include_inset: bool = True,
+    inset_phi_max: float = 300.0,
 ) -> Path:
     if phi_max is None:
         phi_max = params.f_GeV
@@ -1096,6 +1178,27 @@ def example_A1_zero_temperature_potential(
         branch = params.Lambda_glauber / np.sqrt(params.C_glauber)
         if 0.0 < branch < phi_max:
             ax.axvline(branch, color="#d62728", lw=1.2, ls=":", label=r"Gláuber branch")
+    if include_inset:
+        zoom_mask = phi <= min(float(inset_phi_max), float(phi_max))
+        finite_zoom = zoom_mask & np.isfinite(Vfull)
+        if np.any(finite_zoom):
+            axins = ax.inset_axes([0.08, 0.42, 0.43, 0.43])
+            axins.plot(phi[zoom_mask], Vtree[zoom_mask], color="black", lw=1.5)
+            axins.plot(phi[zoom_mask], Vfull[zoom_mask], color="#ff7f0e", lw=1.4, ls="--")
+            axins.axhline(0.0, color="black", lw=0.75, ls="--", alpha=0.55)
+            axins.axvline(params.v, color="0.25", lw=0.8, ls=":", alpha=0.65)
+
+            y_zoom = np.concatenate([Vtree[finite_zoom], Vfull[finite_zoom]])
+            y_min = float(np.nanmin(y_zoom))
+            y_max = float(np.nanmax(y_zoom))
+            y_pad = 0.08 * (y_max - y_min + 1.0e-30)
+
+            axins.set_xlim(0.0, min(float(inset_phi_max), float(phi_max)))
+            axins.set_ylim(y_min - y_pad, y_max + y_pad)
+            axins.grid(True, alpha=0.2)
+            axins.tick_params(labelsize=8)
+            mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.45", lw=0.9, alpha=0.8)
+
     ax.set_xlabel(r"$h$ [GeV]")
     ax.set_ylabel(r"$V(h,0)-V(0,0)$ [GeV$^4$]")
     ax.set_title("Example A1: zero-temperature EFT potential")
@@ -1186,7 +1289,7 @@ def example_C1_finite_temperature_shapes(
     include_daisy: bool = False,
 ) -> Path:
     if phi_max is None:
-        phi_max = params.f_GeV
+        phi_max = min(params.f_GeV, 300.0)
     phi = np.linspace(0.0, phi_max, n_phi)
     fig, ax = plt.subplots(figsize=(8.0, 5.0))
     cmap = plt.get_cmap("viridis_r")
@@ -1204,10 +1307,10 @@ def example_C1_finite_temperature_shapes(
         ax.plot(phi[finite], y[finite], lw=2.0, color=color, label=rf"$T={T:.0f}$ GeV")
     ax.axhline(0.0, color="black", lw=0.9, ls="--", alpha=0.65)
     ax.axvline(params.v, color="0.4", lw=1.0, ls=":")
-    ax.axvline(params.f_GeV, color="0.4", lw=1.0, ls="-.")
+    ax.axvline(phi_max, color="0.4", lw=1.0, ls="-.")
     ax.set_xlabel(r"$h$ [GeV]")
     ax.set_ylabel(r"$V(h,T)-V(0,T)$ [GeV$^4$]")
-    ax.set_title("Example C1: finite-temperature potential shapes")
+    ax.set_title("Example C1: quick finite-temperature potential shapes (diagnostic only)")
     ax.grid(True, alpha=0.25)
     ax.legend(fontsize=8)
     fig.tight_layout()
@@ -1219,52 +1322,316 @@ def example_C1_finite_temperature_shapes(
 # -----------------------------------------------------------------------------
 
 
+def _tree_second_minimum_below_cutoff(params: EFT68Parameters) -> bool:
+    """Return True if the tree-level potential has an extra minimum in (v, f)."""
+    phi = np.linspace(0.0, params.f_GeV, 2500)
+    V = eft68_tree_potential(phi, params)
+    extrema = find_extrema_1d(phi, V)
+    for item in extrema:
+        if not str(item.get("kind", "")).endswith("minimum"):
+            continue
+        phi_ext = float(item["phi"])
+        if params.v + 2.0 < phi_ext < params.f_GeV - 2.0:
+            return True
+    return False
+
+
+def _mean_field_point_record(c6: float, c8: float, *, f_GeV: float) -> dict[str, Any]:
+    """Compute all quick mean-field diagnostics for one EFT point."""
+    p = EFT68Parameters(
+        c6_over_f2_TeV2=float(c6),
+        c8_over_f4_TeV4=float(c8),
+        f_GeV=float(f_GeV),
+    )
+    check = check_zero_temperature_physicality(p, include_zeroT_loops=False)
+    mf = mean_field_vc_tc(p)
+
+    vcTc = mf["v_c_over_T_c"]
+    allowed = bool(
+        check["passes_EFT_tree_condition_Vv_lower_than_v_to_f"]
+        and check["passes_Eq_2_14"]
+    )
+    has_two_minima = _tree_second_minimum_below_cutoff(p)
+
+    combo_no_nucleation = p.combo_TeV2
+    combo_weak = p.c6_over_f2_TeV2 + 1.5 * (p.v / 1000.0) ** 2 * p.c8_over_f4_TeV4
+
+    if not allowed:
+        category = 0
+        category_label = "excluded / not allowed at T=0"
+    elif vcTc is None or not np.isfinite(float(vcTc)):
+        category = 1 if not has_two_minima else 2
+        category_label = "allowed, no mean-field FOPT"
+    elif float(vcTc) <= 0.7:
+        category = 1 if not has_two_minima else 2
+        category_label = "allowed, too weak"
+    elif float(vcTc) < 1.3:
+        category = 3
+        category_label = "SFO, 0.7 < vc/Tc < 1.3"
+    else:
+        category = 4
+        category_label = "SFO, vc/Tc > 1.3"
+
+    # Very useful article-inspired guide for numerical scans:
+    # transition too strong / no nucleation is expected near and to the right of
+    # 2 c6/f^2 + 3 v^2 c8/f^4 ≈ 3.5, whereas transitions below the lower
+    # combination tend to be too weak for the article plots.
+    expected_for_full_scan = bool(
+        allowed
+        and vcTc is not None
+        and np.isfinite(float(vcTc))
+        and float(vcTc) > 0.7
+        and combo_no_nucleation < 3.5
+        and combo_weak >= 1.5
+    )
+
+    return {
+        "c6_over_f2_TeV2": float(c6),
+        "c8_over_f4_TeV4": float(c8),
+        "allowed_T0": allowed,
+        "has_second_tree_minimum_below_f": has_two_minima,
+        "mean_field_vc_GeV": mf["v_c"],
+        "mean_field_Tc_GeV": mf["T_c"],
+        "mean_field_vc_over_Tc": vcTc,
+        "category": category,
+        "category_label": category_label,
+        "combo_no_nucleation_guide": combo_no_nucleation,
+        "combo_too_weak_guide": combo_weak,
+        "expected_useful_for_full_scan": expected_for_full_scan,
+    }
+
+
+def _select_representative_mean_field_points(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Select four initial benchmark points: weak, two intermediate, strong."""
+    candidates = [
+        r for r in records
+        if r.get("expected_useful_for_full_scan")
+        and r.get("mean_field_vc_over_Tc") is not None
+        and np.isfinite(float(r["mean_field_vc_over_Tc"]))
+    ]
+
+    if not candidates:
+        return []
+
+    targets = [
+        ("weak_but_visible", 0.8),
+        ("intermediate_1", 1.3),
+        ("intermediate_2", 2.0),
+        ("strong_near_no_nucleation_edge", 3.5),
+    ]
+
+    selected: list[dict[str, Any]] = []
+    used: set[tuple[float, float]] = set()
+
+    for label, target in targets:
+        ranked = sorted(
+            candidates,
+            key=lambda r: (
+                abs(float(r["mean_field_vc_over_Tc"]) - target),
+                -float(r["combo_no_nucleation_guide"]),
+            ),
+        )
+        for rec in ranked:
+            key = (float(rec["c6_over_f2_TeV2"]), float(rec["c8_over_f4_TeV4"]))
+            if key in used:
+                continue
+            out = dict(rec)
+            out["benchmark_role"] = label
+            selected.append(out)
+            used.add(key)
+            break
+
+    return selected
+
+
 def example_D1_mean_field_map(
     *,
     output_dir: str | Path,
     f_GeV: float = 1000.0,
     c6_range: tuple[float, float] = (-1.0, 6.0),
     c8_range: tuple[float, float] = (-10.0, 15.0),
-    n_c6: int = 80,
-    n_c8: int = 80,
+    n_c6: int = 100,
+    n_c8: int = 100,
+    current_point: tuple[float, float] | None = None,
     show: bool = False,
 ) -> Path:
+    """
+    Example D1: reproduce the logic of Fig. 2 in the mean-field approximation.
+
+    This is a fast diagnostic only.  It is not used to compute Tc, Tn, the
+    bounce, alpha, beta/H or the gravitational-wave spectrum.
+    """
+
     c6_vals = np.linspace(c6_range[0], c6_range[1], int(n_c6))
     c8_vals = np.linspace(c8_range[0], c8_range[1], int(n_c8))
+
     vc_over_Tc = np.full((len(c8_vals), len(c6_vals)), np.nan)
-    valid = np.zeros_like(vc_over_Tc, dtype=bool)
+    Tc_grid = np.full_like(vc_over_Tc, np.nan)
+    category = np.zeros_like(vc_over_Tc, dtype=int)
+    useful = np.zeros_like(vc_over_Tc, dtype=bool)
+    records: list[dict[str, Any]] = []
+
     for i, c8 in enumerate(c8_vals):
         for j, c6 in enumerate(c6_vals):
-            p = EFT68Parameters(c6_over_f2_TeV2=float(c6), c8_over_f4_TeV4=float(c8), f_GeV=f_GeV)
-            check = check_zero_temperature_physicality(p, include_zeroT_loops=False)
-            valid[i, j] = bool(check["passes_EFT_tree_condition_Vv_lower_than_v_to_f"] and check["passes_Eq_2_14"])
-            mf = mean_field_vc_tc(p)
-            if valid[i, j] and mf["v_c_over_T_c"] is not None:
-                vc_over_Tc[i, j] = float(mf["v_c_over_T_c"])
-    csv_path = Path(output_dir) / "D1_mean_field_map.csv"
+            rec = _mean_field_point_record(float(c6), float(c8), f_GeV=f_GeV)
+            records.append(rec)
+            category[i, j] = int(rec["category"])
+            useful[i, j] = bool(rec["expected_useful_for_full_scan"])
+            if rec["mean_field_vc_over_Tc"] is not None:
+                vc_over_Tc[i, j] = float(rec["mean_field_vc_over_Tc"])
+            if rec["mean_field_Tc_GeV"] is not None:
+                Tc_grid[i, j] = float(rec["mean_field_Tc_GeV"])
+
+    csv_path = Path(output_dir) / "D1_mean_field_fig2_map.csv"
     with open(csv_path, "w", newline="", encoding="utf-8") as fobj:
-        writer = csv.writer(fobj)
-        writer.writerow(["c6_over_f2_TeV2", "c8_over_f4_TeV4", "valid", "vc_over_Tc"])
-        for i, c8 in enumerate(c8_vals):
-            for j, c6 in enumerate(c6_vals):
-                writer.writerow([c6, c8, valid[i, j], vc_over_Tc[i, j]])
-    fig, ax = plt.subplots(figsize=(7.2, 5.6))
+        fieldnames = [
+            "c6_over_f2_TeV2",
+            "c8_over_f4_TeV4",
+            "allowed_T0",
+            "has_second_tree_minimum_below_f",
+            "mean_field_vc_GeV",
+            "mean_field_Tc_GeV",
+            "mean_field_vc_over_Tc",
+            "category",
+            "category_label",
+            "combo_no_nucleation_guide",
+            "combo_too_weak_guide",
+            "expected_useful_for_full_scan",
+        ]
+        writer = csv.DictWriter(fobj, fieldnames=fieldnames)
+        writer.writeheader()
+        for rec in records:
+            writer.writerow({key: rec.get(key, None) for key in fieldnames})
+
+    selected = _select_representative_mean_field_points(records)
+    save_json(
+        {
+            "description": "Initial mean-field benchmark suggestions. Confirm with the full CosmoTransitions scan before using in thesis plots.",
+            "selected_points": selected,
+        },
+        Path(output_dir) / "D1_suggested_benchmark_points.json",
+    )
+
+    if selected:
+        selected_csv = Path(output_dir) / "D1_suggested_benchmark_points.csv"
+        with open(selected_csv, "w", newline="", encoding="utf-8") as fobj:
+            fieldnames = [
+                "benchmark_role",
+                "c6_over_f2_TeV2",
+                "c8_over_f4_TeV4",
+                "mean_field_vc_over_Tc",
+                "mean_field_Tc_GeV",
+                "combo_no_nucleation_guide",
+                "combo_too_weak_guide",
+            ]
+            writer = csv.DictWriter(fobj, fieldnames=fieldnames)
+            writer.writeheader()
+            for rec in selected:
+                writer.writerow({key: rec.get(key, None) for key in fieldnames})
+
+    fig, ax = plt.subplots(figsize=(7.8, 6.0))
+
+    cmap = ListedColormap(
+        [
+            "#f4f4f4",  # excluded
+            "#d9d9d9",  # allowed, too weak / one minimum
+            "#969696",  # allowed, too weak / two minima
+            "#fee08b",  # SFO moderate
+            "#1a9850",  # SFO strong
+        ]
+    )
+    norm = BoundaryNorm([-0.5, 0.5, 1.5, 2.5, 3.5, 4.5], cmap.N)
+
     im = ax.imshow(
-        vc_over_Tc,
+        category,
         origin="lower",
         aspect="auto",
         extent=(c6_vals.min(), c6_vals.max(), c8_vals.min(), c8_vals.max()),
-        cmap="viridis",
+        cmap=cmap,
+        norm=norm,
+        alpha=0.95,
     )
-    cs = ax.contour(c6_vals, c8_vals, vc_over_Tc, levels=[0.7, 1.3, 2.0, 4.0], colors="white", linewidths=0.9)
-    ax.clabel(cs, fmt="%g", fontsize=8)
+
+    # Use the mean-field strength as contours, reproducing the information of
+    # the yellow/green regions more quantitatively.
+    valid_v = np.isfinite(vc_over_Tc)
+    if np.any(valid_v):
+        try:
+            cs = ax.contour(
+                c6_vals,
+                c8_vals,
+                vc_over_Tc,
+                levels=[0.7, 1.3, 2.0, 4.0],
+                colors="black",
+                linewidths=0.9,
+            )
+            ax.clabel(cs, fmt={0.7: "0.7", 1.3: "1.3", 2.0: "2", 4.0: "4"}, fontsize=8)
+        except Exception:
+            pass
+
+    # Article-inspired guide lines for full numerical scans.
+    c6_line = np.linspace(c6_vals.min(), c6_vals.max(), 400)
+    vTeV = DEFAULT_VEV / 1000.0
+    c8_no_nucl = (3.5 - 2.0 * c6_line) / (3.0 * vTeV**2)
+    c8_too_weak = (1.5 - c6_line) / (1.5 * vTeV**2)
+    ax.plot(c6_line, c8_no_nucl, color="black", ls="--", lw=2.0, label=r"$2c_6/f^2+3v^2c_8/f^4\simeq3.5$")
+    ax.plot(c6_line, c8_too_weak, color="black", ls=":", lw=1.7, label=r"$c_6/f^2+3v^2c_8/(2f^4)\simeq1.5$")
+
+    if np.any(useful):
+        ax.contour(
+            c6_vals,
+            c8_vals,
+            useful.astype(float),
+            levels=[0.5],
+            colors="#542788",
+            linewidths=1.1,
+        )
+
+    if current_point is not None:
+        ax.scatter(
+            [current_point[0]],
+            [current_point[1]],
+            marker="*",
+            s=160,
+            color="#542788",
+            edgecolor="black",
+            linewidth=0.5,
+            zorder=8,
+            label="current run",
+        )
+
+    for rec in selected:
+        ax.scatter(
+            [float(rec["c6_over_f2_TeV2"])],
+            [float(rec["c8_over_f4_TeV4"])],
+            marker="o",
+            s=55,
+            color="#542788",
+            edgecolor="white",
+            linewidth=0.6,
+            zorder=7,
+        )
+
     ax.set_xlabel(r"$c_6/f^2$ [TeV$^{-2}$]")
     ax.set_ylabel(r"$c_8/f^4$ [TeV$^{-4}$]")
-    ax.set_title("Example D1: mean-field estimate of $v_c/T_c$")
-    cb = fig.colorbar(im, ax=ax, pad=0.02)
-    cb.set_label(r"$v_c/T_c$")
+    ax.set_title("Example D1: Fig. 2-style mean-field map and scan guide")
+    ax.set_xlim(c6_vals.min(), c6_vals.max())
+    ax.set_ylim(c8_vals.min(), c8_vals.max())
+    ax.grid(True, alpha=0.18)
+
+    handles = [
+        plt.Line2D([0], [0], marker="s", color="none", markerfacecolor="#d9d9d9", markersize=9, label="allowed, weak / one minimum"),
+        plt.Line2D([0], [0], marker="s", color="none", markerfacecolor="#969696", markersize=9, label="allowed, weak / two minima"),
+        plt.Line2D([0], [0], marker="s", color="none", markerfacecolor="#fee08b", markersize=9, label=r"SFO, $0.7<v_c/T_c<1.3$"),
+        plt.Line2D([0], [0], marker="s", color="none", markerfacecolor="#1a9850", markersize=9, label=r"SFO, $v_c/T_c>1.3$"),
+    ]
+    line_handles, line_labels = ax.get_legend_handles_labels()
+    ax.legend(handles + line_handles, [h.get_label() for h in handles] + line_labels, fontsize=7.5, loc="upper right")
+
     fig.tight_layout()
-    return save_figure(fig, output_dir, "D1_mean_field_map", close=not show)
+    return save_figure(fig, output_dir, "D1_mean_field_fig2_map", close=not show)
+
+
 
 
 # -----------------------------------------------------------------------------
@@ -1358,7 +1725,7 @@ def example_E3_potential_at_key_temperatures(summary: dict[str, Any], *, output_
     if not clean:
         clean = [("T80", r"$T$", 80.0), ("T100", r"$T$", 100.0), ("T120", r"$T$", 120.0)]
     if phi_max is None:
-        phi_max = summary.get("phi_range", (0.0, DEFAULT_VEV * 4))[1]
+        phi_max = min(300.0, float(summary.get("phi_range", (0.0, DEFAULT_VEV * 4))[1]))
     phi = np.linspace(0.0, float(phi_max), 1600)
     cmap = plt.get_cmap("viridis_r")
     fig, ax = plt.subplots(figsize=(7.5, 4.8))
@@ -1440,10 +1807,10 @@ def _make_phi_only_potential_at_Tn(summary: Mapping[str, Any], *, Tn: float) -> 
                 params,
                 include_zeroT_loops=bool(scan.get("include_zeroT_loops", True)),
                 include_scalar_loops=bool(scan.get("include_scalar_loops", True)),
+                renormalize_zeroT_loops=bool(scan.get("renormalize_zeroT_loops", True)),
                 include_thermal=True,
                 include_scalar_thermal=bool(scan.get("include_scalar_thermal", True)),
                 include_daisy=bool(scan.get("include_daisy", False)),
-                thermal_approx=str(scan.get("thermal_approx", "spline")),
             ),
             dtype=float,
         )
@@ -1473,39 +1840,6 @@ def _get_bounce(summary: Mapping[str, Any]) -> dict[str, Any]:
     if "bounce" not in summary:
         raise RuntimeError("Bounce has not been computed yet.")
     return summary["bounce"]
-
-
-def _safe_phi_top(inst: SingleFieldInstanton) -> float:
-    """Return the top/barrier diagnostic used in the bounce plots."""
-
-    sinfo = getattr(inst, "_scale_info", {}) or {}
-    phi_top = sinfo.get("phi_top", None)
-    if phi_top is None or not np.isfinite(float(phi_top)):
-        phi_top = getattr(inst, "phi_bar", np.nan)
-    return float(phi_top)
-
-
-def _safe_phi0(inst: SingleFieldInstanton, profile: Any) -> tuple[float, float]:
-    """Return the release point diagnostics, falling back to the profile start."""
-
-    r, phi, _ = _profile_arrays(profile)
-    pinfo = getattr(inst, "_profile_info", {}) or {}
-    r0 = pinfo.get("r0", r[0])
-    phi0 = pinfo.get("phi0", phi[0])
-    return float(r0), float(phi0)
-
-
-def _phi_interpolator_from_profile(profile: Any) -> Callable[[ArrayLike | float], np.ndarray]:
-    """Interpolate the radial bounce profile phi(r)."""
-
-    r, phi, _ = _profile_arrays(profile)
-    return interpolate.interp1d(
-        r,
-        phi,
-        kind="linear",
-        bounds_error=False,
-        fill_value=(float(phi[0]), float(phi[-1])),
-    )
 
 
 def example_F1_bounce_potential_geometry(summary: dict[str, Any], *, output_dir: str | Path, show: bool = False) -> Path | None:
@@ -1547,6 +1881,13 @@ def example_F2_bounce_profile(summary: dict[str, Any], *, output_dir: str | Path
     r, phi, _ = _profile_arrays(b["profile"])
     fig, ax = plt.subplots(figsize=(8.0, 4.6))
     ax.plot(r, phi, lw=2.3, label=r"$h(r)$")
+
+    try:
+        wall = inst.wallDiagnostics(b["profile"], frac=(0.1, 0.9))
+        ax.axvspan(wall.r_lo, wall.r_hi, alpha=0.14, label="wall region")
+    except Exception:
+        wall = None
+
     ax.axhline(inst.phi_metaMin, ls="--", lw=1.0, label=r"$h_f$")
     ax.axhline(inst.phi_absMin, ls="--", lw=1.0, label=r"$h_t$")
     ax.set_xlabel(r"$r$ [GeV$^{-1}$]")
@@ -1573,6 +1914,15 @@ def example_F3_bubble_slice(summary: dict[str, Any], *, output_dir: str | Path, 
     PHI = phi_of_r(np.hypot(X, Y))
     fig, ax = plt.subplots(figsize=(6.4, 5.8))
     im = ax.imshow(PHI, origin="lower", extent=(x.min(), x.max(), y.min(), y.max()), cmap="viridis", interpolation="nearest")
+
+    try:
+        inst = b["instanton"]
+        wall = inst.wallDiagnostics(b["profile"], frac=(0.1, 0.9))
+        circle = plt.Circle((0.0, 0.0), wall.r_hi, fill=False, color="black", lw=1.3, ls="--")
+        ax.add_patch(circle)
+    except Exception:
+        pass
+
     ax.set_aspect("equal")
     ax.set_xlabel(r"$x$ [GeV$^{-1}$]")
     ax.set_ylabel(r"$y$ [GeV$^{-1}$]")
@@ -1615,237 +1965,13 @@ def example_F4_action_diagnostics(summary: dict[str, Any], *, output_dir: str | 
     return save_figure(fig, output_dir, "F4_action_diagnostics", close=not show)
 
 
-def example_F2_inverted_potential_path(
-    summary: dict[str, Any],
-    *,
-    output_dir: str | Path,
-    show: bool = False,
-) -> Path | None:
-    """Example F2: inverted potential and bounce trajectory."""
-
-    try:
-        b = _get_bounce(summary)
-    except RuntimeError as err:
-        print(f"[F2] {err}; skipping.")
-        return None
-
-    inst = b["instanton"]
-    profile = b["profile"]
-    _, phi0 = _safe_phi0(inst, profile)
-    phi_top = _safe_phi_top(inst)
-
-    phi_grid = build_phi_grid(inst, margin=0.12, n=1600)
-    Vfalse = float(inst.V(inst.phi_metaMin))
-    invV = -(np.asarray(inst.V(phi_grid), dtype=float) - Vfalse)
-
-    fig, ax = plt.subplots(figsize=(8.0, 4.8))
-    ax.plot(phi_grid, invV, lw=2.35, color="black", label=r"$-[V(h,T_n)-V(h_f,T_n)]$")
-
-    phi_a, phi_b = sorted([phi0, inst.phi_metaMin])
-    mask = (phi_grid >= phi_a) & (phi_grid <= phi_b)
-    ax.plot(phi_grid[mask], invV[mask], lw=3.1, color=BOUNCE_COLORS["phi0"], label=r"bounce path $h_0\to h_f$")
-
-    path_points = np.linspace(phi0, inst.phi_metaMin, 5)[1:-1]
-    step = 0.045 * abs(inst.phi_absMin - inst.phi_metaMin)
-    direction = np.sign(inst.phi_metaMin - phi0)
-    for ph in path_points:
-        x0 = float(ph)
-        x1 = float(np.clip(ph + direction * step, phi_grid.min(), phi_grid.max()))
-        y0 = -float(inst.V(x0) - Vfalse)
-        y1 = -float(inst.V(x1) - Vfalse)
-        ax.annotate("", xy=(x1, y1), xytext=(x0, y0), arrowprops=dict(arrowstyle="-|>", lw=1.9, color="black"))
-
-    markers = [
-        (inst.phi_metaMin, r"$h_f$", BOUNCE_COLORS["false"]),
-        (inst.phi_absMin, r"$h_t$", BOUNCE_COLORS["true"]),
-        (inst.phi_bar, r"$h_{\rm bar}$", BOUNCE_COLORS["bar"]),
-        (phi_top, r"$h_{\rm top}$", BOUNCE_COLORS["top"]),
-        (phi0, r"$h_0$", BOUNCE_COLORS["phi0"]),
-    ]
-    for x, lab, col in markers:
-        if np.isfinite(x):
-            ax.scatter([x], [-float(inst.V(x) - Vfalse)], s=54, color=col, edgecolor="black", linewidth=0.35, zorder=5, label=lab)
-            ax.axvline(x, color=col, ls=":", lw=1.55, alpha=0.82)
-
-    ax.axhline(0.0, color=BOUNCE_COLORS["false"], lw=1.1, ls="--", alpha=0.65)
-    ax.set_xlabel(r"$h$ [GeV]")
-    ax.set_ylabel(r"$-[V(h,T_n)-V(h_f,T_n)]$ [GeV$^4$]")
-    ax.set_title(rf"Example F2: inverted potential at $T_n={b['Tn']:.4g}$ GeV")
-    ax.grid(True, alpha=0.25)
-    ax.legend(loc="best", fontsize=8, ncol=2)
-    fig.tight_layout()
-    return save_figure(fig, output_dir, "F2_inverted_potential_path", close=not show)
-
-
-def example_F4_bubble_volume_3d(
-    summary: dict[str, Any],
-    *,
-    output_dir: str | Path,
-    n_points: int = 14000,
-    random_seed: int = 12345,
-    show: bool = False,
-) -> Path | None:
-    """Example F4: 3D cutaway visualization of the bubble profile."""
-
-    try:
-        b = _get_bounce(summary)
-    except RuntimeError as err:
-        print(f"[F4] {err}; skipping.")
-        return None
-
-    inst = b["instanton"]
-    r, _, _ = _profile_arrays(b["profile"])
-    phi_of_r = _phi_interpolator_from_profile(b["profile"])
-    Rmax = float(r[-1])
-    rng = np.random.default_rng(random_seed)
-
-    xyz = rng.uniform(-Rmax, Rmax, size=(int(3.0 * n_points), 3))
-    radius = np.linalg.norm(xyz, axis=1)
-    inside = radius <= Rmax
-    xyz = xyz[inside][:n_points]
-    radius = radius[inside][:n_points]
-    phi_values = phi_of_r(radius)
-    cutaway = ~((xyz[:, 0] > 0.0) & (xyz[:, 1] > 0.0) & (xyz[:, 2] > 0.0))
-    xyz = xyz[cutaway]
-    phi_values = phi_values[cutaway]
-
-    fig = plt.figure(figsize=(7.0, 6.2))
-    ax = fig.add_subplot(111, projection="3d")
-    sc = ax.scatter(
-        xyz[:, 0], xyz[:, 1], xyz[:, 2],
-        c=phi_values,
-        cmap="viridis",
-        s=3.0,
-        alpha=0.55,
-        linewidths=0,
-        vmin=min(inst.phi_absMin, inst.phi_metaMin),
-        vmax=max(inst.phi_absMin, inst.phi_metaMin),
-    )
-    lim = Rmax
-    ax.plot([-lim, lim], [0, 0], [0, 0], lw=1.0, alpha=0.8)
-    ax.plot([0, 0], [-lim, lim], [0, 0], lw=1.0, alpha=0.8)
-    ax.plot([0, 0], [0, 0], [-lim, lim], lw=1.0, alpha=0.8)
-    ax.set_xlabel(r"$x$ [GeV$^{-1}$]")
-    ax.set_ylabel(r"$y$ [GeV$^{-1}$]")
-    ax.set_zlabel(r"$z$ [GeV$^{-1}$]")
-    ax.set_title(rf"Example F4: 3D bubble profile at $T_n={b['Tn']:.4g}$ GeV")
-    ax.set_xlim(-lim, lim)
-    ax.set_ylim(-lim, lim)
-    ax.set_zlim(-lim, lim)
-    ax.set_box_aspect((1, 1, 1))
-    cb = fig.colorbar(sc, ax=ax, shrink=0.75, pad=0.08)
-    cb.set_label(r"$h(r)$ [GeV]")
-    fig.tight_layout()
-    return save_figure(fig, output_dir, "F4_bubble_volume_3d", close=not show)
-
-
-def example_F4b_phi_xy_surface(
-    summary: dict[str, Any],
-    *,
-    output_dir: str | Path,
-    n_grid: int = 420,
-    show: bool = False,
-) -> Path | None:
-    """Example F4b: 3D surface view of h(x,y) at t=0,z=0."""
-
-    try:
-        b = _get_bounce(summary)
-    except RuntimeError as err:
-        print(f"[F4b] {err}; skipping.")
-        return None
-
-    inst = b["instanton"]
-    r, _, _ = _profile_arrays(b["profile"])
-    phi_of_r = _phi_interpolator_from_profile(b["profile"])
-    Rmax = float(r[-1])
-    pad = 0.08 * Rmax
-    x = np.linspace(-Rmax - pad, Rmax + pad, int(n_grid))
-    y = np.linspace(-Rmax - pad, Rmax + pad, int(n_grid))
-    X, Y = np.meshgrid(x, y, indexing="xy")
-    PHI = phi_of_r(np.hypot(X, Y))
-
-    fig = plt.figure(figsize=(7.4, 6.2))
-    ax = fig.add_subplot(111, projection="3d")
-    step = max(1, int(n_grid / 220))
-    surf = ax.plot_surface(
-        X[::step, ::step],
-        Y[::step, ::step],
-        PHI[::step, ::step],
-        linewidth=0,
-        antialiased=True,
-        cmap="viridis",
-        vmin=min(inst.phi_absMin, inst.phi_metaMin),
-        vmax=max(inst.phi_absMin, inst.phi_metaMin),
-    )
-    ax.set_xlabel(r"$x$ [GeV$^{-1}$]")
-    ax.set_ylabel(r"$y$ [GeV$^{-1}$]")
-    ax.set_zlabel(r"$h(x,y)$ [GeV]")
-    ax.set_title(rf"Example F4b: surface $h(x,y)$ at $T_n={b['Tn']:.4g}$ GeV")
-    cb = fig.colorbar(surf, ax=ax, shrink=0.7, pad=0.08)
-    cb.set_label(r"$h(\sqrt{x^2+y^2})$ [GeV]")
-    fig.tight_layout()
-    return save_figure(fig, output_dir, "F4b_phi_xy_surface", close=not show)
-
-
-def example_F6_ode_terms_decomposition(
-    summary: dict[str, Any],
-    *,
-    output_dir: str | Path,
-    show: bool = False,
-) -> Path | None:
-    """Example F6: decompose the O(3) bounce equation along the profile."""
-
-    try:
-        b = _get_bounce(summary)
-    except RuntimeError as err:
-        print(f"[F6] {err}; skipping.")
-        return None
-
-    inst = b["instanton"]
-    profile = b["profile"]
-    r, phi, dphi = _profile_arrays(profile)
-    phi0 = float(phi[0])
-    d2phi = deriv14(dphi, r)
-    friction = inst.alpha * dphi / np.maximum(r, 1e-30)
-    force = np.asarray(inst.dV(phi), dtype=float)
-    V_profile = np.asarray(inst.V(phi), dtype=float)
-    V_meta = float(inst.V(inst.phi_metaMin))
-    V_0 = float(inst.V(phi0))
-
-    fig, ax = plt.subplots(figsize=(8.8, 5.0))
-    ax.plot(r, d2phi, lw=2.0, label=r"$h''(r)$")
-    ax.plot(r, friction, lw=2.0, label=rf"$\alpha h'(r)/r$, $\alpha={inst.alpha}$")
-    ax.plot(r, force, lw=2.0, label=r"$V'(h(r))$")
-    ax.axhline(0.0, color="black", lw=0.85, alpha=0.55)
-    ax2 = ax.twinx()
-    ax2.plot(r, V_profile, lw=1.8, ls="--", color="0.25", label=r"$V(h(r))$")
-    r_mark = 0.88 * float(r[-1])
-    y_lo, y_hi = sorted([V_0, V_meta])
-    ax2.vlines(r_mark, y_lo, y_hi, color=BOUNCE_COLORS["phi0"], lw=3.0, alpha=0.9)
-    ax2.text(r_mark, 0.5 * (V_0 + V_meta), r"$\Delta V$", color=BOUNCE_COLORS["phi0"], ha="left", va="center", fontsize=10)
-    ax.set_xlabel(r"$r$ [GeV$^{-1}$]")
-    ax.set_ylabel(r"ODE terms [GeV$^3$]")
-    ax2.set_ylabel(r"$V(h(r),T_n)$ [GeV$^4$]")
-    ax.set_title(rf"Example F6: bounce equation terms at $T_n={b['Tn']:.4g}$ GeV")
-    ax.grid(True, alpha=0.25)
-    lines1, labels1 = ax.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax.legend(lines1 + lines2, labels1 + labels2, loc="lower right", fontsize=9)
-    fig.tight_layout()
-    return save_figure(fig, output_dir, "F6_ode_terms_decomposition", close=not show)
-
-
 def run_bounce_examples(summary: dict[str, Any], *, output_dir: str | Path, show: bool = False, xguess: float | None = None, phitol: float = 1e-5, thinCutoff: float = 1e-4, npoints: int = 800) -> dict[str, Path | None]:
     build_bounce_solution_at_Tn(summary, xguess=xguess, phitol=phitol, thinCutoff=thinCutoff, npoints=npoints)
     return {
         "F1": example_F1_bounce_potential_geometry(summary, output_dir=output_dir, show=show),
-        "F2": example_F2_inverted_potential_path(summary, output_dir=output_dir, show=show),
-        "F3": example_F2_bounce_profile(summary, output_dir=output_dir, show=show),
-        "F4": example_F3_bubble_slice(summary, output_dir=output_dir, show=show),
-        "F5": example_F4_bubble_volume_3d(summary, output_dir=output_dir, show=show),
-        "F5b": example_F4b_phi_xy_surface(summary, output_dir=output_dir, show=show),
-        "F6": example_F4_action_diagnostics(summary, output_dir=output_dir, show=show),
-        "F7": example_F6_ode_terms_decomposition(summary, output_dir=output_dir, show=show),
+        "F2": example_F2_bounce_profile(summary, output_dir=output_dir, show=show),
+        "F3": example_F3_bubble_slice(summary, output_dir=output_dir, show=show),
+        "F4": example_F4_action_diagnostics(summary, output_dir=output_dir, show=show),
     }
 
 
@@ -2035,20 +2161,17 @@ def run_all_examples(
     # physics/loop switches
     include_zeroT_loops: bool = True,
     include_scalar_loops: bool = True,
+    renormalize_zeroT_loops: bool = True,
     include_thermal: bool = True,
     include_scalar_thermal: bool = True,
     include_daisy: bool = False,
-    thermal_approx: str = "spline",
     # scan controls
-    x_eps: float = 1e-3,
-    T_eps: float = 1e-2,
-    deriv_order: int = 4,
     run_finite_temperature: bool = True,
     T_min: float = 1.0,
     T_max: float = 250.0,
     phi_scan_range: tuple[float, float] | None = None,
     n_phi_scan: int = 1200,
-    n_T_seeds: int = 3,
+    n_T_seeds: int = 2,
     deltaX_target: float = 0.1,
     phitol: float = 1e-5,
     overlapAngle: float = 45.0,
@@ -2057,7 +2180,14 @@ def run_all_examples(
     verbose: bool = True,
     # examples
     run_A2_benchmarks: bool = True,
-    run_D1_mean_field_map: bool = False,
+    C1_temperatures: Sequence[float] | None = None,
+    C1_phi_max: float = 300.0,
+    E3_phi_max: float = 300.0,
+    run_D1_mean_field_map: bool = True,
+    D1_c6_range: tuple[float, float] = (-1.0, 6.0),
+    D1_c8_range: tuple[float, float] = (-10.0, 15.0),
+    D1_n_c6: int = 100,
+    D1_n_c8: int = 100,
     run_bounce: bool = True,
     run_gw: bool = True,
     gw_f_min_mHz: float = 1e-3,
@@ -2101,17 +2231,53 @@ def run_all_examples(
     saved["B1"] = example_B1_physicality_report(params, output_dir=output_dir, show=show)
 
     # C. Finite-temperature shapes
+    # This is only a quick visual pre-check.  The transition, bounce and GW
+    # blocks below use the full finite-temperature potential through
+    # build_finite_T_derivatives and CosmoTransitions.
     mf = mean_field_vc_tc(params)
-    temps = [0.0, 50.0, 75.0, 100.0, 125.0]
-    if mf["T_c"] is not None:
-        Tc = float(mf["T_c"])
-        temps = sorted(set([0.0, max(1.0, Tc - 20.0), Tc, Tc + 20.0, 125.0]))
-    saved["C1"] = example_C1_finite_temperature_shapes(params, output_dir=output_dir, temperatures=temps, show=show, include_zeroT_loops=include_zeroT_loops, include_daisy=include_daisy)
+    if C1_temperatures is None:
+        temps = [0.0, 50.0, 75.0, 100.0, 125.0]
+        if mf["T_c"] is not None and 1.0 <= float(mf["T_c"]) <= 180.0:
+            Tc = float(mf["T_c"])
+            temps = sorted(set([0.0, max(1.0, Tc - 20.0), Tc, Tc + 20.0, 125.0]))
+    else:
+        temps = [float(T) for T in C1_temperatures]
+
+    saved["C1"] = example_C1_finite_temperature_shapes(
+        params,
+        output_dir=output_dir,
+        temperatures=temps,
+        phi_max=C1_phi_max,
+        show=show,
+        include_zeroT_loops=include_zeroT_loops,
+        include_daisy=include_daisy,
+    )
 
     # D. Fast mean-field diagnostics
-    save_json({"mean_field": mf, "physicality": check_zero_temperature_physicality(params, include_zeroT_loops=False, include_glauber=params.use_glauber_measure)}, output_dir / "D0_fast_diagnostics.json")
+    current_fast_record = _mean_field_point_record(c6_over_f2_TeV2, c8_over_f4_TeV4, f_GeV=f_GeV)
+    save_json(
+        {
+            "mean_field": mf,
+            "current_point_fast_record": current_fast_record,
+            "physicality": check_zero_temperature_physicality(
+                params,
+                include_zeroT_loops=False,
+                include_glauber=params.use_glauber_measure,
+            ),
+        },
+        output_dir / "D0_fast_diagnostics.json",
+    )
     if run_D1_mean_field_map:
-        saved["D1"] = example_D1_mean_field_map(output_dir=output_dir, f_GeV=f_GeV, show=show)
+        saved["D1"] = example_D1_mean_field_map(
+            output_dir=output_dir,
+            f_GeV=f_GeV,
+            c6_range=D1_c6_range,
+            c8_range=D1_c8_range,
+            n_c6=D1_n_c6,
+            n_c8=D1_n_c8,
+            current_point=(c6_over_f2_TeV2, c8_over_f4_TeV4),
+            show=show,
+        )
 
     finite_summary: dict[str, Any] | None = None
     if run_finite_temperature:
@@ -2125,22 +2291,19 @@ def run_all_examples(
             n_phi_scan=n_phi_scan,
             n_T_seeds=n_T_seeds,
             deltaX_target=deltaX_target,
-            x_eps=x_eps,
-            T_eps=T_eps,
-            deriv_order=deriv_order,
             phitol=phitol,
             overlapAngle=overlapAngle,
             Tn_Ttol=Tn_Ttol,
             Tn_maxiter=Tn_maxiter,
             include_zeroT_loops=include_zeroT_loops,
             include_scalar_loops=include_scalar_loops,
+            renormalize_zeroT_loops=renormalize_zeroT_loops,
             include_thermal=include_thermal,
             include_scalar_thermal=include_scalar_thermal,
             include_daisy=include_daisy,
-            thermal_approx=thermal_approx,
             verbose=verbose,
         )
-        saved["E3"] = example_E3_potential_at_key_temperatures(finite_summary, output_dir=output_dir, phi_max=phi_scan_range[1], show=show)
+        saved["E3"] = example_E3_potential_at_key_temperatures(finite_summary, output_dir=output_dir, phi_max=E3_phi_max, show=show)
         if finite_summary.get("main_transition", None) is not None:
             saved["E1"] = example_E1_temperature_scales(finite_summary, output_dir=output_dir, show=show)
             saved["E2"] = example_E2_phi_min_vs_temperature(finite_summary, output_dir=output_dir, show=show)
@@ -2183,41 +2346,64 @@ if __name__ == "__main__":
     # Benchmark close to the central panel of Fig. 1 in arXiv:1802.02168:
     # c6/f^2=2 TeV^-2, c8/f^4=2 TeV^-4, f=1 TeV.
     run_all_examples(
-        c6_over_f2_TeV2=2.0,
-        c8_over_f4_TeV4=2.0,
+        # Theory point
+        c6_over_f2_TeV2=2.5,
+        c8_over_f4_TeV4=6.0,
         f_GeV=1000.0,
         m_h=DEFAULT_MH,
+
+        # Optional Gláuber add-on
         use_glauber_measure=False,
         C_glauber=0.0,
         Lambda_glauber=1000.0,
+
+        # Output
         run_tag="pure_EFT68_benchmark",
         show=False,
+
+        # Potential switches
         include_zeroT_loops=True,
         include_scalar_loops=True,
+        renormalize_zeroT_loops=True,
         include_thermal=True,
         include_scalar_thermal=True,
-        include_daisy=False,  # off by default to reproduce the displayed EFT potential of the article
-        thermal_approx="spline",  # project Jb/Jf spline backend expects theta=m^2/T^2
+        include_daisy=False,
+        #thermal_approx="spline",
+
+        # Finite-temperature scan
         run_finite_temperature=True,
         T_min=1.0,
         T_max=250.0,
-        phi_scan_range=(0.0, 1000.0),
+        phi_scan_range=(-1.0, 1000.0),
         n_phi_scan=1400,
-        n_T_seeds=3,
+        n_T_seeds=2,
         deltaX_target=0.1,
         phitol=1e-5,
         overlapAngle=45.0,
         Tn_Ttol=1e-3,
         Tn_maxiter=100,
+
+        # Quick plots / article checks
         run_A2_benchmarks=True,
-        run_D1_mean_field_map=False,
+        C1_temperatures=None,
+        C1_phi_max=300.0,
+        E3_phi_max=300.0,
+        run_D1_mean_field_map=True,
+        D1_c6_range=(-1.0, 6.0),
+        D1_c8_range=(-10.0, 15.0),
+        D1_n_c6=100,
+        D1_n_c8=100,
+
+        # Bounce
         run_bounce=True,
+
+        # Gravitational-wave spectra
         run_gw=True,
         gw_f_min_mHz=1e-3,
         gw_f_max_mHz=1e5,
         gw_n_freq=2000,
         gw_g_star=106.75,
-        gw_v_w=0.95,
+        gw_v_w=1,
         gw_dT_fraction=1e-3,
         gw_include_sw=True,
         gw_include_turb=True,
@@ -2225,5 +2411,7 @@ if __name__ == "__main__":
         gw_epsilon_turb=1.0,
         gw_kappa_coll=None,
         gw_beta_over_H_override=None,
+
+        # Diagnostics
         save_diagnostics_table=True,
     )
