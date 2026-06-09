@@ -32,12 +32,13 @@ from __future__ import annotations
 
 import csv
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 import matplotlib.pyplot as plt
-from matplotlib.colors import BoundaryNorm, ListedColormap
+from matplotlib.colors import ListedColormap
+from matplotlib.patches import Patch
 import numpy as np
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 from numpy.typing import ArrayLike
@@ -349,13 +350,21 @@ def _coleman_weinberg_raw_eft68(
     out = np.zeros_like(phi_arr, dtype=float)
     Q2 = (params.v if Q is None else float(Q)) ** 2
     masses = eft68_field_masses2(phi_arr, params)
+
     fields: list[tuple[str, float, float]] = []
     if include_scalar_loops:
         fields += [("h", N_H, C_SCALAR), ("chi", N_CHI, C_SCALAR)]
-    fields += [("W", N_W, C_GAUGE), ("Z", N_Z, C_GAUGE), ("top", N_TOP_CW, C_FERMION)]
+
+    fields += [
+        ("W", N_W, C_GAUGE),
+        ("Z", N_Z, C_GAUGE),
+        ("top", N_TOP_CW, C_FERMION),
+    ]
+
     for key, n_i, c_i in fields:
         m2 = np.asarray(masses[key], dtype=float)
         out += n_i * m2**2 * (_safe_log_mass2(m2, Q2) - c_i) / SIXTY_FOUR_PI2
+
     return out
 
 
@@ -386,28 +395,11 @@ def zeroT_counterterms_eft68(
     include_scalar_loops: bool = True,
     Q: float | None = None,
 ) -> np.ndarray:
-    r"""
-    Counterterms that keep the electroweak vacuum fixed at one loop.
+    """
+    Finite zero-temperature counterterms that keep V'(v)=0 and V''(v)=m_h^2.
 
-    We add
-
-    .. math::
-
-        V_{\rm CT}(h)=-\frac{\delta\mu^2}{2}h^2+\frac{\delta\lambda}{4}h^4
-        +\delta V_0,
-
-    with the finite renormalization conditions
-
-    .. math::
-
-        \left.\frac{d}{dh}(\Delta V_{\rm CW}+V_{\rm CT})\right|_{h=v}=0,
-        \qquad
-        \left.\frac{d^2}{dh^2}(\Delta V_{\rm CW}+V_{\rm CT})\right|_{h=v}=0.
-
-    This is numerically equivalent to refitting ``mu`` and ``lambda`` so that
-    the full zero-temperature potential still has its minimum at ``v`` and
-    curvature ``m_h^2``.  The constant ``delta V0`` is chosen so that
-    ``V_CT(0)=0``; it does not affect the transition dynamics.
+    This prevents the one-loop Coleman-Weinberg correction from moving the
+    measured electroweak vacuum away from h=v.
     """
 
     phi_arr = np.asarray(phi, dtype=float)
@@ -415,8 +407,6 @@ def zeroT_counterterms_eft68(
     key = (_params_cache_tuple(params), bool(include_scalar_loops), float(Q_value))
 
     if key not in _CW_COUNTERTERM_CACHE:
-        # A GeV-scale step is stable for the smooth one-loop curves and avoids
-        # roundoff from evaluating the logarithmic masses too close to v.
         h = max(1.0e-3 * params.v, 1.0e-2)
 
         def cw_at(x: float) -> float:
@@ -436,7 +426,6 @@ def zeroT_counterterms_eft68(
         delta_lambda = (cw_p / v0 - cw_pp) / (2.0 * v0**2)
         delta_mu2 = cw_p / v0 + delta_lambda * v0**2
 
-        # Keep the additive convention harmless for plots: V_CT(0)=0.
         delta_V0 = 0.0
 
         _CW_COUNTERTERM_CACHE[key] = (
@@ -446,6 +435,7 @@ def zeroT_counterterms_eft68(
         )
 
     delta_mu2, delta_lambda, delta_V0 = _CW_COUNTERTERM_CACHE[key]
+
     return (
         -0.5 * delta_mu2 * phi_arr**2
         + 0.25 * delta_lambda * phi_arr**4
@@ -464,9 +454,7 @@ def coleman_weinberg_eft68(
     """
     One-loop zero-temperature Coleman-Weinberg piece.
 
-    By default the finite zero-temperature counterterms are included.  This is
-    the safest convention for phase-transition scans because the measured
-    zero-temperature input vacuum is not displaced by the loop correction.
+    By default the finite zero-temperature counterterms are included.
     """
 
     raw = _coleman_weinberg_raw_eft68(
@@ -475,6 +463,7 @@ def coleman_weinberg_eft68(
         include_scalar_loops=include_scalar_loops,
         Q=Q,
     )
+
     if not renormalize_zeroT_loops:
         return raw
 
@@ -484,7 +473,6 @@ def coleman_weinberg_eft68(
         include_scalar_loops=include_scalar_loops,
         Q=Q,
     )
-
 
 def thermal_one_loop_eft68(
     phi: ArrayLike | float,
@@ -497,9 +485,13 @@ def thermal_one_loop_eft68(
     """
     One-loop thermal contribution using the project Jb/Jf wrappers.
 
-    Convention:
-    - approx='spline': pass theta = m^2/T^2.
-    - exact/low/high: pass x = m/T with the real-part prescription.
+    Convention used in this thesis file:
+    - approx='spline': pass theta = m_i^2(h)/T^2;
+    - exact/low/high: pass x = m_i(h)/T with a real-part prescription.
+
+    The spline mode is the safest one for the EFT scans because it accepts
+    negative scalar mass squared values through the analytic continuation
+    already implemented in finiteT.py.
     """
 
     if T <= 0.0:
@@ -541,11 +533,13 @@ def thermal_one_loop_eft68(
     if np.iscomplexobj(out):
         imag_scale = np.nanmax(np.abs(np.imag(out)))
         real_scale = max(1.0, np.nanmax(np.abs(np.real(out))))
+
         if imag_scale > 1.0e-7 * real_scale:
             raise RuntimeError(
                 "thermal_one_loop_eft68 produced a non-negligible imaginary part. "
                 f"max|Im|={imag_scale:.6e}, scale={real_scale:.6e}"
             )
+
         out = np.real(out)
 
     return np.asarray(out, dtype=float)
@@ -559,8 +553,7 @@ def daisy_gauge_eft68(phi: ArrayLike | float, T: float, params: EFT68Parameters)
     mL2_phi = 0.25 * g2_eff * h**2
     mL2_T = mL2_phi + (11.0 / 6.0) * g2_eff * T**2
     return -(T / (12.0 * np.pi)) * 3.0 * (
-        np.maximum(mL2_T, 0.0) ** 1.5 - np.maximum(mL2_phi, 0.0) ** 1.5
-    )
+        np.maximum(mL2_T, 0.0) ** 1.5 - np.maximum(mL2_phi, 0.0) ** 1.5 )
 
 
 def glauber_measure_potential(
@@ -596,20 +589,9 @@ def glauber_measure_potential(
 
 def V_effective_potential(
     phi: ArrayLike | float,
-    T: float | None = None,
-    params: EFT68Parameters | None = None,
+    T: float | None,
+    params: EFT68Parameters,
     *,
-    c6_over_f2_TeV2: float = 2.0,
-    c8_over_f4_TeV4: float = 2.0,
-    f_GeV: float = 1000.0,
-    m_h: float = DEFAULT_MH,
-    v: float = DEFAULT_VEV,
-    m_w: float = DEFAULT_MW,
-    m_z: float = DEFAULT_MZ,
-    m_t: float = DEFAULT_MT,
-    use_glauber_measure: bool = False,
-    C_glauber: float = 0.0,
-    Lambda_glauber: float = 1000.0,
     include_zeroT_loops: bool = True,
     include_scalar_loops: bool = True,
     renormalize_zeroT_loops: bool = True,
@@ -622,21 +604,6 @@ def V_effective_potential(
     return_terms: bool = False,
 ) -> np.ndarray | dict[str, Any]:
     """Full effective potential used by the thesis workflow."""
-    if params is None:
-        params = make_eft68_parameters(
-            c6_over_f2_TeV2=c6_over_f2_TeV2,
-            c8_over_f4_TeV4=c8_over_f4_TeV4,
-            f_GeV=f_GeV,
-            m_h=m_h,
-            v=v,
-            m_w=m_w,
-            m_z=m_z,
-            m_t=m_t,
-            use_glauber_measure=use_glauber_measure,
-            C_glauber=C_glauber,
-            Lambda_glauber=Lambda_glauber,
-        )
-
     if T is None:
         T = 0.0
     T = float(T)
@@ -791,9 +758,8 @@ def mean_field_vc_tc(params: EFT68Parameters) -> dict[str, float | None]:
     """
     Mean-field critical temperature and v_c/T_c.
 
-    This uses the analytic v_c condition, but computes T_c from the
-    degeneracy equation directly. It avoids the unstable complex branch in
-    the previous implementation.
+    The previous analytic branch could enter complex values through fractional
+    powers. This version keeps all quantities explicitly real.
     """
 
     k6 = params.k6_GeV2
@@ -854,7 +820,6 @@ def mean_field_vc_tc(params: EFT68Parameters) -> dict[str, float | None]:
         "v_c_over_T_c": vc / Tc if Tc > 0.0 else None,
     }
 
-
 # -----------------------------------------------------------------------------
 # TransitionFinder wrappers
 # -----------------------------------------------------------------------------
@@ -888,9 +853,9 @@ def build_finite_temperature_problem(
     deriv_order: int = 4,
     include_zeroT_loops: bool = True,
     include_scalar_loops: bool = True,
-    renormalize_zeroT_loops: bool = True,
     include_thermal: bool = True,
     include_scalar_thermal: bool = True,
+    renormalize_zeroT_loops: bool = True,
     include_daisy: bool = False,
     thermal_approx: str = "spline",
 ) -> dict[str, Any]:
@@ -1028,10 +993,11 @@ def compute_finite_temperature_summary(
         "Tn_maxiter": Tn_maxiter,
         "include_zeroT_loops": include_zeroT_loops,
         "include_scalar_loops": include_scalar_loops,
-        "renormalize_zeroT_loops": renormalize_zeroT_loops,
         "include_thermal": include_thermal,
         "include_scalar_thermal": include_scalar_thermal,
         "include_daisy": include_daisy,
+        "renormalize_zeroT_loops": renormalize_zeroT_loops,
+        "thermal_approx": thermal_approx,
     }
     try:
         summary = _build_phases_and_transitions(
@@ -1107,18 +1073,6 @@ def compute_finite_temperature_summary(
     Ts_false = _closest_spinodal_to_T(spinodal_target, spin_false["T_spinodals"])
     Ts_true = _closest_spinodal_to_T(spinodal_target, spin_true["T_spinodals"])
     S_n, S_over_Tn = _extract_action_information(main_transition, Tn)
-    supercooling_fraction = np.nan
-    supercooling_percent = np.nan
-
-    if (
-        Tc is not None
-        and Tn is not None
-        and np.isfinite(Tc)
-        and np.isfinite(Tn)
-        and Tc > 0.0
-    ):
-        supercooling_fraction = (Tc - Tn) / Tc
-        supercooling_percent = 100.0 * supercooling_fraction
     phi_false_Tn = float(np.asarray(false_phase.valAt(Tn), dtype=float).ravel()[0]) if Tn else np.nan
     phi_true_Tn = float(np.asarray(true_phase.valAt(Tn), dtype=float).ravel()[0]) if Tn else np.nan
     summary["spinodal_false_phase"] = spin_false
@@ -1135,8 +1089,6 @@ def compute_finite_temperature_summary(
         "phi_false_Tn": phi_false_Tn,
         "phi_true_Tn": phi_true_Tn,
         "vTn_over_Tn": phi_true_Tn / Tn if Tn and Tn > 0.0 else np.nan,
-        "supercooling_fraction": supercooling_fraction,
-        "supercooling_percent": supercooling_percent,
     }
     print("\n" + "=" * 76)
     print("Finite-temperature transition summary")
@@ -1145,8 +1097,6 @@ def compute_finite_temperature_summary(
     print(f" T_c        : {Tc if Tc is not None else np.nan:10.5g} GeV")
     print(f" phi_true/Tn: {summary['key_temperatures']['vTn_over_Tn']:10.5g}")
     print(f" S3/Tn      : {S_over_Tn:10.5g}")
-    print(f" (Tc-Tn)/Tc : {supercooling_fraction:10.5g}")
-    print(f" supercooling: {supercooling_percent:10.5g} %")
     print("=" * 76)
     return summary
 
@@ -1164,6 +1114,7 @@ def example_A1_zero_temperature_potential(
     n_phi: int = 2000,
     show: bool = False,
     include_zeroT_loops: bool = True,
+    renormalize_zeroT_loops: bool = True,
     include_glauber: bool | None = None,
     include_inset: bool = True,
     inset_phi_max: float = 300.0,
@@ -1177,6 +1128,8 @@ def example_A1_zero_temperature_potential(
         0.0,
         params,
         include_zeroT_loops=include_zeroT_loops,
+        include_scalar_loops=True,
+        renormalize_zeroT_loops=renormalize_zeroT_loops,
         include_thermal=False,
         include_daisy=False,
         include_glauber=include_glauber,
@@ -1194,13 +1147,29 @@ def example_A1_zero_temperature_potential(
         branch = params.Lambda_glauber / np.sqrt(params.C_glauber)
         if 0.0 < branch < phi_max:
             ax.axvline(branch, color="#d62728", lw=1.2, ls=":", label=r"Gláuber branch")
+
     if include_inset:
-        zoom_mask = phi <= min(float(inset_phi_max), float(phi_max))
+        zoom_phi_max = min(float(inset_phi_max), float(phi_max))
+        zoom_mask = phi <= zoom_phi_max
         finite_zoom = zoom_mask & np.isfinite(Vfull)
+
         if np.any(finite_zoom):
-            axins = ax.inset_axes([0.08, 0.42, 0.43, 0.43])
-            axins.plot(phi[zoom_mask], Vtree[zoom_mask], color="black", lw=1.5)
-            axins.plot(phi[zoom_mask], Vfull[zoom_mask], color="#ff7f0e", lw=1.4, ls="--")
+            axins = ax.inset_axes([0.08, 0.17, 0.43, 0.36])
+
+            axins.plot(
+                phi[zoom_mask],
+                Vtree[zoom_mask],
+                color="black",
+                lw=1.5,
+            )
+            axins.plot(
+                phi[zoom_mask],
+                Vfull[zoom_mask],
+                color="#ff7f0e",
+                lw=1.4,
+                ls="--",
+            )
+
             axins.axhline(0.0, color="black", lw=0.75, ls="--", alpha=0.55)
             axins.axvline(params.v, color="0.25", lw=0.8, ls=":", alpha=0.65)
 
@@ -1209,12 +1178,21 @@ def example_A1_zero_temperature_potential(
             y_max = float(np.nanmax(y_zoom))
             y_pad = 0.08 * (y_max - y_min + 1.0e-30)
 
-            axins.set_xlim(0.0, min(float(inset_phi_max), float(phi_max)))
+            axins.set_xlim(0.0, zoom_phi_max)
             axins.set_ylim(y_min - y_pad, y_max + y_pad)
             axins.grid(True, alpha=0.2)
             axins.tick_params(labelsize=8)
-            mark_inset(ax, axins, loc1=2, loc2=4, fc="none", ec="0.45", lw=0.9, alpha=0.8)
 
+            mark_inset(
+                ax,
+                axins,
+                loc1=2,
+                loc2=4,
+                fc="none",
+                ec="0.45",
+                lw=0.9,
+                alpha=0.8,
+            )
     ax.set_xlabel(r"$h$ [GeV]")
     ax.set_ylabel(r"$V(h,0)-V(0,0)$ [GeV$^4$]")
     ax.set_title("Example A1: zero-temperature EFT potential")
@@ -1241,8 +1219,30 @@ def example_A2_article_benchmarks(
         p = EFT68Parameters(c6_over_f2_TeV2=c6f2, c8_over_f4_TeV4=c8f4, f_GeV=f_GeV)
         phi = np.linspace(0.0, phi_max, 1400)
         Vtree = eft68_tree_potential(phi, p) - eft68_tree_potential(0.0, p)
-        V0 = deltaV(phi, 0.0, p, include_zeroT_loops=True, include_thermal=False, include_daisy=False)
-        VTx = deltaV(phi, Tx, p, include_zeroT_loops=True, include_thermal=True, include_daisy=False)
+        V0 = deltaV(
+            phi,
+            0.0,
+            p,
+            include_zeroT_loops=True,
+            include_scalar_loops=True,
+            renormalize_zeroT_loops=True,
+            include_thermal=False,
+            include_daisy=False,
+            thermal_approx="spline",
+        )
+
+        VTx = deltaV(
+            phi,
+            Tx,
+            p,
+            include_zeroT_loops=True,
+            include_scalar_loops=True,
+            renormalize_zeroT_loops=True,
+            include_thermal=True,
+            include_scalar_thermal=True,
+            include_daisy=False,
+            thermal_approx="spline",
+        )
         ax.plot(phi, Vtree, color="black", lw=2.0, label=r"$V_{\rm tree}$")
         ax.plot(phi, V0, color="#ff7f0e", lw=1.8, ls="--", label=r"$V_{1\ell}, T=0$")
         ax.plot(phi, VTx, color="#2ca02c", lw=1.8, ls="--", label=rf"$V_{{1\ell}}, T_x={Tx:.0f}$ GeV")
@@ -1302,10 +1302,12 @@ def example_C1_finite_temperature_shapes(
     n_phi: int = 2000,
     show: bool = False,
     include_zeroT_loops: bool = True,
+    renormalize_zeroT_loops: bool = True,
+    thermal_approx: str = "spline",
     include_daisy: bool = False,
 ) -> Path:
     if phi_max is None:
-        phi_max = min(params.f_GeV, 300.0)
+        phi_max = params.f_GeV
     phi = np.linspace(0.0, phi_max, n_phi)
     fig, ax = plt.subplots(figsize=(8.0, 5.0))
     cmap = plt.get_cmap("viridis_r")
@@ -1316,8 +1318,12 @@ def example_C1_finite_temperature_shapes(
             float(T),
             params,
             include_zeroT_loops=include_zeroT_loops,
+            include_scalar_loops=True,
+            renormalize_zeroT_loops=renormalize_zeroT_loops,
             include_thermal=float(T) > 0.0,
+            include_scalar_thermal=True,
             include_daisy=include_daisy,
+            thermal_approx=thermal_approx,
         )
         finite = np.isfinite(y)
         ax.plot(phi[finite], y[finite], lw=2.0, color=color, label=rf"$T={T:.0f}$ GeV")
@@ -1326,7 +1332,7 @@ def example_C1_finite_temperature_shapes(
     ax.axvline(phi_max, color="0.4", lw=1.0, ls="-.")
     ax.set_xlabel(r"$h$ [GeV]")
     ax.set_ylabel(r"$V(h,T)-V(0,T)$ [GeV$^4$]")
-    ax.set_title("Example C1: quick finite-temperature potential shapes (diagnostic only)")
+    ax.set_title("Example C1: finite-temperature potential shapes")
     ax.grid(True, alpha=0.25)
     ax.legend(fontsize=8)
     fig.tight_layout()
@@ -1337,311 +1343,172 @@ def example_C1_finite_temperature_shapes(
 # Plot block D: mean-field scan and fast diagnostics
 # -----------------------------------------------------------------------------
 
-
-def _tree_second_minimum_below_cutoff(params: EFT68Parameters) -> bool:
-    """Return True if the tree-level potential has an extra minimum in (v, f)."""
-    phi = np.linspace(0.0, params.f_GeV, 2500)
-    V = eft68_tree_potential(phi, params)
-    extrema = find_extrema_1d(phi, V)
-    for item in extrema:
-        if not str(item.get("kind", "")).endswith("minimum"):
-            continue
-        phi_ext = float(item["phi"])
-        if params.v + 2.0 < phi_ext < params.f_GeV - 2.0:
-            return True
-    return False
-
-
-def _mean_field_point_record(c6: float, c8: float, *, f_GeV: float) -> dict[str, Any]:
-    """Compute all quick mean-field diagnostics for one EFT point."""
-    p = EFT68Parameters(
-        c6_over_f2_TeV2=float(c6),
-        c8_over_f4_TeV4=float(c8),
-        f_GeV=float(f_GeV),
-    )
-    check = check_zero_temperature_physicality(p, include_zeroT_loops=False)
-    mf = mean_field_vc_tc(p)
-
-    vcTc = mf["v_c_over_T_c"]
-    allowed = bool(
-        check["passes_EFT_tree_condition_Vv_lower_than_v_to_f"]
-        and check["passes_Eq_2_14"]
-    )
-    has_two_minima = _tree_second_minimum_below_cutoff(p)
-
-    combo_no_nucleation = p.combo_TeV2
-    combo_weak = p.c6_over_f2_TeV2 + 1.5 * (p.v / 1000.0) ** 2 * p.c8_over_f4_TeV4
-
-    if not allowed:
-        category = 0
-        category_label = "excluded / not allowed at T=0"
-    elif vcTc is None or not np.isfinite(float(vcTc)):
-        category = 1 if not has_two_minima else 2
-        category_label = "allowed, no mean-field FOPT"
-    elif float(vcTc) <= 0.7:
-        category = 1 if not has_two_minima else 2
-        category_label = "allowed, too weak"
-    elif float(vcTc) < 1.3:
-        category = 3
-        category_label = "SFO, 0.7 < vc/Tc < 1.3"
-    else:
-        category = 4
-        category_label = "SFO, vc/Tc > 1.3"
-
-    # Very useful article-inspired guide for numerical scans:
-    # transition too strong / no nucleation is expected near and to the right of
-    # 2 c6/f^2 + 3 v^2 c8/f^4 ≈ 3.5, whereas transitions below the lower
-    # combination tend to be too weak for the article plots.
-    expected_for_full_scan = bool(
-        allowed
-        and vcTc is not None
-        and np.isfinite(float(vcTc))
-        and float(vcTc) > 0.7
-        and combo_no_nucleation < 3.5
-        and combo_weak >= 1.5
-    )
-
-    return {
-        "c6_over_f2_TeV2": float(c6),
-        "c8_over_f4_TeV4": float(c8),
-        "allowed_T0": allowed,
-        "has_second_tree_minimum_below_f": has_two_minima,
-        "mean_field_vc_GeV": mf["v_c"],
-        "mean_field_Tc_GeV": mf["T_c"],
-        "mean_field_vc_over_Tc": vcTc,
-        "category": category,
-        "category_label": category_label,
-        "combo_no_nucleation_guide": combo_no_nucleation,
-        "combo_too_weak_guide": combo_weak,
-        "expected_useful_for_full_scan": expected_for_full_scan,
-    }
-
-
-def _select_representative_mean_field_points(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Select four initial benchmark points: weak, two intermediate, strong."""
-    candidates = [
-        r for r in records
-        if r.get("expected_useful_for_full_scan")
-        and r.get("mean_field_vc_over_Tc") is not None
-        and np.isfinite(float(r["mean_field_vc_over_Tc"]))
-    ]
-
-    if not candidates:
-        return []
-
-    targets = [
-        ("weak_but_visible", 0.8),
-        ("intermediate_1", 1.3),
-        ("intermediate_2", 2.0),
-        ("strong_near_no_nucleation_edge", 3.5),
-    ]
-
-    selected: list[dict[str, Any]] = []
-    used: set[tuple[float, float]] = set()
-
-    for label, target in targets:
-        ranked = sorted(
-            candidates,
-            key=lambda r: (
-                abs(float(r["mean_field_vc_over_Tc"]) - target),
-                -float(r["combo_no_nucleation_guide"]),
-            ),
-        )
-        for rec in ranked:
-            key = (float(rec["c6_over_f2_TeV2"]), float(rec["c8_over_f4_TeV4"]))
-            if key in used:
-                continue
-            out = dict(rec)
-            out["benchmark_role"] = label
-            selected.append(out)
-            used.add(key)
-            break
-
-    return selected
-
-
 def example_D1_mean_field_map(
+    params: EFT68Parameters,
     *,
     output_dir: str | Path,
-    f_GeV: float = 1000.0,
-    c6_range: tuple[float, float] = (-1.0, 6.0),
-    c8_range: tuple[float, float] = (-10.0, 15.0),
-    n_c6: int = 100,
-    n_c8: int = 100,
-    current_point: tuple[float, float] | None = None,
+    c6_range: tuple[float, float] = (0.5, 4.6),
+    c8_range: tuple[float, float] = (-3.0, 10.0),
+    n_c6: int = 120,
+    n_c8: int = 120,
+    vmax_ratio: float = 3.0,
     show: bool = False,
 ) -> Path:
     """
-    Example D1: reproduce the logic of Fig. 2 in the mean-field approximation.
+    Example D1: Fig.-2-style mean-field map.
 
-    This is a fast diagnostic only.  It is not used to compute Tc, Tn, the
-    bounce, alpha, beta/H or the gravitational-wave spectrum.
+    Hybrid plot:
+    - background = categorical phase-structure regions;
+    - overlay = smooth color map of v_c/T_c only where SFO is expected.
     """
 
     c6_vals = np.linspace(c6_range[0], c6_range[1], int(n_c6))
     c8_vals = np.linspace(c8_range[0], c8_range[1], int(n_c8))
+    C6, C8 = np.meshgrid(c6_vals, c8_vals, indexing="xy")
 
-    vc_over_Tc = np.full((len(c8_vals), len(c6_vals)), np.nan)
-    Tc_grid = np.full_like(vc_over_Tc, np.nan)
-    category = np.zeros_like(vc_over_Tc, dtype=int)
-    useful = np.zeros_like(vc_over_Tc, dtype=bool)
-    records: list[dict[str, Any]] = []
+    ratio_map = np.full_like(C6, np.nan, dtype=float)
+    class_map = np.zeros_like(C6, dtype=int)
 
-    for i, c8 in enumerate(c8_vals):
-        for j, c6 in enumerate(c6_vals):
-            rec = _mean_field_point_record(float(c6), float(c8), f_GeV=f_GeV)
-            records.append(rec)
-            category[i, j] = int(rec["category"])
-            useful[i, j] = bool(rec["expected_useful_for_full_scan"])
-            if rec["mean_field_vc_over_Tc"] is not None:
-                vc_over_Tc[i, j] = float(rec["mean_field_vc_over_Tc"])
-            if rec["mean_field_Tc_GeV"] is not None:
-                Tc_grid[i, j] = float(rec["mean_field_Tc_GeV"])
+    # class labels:
+    # 0 -> >=1 minimum / no mean-field critical pair found
+    # 1 -> >=2 minima but weak transition proxy (vc/Tc < 0.7)
+    # 2 -> SFO, 0.7 < vc/Tc < 1.3
+    # 3 -> SFO, vc/Tc > 1.3
 
-    csv_path = Path(output_dir) / "D1_mean_field_fig2_map.csv"
-    with open(csv_path, "w", newline="", encoding="utf-8") as fobj:
-        fieldnames = [
-            "c6_over_f2_TeV2",
-            "c8_over_f4_TeV4",
-            "allowed_T0",
-            "has_second_tree_minimum_below_f",
-            "mean_field_vc_GeV",
-            "mean_field_Tc_GeV",
-            "mean_field_vc_over_Tc",
-            "category",
-            "category_label",
-            "combo_no_nucleation_guide",
-            "combo_too_weak_guide",
-            "expected_useful_for_full_scan",
-        ]
-        writer = csv.DictWriter(fobj, fieldnames=fieldnames)
-        writer.writeheader()
-        for rec in records:
-            writer.writerow({key: rec.get(key, None) for key in fieldnames})
+    for j, c8 in enumerate(c8_vals):
+        for i, c6 in enumerate(c6_vals):
+            p = replace(
+                params,
+                c6_over_f2_TeV2=float(c6),
+                c8_over_f4_TeV4=float(c8),
+            )
 
-    selected = _select_representative_mean_field_points(records)
-    save_json(
-        {
-            "description": "Initial mean-field benchmark suggestions. Confirm with the full CosmoTransitions scan before using in thesis plots.",
-            "selected_points": selected,
-        },
-        Path(output_dir) / "D1_suggested_benchmark_points.json",
+            mf = mean_field_vc_tc(p)
+            ratio = _as_finite_float_or_none(mf.get("v_c_over_T_c", None))
+
+            if ratio is None:
+                class_map[j, i] = 0
+            else:
+                ratio_map[j, i] = ratio
+                if ratio < 0.7:
+                    class_map[j, i] = 1
+                elif ratio < 1.3:
+                    class_map[j, i] = 2
+                else:
+                    class_map[j, i] = 3
+
+    fig, ax = plt.subplots(figsize=(8.3, 6.7))
+
+    # ------------------------------------------------------------------
+    # 1. Background categorical regions (article-like)
+    # ------------------------------------------------------------------
+    class_cmap = ListedColormap([
+        "#d9d9d9",  # light gray: >=1 minimum
+        "#8c8c8c",  # dark gray: >=2 minima
+        "#f0d34a",  # yellow: weak/intermediate SFO
+        "#2ca02c",  # green: stronger SFO
+    ])
+
+    ax.pcolormesh(
+        C6,
+        C8,
+        class_map,
+        shading="nearest",
+        cmap=class_cmap,
+        vmin=-0.5,
+        vmax=3.5,
+        rasterized=True,
     )
 
-    if selected:
-        selected_csv = Path(output_dir) / "D1_suggested_benchmark_points.csv"
-        with open(selected_csv, "w", newline="", encoding="utf-8") as fobj:
-            fieldnames = [
-                "benchmark_role",
-                "c6_over_f2_TeV2",
-                "c8_over_f4_TeV4",
-                "mean_field_vc_over_Tc",
-                "mean_field_Tc_GeV",
-                "combo_no_nucleation_guide",
-                "combo_too_weak_guide",
-            ]
-            writer = csv.DictWriter(fobj, fieldnames=fieldnames)
-            writer.writeheader()
-            for rec in selected:
-                writer.writerow({key: rec.get(key, None) for key in fieldnames})
-
-    fig, ax = plt.subplots(figsize=(7.8, 6.0))
-
-    cmap = ListedColormap(
-        [
-            "#f4f4f4",  # excluded
-            "#d9d9d9",  # allowed, too weak / one minimum
-            "#969696",  # allowed, too weak / two minima
-            "#fee08b",  # SFO moderate
-            "#1a9850",  # SFO strong
-        ]
-    )
-    norm = BoundaryNorm([-0.5, 0.5, 1.5, 2.5, 3.5, 4.5], cmap.N)
-
-    im = ax.imshow(
-        category,
-        origin="lower",
-        aspect="auto",
-        extent=(c6_vals.min(), c6_vals.max(), c8_vals.min(), c8_vals.max()),
-        cmap=cmap,
-        norm=norm,
-        alpha=0.95,
+    # ------------------------------------------------------------------
+    # 2. Smooth vc/Tc overlay only in the SFO regions
+    # ------------------------------------------------------------------
+    ratio_overlay = np.ma.masked_where(
+        (~np.isfinite(ratio_map)) | (class_map < 2),
+        np.minimum(ratio_map, vmax_ratio),
     )
 
-    # Use the mean-field strength as contours, reproducing the information of
-    if current_point is not None:
-        ax.scatter(
-            [current_point[0]],
-            [current_point[1]],
-            marker="*",
-            s=180,
-            color="#542788",
-            edgecolor="black",
-            linewidth=0.6,
-            zorder=8,
-        )
-    ax.set_xlabel(r"$c_6/f^2$ [TeV$^{-2}$]")
-    ax.set_ylabel(r"$c_8/f^4$ [TeV$^{-4}$]")
-    ax.set_title("Example D1: Fig. 2-style mean-field map and scan guide")
-    ax.set_xlim(c6_vals.min(), c6_vals.max())
-    ax.set_ylim(c8_vals.min(), c8_vals.max())
-    ax.grid(True, alpha=0.18)
+    pcm = ax.pcolormesh(
+        C6,
+        C8,
+        ratio_overlay,
+        shading="nearest",
+        cmap="viridis",
+        vmin=0.7,
+        vmax=vmax_ratio,
+        alpha=0.82,
+        rasterized=True,
+    )
 
-    handles = [
-        plt.Line2D(
-            [0], [0],
-            marker="s",
-            color="none",
-            markerfacecolor="#d9d9d9",
-            markersize=9,
-            label="allowed, weak / one minimum",
-        ),
-        plt.Line2D(
-            [0], [0],
-            marker="s",
-            color="none",
-            markerfacecolor="#969696",
-            markersize=9,
-            label="allowed, weak / two minima",
-        ),
-        plt.Line2D(
-            [0], [0],
-            marker="s",
-            color="none",
-            markerfacecolor="#fee08b",
-            markersize=9,
-            label=r"SFO, $0.7<v_c/T_c<1.3$",
-        ),
-        plt.Line2D(
-            [0], [0],
-            marker="s",
-            color="none",
-            markerfacecolor="#1a9850",
-            markersize=9,
-            label=r"SFO, $v_c/T_c>1.3$",
-        ),
+    # Optional: keep only the physically relevant separating contours
+    contour_field = np.ma.masked_invalid(ratio_map)
+    cs = ax.contour(
+        C6,
+        C8,
+        contour_field,
+        levels=[0.7, 1.3],
+        colors="white",
+        linewidths=1.8,
+    )
+    ax.clabel(
+        cs,
+        fmt={0.7: "0.7", 1.3: "1.3"},
+        inline=True,
+        fontsize=10,
+    )
+
+    # ------------------------------------------------------------------
+    # 3. Current run marker
+    # ------------------------------------------------------------------
+    ax.scatter(
+        [params.c6_over_f2_TeV2],
+        [params.c8_over_f4_TeV4],
+        marker="*",
+        s=380,
+        color="#6a3d9a",
+        edgecolor="black",
+        linewidth=0.8,
+        zorder=6,
+        label="current run",
+    )
+
+    # ------------------------------------------------------------------
+    # 4. Legend
+    # ------------------------------------------------------------------
+    legend_handles = [
+        Patch(facecolor="#d9d9d9", edgecolor="black", label=r"$\geq 1$ minimum"),
+        Patch(facecolor="#8c8c8c", edgecolor="black", label=r"$\geq 2$ minima"),
+        Patch(facecolor="#f0d34a", edgecolor="black", label=r"SFO, $0.7 < v_c/T_c < 1.3$"),
+        Patch(facecolor="#2ca02c", edgecolor="black", label=r"SFO, $v_c/T_c > 1.3$"),
     ]
 
-    if current_point is not None:
-        handles.append(
-            plt.Line2D(
-                [0], [0],
-                marker="*",
-                color="none",
-                markerfacecolor="#542788",
-                markeredgecolor="black",
-                markersize=13,
-                label="current run",
-            )
-        )
+    ax.legend(
+        handles=legend_handles,
+        loc="upper left",
+        fontsize=10,
+        framealpha=0.95,
+    )
 
-    ax.legend(handles=handles, fontsize=8, loc="upper right")
-    
+    # ------------------------------------------------------------------
+    # 5. Axes / colorbar / styling
+    # ------------------------------------------------------------------
+    cb = fig.colorbar(pcm, ax=ax, pad=0.02)
+    cb.set_label(r"$v_c/T_c$", fontsize=12)
+
+    ax.set_xlim(c6_range)
+    ax.set_ylim(c8_range)
+    ax.set_xlabel(r"$c_6/f^2$ [TeV$^{-2}$]")
+    ax.set_ylabel(r"$c_8/f^4$ [TeV$^{-4}$]")
+    ax.set_title(r"Example D1: Fig. 2-style mean-field map")
+    ax.grid(True, alpha=0.18)
+
     fig.tight_layout()
-    return save_figure(fig, output_dir, "D1_mean_field_fig2_map", close=not show)
 
+    saved_path = save_figure(fig, output_dir, "D1_mean_field_map", close=not show)
+    if show:
+        plt.show()
 
-
+    return saved_path
 
 # -----------------------------------------------------------------------------
 # Plot block E: transition-finder finite-temperature plots
@@ -1676,10 +1543,79 @@ def _main_transition_objects(summary: Mapping[str, Any]) -> tuple[Any, Any, Any,
     return main, phases[false_key], phases[true_key], false_key, true_key, dict(summary.get("key_temperatures", {}) or {})
 
 
-def _phase_phi_curve(phase: Any, *, n_T: int = 350) -> tuple[np.ndarray, np.ndarray]:
-    T_vals = np.linspace(float(np.min(phase.T)), float(np.max(phase.T)), int(n_T))
-    phi_vals = np.array([np.asarray(phase.valAt(float(T)), dtype=float).ravel()[0] for T in T_vals])
+def _transition_plot_T_bounds(
+    key_T: Mapping[str, Any],
+    *,
+    extra_margin: float = 20.0,
+) -> tuple[float, float | None]:
+    """
+    Temperature interval used by the finite-temperature phase plots.
+
+    The lower bound is fixed at 0 for readability. The upper bound is chosen
+    slightly above the largest relevant scale among Tn, Tc and the spinodals.
+    """
+
+    temps = _finite_temperature_values(key_T)
+    if not temps:
+        return 0.0, None
+
+    hi = max(temps)
+    spread = max(max(temps) - min(temps), 1.0)
+    margin = max(float(extra_margin), 0.12 * spread)
+    return 0.0, hi + margin
+
+
+def _phase_phi_curve(
+    phase: Any,
+    *,
+    n_T: int = 350,
+    T_min: float | None = None,
+    T_max: float | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Sample h_min(T) along one traced phase inside an optional T-window."""
+
+    phase_T_min = float(np.min(phase.T))
+    phase_T_max = float(np.max(phase.T))
+
+    lo = phase_T_min if T_min is None else max(float(T_min), phase_T_min)
+    hi = phase_T_max if T_max is None else min(float(T_max), phase_T_max)
+
+    if hi <= lo:
+        return np.array([], dtype=float), np.array([], dtype=float)
+
+    T_vals = np.linspace(lo, hi, int(n_T))
+    phi_vals = np.array(
+        [np.asarray(phase.valAt(float(T)), dtype=float).ravel()[0] for T in T_vals],
+        dtype=float,
+    )
     return T_vals, phi_vals
+
+
+def _phase_m2_curve(
+    phase: Any,
+    hessV_XT: Callable[[ArrayLike, float], np.ndarray],
+    *,
+    n_T: int = 350,
+    T_min: float | None = None,
+    T_max: float | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Sample the one-dimensional curvature mass squared along a phase."""
+
+    T_vals, _ = _phase_phi_curve(phase, n_T=n_T, T_min=T_min, T_max=T_max)
+    if T_vals.size == 0:
+        return T_vals, np.array([], dtype=float)
+
+    m2_vals: list[float] = []
+    for T in T_vals:
+        x = np.asarray(phase.valAt(float(T)), dtype=float)
+        H = np.asarray(hessV_XT(x, float(T)), dtype=float)
+        if H.ndim == 0:
+            m2_vals.append(float(H))
+        else:
+            H = H.reshape(x.size, x.size)
+            m2_vals.append(float(np.min(np.linalg.eigvalsh(H))))
+
+    return T_vals, np.asarray(m2_vals, dtype=float)
 
 
 def example_E1_temperature_scales(summary: dict[str, Any], *, output_dir: str | Path, show: bool = False) -> Path | None:
@@ -1702,26 +1638,49 @@ def example_E1_temperature_scales(summary: dict[str, Any], *, output_dir: str | 
     return save_figure(fig, output_dir, "E1_temperature_scales", close=not show)
 
 
-def example_E2_phi_min_vs_temperature(summary: dict[str, Any], *, output_dir: str | Path, show: bool = False) -> Path | None:
+def example_E2_phi_min_vs_temperature(
+    summary: dict[str, Any],
+    *,
+    output_dir: str | Path,
+    show: bool = False,
+    n_T_plot: int = 350,
+    extra_T_margin: float = 20.0,
+) -> Path | None:
+    """Example E2: motion of the true and false minima near the transition."""
+
     try:
         _, false_phase, true_phase, *_rest, key_T = _main_transition_objects(summary)
     except RuntimeError as err:
         print(f"[E2] {err}; skipping.")
         return None
-    Tf, phif = _phase_phi_curve(false_phase)
-    Tt, phit = _phase_phi_curve(true_phase)
+
+    T_lo, T_hi = _transition_plot_T_bounds(key_T, extra_margin=extra_T_margin)
+    Tf, phif = _phase_phi_curve(false_phase, n_T=n_T_plot, T_min=T_lo, T_max=T_hi)
+    Tt, phit = _phase_phi_curve(true_phase, n_T=n_T_plot, T_min=T_lo, T_max=T_hi)
+
     fig, ax = plt.subplots(figsize=(7.2, 4.5))
-    ax.plot(Tf, phif, lw=2.0, label="false/high-T")
-    ax.plot(Tt, phit, lw=2.0, label="true/low-T")
+    if Tf.size:
+        ax.plot(Tf, phif, lw=2.0, label=r"false/high-$T$ minimum")
+    if Tt.size:
+        ax.plot(Tt, phit, lw=2.0, label=r"true/low-$T$ minimum")
+
     _draw_key_temperature_lines(ax, key_T, label=True)
+    ax.set_xlim(T_lo, T_hi if T_hi is not None else ax.get_xlim()[1])
     ax.set_xlabel(r"$T$ [GeV]")
     ax.set_ylabel(r"$h_{\min}(T)$ [GeV]")
     ax.set_title("Example E2: motion of minima")
     ax.grid(True, alpha=0.25)
     ax.legend(fontsize=9)
     fig.tight_layout()
-    return save_figure(fig, output_dir, "E2_phi_min_vs_temperature", close=not show)
 
+    summary["example_E2"] = {
+        "T_false": Tf,
+        "h_false": phif,
+        "T_true": Tt,
+        "h_true": phit,
+    }
+
+    return save_figure(fig, output_dir, "E2_phi_min_vs_temperature", close=not show)
 
 def example_E3_potential_at_key_temperatures(summary: dict[str, Any], *, output_dir: str | Path, phi_max: float | None = None, show: bool = False) -> Path | None:
     V_XT = summary.get("V_XT", None)
@@ -1734,7 +1693,7 @@ def example_E3_potential_at_key_temperatures(summary: dict[str, Any], *, output_
     if not clean:
         clean = [("T80", r"$T$", 80.0), ("T100", r"$T$", 100.0), ("T120", r"$T$", 120.0)]
     if phi_max is None:
-        phi_max = min(300.0, float(summary.get("phi_range", (0.0, DEFAULT_VEV * 4))[1]))
+        phi_max = summary.get("phi_range", (0.0, DEFAULT_VEV * 4))[1]
     phi = np.linspace(0.0, float(phi_max), 1600)
     cmap = plt.get_cmap("viridis_r")
     fig, ax = plt.subplots(figsize=(7.5, 4.8))
@@ -1782,6 +1741,64 @@ def example_E4_free_energy_difference(summary: dict[str, Any], *, output_dir: st
     return save_figure(fig, output_dir, "E4_free_energy_difference", close=not show)
 
 
+
+def example_E5_mass2_vs_temperature(
+    summary: dict[str, Any],
+    *,
+    output_dir: str | Path,
+    show: bool = False,
+    n_T_plot: int = 350,
+    extra_T_margin: float = 20.0,
+) -> Path | None:
+    """
+    Example E5: curvature mass squared along the true and false phases.
+
+    This is the EFT68 version of the old B3 diagnostic. The horizontal range is
+    restricted to the physically relevant transition window, from 0 to slightly
+    above the largest extracted thermal scale.
+    """
+
+    try:
+        _, false_phase, true_phase, *_rest, key_T = _main_transition_objects(summary)
+    except RuntimeError as err:
+        print(f"[E5] {err}; skipping.")
+        return None
+
+    hessV_XT = summary.get("hessV_XT", None)
+    if hessV_XT is None:
+        print("[E5] Hessian wrapper not available; skipping.")
+        return None
+
+    T_lo, T_hi = _transition_plot_T_bounds(key_T, extra_margin=extra_T_margin)
+    Tf, m2f = _phase_m2_curve(false_phase, hessV_XT, n_T=n_T_plot, T_min=T_lo, T_max=T_hi)
+    Tt, m2t = _phase_m2_curve(true_phase, hessV_XT, n_T=n_T_plot, T_min=T_lo, T_max=T_hi)
+
+    fig, ax = plt.subplots(figsize=(7.2, 4.5))
+    if Tf.size:
+        ax.plot(Tf, m2f, lw=2.0, label=r"$m^2_{\rm false}(T)$")
+    if Tt.size:
+        ax.plot(Tt, m2t, lw=2.0, label=r"$m^2_{\rm true}(T)$")
+
+    ax.axhline(0.0, color="black", linestyle="--", linewidth=1.0, alpha=0.75)
+    _draw_key_temperature_lines(ax, key_T, label=True)
+    ax.set_xlim(T_lo, T_hi if T_hi is not None else ax.get_xlim()[1])
+    ax.set_xlabel(r"$T$ [GeV]")
+    ax.set_ylabel(r"$m_{\rm eff}^2(T)$ [GeV$^2$]")
+    ax.set_title("Example E5: curvature masses along the phases")
+    ax.grid(True, alpha=0.25)
+    ax.legend(fontsize=9)
+    fig.tight_layout()
+
+    summary["example_E5"] = {
+        "T_false": Tf,
+        "m2_false": m2f,
+        "T_true": Tt,
+        "m2_true": m2t,
+    }
+
+    return save_figure(fig, output_dir, "E5_mass2_vs_temperature", close=not show)
+
+
 # -----------------------------------------------------------------------------
 # Plot block F: bounce diagnostics
 # -----------------------------------------------------------------------------
@@ -1805,9 +1822,14 @@ def _extract_bounce_inputs_from_summary(summary: Mapping[str, Any]) -> dict[str,
     }
 
 
-def _make_phi_only_potential_at_Tn(summary: Mapping[str, Any], *, Tn: float) -> Callable[[ArrayLike | float], np.ndarray]:
+def _make_phi_only_potential_at_Tn(
+    summary: Mapping[str, Any],
+    *,
+    Tn: float,
+) -> Callable[[ArrayLike | float], np.ndarray]:
     params = EFT68Parameters(**summary["model_parameters"])
     scan = summary.get("scan_parameters", {}) or {}
+
     def V_phi(phi: ArrayLike | float) -> np.ndarray:
         return np.asarray(
             V_effective_potential(
@@ -1820,19 +1842,43 @@ def _make_phi_only_potential_at_Tn(summary: Mapping[str, Any], *, Tn: float) -> 
                 include_thermal=True,
                 include_scalar_thermal=bool(scan.get("include_scalar_thermal", True)),
                 include_daisy=bool(scan.get("include_daisy", False)),
+                thermal_approx=str(scan.get("thermal_approx", "spline")),
             ),
             dtype=float,
         )
+
     return V_phi
 
 
-def build_bounce_solution_at_Tn(summary: dict[str, Any], *, phitol: float = 1e-5, thinCutoff: float = 1e-4, npoints: int = 800, xguess: float | None = None) -> dict[str, Any]:
+def build_bounce_solution_at_Tn(
+    summary: dict[str, Any],
+    *,
+    phitol: float = 1e-5,
+    thinCutoff: float = 1e-4,
+    npoints: int = 800,
+    xguess: float | None = None,
+) -> dict[str, Any]:
     inputs = _extract_bounce_inputs_from_summary(summary)
     V_phi = _make_phi_only_potential_at_Tn(summary, Tn=inputs["Tn"])
-    inst = SingleFieldInstanton(phi_absMin=inputs["phi_true"], phi_metaMin=inputs["phi_false"], V=V_phi, alpha=2, phi_eps=1e-3)
+    inst = SingleFieldInstanton(
+        phi_absMin=inputs["phi_true"],
+        phi_metaMin=inputs["phi_false"],
+        V=V_phi,
+        alpha=2,
+        phi_eps=1e-3,
+    )
     profile = compute_profile(inst, xguess=xguess, phitol=phitol, thinCutoff=thinCutoff, npoints=npoints)
     br = inst.actionBreakdown(profile)
-    bounce = {**inputs, "V_phi": V_phi, "instanton": inst, "profile": profile, "action_breakdown": br, "S3": float(br.S_total), "S3_over_T": float(br.S_total) / inputs["Tn"]}
+    bounce = {
+        **inputs,
+        "V_phi": V_phi,
+        "instanton": inst,
+        "profile": profile,
+        "action_breakdown": br,
+        "S3": float(br.S_total),
+        "S3_over_T": float(br.S_total) / inputs["Tn"],
+        "settings": {"xguess": xguess, "phitol": phitol, "thinCutoff": thinCutoff, "npoints": npoints},
+    }
     summary["bounce"] = bounce
     print("\nBounce at Tn: S3/Tn =", bounce["S3_over_T"])
     return bounce
@@ -1851,26 +1897,69 @@ def _get_bounce(summary: Mapping[str, Any]) -> dict[str, Any]:
     return summary["bounce"]
 
 
+def _safe_phi_top(inst: SingleFieldInstanton) -> float:
+    sinfo = getattr(inst, "_scale_info", {}) or {}
+    phi_top = sinfo.get("phi_top", None)
+    if phi_top is None or not np.isfinite(float(phi_top)):
+        phi_top = getattr(inst, "phi_bar", np.nan)
+    return float(phi_top)
+
+
+def _safe_phi0(inst: SingleFieldInstanton, profile: Any) -> tuple[float, float]:
+    r, phi, _ = _profile_arrays(profile)
+    pinfo = getattr(inst, "_profile_info", {}) or {}
+    r0 = pinfo.get("r0", r[0])
+    phi0 = pinfo.get("phi0", phi[0])
+    return float(r0), float(phi0)
+
+
+def _phi_interpolator_from_profile(profile: Any) -> Callable[[ArrayLike | float], np.ndarray]:
+    r, phi, _ = _profile_arrays(profile)
+    return interpolate.interp1d(r, phi, kind="linear", bounds_error=False, fill_value=(float(phi[0]), float(phi[-1])))
+
+
+def _wall_diagnostics_or_none(inst: SingleFieldInstanton, profile: Any) -> Any | None:
+    try:
+        return inst.wallDiagnostics(profile, frac=(0.1, 0.9))
+    except Exception:
+        return None
+
+
 def example_F1_bounce_potential_geometry(summary: dict[str, Any], *, output_dir: str | Path, show: bool = False) -> Path | None:
+    """Example F1: potential at Tn with the relevant bounce points marked."""
     try:
         b = _get_bounce(summary)
     except RuntimeError as err:
         print(f"[F1] {err}; skipping.")
         return None
     inst = b["instanton"]
-    phi0 = float(np.asarray(b["profile"].Phi, dtype=float)[0])
-    phi_top = float(getattr(inst, "phi_bar", np.nan))
+    profile = b["profile"]
+    _, phi0 = _safe_phi0(inst, profile)
+    phi_top = _safe_phi_top(inst)
     phi_grid = build_phi_grid(inst, margin=0.12, n=1500)
     Vfalse = float(inst.V(inst.phi_metaMin))
+    Vtrue = float(inst.V(inst.phi_absMin))
     y = np.asarray(inst.V(phi_grid), dtype=float) - Vfalse
     fig, ax = plt.subplots(figsize=(8.0, 5.0))
     ax.plot(phi_grid, y, color="black", lw=2.4, label=r"$V(h,T_n)-V(h_f,T_n)$")
-    points = [(inst.phi_metaMin, r"$h_f$", BOUNCE_COLORS["false"]), (inst.phi_absMin, r"$h_t$", BOUNCE_COLORS["true"]), (inst.phi_bar, r"$h_{\rm bar}$", BOUNCE_COLORS["bar"]), (phi_top, r"$h_{\rm top}$", BOUNCE_COLORS["top"]), (phi0, r"$h_0$", BOUNCE_COLORS["phi0"])]
+    points = [
+        (inst.phi_metaMin, r"$h_f$ false", BOUNCE_COLORS["false"]),
+        (inst.phi_absMin, r"$h_t$ true", BOUNCE_COLORS["true"]),
+        (inst.phi_bar, r"$h_{\rm bar}$", BOUNCE_COLORS["bar"]),
+        (phi_top, r"$h_{\rm top}$", BOUNCE_COLORS["top"]),
+        (phi0, r"$h_0$", BOUNCE_COLORS["phi0"]),
+    ]
     for x, lab, col in points:
         if np.isfinite(x):
             ax.scatter([x], [float(inst.V(x)) - Vfalse], s=54, color=col, edgecolor="black", linewidth=0.35, zorder=5, label=lab)
-            ax.axvline(x, color=col, ls=":", lw=1.55, alpha=0.82)
-    ax.axhline(0.0, color=BOUNCE_COLORS["false"], ls="--", lw=1.0, alpha=0.7)
+            ax.axvline(x, color=col, ls=":", lw=1.65, alpha=0.82)
+    ax.axhline(0.0, color=BOUNCE_COLORS["false"], ls="--", lw=1.1, alpha=0.7)
+    delta_x = 0.055 * abs(inst.phi_absMin - inst.phi_metaMin)
+    x_arrow = inst.phi_absMin + np.sign(inst.phi_metaMin - inst.phi_absMin) * delta_x
+    ax.annotate("", xy=(x_arrow, Vtrue - Vfalse), xytext=(x_arrow, 0.0), arrowprops=dict(arrowstyle="<->", lw=1.45, color=BOUNCE_COLORS["true"]))
+    y_text = 0.08 * (np.nanmax(y) - np.nanmin(y))
+    x_text = x_arrow + 0.018 * abs(inst.phi_absMin - inst.phi_metaMin)
+    ax.text(x_text, y_text, r"$\Delta V_{\rm vac}$", color=BOUNCE_COLORS["true"], ha="left", va="bottom", fontsize=10)
     ax.set_xlabel(r"$h$ [GeV]")
     ax.set_ylabel(r"$V(h,T_n)-V(h_f,T_n)$ [GeV$^4$]")
     ax.set_title(rf"Example F1: bounce potential geometry at $T_n={b['Tn']:.4g}$ GeV")
@@ -1880,73 +1969,201 @@ def example_F1_bounce_potential_geometry(summary: dict[str, Any], *, output_dir:
     return save_figure(fig, output_dir, "F1_bounce_potential_geometry", close=not show)
 
 
-def example_F2_bounce_profile(summary: dict[str, Any], *, output_dir: str | Path, show: bool = False) -> Path | None:
+def example_F2_inverted_potential_path(summary: dict[str, Any], *, output_dir: str | Path, show: bool = False) -> Path | None:
+    """Example F2: inverted potential and bounce trajectory."""
     try:
         b = _get_bounce(summary)
     except RuntimeError as err:
         print(f"[F2] {err}; skipping.")
         return None
     inst = b["instanton"]
-    r, phi, _ = _profile_arrays(b["profile"])
-    fig, ax = plt.subplots(figsize=(8.0, 4.6))
-    ax.plot(r, phi, lw=2.3, label=r"$h(r)$")
-
-    try:
-        wall = inst.wallDiagnostics(b["profile"], frac=(0.1, 0.9))
-        ax.axvspan(wall.r_lo, wall.r_hi, alpha=0.14, label="wall region")
-    except Exception:
-        wall = None
-
-    ax.axhline(inst.phi_metaMin, ls="--", lw=1.0, label=r"$h_f$")
-    ax.axhline(inst.phi_absMin, ls="--", lw=1.0, label=r"$h_t$")
-    ax.set_xlabel(r"$r$ [GeV$^{-1}$]")
-    ax.set_ylabel(r"$h(r)$ [GeV]")
-    ax.set_title("Example F2: bounce profile")
+    profile = b["profile"]
+    _, phi0 = _safe_phi0(inst, profile)
+    phi_top = _safe_phi_top(inst)
+    phi_grid = build_phi_grid(inst, margin=0.12, n=1600)
+    Vfalse = float(inst.V(inst.phi_metaMin))
+    invV = -(np.asarray(inst.V(phi_grid), dtype=float) - Vfalse)
+    fig, ax = plt.subplots(figsize=(8.0, 4.8))
+    ax.plot(phi_grid, invV, lw=2.35, color="black", label=r"$-[V(h,T_n)-V(h_f,T_n)]$")
+    phi_a, phi_b = sorted([phi0, inst.phi_metaMin])
+    mask = (phi_grid >= phi_a) & (phi_grid <= phi_b)
+    ax.plot(phi_grid[mask], invV[mask], lw=3.1, color=BOUNCE_COLORS["phi0"], label=r"bounce path $h_0\to h_f$")
+    path_points = np.linspace(phi0, inst.phi_metaMin, 5)[1:-1]
+    step = 0.045 * abs(inst.phi_absMin - inst.phi_metaMin)
+    direction = np.sign(inst.phi_metaMin - phi0)
+    for ph in path_points:
+        x0 = float(ph)
+        x1 = float(np.clip(ph + direction * step, phi_grid.min(), phi_grid.max()))
+        y0 = -float(inst.V(x0) - Vfalse)
+        y1 = -float(inst.V(x1) - Vfalse)
+        ax.annotate("", xy=(x1, y1), xytext=(x0, y0), arrowprops=dict(arrowstyle="-|>", lw=1.9, color="black"))
+    markers = [
+        (inst.phi_metaMin, r"$h_f$", BOUNCE_COLORS["false"]),
+        (inst.phi_absMin, r"$h_t$", BOUNCE_COLORS["true"]),
+        (inst.phi_bar, r"$h_{\rm bar}$", BOUNCE_COLORS["bar"]),
+        (phi_top, r"$h_{\rm top}$", BOUNCE_COLORS["top"]),
+        (phi0, r"$h_0$", BOUNCE_COLORS["phi0"]),
+    ]
+    for x, lab, col in markers:
+        if np.isfinite(x):
+            ax.scatter([x], [-float(inst.V(x) - Vfalse)], s=54, color=col, edgecolor="black", linewidth=0.35, zorder=5, label=lab)
+            ax.axvline(x, color=col, ls=":", lw=1.65, alpha=0.82)
+    ax.axhline(0.0, color=BOUNCE_COLORS["false"], lw=1.1, ls="--", alpha=0.65)
+    ax.set_xlabel(r"$h$ [GeV]")
+    ax.set_ylabel(r"$-[V(h,T_n)-V(h_f,T_n)]$ [GeV$^4$]")
+    ax.set_title(rf"Example F2: inverted potential at $T_n={b['Tn']:.4g}$ GeV")
     ax.grid(True, alpha=0.25)
-    ax.legend(fontsize=9)
+    ax.legend(loc="best", fontsize=8, ncol=2)
     fig.tight_layout()
-    return save_figure(fig, output_dir, "F2_bounce_profile", close=not show)
+    return save_figure(fig, output_dir, "F2_inverted_potential_path", close=not show)
 
 
-def example_F3_bubble_slice(summary: dict[str, Any], *, output_dir: str | Path, n_grid: int = 360, show: bool = False) -> Path | None:
+def example_F3_bounce_profile(summary: dict[str, Any], *, output_dir: str | Path, show: bool = False) -> Path | None:
+    """Example F3: radial bounce profile with the wall region."""
     try:
         b = _get_bounce(summary)
     except RuntimeError as err:
         print(f"[F3] {err}; skipping.")
         return None
+    inst = b["instanton"]
     r, phi, _ = _profile_arrays(b["profile"])
-    phi_of_r = interpolate.interp1d(r, phi, bounds_error=False, fill_value=(float(phi[0]), float(phi[-1])))
-    Rmax = float(r[-1])
-    x = np.linspace(-Rmax, Rmax, int(n_grid))
-    y = np.linspace(-Rmax, Rmax, int(n_grid))
-    X, Y = np.meshgrid(x, y)
-    PHI = phi_of_r(np.hypot(X, Y))
-    fig, ax = plt.subplots(figsize=(6.4, 5.8))
-    im = ax.imshow(PHI, origin="lower", extent=(x.min(), x.max(), y.min(), y.max()), cmap="viridis", interpolation="nearest")
-
-    try:
-        inst = b["instanton"]
-        wall = inst.wallDiagnostics(b["profile"], frac=(0.1, 0.9))
-        circle = plt.Circle((0.0, 0.0), wall.r_hi, fill=False, color="black", lw=1.3, ls="--")
-        ax.add_patch(circle)
-    except Exception:
-        pass
-
-    ax.set_aspect("equal")
-    ax.set_xlabel(r"$x$ [GeV$^{-1}$]")
-    ax.set_ylabel(r"$y$ [GeV$^{-1}$]")
-    ax.set_title("Example F3: bubble slice at $t=0,z=0$")
-    cb = fig.colorbar(im, ax=ax, pad=0.02)
-    cb.set_label(r"$h(\sqrt{x^2+y^2})$ [GeV]")
+    r0, phi0 = _safe_phi0(inst, b["profile"])
+    fig, ax = plt.subplots(figsize=(8.0, 4.6))
+    ax.plot(r, phi, lw=2.3, label=r"$h(r)$")
+    ax.scatter([r0], [phi0], s=45, zorder=5, label=r"release point $(r_0,h_0)$")
+    wall = _wall_diagnostics_or_none(inst, b["profile"])
+    if wall is not None:
+        ax.axvspan(wall.r_lo, wall.r_hi, alpha=0.14, label="wall region")
+    ax.axhline(inst.phi_metaMin, ls="--", lw=1.0, label=r"$h_f$")
+    ax.axhline(inst.phi_absMin, ls="--", lw=1.0, label=r"$h_t$")
+    ax.set_xlabel(r"$r$ [GeV$^{-1}$]")
+    ax.set_ylabel(r"$h(r)$ [GeV]")
+    ax.set_title("Example F3: bounce profile")
+    ax.grid(True, alpha=0.25)
+    ax.legend(fontsize=9, ncol=2)
     fig.tight_layout()
-    return save_figure(fig, output_dir, "F3_bubble_slice", close=not show)
+    return save_figure(fig, output_dir, "F3_bounce_profile", close=not show)
 
 
-def example_F4_action_diagnostics(summary: dict[str, Any], *, output_dir: str | Path, show: bool = False) -> Path | None:
+def example_F4_bubble_slice(summary: dict[str, Any], *, output_dir: str | Path, n_grid: int = 360, show: bool = False) -> Path | None:
+    """Example F4: spatial slice of the bubble at t=0, z=0."""
     try:
         b = _get_bounce(summary)
     except RuntimeError as err:
         print(f"[F4] {err}; skipping.")
+        return None
+    inst = b["instanton"]
+    r, phi, _ = _profile_arrays(b["profile"])
+    phi_of_r = _phi_interpolator_from_profile(b["profile"])
+    Rmax = float(r[-1])
+    pad = 0.08 * Rmax
+    x = np.linspace(-Rmax - pad, Rmax + pad, int(n_grid))
+    y = np.linspace(-Rmax - pad, Rmax + pad, int(n_grid))
+    X, Y = np.meshgrid(x, y)
+    PHI = phi_of_r(np.hypot(X, Y))
+    fig, ax = plt.subplots(figsize=(6.4, 5.8))
+    im = ax.imshow(PHI, origin="lower", extent=(x.min(), x.max(), y.min(), y.max()), cmap="viridis", interpolation="nearest", vmin=min(inst.phi_absMin, inst.phi_metaMin), vmax=max(inst.phi_absMin, inst.phi_metaMin))
+    wall = _wall_diagnostics_or_none(inst, b["profile"])
+    if wall is not None:
+        circle = plt.Circle((0.0, 0.0), wall.r_hi, fill=False, color="black", lw=1.3, ls="--")
+        ax.add_patch(circle)
+    ax.set_aspect("equal")
+    ax.set_xlabel(r"$x$ [GeV$^{-1}$]")
+    ax.set_ylabel(r"$y$ [GeV$^{-1}$]")
+    ax.set_title("Example F4: bubble slice at $t=0,z=0$")
+    cb = fig.colorbar(im, ax=ax, pad=0.02)
+    cb.set_label(r"$h(\sqrt{x^2+y^2})$ [GeV]")
+    fig.tight_layout()
+    return save_figure(fig, output_dir, "F4_bubble_slice", close=not show)
+
+
+def example_F5_bubble_volume_3d(summary: dict[str, Any], *, output_dir: str | Path, n_points: int = 14000, random_seed: int = 12345, show: bool = False) -> Path | None:
+    """Example F5: 3D cutaway visualization of the bubble profile."""
+    try:
+        b = _get_bounce(summary)
+    except RuntimeError as err:
+        print(f"[F5] {err}; skipping.")
+        return None
+    inst = b["instanton"]
+    r, _, _ = _profile_arrays(b["profile"])
+    phi_of_r = _phi_interpolator_from_profile(b["profile"])
+    Rmax = float(r[-1])
+    rng = np.random.default_rng(random_seed)
+    xyz = rng.uniform(-Rmax, Rmax, size=(int(3.0 * n_points), 3))
+    radius = np.linalg.norm(xyz, axis=1)
+    inside = radius <= Rmax
+    xyz = xyz[inside][:n_points]
+    radius = radius[inside][:n_points]
+    phi_values = phi_of_r(radius)
+    cutaway = ~((xyz[:, 0] > 0.0) & (xyz[:, 1] > 0.0) & (xyz[:, 2] > 0.0))
+    xyz = xyz[cutaway]
+    phi_values = phi_values[cutaway]
+    fig = plt.figure(figsize=(7.0, 6.2))
+    ax = fig.add_subplot(111, projection="3d")
+    sc = ax.scatter(xyz[:, 0], xyz[:, 1], xyz[:, 2], c=phi_values, cmap="viridis", s=3.0, alpha=0.55, linewidths=0, vmin=min(inst.phi_absMin, inst.phi_metaMin), vmax=max(inst.phi_absMin, inst.phi_metaMin))
+    lim = Rmax
+    ax.plot([-lim, lim], [0, 0], [0, 0], lw=1.0, alpha=0.8)
+    ax.plot([0, 0], [-lim, lim], [0, 0], lw=1.0, alpha=0.8)
+    ax.plot([0, 0], [0, 0], [-lim, lim], lw=1.0, alpha=0.8)
+    wall = _wall_diagnostics_or_none(inst, b["profile"])
+    if wall is not None:
+        Rwall = float(wall.r_hi)
+        u = np.linspace(0.0, 2.0 * np.pi, 50)
+        v = np.linspace(0.0, np.pi, 25)
+        XS = Rwall * np.outer(np.cos(u), np.sin(v))
+        YS = Rwall * np.outer(np.sin(u), np.sin(v))
+        ZS = Rwall * np.outer(np.ones_like(u), np.cos(v))
+        ax.plot_wireframe(XS, YS, ZS, linewidth=0.35, alpha=0.25)
+    ax.set_xlabel(r"$x$ [GeV$^{-1}$]")
+    ax.set_ylabel(r"$y$ [GeV$^{-1}$]")
+    ax.set_zlabel(r"$z$ [GeV$^{-1}$]")
+    ax.set_title(rf"Example F5: 3D bubble profile at $T_n={b['Tn']:.4g}$ GeV")
+    ax.set_xlim(-lim, lim)
+    ax.set_ylim(-lim, lim)
+    ax.set_zlim(-lim, lim)
+    ax.set_box_aspect((1, 1, 1))
+    cb = fig.colorbar(sc, ax=ax, shrink=0.75, pad=0.08)
+    cb.set_label(r"$h(r)$ [GeV]")
+    fig.tight_layout()
+    return save_figure(fig, output_dir, "F5_bubble_volume_3d", close=not show)
+
+
+def example_F5b_phi_xy_surface(summary: dict[str, Any], *, output_dir: str | Path, n_grid: int = 420, show: bool = False) -> Path | None:
+    """Example F5b: 3D surface view of h(x,y) at t=0,z=0."""
+    try:
+        b = _get_bounce(summary)
+    except RuntimeError as err:
+        print(f"[F5b] {err}; skipping.")
+        return None
+    inst = b["instanton"]
+    r, _, _ = _profile_arrays(b["profile"])
+    phi_of_r = _phi_interpolator_from_profile(b["profile"])
+    Rmax = float(r[-1])
+    pad = 0.08 * Rmax
+    x = np.linspace(-Rmax - pad, Rmax + pad, int(n_grid))
+    y = np.linspace(-Rmax - pad, Rmax + pad, int(n_grid))
+    X, Y = np.meshgrid(x, y, indexing="xy")
+    PHI = phi_of_r(np.hypot(X, Y))
+    fig = plt.figure(figsize=(7.4, 6.2))
+    ax = fig.add_subplot(111, projection="3d")
+    step = max(1, int(n_grid / 220))
+    surf = ax.plot_surface(X[::step, ::step], Y[::step, ::step], PHI[::step, ::step], linewidth=0, antialiased=True, cmap="viridis", vmin=min(inst.phi_absMin, inst.phi_metaMin), vmax=max(inst.phi_absMin, inst.phi_metaMin))
+    ax.set_xlabel(r"$x$ [GeV$^{-1}$]")
+    ax.set_ylabel(r"$y$ [GeV$^{-1}$]")
+    ax.set_zlabel(r"$h(x,y)$ [GeV]")
+    ax.set_title(rf"Example F5b: surface $h(x,y)$ at $T_n={b['Tn']:.4g}$ GeV")
+    cb = fig.colorbar(surf, ax=ax, shrink=0.7, pad=0.08)
+    cb.set_label(r"$h(\sqrt{x^2+y^2})$ [GeV]")
+    fig.tight_layout()
+    return save_figure(fig, output_dir, "F5b_phi_xy_surface", close=not show)
+
+
+def example_F6_action_diagnostics(summary: dict[str, Any], *, output_dir: str | Path, show: bool = False) -> Path | None:
+    """Example F6: action densities and cumulative action."""
+    try:
+        b = _get_bounce(summary)
+    except RuntimeError as err:
+        print(f"[F6] {err}; skipping.")
         return None
     br = b["action_breakdown"]
     r = np.asarray(br.r, dtype=float)
@@ -1969,18 +2186,95 @@ def example_F4_action_diagnostics(summary: dict[str, Any], *, output_dir: str | 
     ax2.set_ylabel(r"$S_3(<r)$")
     ax2.legend(fontsize=9)
     ax2.grid(True, alpha=0.25)
-    fig.suptitle("Example F4: action density and cumulative action", y=1.02)
+    fig.suptitle("Example F6: action density and cumulative action", y=1.02)
     fig.tight_layout()
-    return save_figure(fig, output_dir, "F4_action_diagnostics", close=not show)
+    return save_figure(fig, output_dir, "F6_action_diagnostics", close=not show)
 
+
+def example_F7_ode_terms_decomposition(summary: dict[str, Any], *, output_dir: str | Path, show: bool = False) -> Path | None:
+    """Example F7: decompose the O(3) bounce equation along the profile."""
+    try:
+        b = _get_bounce(summary)
+    except RuntimeError as err:
+        print(f"[F7] {err}; skipping.")
+        return None
+    inst = b["instanton"]
+    profile = b["profile"]
+    r, phi, dphi = _profile_arrays(profile)
+    phi0 = float(phi[0])
+    d2phi = deriv14(dphi, r)
+    friction = inst.alpha * dphi / np.maximum(r, 1e-30)
+    force = np.asarray(inst.dV(phi), dtype=float)
+    V_profile = np.asarray(inst.V(phi), dtype=float)
+    V_meta = float(inst.V(inst.phi_metaMin))
+    V_0 = float(inst.V(phi0))
+    fig, ax = plt.subplots(figsize=(8.8, 5.0))
+    ax.plot(r, d2phi, lw=2.0, label=r"$h''(r)$")
+    ax.plot(r, friction, lw=2.0, label=rf"$\alpha h'(r)/r$, $\alpha={inst.alpha}$")
+    ax.plot(r, force, lw=2.0, label=r"$V'(h(r))$")
+    ax.axhline(0.0, color="black", lw=0.85, alpha=0.55)
+    ax2 = ax.twinx()
+    ax2.plot(r, V_profile, lw=1.8, ls="--", color="0.25", label=r"$V(h(r))$")
+    r_mark = 0.88 * float(r[-1])
+    y_lo, y_hi = sorted([V_0, V_meta])
+    ax2.vlines(r_mark, y_lo, y_hi, color=BOUNCE_COLORS["phi0"], lw=3.0, alpha=0.9)
+    ax2.text(r_mark, 0.5 * (V_0 + V_meta), r"$\Delta V$", color=BOUNCE_COLORS["phi0"], ha="left", va="center", fontsize=10)
+    ax.set_xlabel(r"$r$ [GeV$^{-1}$]")
+    ax.set_ylabel(r"ODE terms [GeV$^3$]")
+    ax2.set_ylabel(r"$V(h(r),T_n)$ [GeV$^4$]")
+    ax.set_title(rf"Example F7: bounce equation terms at $T_n={b['Tn']:.4g}$ GeV")
+    ax.grid(True, alpha=0.25)
+    lines1, labels1 = ax.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax.legend(lines1 + lines2, labels1 + labels2, loc="lower right", fontsize=9)
+    fig.tight_layout()
+    return save_figure(fig, output_dir, "F7_ode_terms_decomposition", close=not show)
+
+
+
+# Backward-compatible aliases for the numbering used in the pre-update file.
+def example_F2_bounce_profile(
+    summary: dict[str, Any],
+    *,
+    output_dir: str | Path,
+    show: bool = False,
+) -> Path | None:
+    """Backward-compatible alias: old F2 is now F3."""
+    return example_F3_bounce_profile(summary, output_dir=output_dir, show=show)
+
+
+def example_F3_bubble_slice(
+    summary: dict[str, Any],
+    *,
+    output_dir: str | Path,
+    n_grid: int = 360,
+    show: bool = False,
+) -> Path | None:
+    """Backward-compatible alias: old F3 is now F4."""
+    return example_F4_bubble_slice(summary, output_dir=output_dir, n_grid=n_grid, show=show)
+
+
+def example_F4_action_diagnostics(
+    summary: dict[str, Any],
+    *,
+    output_dir: str | Path,
+    show: bool = False,
+) -> Path | None:
+    """Backward-compatible alias: old F4 is now F6."""
+    return example_F6_action_diagnostics(summary, output_dir=output_dir, show=show)
 
 def run_bounce_examples(summary: dict[str, Any], *, output_dir: str | Path, show: bool = False, xguess: float | None = None, phitol: float = 1e-5, thinCutoff: float = 1e-4, npoints: int = 800) -> dict[str, Path | None]:
+    """Compute the bounce at Tn and run all bounce plots."""
     build_bounce_solution_at_Tn(summary, xguess=xguess, phitol=phitol, thinCutoff=thinCutoff, npoints=npoints)
     return {
         "F1": example_F1_bounce_potential_geometry(summary, output_dir=output_dir, show=show),
-        "F2": example_F2_bounce_profile(summary, output_dir=output_dir, show=show),
-        "F3": example_F3_bubble_slice(summary, output_dir=output_dir, show=show),
-        "F4": example_F4_action_diagnostics(summary, output_dir=output_dir, show=show),
+        "F2": example_F2_inverted_potential_path(summary, output_dir=output_dir, show=show),
+        "F3": example_F3_bounce_profile(summary, output_dir=output_dir, show=show),
+        "F4": example_F4_bubble_slice(summary, output_dir=output_dir, show=show),
+        "F5": example_F5_bubble_volume_3d(summary, output_dir=output_dir, show=show),
+        "F5b": example_F5b_phi_xy_surface(summary, output_dir=output_dir, show=show),
+        "F6": example_F6_action_diagnostics(summary, output_dir=output_dir, show=show),
+        "F7": example_F7_ode_terms_decomposition(summary, output_dir=output_dir, show=show),
     }
 
 
@@ -2109,6 +2403,57 @@ def example_G2_gw_total_with_sensitivities(summary: dict[str, Any], *, output_di
     return save_figure(fig, output_dir, "G2_gw_total_with_sensitivities", close=not show)
 
 
+
+def save_gw_spectrum_table(
+    summary: Mapping[str, Any],
+    *,
+    output_dir: str | Path,
+    basename: str = "G0_gw_spectrum",
+) -> Path | None:
+    """Save the sampled GW spectra to CSV for later aggregate plotting."""
+
+    gw = summary.get("gw", None)
+    if not isinstance(gw, Mapping):
+        return None
+
+    f_mHz = np.asarray(gw.get("f_mHz", []), dtype=float)
+    f_Hz = np.asarray(gw.get("f_Hz", 1.0e-3 * f_mHz), dtype=float)
+    spectra = gw.get("spectra", {}) or {}
+    spectra_no = gw.get("spectra_no_turb", {}) or {}
+    spectra_max = gw.get("spectra_max_turb", {}) or {}
+
+    path = Path(output_dir) / f"{basename}.csv"
+    with open(path, "w", newline="", encoding="utf-8") as fobj:
+        writer = csv.writer(fobj)
+        writer.writerow(
+            [
+                "f_mHz",
+                "f_Hz",
+                "omega_sw",
+                "omega_turb",
+                "omega_coll",
+                "omega_total",
+                "omega_total_no_turb",
+                "omega_total_max_turb",
+            ]
+        )
+        n = len(f_mHz)
+        for i in range(n):
+            writer.writerow(
+                [
+                    f_mHz[i],
+                    f_Hz[i] if i < len(f_Hz) else np.nan,
+                    np.asarray(spectra.get("sw", np.full(n, np.nan)), dtype=float)[i],
+                    np.asarray(spectra.get("turb", np.full(n, np.nan)), dtype=float)[i],
+                    np.asarray(spectra.get("coll", np.full(n, np.nan)), dtype=float)[i],
+                    np.asarray(spectra.get("total", np.full(n, np.nan)), dtype=float)[i],
+                    np.asarray(spectra_no.get("total", np.full(n, np.nan)), dtype=float)[i],
+                    np.asarray(spectra_max.get("total", np.full(n, np.nan)), dtype=float)[i],
+                ]
+            )
+
+    return path
+
 def gather_thesis_diagnostics(summary: dict[str, Any], *, output_dir: str | Path, basename: str = "thesis_diagnostics", label: str = "thesis_run") -> dict[str, Any]:
     diagnostics: dict[str, Any] = {
         "label": label,
@@ -2174,31 +2519,39 @@ def run_all_examples(
     include_thermal: bool = True,
     include_scalar_thermal: bool = True,
     include_daisy: bool = False,
+    thermal_approx: str = "spline",
+    # derivative controls
+    x_eps: float = 1e-3,
+    T_eps: float = 1e-2,
+    deriv_order: int = 4,
     # scan controls
     run_finite_temperature: bool = True,
     T_min: float = 1.0,
     T_max: float = 250.0,
     phi_scan_range: tuple[float, float] | None = None,
     n_phi_scan: int = 1200,
-    n_T_seeds: int = 2,
+    n_T_seeds: int = 3,
     deltaX_target: float = 0.1,
     phitol: float = 1e-5,
     overlapAngle: float = 45.0,
     Tn_Ttol: float = 1e-3,
     Tn_maxiter: int = 100,
     verbose: bool = True,
-    # examples
+    # example/plot switches
     run_A2_benchmarks: bool = True,
-    C1_temperatures: Sequence[float] | None = None,
+    run_D1_mean_field_map: bool = False,
+    make_intro_plots: bool = True,
+    make_transition_plots: bool = True,
+    make_bounce_plots: bool = True,
+    make_gw_plots: bool = True,
     C1_phi_max: float = 300.0,
     E3_phi_max: float = 300.0,
-    run_D1_mean_field_map: bool = True,
-    D1_c6_range: tuple[float, float] = (-1.0, 6.0),
-    D1_c8_range: tuple[float, float] = (-10.0, 15.0),
-    D1_n_c6: int = 100,
-    D1_n_c8: int = 100,
+    # bounce and GW controls
     run_bounce: bool = True,
     run_gw: bool = True,
+    bounce_xguess: float | None = None,
+    bounce_thinCutoff: float = 1e-4,
+    bounce_npoints: int = 800,
     gw_f_min_mHz: float = 1e-3,
     gw_f_max_mHz: float = 1e5,
     gw_n_freq: int = 2000,
@@ -2213,6 +2566,21 @@ def run_all_examples(
     gw_beta_over_H_override: float | None = None,
     save_diagnostics_table: bool = True,
 ) -> dict[str, Any]:
+    """
+    Run the full EFT68 thesis workflow.
+
+    For production scans, keep the physics calculation but suppress most plots,
+    for example::
+
+        make_intro_plots=False,
+        make_transition_plots=False,
+        make_bounce_plots=False,
+        make_gw_plots=True,
+
+    This still saves the JSON/CSV diagnostics and the GW spectrum plots, but
+    avoids creating the full page of visual diagnostics for every grid point.
+    """
+
     params = EFT68Parameters(
         c6_over_f2_TeV2=c6_over_f2_TeV2,
         c8_over_f4_TeV4=c8_over_f4_TeV4,
@@ -2224,6 +2592,7 @@ def run_all_examples(
     )
     output_dir = make_results_directory(params, run_tag=run_tag, base_dir=base_dir)
     saved: dict[str, Path | None] = {}
+
     print("\n" + "=" * 76)
     print("Running EFT dimension-six/eight thesis workflow")
     print("=" * 76)
@@ -2231,67 +2600,48 @@ def run_all_examples(
     print("lambda_tree =", params.lambda_tree, " mu2_tree =", params.mu2_tree, " a0 =", params.a0_mean_field)
     print("=" * 76)
 
-    # A. Zero-temperature potential
-    saved["A1"] = example_A1_zero_temperature_potential(params, output_dir=output_dir, show=show, include_zeroT_loops=include_zeroT_loops)
-    if run_A2_benchmarks:
-        saved["A2"] = example_A2_article_benchmarks(output_dir=output_dir, f_GeV=f_GeV, show=show)
-
-    # B. Physicality
-    saved["B1"] = example_B1_physicality_report(params, output_dir=output_dir, show=show)
-
-    # C. Finite-temperature shapes
-    # This is only a quick visual pre-check.  The transition, bounce and GW
-    # blocks below use the full finite-temperature potential through
-    # build_finite_T_derivatives and CosmoTransitions.
-    mf = mean_field_vc_tc(params)
-    if C1_temperatures is None:
+    if make_intro_plots:
+        saved["A1"] = example_A1_zero_temperature_potential(params, output_dir=output_dir, show=show, include_zeroT_loops=include_zeroT_loops, renormalize_zeroT_loops=renormalize_zeroT_loops,)
+        if run_A2_benchmarks:
+            saved["A2"] = example_A2_article_benchmarks(output_dir=output_dir, f_GeV=f_GeV, show=show)
+        saved["B1"] = example_B1_physicality_report(params, output_dir=output_dir, show=show)
+        mf_for_C = mean_field_vc_tc(params)
         temps = [0.0, 50.0, 75.0, 100.0, 125.0]
-        if mf["T_c"] is not None and 1.0 <= float(mf["T_c"]) <= 180.0:
-            Tc = float(mf["T_c"])
-            temps = sorted(set([0.0, max(1.0, Tc - 20.0), Tc, Tc + 20.0, 125.0]))
-    else:
-        temps = [float(T) for T in C1_temperatures]
+        if mf_for_C["T_c"] is not None:
+            Tc_fast = float(mf_for_C["T_c"])
+            temps = sorted(set([0.0, max(1.0, Tc_fast - 20.0), Tc_fast, Tc_fast + 20.0, 125.0]))
+        saved["C1"] = example_C1_finite_temperature_shapes(
+            params,
+            output_dir=output_dir,
+            temperatures=temps,
+            phi_max=C1_phi_max,
+            show=show,
+            include_zeroT_loops=include_zeroT_loops,
+            renormalize_zeroT_loops=renormalize_zeroT_loops,
+            thermal_approx=thermal_approx,
+            include_daisy=include_daisy,
+        )
 
-    saved["C1"] = example_C1_finite_temperature_shapes(
-        params,
-        output_dir=output_dir,
-        temperatures=temps,
-        phi_max=C1_phi_max,
-        show=show,
-        include_zeroT_loops=include_zeroT_loops,
-        include_daisy=include_daisy,
-    )
-
-    # D. Fast mean-field diagnostics
-    current_fast_record = _mean_field_point_record(c6_over_f2_TeV2, c8_over_f4_TeV4, f_GeV=f_GeV)
+    mf = mean_field_vc_tc(params)
     save_json(
         {
             "mean_field": mf,
-            "current_point_fast_record": current_fast_record,
-            "physicality": check_zero_temperature_physicality(
-                params,
-                include_zeroT_loops=False,
-                include_glauber=params.use_glauber_measure,
-            ),
+            "physicality": check_zero_temperature_physicality(params, include_zeroT_loops=False, include_glauber=params.use_glauber_measure),
         },
         output_dir / "D0_fast_diagnostics.json",
     )
-    if run_D1_mean_field_map:
-        saved["D1"] = example_D1_mean_field_map(
-            output_dir=output_dir,
-            f_GeV=f_GeV,
-            c6_range=D1_c6_range,
-            c8_range=D1_c8_range,
-            n_c6=D1_n_c6,
-            n_c8=D1_n_c8,
-            current_point=(c6_over_f2_TeV2, c8_over_f4_TeV4),
-            show=show,
-        )
+    if make_intro_plots and run_D1_mean_field_map:
+        saved["D1"] = example_D1_mean_field_map(params= params, output_dir=output_dir, show=show)
 
     finite_summary: dict[str, Any] | None = None
     if run_finite_temperature:
         if phi_scan_range is None:
-            phi_scan_range = (0.0, f_GeV)
+            phi_limit = float(f_GeV)
+            if use_glauber_measure and C_glauber > 0.0:
+                phi_branch = float(Lambda_glauber) / np.sqrt(float(C_glauber))
+                phi_limit = min(phi_limit, 0.98 * phi_branch)
+            phi_scan_range = (-phi_limit, phi_limit)
+
         finite_summary = compute_finite_temperature_summary(
             params,
             T_min=T_min,
@@ -2300,28 +2650,47 @@ def run_all_examples(
             n_phi_scan=n_phi_scan,
             n_T_seeds=n_T_seeds,
             deltaX_target=deltaX_target,
+            x_eps=x_eps,
+            T_eps=T_eps,
+            deriv_order=deriv_order,
             phitol=phitol,
             overlapAngle=overlapAngle,
             Tn_Ttol=Tn_Ttol,
             Tn_maxiter=Tn_maxiter,
             include_zeroT_loops=include_zeroT_loops,
             include_scalar_loops=include_scalar_loops,
-            renormalize_zeroT_loops=renormalize_zeroT_loops,
             include_thermal=include_thermal,
             include_scalar_thermal=include_scalar_thermal,
+            renormalize_zeroT_loops=renormalize_zeroT_loops,
             include_daisy=include_daisy,
+            thermal_approx=thermal_approx,
             verbose=verbose,
         )
-        saved["E3"] = example_E3_potential_at_key_temperatures(finite_summary, output_dir=output_dir, phi_max=E3_phi_max, show=show)
+
+        if make_transition_plots:
+            saved["E3"] = example_E3_potential_at_key_temperatures(
+                finite_summary,
+                output_dir=output_dir,
+                phi_max=E3_phi_max,
+                show=show,
+            )
+
         if finite_summary.get("main_transition", None) is not None:
-            saved["E1"] = example_E1_temperature_scales(finite_summary, output_dir=output_dir, show=show)
-            saved["E2"] = example_E2_phi_min_vs_temperature(finite_summary, output_dir=output_dir, show=show)
-            saved["E4"] = example_E4_free_energy_difference(finite_summary, output_dir=output_dir, show=show)
-            if run_bounce:
+            if make_transition_plots:
+                saved["E1"] = example_E1_temperature_scales(finite_summary, output_dir=output_dir, show=show)
+                saved["E2"] = example_E2_phi_min_vs_temperature(finite_summary, output_dir=output_dir, show=show)
+                saved["E4"] = example_E4_free_energy_difference(finite_summary, output_dir=output_dir, show=show)
+                saved["E5"] = example_E5_mass2_vs_temperature(finite_summary, output_dir=output_dir, show=show)
+
+            if run_bounce or run_gw:
                 try:
-                    saved.update(run_bounce_examples(finite_summary, output_dir=output_dir, show=show, phitol=phitol))
+                    if make_bounce_plots and run_bounce:
+                        saved.update(run_bounce_examples(finite_summary, output_dir=output_dir, show=show, xguess=bounce_xguess, phitol=phitol, thinCutoff=bounce_thinCutoff, npoints=bounce_npoints))
+                    else:
+                        build_bounce_solution_at_Tn(finite_summary, xguess=bounce_xguess, phitol=phitol, thinCutoff=bounce_thinCutoff, npoints=bounce_npoints)
                 except Exception as err:
-                    print("[runner] Bounce examples skipped:", repr(err))
+                    print("[runner] Bounce computation/examples skipped:", repr(err))
+
             if run_gw:
                 try:
                     compute_gw_spectrum_summary(
@@ -2339,93 +2708,520 @@ def run_all_examples(
                         kappa_coll=gw_kappa_coll,
                         beta_over_H_override=gw_beta_over_H_override,
                     )
-                    saved["G1"] = example_G1_gw_components(finite_summary, output_dir=output_dir, show=show)
-                    saved["G2"] = example_G2_gw_total_with_sensitivities(finite_summary, output_dir=output_dir, show=show)
+                    saved["G0"] = save_gw_spectrum_table(finite_summary, output_dir=output_dir)
+                    if make_gw_plots:
+                        saved["G1"] = example_G1_gw_components(finite_summary, output_dir=output_dir, show=show)
+                        saved["G2"] = example_G2_gw_total_with_sensitivities(finite_summary, output_dir=output_dir, show=show)
                 except Exception as err:
                     print("[runner] GW examples skipped:", repr(err))
+
             if save_diagnostics_table:
                 gather_thesis_diagnostics(finite_summary, output_dir=output_dir, label=build_results_directory_name(params, run_tag=run_tag))
         else:
-            print("[runner] No FOPT with nucleation found; E1/E2/E4, F and G were skipped.")
+            print("[runner] No FOPT with nucleation found; E1/E2/E4/E5, F and G were skipped.")
             if save_diagnostics_table:
-                gather_thesis_diagnostics(
-                    finite_summary,
-                    output_dir=output_dir,
-                    label=build_results_directory_name(params, run_tag=run_tag),
-                )
+                gather_thesis_diagnostics(finite_summary, output_dir=output_dir, label=build_results_directory_name(params, run_tag=run_tag))
+
     return {"output_dir": output_dir, "parameters": asdict(params), "figures": saved, "finite_temperature_summary": finite_summary}
 
 
-if __name__ == "__main__":
-    # Benchmark close to the central panel of Fig. 1 in arXiv:1802.02168:
-    # c6/f^2=2 TeV^-2, c8/f^4=2 TeV^-4, f=1 TeV.
-    run_all_examples(
-        # Theory point
-        c6_over_f2_TeV2=3.0,
-        c8_over_f4_TeV4=2.8,
-        f_GeV=1000.0,
-        m_h=DEFAULT_MH,
+# -----------------------------------------------------------------------------
+# Production run sequence helpers
+# -----------------------------------------------------------------------------
 
-        # Optional Gláuber add-on
+def _glauber_phi_scan_limit(
+    *,
+    C: float,
+    Lambda: float,
+    phi_scan_abs_max: float = 1000.0,
+    branch_safety: float = 0.98,
+) -> float:
+    """
+    Safe symmetric field-search range for Gláuber runs.
+
+    The Gláuber logarithm has a branch at
+
+        phi_branch = Lambda / sqrt(C),
+
+    so for C > 0 we keep the scan below this value.
+    """
+
+    if C <= 0.0:
+        return float(phi_scan_abs_max)
+
+    phi_branch = float(Lambda) / np.sqrt(float(C))
+    return float(min(phi_scan_abs_max, branch_safety * phi_branch))
+
+# Runnings
+
+def run_00_article_checks(
+    *,
+    base_dir: str | Path = "00_article_checks",
+    show: bool = False,
+    # ------------------------------------------------------------------
+    # Theory point used only to place the current marker on D1.
+    # ------------------------------------------------------------------
+    c6_over_f2_TeV2: float = 2.0,
+    c8_over_f4_TeV4: float = 2.0,
+    f_GeV: float = 1000.0,
+    m_h: float = DEFAULT_MH,
+    # ------------------------------------------------------------------
+    # D1 mean-field-map controls.
+    # ------------------------------------------------------------------
+    D1_c6_range: tuple[float, float] = (0.5, 4.6),
+    D1_c8_range: tuple[float, float] = (-3.0, 10.0),
+    D1_n_c6: int = 140,
+    D1_n_c8: int = 140,
+) -> dict[str, Any]:
+    """
+    Run the article-style diagnostic page.
+
+    Main purpose:
+    - A1/A2/B1/C1 quick checks;
+    - D1 mean-field map with user-controlled c6/c8 ranges and grid resolution.
+
+    This run does not trace the full thermal transition and does not compute
+    bounce/GW quantities.
+    """
+
+    result = run_all_examples(
+        # ------------------------------------------------------------------
+        # Model definition.
+        # ------------------------------------------------------------------
+        c6_over_f2_TeV2=c6_over_f2_TeV2,
+        c8_over_f4_TeV4=c8_over_f4_TeV4,
+        f_GeV=f_GeV,
+        m_h=m_h,
         use_glauber_measure=False,
-        C_glauber=3.83,
+        C_glauber=0.0,
         Lambda_glauber=1000.0,
 
-        # Output
-        run_tag="FelipeMatheus",
-        show=False,
+        # ------------------------------------------------------------------
+        # Output.
+        # ------------------------------------------------------------------
+        run_tag=None,
+        base_dir=base_dir,
+        show=show,
 
-        # Potential switches
+        # ------------------------------------------------------------------
+        # Physics switches.
+        # ------------------------------------------------------------------
         include_zeroT_loops=True,
         include_scalar_loops=True,
-        renormalize_zeroT_loops=True,
         include_thermal=True,
         include_scalar_thermal=True,
         include_daisy=False,
-        #thermal_approx="spline",
 
-        # Finite-temperature scan
-        run_finite_temperature=True,
-        T_min=1.0,
-        T_max=250.0,
-        phi_scan_range=(-1.0, 1000.0),
-        n_phi_scan=1400,
-        n_T_seeds=2,
-        deltaX_target=0.1,
-        phitol=1e-5,
-        overlapAngle=45.0,
-        Tn_Ttol=1e-3,
-        Tn_maxiter=100,
-
-        # Quick plots / article checks
+        # ------------------------------------------------------------------
+        # Workflow switches.
+        # ------------------------------------------------------------------
+        run_finite_temperature=False,
         run_A2_benchmarks=True,
-        C1_temperatures=None,
-        C1_phi_max=300.0,
-        E3_phi_max=300.0,
-        run_D1_mean_field_map=True,
-        D1_c6_range=(-1.0, 6.0),
-        D1_c8_range=(-10.0, 15.0),
-        D1_n_c6=100,
-        D1_n_c8=100,
+        run_D1_mean_field_map=False,
+        make_intro_plots=True,
+        make_transition_plots=False,
+        make_bounce_plots=False,
+        make_gw_plots=False,
+        run_bounce=False,
+        run_gw=False,
+        save_diagnostics_table=False,
+        verbose=False,
+    )
+    params = EFT68Parameters(
+        c6_over_f2_TeV2=c6_over_f2_TeV2,
+        c8_over_f4_TeV4=c6_over_f2_TeV2,
+        f_GeV=f_GeV,
+        m_h=m_h,
+        use_glauber_measure=False,
+        C_glauber=0.0,
+        Lambda_glauber=1000.0,
+    )
 
-        # Bounce
+    # Run D1 separately so the ranges/resolution are explicit in run_00.
+    output_dir = result["output_dir"]
+    result["figures"]["D1"] = example_D1_mean_field_map(
+        params=params,
+        output_dir=output_dir,
+        c6_range=D1_c6_range,
+        c8_range=D1_c8_range,
+        n_c6=D1_n_c6,
+        n_c8=D1_n_c8,
+        show=show,
+    )
+
+    return result
+
+
+def run_01_standard_model_page(
+    *,
+    base_dir: str | Path = "01_SM_reference",
+    show: bool = False,
+    # ------------------------------------------------------------------
+    # Diagnostic temperature controls.
+    # These control the quick backend plots C1 and E3.
+    # ------------------------------------------------------------------
+    C1_temperatures: Sequence[float] = (0.0, 50.0, 75.0, 100.0, 125.0, 160.0, 180.0),
+    C1_phi_max: float = 300.0,
+    # ------------------------------------------------------------------
+    # Finite-temperature scan controls.
+    # ------------------------------------------------------------------
+    T_min: float = 1.0,
+    T_max: float = 250.0,
+    phi_scan_range: tuple[float, float] = (-1000.0, 1000.0),
+    n_phi_scan: int = 1400,
+    n_T_seeds: int = 3,
+    deltaX_target: float = 0.1,
+    phitol: float = 1e-5,
+    overlapAngle: float = 45.0,
+    Tn_Ttol: float = 1e-3,
+    Tn_maxiter: int = 100,
+    # ------------------------------------------------------------------
+    # Bounce controls.
+    # ------------------------------------------------------------------
+    bounce_xguess: float | None = None,
+    bounce_thinCutoff: float = 1e-4,
+    bounce_npoints: int = 800,
+    # ------------------------------------------------------------------
+    # GW controls exposed by the current runner.
+    # ------------------------------------------------------------------
+    gw_f_min_mHz: float = 1e-3,
+    gw_f_max_mHz: float = 1e5,
+    gw_n_freq: int = 2000,
+    gw_v_w: float = 1.0,
+    gw_epsilon_turb: float | None = 1.0,
+    gw_beta_over_H_override: float | None = None,
+) -> dict[str, Any]:
+    """
+    Run the SM-like reference page.
+
+    This keeps c6=c8=0 and Gláuber off.  The purpose is to have a baseline
+    page with the same plotting structure used for the BSM runs.
+    """
+
+    result = run_all_examples(
+        # ------------------------------------------------------------------
+        # Model definition.
+        # ------------------------------------------------------------------
+        c6_over_f2_TeV2=0.0,
+        c8_over_f4_TeV4=0.0,
+        f_GeV=1000.0,
+        m_h=DEFAULT_MH,
+        use_glauber_measure=False,
+        C_glauber=0.0,
+        Lambda_glauber=1000.0,
+
+        # ------------------------------------------------------------------
+        # Output.
+        # ------------------------------------------------------------------
+        run_tag=None,
+        base_dir=base_dir,
+        show=show,
+
+        # ------------------------------------------------------------------
+        # Physics switches.
+        # ------------------------------------------------------------------
+        include_zeroT_loops=True,
+        include_scalar_loops=True,
+        include_thermal=True,
+        include_scalar_thermal=True,
+        include_daisy=False,
+
+        # ------------------------------------------------------------------
+        # Finite-temperature scan.
+        # ------------------------------------------------------------------
+        run_finite_temperature=True,
+        T_min=T_min,
+        T_max=T_max,
+        phi_scan_range=phi_scan_range,
+        n_phi_scan=n_phi_scan,
+        n_T_seeds=n_T_seeds,
+        deltaX_target=deltaX_target,
+        phitol=phitol,
+        overlapAngle=overlapAngle,
+        Tn_Ttol=Tn_Ttol,
+        Tn_maxiter=Tn_maxiter,
+        verbose=True,
+
+        # ------------------------------------------------------------------
+        # Plot switches.
+        # ------------------------------------------------------------------
+        run_A2_benchmarks=False,
+        run_D1_mean_field_map=False,
+        make_intro_plots=True,
+        make_transition_plots=True,
+        make_bounce_plots=True,
+        make_gw_plots=True,
+
+        # ------------------------------------------------------------------
+        # Bounce and GW.
+        # ------------------------------------------------------------------
         run_bounce=True,
-
-        # Gravitational-wave spectra
         run_gw=True,
-        gw_f_min_mHz=1e-3,
-        gw_f_max_mHz=1e5,
-        gw_n_freq=2000,
-        gw_g_star=106.75,
-        gw_v_w=1,
-        gw_dT_fraction=1e-3,
-        gw_include_sw=True,
-        gw_include_turb=True,
-        gw_include_coll=True,
-        gw_epsilon_turb=1.0,
-        gw_kappa_coll=None,
-        gw_beta_over_H_override=None,
+        bounce_xguess=bounce_xguess,
+        bounce_thinCutoff=bounce_thinCutoff,
+        bounce_npoints=bounce_npoints,
+        gw_f_min_mHz=gw_f_min_mHz,
+        gw_f_max_mHz=gw_f_max_mHz,
+        gw_n_freq=gw_n_freq,
+        gw_v_w=gw_v_w,
+        gw_epsilon_turb=gw_epsilon_turb,
+        gw_beta_over_H_override=gw_beta_over_H_override,
 
-        # Diagnostics
+        # ------------------------------------------------------------------
+        # Diagnostics.
+        # ------------------------------------------------------------------
         save_diagnostics_table=True,
+    )
+
+    output_dir = result["output_dir"]
+    params = EFT68Parameters(
+        c6_over_f2_TeV2=0.0,
+        c8_over_f4_TeV4=0.0,
+        f_GeV=1000.0,
+        m_h=DEFAULT_MH,
+        use_glauber_measure=False,
+        C_glauber=0.0,
+        Lambda_glauber=1000.0,
+    )
+
+    # Overwrite C1 with the explicit backend temperatures requested here.
+    result["figures"]["C1"] = example_C1_finite_temperature_shapes(
+        params,
+        output_dir=output_dir,
+        temperatures=C1_temperatures,
+        phi_max=C1_phi_max,
+        show=show,
+        include_zeroT_loops=True,
+        include_daisy=False,
+    )
+
+    return result
+
+
+def run_02_glauber_pure_benchmark_grid(
+    *,
+    base_dir: str | Path = "02_Glauber_pure_benchmarks",
+    show: bool = False,
+    # ------------------------------------------------------------------
+    # Pure Gláuber benchmark points.
+    # Each pair is (Lambda, [C values]).
+    # ------------------------------------------------------------------
+    glauber_points: Mapping[float, Sequence[float]] | None = None,
+    include_daisy_values: Sequence[bool] = (False, True),
+    # ------------------------------------------------------------------
+    # SM/EFT baseline.
+    # ------------------------------------------------------------------
+    f_GeV: float = 1000.0,
+    m_h: float = DEFAULT_MH,
+    # ------------------------------------------------------------------
+    # Field-search controls.
+    # ------------------------------------------------------------------
+    phi_scan_abs_max: float = 1000.0,
+    phi_scan_branch_safety: float = 0.98,
+    n_phi_scan: int = 1400,
+    n_T_seeds: int = 3,
+    deltaX_target: float = 0.1,
+    # ------------------------------------------------------------------
+    # Temperature-search controls.
+    # ------------------------------------------------------------------
+    T_min: float = 1.0,
+    T_max: float = 250.0,
+    phitol: float = 1e-5,
+    overlapAngle: float = 45.0,
+    Tn_Ttol: float = 1e-3,
+    Tn_maxiter: int = 150,
+    # ------------------------------------------------------------------
+    # Bounce controls.
+    # ------------------------------------------------------------------
+    bounce_xguess: float | None = None,
+    bounce_thinCutoff: float = 1e-4,
+    bounce_npoints: int = 800,
+    # ------------------------------------------------------------------
+    # GW controls exposed by the current runner.
+    # ------------------------------------------------------------------
+    gw_f_min_mHz: float = 1e-3,
+    gw_f_max_mHz: float = 1e5,
+    gw_n_freq: int = 2000,
+    gw_v_w: float = 1.0,
+    gw_epsilon_turb: float | None = 1.0,
+    gw_beta_over_H_override: float | None = None,
+    # ------------------------------------------------------------------
+    # Plot/diagnostic switches.
+    # ------------------------------------------------------------------
+    make_intro_plots: bool = True,
+    make_transition_plots: bool = True,
+    make_bounce_plots: bool = True,
+    make_gw_plots: bool = True,
+    verbose: bool = True,
+) -> list[dict[str, Any]]:
+    """
+    Run the pure-Gláuber benchmark set.
+
+    Requested grid:
+    - Lambda = 1000 GeV with C = 3.83, 3.75, 3.65;
+    - Lambda = 2000 GeV with C = 6.25, 6.55, 6.75;
+    - Lambda = 4000 GeV with C = 10.5, 10.8, 11.23.
+
+    Each point is run twice:
+    - without daisy;
+    - with daisy.
+
+    Directory organization:
+    - base_dir/no_daisy/<automatic result folder>;
+    - base_dir/with_daisy/<automatic result folder>.
+
+    This avoids overwriting, since the automatic folder name does not include
+    include_daisy.
+    """
+
+    if glauber_points is None:
+        glauber_points = {
+            1000.0: (3.83, 3.75, 3.65),
+            2000.0: (6.25, 6.55, 6.75),
+            4000.0: (10.5, 10.8, 11.23),
+        }
+
+    results: list[dict[str, Any]] = []
+
+    for include_daisy in include_daisy_values:
+        daisy_folder = "with_daisy" if include_daisy else "no_daisy"
+        daisy_base_dir = Path(base_dir) / daisy_folder
+
+        for Lambda, C_values in glauber_points.items():
+            for C in C_values:
+                C_float = float(C)
+                Lambda_float = float(Lambda)
+
+                phi_limit = _glauber_phi_scan_limit(
+                    C=C_float,
+                    Lambda=Lambda_float,
+                    phi_scan_abs_max=phi_scan_abs_max,
+                    branch_safety=phi_scan_branch_safety,
+                )
+
+                results.append(
+                    run_all_examples(
+                        # --------------------------------------------------
+                        # Pure Gláuber model definition.
+                        # --------------------------------------------------
+                        c6_over_f2_TeV2=0.0,
+                        c8_over_f4_TeV4=0.0,
+                        f_GeV=f_GeV,
+                        m_h=m_h,
+                        use_glauber_measure=True,
+                        C_glauber=C_float,
+                        Lambda_glauber=Lambda_float,
+
+                        # --------------------------------------------------
+                        # Output.
+                        # Keep run_tag=None: the automatic name already stores
+                        # C and Lambda.  Daisy is separated by base_dir.
+                        # --------------------------------------------------
+                        run_tag=None,
+                        base_dir=daisy_base_dir,
+                        show=show,
+
+                        # --------------------------------------------------
+                        # Physics switches.
+                        # --------------------------------------------------
+                        include_zeroT_loops=True,
+                        include_scalar_loops=True,
+                        include_thermal=True,
+                        include_scalar_thermal=True,
+                        include_daisy=bool(include_daisy),
+
+                        # --------------------------------------------------
+                        # Finite-temperature search.
+                        # --------------------------------------------------
+                        run_finite_temperature=True,
+                        T_min=T_min,
+                        T_max=T_max,
+                        phi_scan_range=(-phi_limit, phi_limit),
+                        n_phi_scan=n_phi_scan,
+                        n_T_seeds=n_T_seeds,
+                        deltaX_target=deltaX_target,
+                        phitol=phitol,
+                        overlapAngle=overlapAngle,
+                        Tn_Ttol=Tn_Ttol,
+                        Tn_maxiter=Tn_maxiter,
+                        verbose=verbose,
+
+                        # --------------------------------------------------
+                        # Plot switches.
+                        # A2 and D1 are article/EFT checks; they do not need
+                        # to be repeated for every pure-Gláuber point.
+                        # --------------------------------------------------
+                        run_A2_benchmarks=False,
+                        run_D1_mean_field_map=False,
+                        make_intro_plots=make_intro_plots,
+                        make_transition_plots=make_transition_plots,
+                        make_bounce_plots=make_bounce_plots,
+                        make_gw_plots=make_gw_plots,
+
+                        # --------------------------------------------------
+                        # Bounce and GW.
+                        # --------------------------------------------------
+                        run_bounce=True,
+                        run_gw=True,
+                        bounce_xguess=bounce_xguess,
+                        bounce_thinCutoff=bounce_thinCutoff,
+                        bounce_npoints=bounce_npoints,
+                        gw_f_min_mHz=gw_f_min_mHz,
+                        gw_f_max_mHz=gw_f_max_mHz,
+                        gw_n_freq=gw_n_freq,
+                        gw_v_w=gw_v_w,
+                        gw_epsilon_turb=gw_epsilon_turb,
+                        gw_beta_over_H_override=gw_beta_over_H_override,
+
+                        # --------------------------------------------------
+                        # Diagnostics.
+                        # --------------------------------------------------
+                        save_diagnostics_table=True,
+                    )
+                )
+
+    return results
+
+
+def run_planned_sequence(
+    *,
+    show: bool = False,
+    run_00: bool = True,
+    run_01: bool = False,
+    run_02: bool = False,
+) -> dict[str, Any]:
+    """
+    Dispatcher for the first thesis-production sequence.
+
+    For now we keep only:
+    - run_00: article/EFT diagnostic checks;
+    - run_01: SM-like reference page;
+    - run_02: pure Gláuber benchmark grid.
+    """
+
+    outputs: dict[str, Any] = {}
+
+    if run_00:
+        outputs["00_article_checks"] = run_00_article_checks(show=show)
+
+    if run_01:
+        outputs["01_standard_model"] = run_01_standard_model_page(show=show)
+
+    if run_02:
+        outputs["02_glauber_pure_benchmarks"] = run_02_glauber_pure_benchmark_grid(
+            show=show
+        )
+
+    return outputs
+
+
+if __name__ == "__main__":
+    # Safe default:
+    # run_00 is light and generates the article checks.
+    # run_01 and run_02 are off by default; turn them on when desired.
+    run_planned_sequence(
+        show=False,
+        run_00=True,
+        run_01=True,
+        run_02=False,
     )
