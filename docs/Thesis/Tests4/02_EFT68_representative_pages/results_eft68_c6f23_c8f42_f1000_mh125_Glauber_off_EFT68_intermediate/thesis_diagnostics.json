@@ -1,0 +1,141 @@
+{
+  "label": "results_eft68_c6f23_c8f42_f1000_mh125_Glauber_off_EFT68_intermediate",
+  "model_parameters": {
+    "c6_over_f2_TeV2": 3.0,
+    "c8_over_f4_TeV4": 2.0,
+    "f_GeV": 1000.0,
+    "m_h": 125.0,
+    "v": 246.0,
+    "m_w": 80.36,
+    "m_z": 91.19,
+    "m_t": 173.1,
+    "use_glauber_measure": false,
+    "C_glauber": 0.0,
+    "Lambda_glauber": 1000.0
+  },
+  "scan_parameters": {
+    "T_min": 1.0,
+    "T_max": 250.0,
+    "phi_scan_range": [
+      -10.0,
+      1000.0
+    ],
+    "n_phi_scan": 1600,
+    "n_T_seeds": 2,
+    "deltaX_target": 0.1,
+    "x_eps": 0.001,
+    "T_eps": 0.01,
+    "deriv_order": 4,
+    "phitol": 1e-05,
+    "overlapAngle": 45.0,
+    "Tn_Ttol": 0.001,
+    "Tn_maxiter": 100,
+    "include_zeroT_loops": true,
+    "include_scalar_loops": true,
+    "renormalize_zeroT_loops": true,
+    "include_thermal": true,
+    "include_scalar_thermal": true,
+    "include_daisy": false
+  },
+  "key_temperatures": {
+    "Tn": 82.36209292320238,
+    "Tc": 94.5627096751715,
+    "Ts_false": 58.970215234371125,
+    "Ts_true": 95.62729492187466,
+    "S_at_Tn": 11530.512499381777,
+    "S_over_Tn": 139.9978083380333,
+    "false_phase_key": 2,
+    "true_phase_key": 0,
+    "phi_false_Tn": 4.7630758002729353e-05,
+    "phi_true_Tn": 223.78116178370618,
+    "vTn_over_Tn": 2.717040738539372,
+    "supercooling_fraction": 0.12902143766690868,
+    "supercooling_percent": 12.902143766690868
+  },
+  "gw_scales": {
+    "gw_T_star_GeV": 82.36209292320238,
+    "gw_alpha": 0.021426227095924108,
+    "gw_beta_over_H": 1397.7811010804448,
+    "gw_v_w": 1.0,
+    "gw_g_star": 106.75
+  },
+  "gw_peaks": {
+    "sw": {
+      "f_peak_mHz": 22.19080650398875,
+      "f_peak_Hz": 0.02219080650398875,
+      "omega_peak": 5.244257033153984e-17
+    },
+    "turb": {
+      "f_peak_mHz": 37.8694628107695,
+      "f_peak_Hz": 0.0378694628107695,
+      "omega_peak": 3.810355470347247e-21
+    },
+    "coll": {
+      "f_peak_mHz": NaN,
+      "f_peak_Hz": NaN,
+      "omega_peak": NaN
+    },
+    "total": {
+      "f_peak_mHz": 22.19080650398875,
+      "f_peak_Hz": 0.02219080650398875,
+      "omega_peak": 5.2445921753937e-17
+    }
+  },
+  "gw_run_parameters": {
+    "g_star": 106.75,
+    "v_w": 1.0,
+    "epsilon_turb": 1.0,
+    "frequency_unit": "mHz"
+  },
+  "S3": 11536.449631580514,
+  "S3_over_T": 140.06989407539155,
+  "bounce_diagnostics": {
+    "label": "results_eft68_c6f23_c8f42_f1000_mh125_Glauber_off_EFT68_intermediate",
+    "C": NaN,
+    "Lambda_GeV": NaN,
+    "finiteT": null,
+    "temperature_GeV": NaN,
+    "phi_metaMin": 4.7630758002729353e-05,
+    "phi_absMin": 223.78116178370618,
+    "phi_bar": 115.62157385407953,
+    "phi_top": 76.56365400894596,
+    "V(phi_meta)": -117816446.35283627,
+    "V(phi_true)": -130795252.94852391,
+    "V(phi_top)": -116630581.9485752,
+    "DeltaV_true_minus_meta": -12978806.595687643,
+    "r0": 2.87031288161007e-06,
+    "phi0": 218.18015733207196,
+    "dphi0": -0.04085773028364466,
+    "rscale_cubic": 0.0287031288161007,
+    "rscale_curv": 0.027116880028836676,
+    "wall_r_hi": 0.12225190089905992,
+    "wall_thickness": 0.08339398740824627,
+    "S_total": 11536.449631580514,
+    "S_kin": 17302.918854801763,
+    "S_pot": -5766.469223221249,
+    "S_interior": 0.0,
+    "S3_over_T": NaN,
+    "beta_rscale": 34.83940745299729,
+    "beta_curvature": 36.877398916605536,
+    "beta_wall": 11.991272165757081,
+    "Tn_from_transitionFinder_GeV": 82.36209292320238,
+    "Tc_from_transitionFinder_GeV": 94.5627096751715,
+    "T_spinodal_high_GeV": NaN,
+    "T_spinodal_low_GeV": NaN,
+    "gw_T_star_GeV": 82.36209292320238,
+    "gw_alpha": 0.021426227095924108,
+    "gw_beta_over_H": 1397.7811010804448,
+    "gw_R_star_times_H": NaN,
+    "gw_Gamma_Tstar_GeV4": NaN,
+    "gw_dT_for_beta_GeV": NaN,
+    "gw_f_sw_peak_Hz": NaN,
+    "gw_f_turb_peak_Hz": NaN,
+    "gw_f_coll_peak_Hz": NaN,
+    "gw_g_star": 106.75,
+    "gw_v_w": 1.0,
+    "omega_sw_peak": NaN,
+    "omega_turb_peak": NaN,
+    "omega_coll_peak": NaN,
+    "omega_tot_peak": NaN
+  }
+}

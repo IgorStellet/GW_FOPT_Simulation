@@ -1,0 +1,16 @@
+{
+  "lambda_tree": -0.2504777483906146,
+  "mu2_tree": -3838.9213584042886,
+  "a0_mean_field": 0.21003731433334638,
+  "combo_TeV2": 8.544644,
+  "upper_c6_over_f2_TeV2_from_Eq_2_14": 3.9942550956899137,
+  "passes_Eq_2_14": false,
+  "passes_EFT_tree_condition_Vv_lower_than_v_to_f": true,
+  "min_after_v_tree": 159201.4514029594,
+  "V_tree_v": 159148.83171784412,
+  "sampled_min_phi_full_zeroT": 0.0,
+  "sampled_min_deltaV_full_zeroT": 0.0,
+  "dV_at_v_numeric": 5.852581884870987,
+  "d2V_at_v_numeric": 15625.053171484382,
+  "mh2_target": 15625.0
+}

@@ -1,0 +1,65 @@
+{
+  "description": "Initial mean-field benchmark suggestions. Confirm with the full CosmoTransitions scan before using in thesis plots.",
+  "selected_points": [
+    {
+      "c6_over_f2_TeV2": 1.333333333333333,
+      "c8_over_f4_TeV4": 3.1313131313131315,
+      "allowed_T0": true,
+      "has_second_tree_minimum_below_f": false,
+      "mean_field_vc_GeV": 82.28349766406491,
+      "mean_field_Tc_GeV": 102.46112438138371,
+      "mean_field_vc_over_Tc": 0.8030704148608299,
+      "category": 3,
+      "category_label": "SFO, 0.7 < vc/Tc < 1.3",
+      "combo_no_nucleation_guide": 3.235150303030302,
+      "combo_too_weak_guide": 1.617575151515151,
+      "expected_useful_for_full_scan": true,
+      "benchmark_role": "weak_but_visible"
+    },
+    {
+      "c6_over_f2_TeV2": 1.8282828282828283,
+      "c8_over_f4_TeV4": -1.1616161616161609,
+      "allowed_T0": true,
+      "has_second_tree_minimum_below_f": false,
+      "mean_field_vc_GeV": 129.64078507555706,
+      "mean_field_Tc_GeV": 99.61927978802125,
+      "mean_field_vc_over_Tc": 1.3013624004451572,
+      "category": 4,
+      "category_label": "SFO, vc/Tc > 1.3",
+      "combo_no_nucleation_guide": 3.4456765656565658,
+      "combo_too_weak_guide": 1.7228382828282829,
+      "expected_useful_for_full_scan": true,
+      "benchmark_role": "intermediate_1"
+    },
+    {
+      "c6_over_f2_TeV2": 1.9696969696969697,
+      "c8_over_f4_TeV4": -2.424242424242424,
+      "allowed_T0": true,
+      "has_second_tree_minimum_below_f": false,
+      "mean_field_vc_GeV": 137.10246089560803,
+      "mean_field_Tc_GeV": 99.03068573076064,
+      "mean_field_vc_over_Tc": 1.384444224372584,
+      "category": 4,
+      "category_label": "SFO, vc/Tc > 1.3",
+      "combo_no_nucleation_guide": 3.499277575757576,
+      "combo_too_weak_guide": 1.749638787878788,
+      "expected_useful_for_full_scan": true,
+      "benchmark_role": "intermediate_2"
+    },
+    {
+      "c6_over_f2_TeV2": 2.04040404040404,
+      "c8_over_f4_TeV4": -3.4343434343434343,
+      "allowed_T0": true,
+      "has_second_tree_minimum_below_f": false,
+      "mean_field_vc_GeV": 136.742112281484,
+      "mean_field_Tc_GeV": 99.6139402997827,
+      "mean_field_vc_over_Tc": 1.3727206440179567,
+      "category": 4,
+      "category_label": "SFO, vc/Tc > 1.3",
+      "combo_no_nucleation_guide": 3.457309898989899,
+      "combo_too_weak_guide": 1.7286549494949495,
+      "expected_useful_for_full_scan": true,
+      "benchmark_role": "strong_near_no_nucleation_edge"
+    }
+  ]
+}

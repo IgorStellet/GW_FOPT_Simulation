@@ -1107,6 +1107,18 @@ def compute_finite_temperature_summary(
     Ts_false = _closest_spinodal_to_T(spinodal_target, spin_false["T_spinodals"])
     Ts_true = _closest_spinodal_to_T(spinodal_target, spin_true["T_spinodals"])
     S_n, S_over_Tn = _extract_action_information(main_transition, Tn)
+    supercooling_fraction = np.nan
+    supercooling_percent = np.nan
+
+    if (
+        Tc is not None
+        and Tn is not None
+        and np.isfinite(Tc)
+        and np.isfinite(Tn)
+        and Tc > 0.0
+    ):
+        supercooling_fraction = (Tc - Tn) / Tc
+        supercooling_percent = 100.0 * supercooling_fraction
     phi_false_Tn = float(np.asarray(false_phase.valAt(Tn), dtype=float).ravel()[0]) if Tn else np.nan
     phi_true_Tn = float(np.asarray(true_phase.valAt(Tn), dtype=float).ravel()[0]) if Tn else np.nan
     summary["spinodal_false_phase"] = spin_false
@@ -1123,6 +1135,8 @@ def compute_finite_temperature_summary(
         "phi_false_Tn": phi_false_Tn,
         "phi_true_Tn": phi_true_Tn,
         "vTn_over_Tn": phi_true_Tn / Tn if Tn and Tn > 0.0 else np.nan,
+        "supercooling_fraction": supercooling_fraction,
+        "supercooling_percent": supercooling_percent,
     }
     print("\n" + "=" * 76)
     print("Finite-temperature transition summary")
@@ -1131,6 +1145,8 @@ def compute_finite_temperature_summary(
     print(f" T_c        : {Tc if Tc is not None else np.nan:10.5g} GeV")
     print(f" phi_true/Tn: {summary['key_temperatures']['vTn_over_Tn']:10.5g}")
     print(f" S3/Tn      : {S_over_Tn:10.5g}")
+    print(f" (Tc-Tn)/Tc : {supercooling_fraction:10.5g}")
+    print(f" supercooling: {supercooling_percent:10.5g} %")
     print("=" * 76)
     return summary
 
@@ -1553,65 +1569,17 @@ def example_D1_mean_field_map(
     )
 
     # Use the mean-field strength as contours, reproducing the information of
-    # the yellow/green regions more quantitatively.
-    valid_v = np.isfinite(vc_over_Tc)
-    if np.any(valid_v):
-        try:
-            cs = ax.contour(
-                c6_vals,
-                c8_vals,
-                vc_over_Tc,
-                levels=[0.7, 1.3, 2.0, 4.0],
-                colors="black",
-                linewidths=0.9,
-            )
-            ax.clabel(cs, fmt={0.7: "0.7", 1.3: "1.3", 2.0: "2", 4.0: "4"}, fontsize=8)
-        except Exception:
-            pass
-
-    # Article-inspired guide lines for full numerical scans.
-    c6_line = np.linspace(c6_vals.min(), c6_vals.max(), 400)
-    vTeV = DEFAULT_VEV / 1000.0
-    c8_no_nucl = (3.5 - 2.0 * c6_line) / (3.0 * vTeV**2)
-    c8_too_weak = (1.5 - c6_line) / (1.5 * vTeV**2)
-    ax.plot(c6_line, c8_no_nucl, color="black", ls="--", lw=2.0, label=r"$2c_6/f^2+3v^2c_8/f^4\simeq3.5$")
-    ax.plot(c6_line, c8_too_weak, color="black", ls=":", lw=1.7, label=r"$c_6/f^2+3v^2c_8/(2f^4)\simeq1.5$")
-
-    if np.any(useful):
-        ax.contour(
-            c6_vals,
-            c8_vals,
-            useful.astype(float),
-            levels=[0.5],
-            colors="#542788",
-            linewidths=1.1,
-        )
-
     if current_point is not None:
         ax.scatter(
             [current_point[0]],
             [current_point[1]],
             marker="*",
-            s=160,
+            s=180,
             color="#542788",
             edgecolor="black",
-            linewidth=0.5,
-            zorder=8,
-            label="current run",
-        )
-
-    for rec in selected:
-        ax.scatter(
-            [float(rec["c6_over_f2_TeV2"])],
-            [float(rec["c8_over_f4_TeV4"])],
-            marker="o",
-            s=55,
-            color="#542788",
-            edgecolor="white",
             linewidth=0.6,
-            zorder=7,
+            zorder=8,
         )
-
     ax.set_xlabel(r"$c_6/f^2$ [TeV$^{-2}$]")
     ax.set_ylabel(r"$c_8/f^4$ [TeV$^{-4}$]")
     ax.set_title("Example D1: Fig. 2-style mean-field map and scan guide")
@@ -1620,14 +1588,55 @@ def example_D1_mean_field_map(
     ax.grid(True, alpha=0.18)
 
     handles = [
-        plt.Line2D([0], [0], marker="s", color="none", markerfacecolor="#d9d9d9", markersize=9, label="allowed, weak / one minimum"),
-        plt.Line2D([0], [0], marker="s", color="none", markerfacecolor="#969696", markersize=9, label="allowed, weak / two minima"),
-        plt.Line2D([0], [0], marker="s", color="none", markerfacecolor="#fee08b", markersize=9, label=r"SFO, $0.7<v_c/T_c<1.3$"),
-        plt.Line2D([0], [0], marker="s", color="none", markerfacecolor="#1a9850", markersize=9, label=r"SFO, $v_c/T_c>1.3$"),
+        plt.Line2D(
+            [0], [0],
+            marker="s",
+            color="none",
+            markerfacecolor="#d9d9d9",
+            markersize=9,
+            label="allowed, weak / one minimum",
+        ),
+        plt.Line2D(
+            [0], [0],
+            marker="s",
+            color="none",
+            markerfacecolor="#969696",
+            markersize=9,
+            label="allowed, weak / two minima",
+        ),
+        plt.Line2D(
+            [0], [0],
+            marker="s",
+            color="none",
+            markerfacecolor="#fee08b",
+            markersize=9,
+            label=r"SFO, $0.7<v_c/T_c<1.3$",
+        ),
+        plt.Line2D(
+            [0], [0],
+            marker="s",
+            color="none",
+            markerfacecolor="#1a9850",
+            markersize=9,
+            label=r"SFO, $v_c/T_c>1.3$",
+        ),
     ]
-    line_handles, line_labels = ax.get_legend_handles_labels()
-    ax.legend(handles + line_handles, [h.get_label() for h in handles] + line_labels, fontsize=7.5, loc="upper right")
 
+    if current_point is not None:
+        handles.append(
+            plt.Line2D(
+                [0], [0],
+                marker="*",
+                color="none",
+                markerfacecolor="#542788",
+                markeredgecolor="black",
+                markersize=13,
+                label="current run",
+            )
+        )
+
+    ax.legend(handles=handles, fontsize=8, loc="upper right")
+    
     fig.tight_layout()
     return save_figure(fig, output_dir, "D1_mean_field_fig2_map", close=not show)
 
@@ -2338,7 +2347,12 @@ def run_all_examples(
                 gather_thesis_diagnostics(finite_summary, output_dir=output_dir, label=build_results_directory_name(params, run_tag=run_tag))
         else:
             print("[runner] No FOPT with nucleation found; E1/E2/E4, F and G were skipped.")
-
+            if save_diagnostics_table:
+                gather_thesis_diagnostics(
+                    finite_summary,
+                    output_dir=output_dir,
+                    label=build_results_directory_name(params, run_tag=run_tag),
+                )
     return {"output_dir": output_dir, "parameters": asdict(params), "figures": saved, "finite_temperature_summary": finite_summary}
 
 
@@ -2348,13 +2362,13 @@ if __name__ == "__main__":
     run_all_examples(
         # Theory point
         c6_over_f2_TeV2=2.5,
-        c8_over_f4_TeV4=6.0,
+        c8_over_f4_TeV4=10.0,
         f_GeV=1000.0,
         m_h=DEFAULT_MH,
 
         # Optional Gláuber add-on
         use_glauber_measure=False,
-        C_glauber=0.0,
+        C_glauber=3.83,
         Lambda_glauber=1000.0,
 
         # Output

@@ -1,0 +1,37 @@
+{
+  "mean_field": {
+    "v_c": 231.6747037026374,
+    "T_c": 55.72190183183532,
+    "v_c_over_T_c": 4.157695557517311
+  },
+  "current_point_fast_record": {
+    "c6_over_f2_TeV2": 3.3,
+    "c8_over_f4_TeV4": 2.0,
+    "allowed_T0": true,
+    "has_second_tree_minimum_below_f": false,
+    "mean_field_vc_GeV": 231.6747037026374,
+    "mean_field_Tc_GeV": 55.72190183183532,
+    "mean_field_vc_over_Tc": 4.157695557517311,
+    "category": 4,
+    "category_label": "SFO, vc/Tc > 1.3",
+    "combo_no_nucleation_guide": 6.963095999999999,
+    "combo_too_weak_guide": 3.4815479999999996,
+    "expected_useful_for_full_scan": false
+  },
+  "physicality": {
+    "lambda_tree": -0.18144266900661457,
+    "mu2_tree": -1694.6527105361902,
+    "a0_mean_field": 0.2445548540253464,
+    "combo_TeV2": 6.963095999999999,
+    "upper_c6_over_f2_TeV2_from_Eq_2_14": 4.085029095689913,
+    "passes_Eq_2_14": true,
+    "passes_EFT_tree_condition_Vv_lower_than_v_to_f": true,
+    "min_after_v_tree": -21747300.641361583,
+    "V_tree_v": -21747353.25429722,
+    "sampled_min_phi_full_zeroT": 246.08202734244747,
+    "sampled_min_deltaV_full_zeroT": -21747300.641361583,
+    "dV_at_v_numeric": 5.112915330119734,
+    "d2V_at_v_numeric": 15625.043708263007,
+    "mh2_target": 15625.0
+  }
+}
