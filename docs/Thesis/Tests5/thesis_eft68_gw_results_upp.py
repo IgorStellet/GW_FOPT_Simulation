@@ -2733,8 +2733,7 @@ def _glauber_phi_scan_limit(
     *,
     C: float,
     Lambda: float,
-    phi_scan_abs_max: float = 1000.0,
-    branch_safety: float = 0.98,
+    branch_safety: float = 0.99,
 ) -> float:
     """
     Safe symmetric field-search range for Gláuber runs.
@@ -2746,11 +2745,8 @@ def _glauber_phi_scan_limit(
     so for C > 0 we keep the scan below this value.
     """
 
-    if C <= 0.0:
-        return float(phi_scan_abs_max)
-
     phi_branch = float(Lambda) / np.sqrt(float(C))
-    return float(min(phi_scan_abs_max, branch_safety * phi_branch))
+    return float(branch_safety * phi_branch)
 
 # Runnings
 
@@ -3011,16 +3007,16 @@ def run_02_glauber_pure_benchmark_grid(
     # ------------------------------------------------------------------
     # SM/EFT baseline.
     # ------------------------------------------------------------------
-    f_GeV: float = 1000.0,
     m_h: float = DEFAULT_MH,
     # ------------------------------------------------------------------
     # Field-search controls.
     # ------------------------------------------------------------------
     phi_scan_abs_max: float = 1000.0,
-    phi_scan_branch_safety: float = 0.98,
+    phi_scan_branch_safety: float = 0.99
+        ,
     n_phi_scan: int = 1400,
     n_T_seeds: int = 3,
-    deltaX_target: float = 0.1,
+    deltaX_target: float = 0.05,
     # ------------------------------------------------------------------
     # Temperature-search controls.
     # ------------------------------------------------------------------
@@ -3034,8 +3030,8 @@ def run_02_glauber_pure_benchmark_grid(
     # Bounce controls.
     # ------------------------------------------------------------------
     bounce_xguess: float | None = None,
-    bounce_thinCutoff: float = 1e-3,
-    bounce_npoints: int = 800,
+    bounce_thinCutoff: float = 1e-4,
+    bounce_npoints: int = 1200,
     # ------------------------------------------------------------------
     # GW controls exposed by the current runner.
     # ------------------------------------------------------------------

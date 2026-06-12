@@ -142,8 +142,8 @@ def V_paper(phi: np.ndarray | float, T: np.ndarray | float | None=None , C: floa
 
 
     # bosons positive, fermions negative (as in your ΔV expression)
-    DV_b = (T**4)/(2.0*np.pi**2) * (_nW*Jb(xW, approx="exact") + _nZ*Jb(xZ,approx="exact"))
-    DV_f = (T**4)/(2.0*np.pi**2) * (_nt*Jf(xt,approx="exact"))
+    DV_b = (T**4)/(2.0*np.pi**2) * (_nW*Jb(xW, approx="spline") + _nZ*Jb(xZ,approx="spline"))
+    DV_f = (T**4)/(2.0*np.pi**2) * (_nt*Jf(xt,approx="spline"))
 
     DV_b = np.real_if_close(DV_b)
     DV_f = np.real_if_close(DV_f)
@@ -1859,7 +1859,7 @@ def run_all(case: str = "paper",
 
     ########################### Finite Temperature #####################################
     if phi_scan_range is None:
-        phi_low_scan, phi_high_scan = 0.0, _VEW
+        phi_low_scan, phi_high_scan = -10.0, _VEW*1.5
     else:
         phi_low_scan, phi_high_scan = phi_scan_range
 
@@ -2012,20 +2012,20 @@ if __name__ == "__main__":
         C=C,
         Lambda=1000.0,
         finiteT=True,
-        include_daisy=True,
+        include_daisy=False,
         xguess=None,
         phitol=1e-5,
-        npoints=800,
-        thinCutoff=0.0001,
+        npoints=1500,
+        thinCutoff=0.001,
         phi_scan_range = None,
         T_min=5.0,
-        T_max=500.0,
+        T_max=150.0,
         deltaX_target= 0.1,
         n_T_seeds=2,
         nuclCriterion=None,
         Tn_Ttol= 1e-3,
-        Tn_maxiter= 100,
-        save_dir=f"results_C_{C}",        # "results"
+        Tn_maxiter= 200,
+        save_dir=f"results_C_{C}_test-No-daisy",        # "results"
     )
 
 """
