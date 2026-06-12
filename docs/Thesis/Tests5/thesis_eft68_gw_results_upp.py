@@ -1310,7 +1310,7 @@ def example_C1_finite_temperature_shapes(
         phi_max = params.f_GeV
     phi = np.linspace(0.0, phi_max, n_phi)
     fig, ax = plt.subplots(figsize=(8.0, 5.0))
-    cmap = plt.get_cmap("viridis_r")
+    cmap = plt.get_cmap("inferno_r")
     for i, T in enumerate(temperatures):
         color = cmap(i / max(len(temperatures) - 1, 1))
         y = deltaV(
@@ -1695,7 +1695,7 @@ def example_E3_potential_at_key_temperatures(summary: dict[str, Any], *, output_
     if phi_max is None:
         phi_max = summary.get("phi_range", (0.0, DEFAULT_VEV * 4))[1]
     phi = np.linspace(0.0, float(phi_max), 1600)
-    cmap = plt.get_cmap("viridis_r")
+    cmap = plt.get_cmap("inferno_r")
     fig, ax = plt.subplots(figsize=(7.5, 4.8))
     for i, (_, lab, T) in enumerate(clean):
         y = np.asarray(V_XT(phi, T), dtype=float).reshape(-1)
@@ -3029,12 +3029,12 @@ def run_02_glauber_pure_benchmark_grid(
     phitol: float = 1e-5,
     overlapAngle: float = 45.0,
     Tn_Ttol: float = 1e-3,
-    Tn_maxiter: int = 150,
+    Tn_maxiter: int = 200,
     # ------------------------------------------------------------------
     # Bounce controls.
     # ------------------------------------------------------------------
     bounce_xguess: float | None = None,
-    bounce_thinCutoff: float = 1e-4,
+    bounce_thinCutoff: float = 1e-3,
     bounce_npoints: int = 800,
     # ------------------------------------------------------------------
     # GW controls exposed by the current runner.
@@ -3106,7 +3106,7 @@ def run_02_glauber_pure_benchmark_grid(
                         # --------------------------------------------------
                         c6_over_f2_TeV2=0.0,
                         c8_over_f4_TeV4=0.0,
-                        f_GeV=f_GeV,
+                        f_GeV=phi_limit,
                         m_h=m_h,
                         use_glauber_measure=True,
                         C_glauber=C_float,
@@ -3136,7 +3136,7 @@ def run_02_glauber_pure_benchmark_grid(
                         run_finite_temperature=True,
                         T_min=T_min,
                         T_max=T_max,
-                        phi_scan_range=(-phi_limit, phi_limit),
+                        phi_scan_range=(-10, phi_limit),
                         n_phi_scan=n_phi_scan,
                         n_T_seeds=n_T_seeds,
                         deltaX_target=deltaX_target,
@@ -3221,7 +3221,7 @@ if __name__ == "__main__":
     # run_01 and run_02 are off by default; turn them on when desired.
     run_planned_sequence(
         show=False,
-        run_00=True,
-        run_01=True,
-        run_02=False,
+        run_00=False,
+        run_01=False,
+        run_02=True,
     )
