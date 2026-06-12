@@ -1,0 +1,43 @@
+{
+  "label": "results_eft68_c6f20_c8f40_f512p955_mh125_Glauber_C3p65_Lambda1000",
+  "model_parameters": {
+    "c6_over_f2_TeV2": 0.0,
+    "c8_over_f4_TeV4": 0.0,
+    "f_GeV": 512.9554441384095,
+    "m_h": 125.0,
+    "v": 246.0,
+    "m_w": 80.36,
+    "m_z": 91.19,
+    "m_t": 173.1,
+    "use_glauber_measure": true,
+    "C_glauber": 3.65,
+    "Lambda_glauber": 1000.0
+  },
+  "scan_parameters": {
+    "T_min": 1.0,
+    "T_max": 250.0,
+    "phi_scan_range": [
+      -10,
+      512.9554441384095
+    ],
+    "n_phi_scan": 1400,
+    "n_T_seeds": 3,
+    "deltaX_target": 0.1,
+    "x_eps": 0.001,
+    "T_eps": 0.01,
+    "deriv_order": 4,
+    "phitol": 1e-05,
+    "overlapAngle": 45.0,
+    "Tn_Ttol": 0.001,
+    "Tn_maxiter": 200,
+    "include_zeroT_loops": true,
+    "include_scalar_loops": true,
+    "include_thermal": true,
+    "include_scalar_thermal": true,
+    "include_daisy": false,
+    "renormalize_zeroT_loops": true,
+    "thermal_approx": "spline"
+  },
+  "key_temperatures": {},
+  "gw_scales": {}
+}
