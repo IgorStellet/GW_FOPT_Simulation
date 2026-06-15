@@ -3011,9 +3011,7 @@ def run_02_glauber_pure_benchmark_grid(
     # ------------------------------------------------------------------
     # Field-search controls.
     # ------------------------------------------------------------------
-    phi_scan_abs_max: float = 1000.0,
-    phi_scan_branch_safety: float = 0.99
-        ,
+    phi_scan_branch_safety: float = 0.99,
     n_phi_scan: int = 1400,
     n_T_seeds: int = 3,
     deltaX_target: float = 0.05,
@@ -3091,7 +3089,6 @@ def run_02_glauber_pure_benchmark_grid(
                 phi_limit = _glauber_phi_scan_limit(
                     C=C_float,
                     Lambda=Lambda_float,
-                    phi_scan_abs_max=phi_scan_abs_max,
                     branch_safety=phi_scan_branch_safety,
                 )
 
