@@ -1077,6 +1077,12 @@ def compute_finite_temperature_summary(
     phi_true_Tn = float(np.asarray(true_phase.valAt(Tn), dtype=float).ravel()[0]) if Tn else np.nan
     summary["spinodal_false_phase"] = spin_false
     summary["spinodal_true_phase"] = spin_true
+    supercooling_fraction = (
+        (Tc - Tn) / Tc
+        if Tc is not None and Tn is not None and Tc > 0.0
+        else np.nan
+    )
+
     summary["key_temperatures"] = {
         "Tn": Tn,
         "Tc": Tc,
@@ -1089,6 +1095,7 @@ def compute_finite_temperature_summary(
         "phi_false_Tn": phi_false_Tn,
         "phi_true_Tn": phi_true_Tn,
         "vTn_over_Tn": phi_true_Tn / Tn if Tn and Tn > 0.0 else np.nan,
+        "Tc_minus_Tn_over_Tc": supercooling_fraction,
     }
     print("\n" + "=" * 76)
     print("Finite-temperature transition summary")
@@ -1097,6 +1104,7 @@ def compute_finite_temperature_summary(
     print(f" T_c        : {Tc if Tc is not None else np.nan:10.5g} GeV")
     print(f" phi_true/Tn: {summary['key_temperatures']['vTn_over_Tn']:10.5g}")
     print(f" S3/Tn      : {S_over_Tn:10.5g}")
+    print(f" (Tc-Tn)/Tc : {supercooling_fraction:10.5g}")
     print("=" * 76)
     return summary
 
@@ -1310,7 +1318,7 @@ def example_C1_finite_temperature_shapes(
         phi_max = params.f_GeV
     phi = np.linspace(0.0, phi_max, n_phi)
     fig, ax = plt.subplots(figsize=(8.0, 5.0))
-    cmap = plt.get_cmap("inferno_r")
+    cmap = plt.get_cmap("plasma_r")
     for i, T in enumerate(temperatures):
         color = cmap(i / max(len(temperatures) - 1, 1))
         y = deltaV(
@@ -1687,7 +1695,7 @@ def example_E3_potential_at_key_temperatures(summary: dict[str, Any], *, output_
     if V_XT is None:
         return None
     key_T = summary.get("key_temperatures", {}) or {}
-    temps = [("Tn", r"$T_n$", key_T.get("Tn")), ("Tc", r"$T_c$", key_T.get("Tc")), ("Ts_true", r"$T_s^{\rm true}$", key_T.get("Ts_true")), ("Ts_false", r"$T_s^{\rm false}$", key_T.get("Ts_false"))]
+    temps = [("Ts_false", r"$T_s^{\rm false}$", key_T.get("Ts_false")), ("Tn", r"$T_n$", key_T.get("Tn")), ("Tc", r"$T_c$", key_T.get("Tc")), ("Ts_true", r"$T_s^{\rm true}$", key_T.get("Ts_true"))]
     clean = [(k, lab, _as_finite_float_or_none(v)) for k, lab, v in temps]
     clean = [(k, lab, v) for k, lab, v in clean if v is not None]
     if not clean:
@@ -1695,7 +1703,7 @@ def example_E3_potential_at_key_temperatures(summary: dict[str, Any], *, output_
     if phi_max is None:
         phi_max = summary.get("phi_range", (0.0, DEFAULT_VEV * 4))[1]
     phi = np.linspace(0.0, float(phi_max), 1600)
-    cmap = plt.get_cmap("inferno_r")
+    cmap = plt.get_cmap("viridis_r")
     fig, ax = plt.subplots(figsize=(7.5, 4.8))
     for i, (_, lab, T) in enumerate(clean):
         y = np.asarray(V_XT(phi, T), dtype=float).reshape(-1)
@@ -2565,6 +2573,8 @@ def run_all_examples(
     gw_kappa_coll: float | None = None,
     gw_beta_over_H_override: float | None = None,
     save_diagnostics_table: bool = True,
+    save_fast_diagnostics: bool = True,
+    save_gw_spectrum_csv: bool = True,
 ) -> dict[str, Any]:
     """
     Run the full EFT68 thesis workflow.
@@ -2621,15 +2631,20 @@ def run_all_examples(
             thermal_approx=thermal_approx,
             include_daisy=include_daisy,
         )
-
     mf = mean_field_vc_tc(params)
-    save_json(
-        {
-            "mean_field": mf,
-            "physicality": check_zero_temperature_physicality(params, include_zeroT_loops=False, include_glauber=params.use_glauber_measure),
-        },
-        output_dir / "D0_fast_diagnostics.json",
-    )
+
+    if save_fast_diagnostics:
+        save_json(
+            {
+                "mean_field": mf,
+                "physicality": check_zero_temperature_physicality(
+                    params,
+                    include_zeroT_loops=False,
+                    include_glauber=params.use_glauber_measure,
+                ),
+            },
+            output_dir / "D0_fast_diagnostics.json",
+        )
     if make_intro_plots and run_D1_mean_field_map:
         saved["D1"] = example_D1_mean_field_map(params= params, output_dir=output_dir, show=show)
 
@@ -2708,7 +2723,8 @@ def run_all_examples(
                         kappa_coll=gw_kappa_coll,
                         beta_over_H_override=gw_beta_over_H_override,
                     )
-                    saved["G0"] = save_gw_spectrum_table(finite_summary, output_dir=output_dir)
+                    if save_gw_spectrum_csv:
+                        saved["G0"] = save_gw_spectrum_table(finite_summary, output_dir=output_dir)
                     if make_gw_plots:
                         saved["G1"] = example_G1_gw_components(finite_summary, output_dir=output_dir, show=show)
                         saved["G2"] = example_G2_gw_total_with_sensitivities(finite_summary, output_dir=output_dir, show=show)
@@ -3011,10 +3027,10 @@ def run_02_glauber_pure_benchmark_grid(
     # ------------------------------------------------------------------
     # Field-search controls.
     # ------------------------------------------------------------------
-    phi_scan_branch_safety: float = 0.99,
+    phi_scan_branch_safety: float = 1.0,
     n_phi_scan: int = 1400,
     n_T_seeds: int = 3,
-    deltaX_target: float = 0.05,
+    deltaX_target: float = 0.1,
     # ------------------------------------------------------------------
     # Temperature-search controls.
     # ------------------------------------------------------------------
@@ -3175,6 +3191,402 @@ def run_02_glauber_pure_benchmark_grid(
 
     return results
 
+def _scan_float(value: Any) -> float:
+    """Return a finite float when possible; otherwise nan."""
+
+    out = _as_finite_float_or_none(value)
+    return float(out) if out is not None else float("nan")
+
+
+def _glauber_scan_row_from_result(
+    *,
+    result: Mapping[str, Any] | None,
+    Lambda: float,
+    C: float,
+    include_daisy: bool,
+    phi_limit: float,
+    error: str | None = None,
+) -> dict[str, Any]:
+    """
+    Build one compact row for the Gláuber C-scan master table.
+
+    The per-run folder still stores the full thesis_diagnostics.csv/json.
+    This row is only the light summary used later for alpha(C), beta(C),
+    Tn(C), Tc(C) and (Tc-Tn)/Tc plots.
+    """
+
+    if result is None:
+        return {
+            "Lambda_GeV": float(Lambda),
+            "C": float(C),
+            "include_daisy": bool(include_daisy),
+            "phi_limit_GeV": float(phi_limit),
+            "status": "runner_error",
+            "output_dir": "",
+            "Tn_GeV": np.nan,
+            "Tc_GeV": np.nan,
+            "Ts_false_GeV": np.nan,
+            "Ts_true_GeV": np.nan,
+            "Tc_minus_Tn_over_Tc": np.nan,
+            "S3_over_Tn": np.nan,
+            "phi_true_Tn_GeV": np.nan,
+            "phi_false_Tn_GeV": np.nan,
+            "vTn_over_Tn": np.nan,
+            "alpha": np.nan,
+            "beta_over_H": np.nan,
+            "omega_total_peak": np.nan,
+            "f_total_peak_mHz": np.nan,
+            "transition_error": error or "",
+        }
+
+    summary = result.get("finite_temperature_summary", None)
+    output_dir = result.get("output_dir", "")
+
+    if not isinstance(summary, Mapping):
+        return {
+            "Lambda_GeV": float(Lambda),
+            "C": float(C),
+            "include_daisy": bool(include_daisy),
+            "phi_limit_GeV": float(phi_limit),
+            "status": "no_summary",
+            "output_dir": str(output_dir),
+            "Tn_GeV": np.nan,
+            "Tc_GeV": np.nan,
+            "Ts_false_GeV": np.nan,
+            "Ts_true_GeV": np.nan,
+            "Tc_minus_Tn_over_Tc": np.nan,
+            "S3_over_Tn": np.nan,
+            "phi_true_Tn_GeV": np.nan,
+            "phi_false_Tn_GeV": np.nan,
+            "vTn_over_Tn": np.nan,
+            "alpha": np.nan,
+            "beta_over_H": np.nan,
+            "omega_total_peak": np.nan,
+            "f_total_peak_mHz": np.nan,
+            "transition_error": "",
+        }
+
+    key_T = summary.get("key_temperatures", {}) or {}
+    gw_scales = summary.get("gw_scales", {}) or {}
+    gw = summary.get("gw", {}) or {}
+    peaks = gw.get("peaks", {}) if isinstance(gw, Mapping) else {}
+    total_peak = peaks.get("total", {}) if isinstance(peaks, Mapping) else {}
+
+    main_transition = summary.get("main_transition", None)
+    transition_error = summary.get("transition_error", "")
+
+    if main_transition is not None:
+        status = "FOPT_with_nucleation"
+    elif transition_error:
+        status = "transition_error"
+    else:
+        status = "no_FOPT_or_no_nucleation"
+
+    Tc = _scan_float(key_T.get("Tc", np.nan))
+    Tn = _scan_float(key_T.get("Tn", np.nan))
+    supercooling = _scan_float(key_T.get("Tc_minus_Tn_over_Tc", np.nan))
+
+    if not np.isfinite(supercooling) and np.isfinite(Tc) and np.isfinite(Tn) and Tc > 0.0:
+        supercooling = (Tc - Tn) / Tc
+
+    return {
+        "Lambda_GeV": float(Lambda),
+        "C": float(C),
+        "include_daisy": bool(include_daisy),
+        "phi_limit_GeV": float(phi_limit),
+        "status": status,
+        "output_dir": str(output_dir),
+        "Tn_GeV": Tn,
+        "Tc_GeV": Tc,
+        "Ts_false_GeV": _scan_float(key_T.get("Ts_false", np.nan)),
+        "Ts_true_GeV": _scan_float(key_T.get("Ts_true", np.nan)),
+        "Tc_minus_Tn_over_Tc": supercooling,
+        "S3_over_Tn": _scan_float(key_T.get("S_over_Tn", np.nan)),
+        "phi_true_Tn_GeV": _scan_float(key_T.get("phi_true_Tn", np.nan)),
+        "phi_false_Tn_GeV": _scan_float(key_T.get("phi_false_Tn", np.nan)),
+        "vTn_over_Tn": _scan_float(key_T.get("vTn_over_Tn", np.nan)),
+        "alpha": _scan_float(gw_scales.get("gw_alpha", np.nan)),
+        "beta_over_H": _scan_float(gw_scales.get("gw_beta_over_H", np.nan)),
+        "omega_total_peak": _scan_float(total_peak.get("omega_peak", np.nan)),
+        "f_total_peak_mHz": _scan_float(total_peak.get("f_peak_mHz", np.nan)),
+        "transition_error": str(transition_error),
+    }
+
+
+def _write_glauber_scan_master_csv(
+    rows: Sequence[Mapping[str, Any]],
+    path: str | Path,
+) -> Path:
+    """Write the Gláuber C-scan master table."""
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    fieldnames = [
+        "Lambda_GeV",
+        "C",
+        "include_daisy",
+        "phi_limit_GeV",
+        "status",
+        "output_dir",
+        "Tn_GeV",
+        "Tc_GeV",
+        "Ts_false_GeV",
+        "Ts_true_GeV",
+        "Tc_minus_Tn_over_Tc",
+        "S3_over_Tn",
+        "phi_true_Tn_GeV",
+        "phi_false_Tn_GeV",
+        "vTn_over_Tn",
+        "alpha",
+        "beta_over_H",
+        "omega_total_peak",
+        "f_total_peak_mHz",
+        "transition_error",
+    ]
+
+    with open(path, "w", newline="", encoding="utf-8") as fobj:
+        writer = csv.DictWriter(fobj, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for row in rows:
+            writer.writerow({key: row.get(key, "") for key in fieldnames})
+
+    return path
+
+
+def run_03_glauber_pure_C_scan(
+    *,
+    base_dir: str | Path = "03_Glauber_pure_C_scan",
+    show: bool = False,
+    # ------------------------------------------------------------------
+    # Pure Gláuber C-ranges.
+    # Each entry is Lambda: (C_min, C_max, number_of_points).
+    # Increase n_C later if you want smoother alpha(C), beta(C) curves.
+    # ------------------------------------------------------------------
+    C_scan_ranges: Mapping[float, tuple[float, float, int]] | None = None,
+    include_daisy_values: Sequence[bool] = (False, True),
+    # ------------------------------------------------------------------
+    # SM/EFT baseline.
+    # ------------------------------------------------------------------
+    m_h: float = DEFAULT_MH,
+    # ------------------------------------------------------------------
+    # Field-search controls.
+    # Keep below the Gláuber branch to avoid log singularities.
+    # If you want to reproduce run_02 exactly, set this to 1.0.
+    # ------------------------------------------------------------------
+    phi_scan_branch_safety: float = 1.0,
+    n_phi_scan: int = 1200,
+    n_T_seeds: int = 3,
+    deltaX_target: float = 0.1,
+    # ------------------------------------------------------------------
+    # Temperature-search controls.
+    # For scans, use a slightly looser Tn search than in benchmark plots.
+    # ------------------------------------------------------------------
+    T_min: float = 1.0,
+    T_max: float = 250.0,
+    phitol: float = 1e-5,
+    overlapAngle: float = 45.0,
+    Tn_Ttol: float = 1e-3,
+    Tn_maxiter: int = 160,
+    # ------------------------------------------------------------------
+    # Bounce controls.
+    # These are still needed because alpha/beta/GW diagnostics reuse the
+    # nucleation and bounce information, but no bounce figures are saved.
+    # ------------------------------------------------------------------
+    bounce_xguess: float | None = None,
+    bounce_thinCutoff: float = 1e-4,
+    bounce_npoints: int = 1200,
+    # ------------------------------------------------------------------
+    # GW controls.
+    # No GW plots or spectrum CSV are saved; the GW calculator is still run
+    # to store alpha, beta/H and peak diagnostics in thesis_diagnostics.
+    # ------------------------------------------------------------------
+    gw_f_min_mHz: float = 1e-3,
+    gw_f_max_mHz: float = 1e5,
+    gw_n_freq: int = 1200,
+    gw_v_w: float = 1.0,
+    gw_epsilon_turb: float | None = 1.0,
+    gw_beta_over_H_override: float | None = None,
+    # ------------------------------------------------------------------
+    # Runtime controls.
+    # ------------------------------------------------------------------
+    verbose: bool = False,
+) -> list[dict[str, Any]]:
+    """
+    Run a pure-Gláuber one-dimensional scan in C.
+
+    Output strategy:
+    - one folder per C and Lambda;
+    - no figures;
+    - no GW spectrum table;
+    - full thesis_diagnostics.csv/json inside each point folder;
+    - one master CSV at base_dir/run03_glauber_C_scan_summary.csv.
+
+    This is the scan designed for later plots:
+    alpha(C), beta/H(C), Tn(C), Tc(C), and (Tc-Tn)/Tc.
+    """
+
+    if C_scan_ranges is None:
+        C_scan_ranges = {
+            1000.0: (3.64, 3.84, 23),
+            2000.0: (6.23, 6.66, 23),
+            4000.0: (10.48, 11.24, 23),
+        }
+
+    base_dir = Path(base_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
+
+    master_rows: list[dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
+
+    master_csv_path = base_dir / "run03_glauber_C_scan_summary.csv"
+
+    for include_daisy in include_daisy_values:
+        daisy_folder = "with_daisy" if include_daisy else "no_daisy"
+        daisy_base_dir = base_dir / daisy_folder
+
+        for Lambda, scan_info in C_scan_ranges.items():
+            C_min, C_max, n_C = scan_info
+            C_values = np.linspace(float(C_min), float(C_max), int(n_C))
+
+            for C in C_values:
+                C_float = float(C)
+                Lambda_float = float(Lambda)
+
+                phi_limit = _glauber_phi_scan_limit(
+                    C=C_float,
+                    Lambda=Lambda_float,
+                    branch_safety=phi_scan_branch_safety,
+                )
+
+                print("\n" + "=" * 76)
+                print("Run 03 – pure Gláuber C-scan")
+                print("=" * 76)
+                print(f" Lambda       : {Lambda_float:g} GeV")
+                print(f" C            : {C_float:g}")
+                print(f" include_daisy: {include_daisy}")
+                print(f" phi_limit    : {phi_limit:g} GeV")
+                print("=" * 76)
+
+                try:
+                    result = run_all_examples(
+                        # --------------------------------------------------
+                        # Pure Gláuber model definition.
+                        # --------------------------------------------------
+                        c6_over_f2_TeV2=0.0,
+                        c8_over_f4_TeV4=0.0,
+                        f_GeV=phi_limit,
+                        m_h=m_h,
+                        use_glauber_measure=True,
+                        C_glauber=C_float,
+                        Lambda_glauber=Lambda_float,
+
+                        # --------------------------------------------------
+                        # Output.
+                        # Daisy is separated by base_dir; automatic folder
+                        # name already stores C and Lambda.
+                        # --------------------------------------------------
+                        run_tag=None,
+                        base_dir=daisy_base_dir,
+                        show=show,
+
+                        # --------------------------------------------------
+                        # Physics switches.
+                        # --------------------------------------------------
+                        include_zeroT_loops=True,
+                        include_scalar_loops=True,
+                        renormalize_zeroT_loops=True,
+                        include_thermal=True,
+                        include_scalar_thermal=True,
+                        include_daisy=bool(include_daisy),
+                        thermal_approx="spline",
+
+                        # --------------------------------------------------
+                        # Finite-temperature search.
+                        # --------------------------------------------------
+                        run_finite_temperature=True,
+                        T_min=T_min,
+                        T_max=T_max,
+                        phi_scan_range=(-10.0, phi_limit),
+                        n_phi_scan=n_phi_scan,
+                        n_T_seeds=n_T_seeds,
+                        deltaX_target=deltaX_target,
+                        phitol=phitol,
+                        overlapAngle=overlapAngle,
+                        Tn_Ttol=Tn_Ttol,
+                        Tn_maxiter=Tn_maxiter,
+                        verbose=verbose,
+
+                        # --------------------------------------------------
+                        # No plots for the scan.
+                        # --------------------------------------------------
+                        run_A2_benchmarks=False,
+                        run_D1_mean_field_map=False,
+                        make_intro_plots=False,
+                        make_transition_plots=False,
+                        make_bounce_plots=False,
+                        make_gw_plots=False,
+
+                        # --------------------------------------------------
+                        # Bounce and GW diagnostics only.
+                        # --------------------------------------------------
+                        run_bounce=True,
+                        run_gw=True,
+                        bounce_xguess=bounce_xguess,
+                        bounce_thinCutoff=bounce_thinCutoff,
+                        bounce_npoints=bounce_npoints,
+                        gw_f_min_mHz=gw_f_min_mHz,
+                        gw_f_max_mHz=gw_f_max_mHz,
+                        gw_n_freq=gw_n_freq,
+                        gw_v_w=gw_v_w,
+                        gw_epsilon_turb=gw_epsilon_turb,
+                        gw_beta_over_H_override=gw_beta_over_H_override,
+
+                        # --------------------------------------------------
+                        # Save only compact diagnostics.
+                        # --------------------------------------------------
+                        save_diagnostics_table=True,
+                        save_fast_diagnostics=False,
+                        save_gw_spectrum_csv=False,
+                    )
+
+                    results.append(result)
+
+                    row = _glauber_scan_row_from_result(
+                        result=result,
+                        Lambda=Lambda_float,
+                        C=C_float,
+                        include_daisy=bool(include_daisy),
+                        phi_limit=phi_limit,
+                    )
+
+                except Exception as err:
+                    print("[run_03] Point failed:", repr(err))
+
+                    row = _glauber_scan_row_from_result(
+                        result=None,
+                        Lambda=Lambda_float,
+                        C=C_float,
+                        include_daisy=bool(include_daisy),
+                        phi_limit=phi_limit,
+                        error=repr(err),
+                    )
+
+                master_rows.append(row)
+
+                # Save after every point, so an interrupted scan still leaves
+                # a useful partial table.
+                _write_glauber_scan_master_csv(master_rows, master_csv_path)
+
+    print("\n" + "=" * 76)
+    print("Run 03 completed")
+    print("=" * 76)
+    print(f" Master CSV: {master_csv_path}")
+    print("=" * 76)
+
+    return results
+
 
 def run_planned_sequence(
     *,
@@ -3182,6 +3594,7 @@ def run_planned_sequence(
     run_00: bool = True,
     run_01: bool = False,
     run_02: bool = False,
+    run_03: bool = False,
 ) -> dict[str, Any]:
     """
     Dispatcher for the first thesis-production sequence.
@@ -3202,6 +3615,10 @@ def run_planned_sequence(
 
     if run_02:
         outputs["02_glauber_pure_benchmarks"] = run_02_glauber_pure_benchmark_grid(
+            show=show)
+
+    if run_03:
+        outputs["03_glauber_pure_C_scan"] = run_03_glauber_pure_C_scan(
             show=show
         )
 
@@ -3216,5 +3633,6 @@ if __name__ == "__main__":
         show=False,
         run_00=False,
         run_01=False,
-        run_02=True,
+        run_02=False,
+        run_03=True,
     )

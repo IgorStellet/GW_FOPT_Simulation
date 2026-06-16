@@ -1,0 +1,23 @@
+{
+  "mean_field": {
+    "v_c": null,
+    "T_c": null,
+    "v_c_over_T_c": null
+  },
+  "physicality": {
+    "lambda_tree": 0.12909808976138543,
+    "mu2_tree": 7812.5,
+    "a0_mean_field": 0.3998252334093464,
+    "combo_TeV2": 0.0,
+    "upper_c6_over_f2_TeV2_from_Eq_2_14": 4.266577095689914,
+    "passes_Eq_2_14": true,
+    "passes_EFT_tree_condition_Vv_lower_than_v_to_f": true,
+    "min_after_v_tree": -118195231.64469422,
+    "V_tree_v": -118195312.5,
+    "sampled_min_phi_full_zeroT": 245.933033013868,
+    "sampled_min_deltaV_full_zeroT": -23424036.189179868,
+    "dV_at_v_numeric": 5.692286553179345,
+    "d2V_at_v_numeric": 15625.06373720787,
+    "mh2_target": 15625.0
+  }
+}
