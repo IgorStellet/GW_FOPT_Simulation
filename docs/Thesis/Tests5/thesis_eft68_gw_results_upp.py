@@ -2841,7 +2841,7 @@ def run_00_article_checks(
     )
     params = EFT68Parameters(
         c6_over_f2_TeV2=c6_over_f2_TeV2,
-        c8_over_f4_TeV4=c6_over_f2_TeV2,
+        c8_over_f4_TeV4=c8_over_f4_TeV4,
         f_GeV=f_GeV,
         m_h=m_h,
         use_glauber_measure=False,
@@ -3587,6 +3587,605 @@ def run_03_glauber_pure_C_scan(
 
     return results
 
+def _eft68_scan_row_from_result(
+    *,
+    result: Mapping[str, Any] | None,
+    c6: float,
+    c8: float,
+    f_GeV: float,
+    include_daisy: bool,
+    error: str | None = None,
+) -> dict[str, Any]:
+    """
+    Build one compact row for pure EFT68 benchmark/scan master tables.
+
+    The per-run folder still stores the full thesis_diagnostics.csv/json.
+    This row is only the light summary used later for alpha(c6), beta(c6),
+    Tn(c6), Tc(c6), (Tc-Tn)/Tc and GW peak plots.
+    """
+
+    if result is None:
+        return {
+            "c6_over_f2_TeV2": float(c6),
+            "c8_over_f4_TeV4": float(c8),
+            "f_GeV": float(f_GeV),
+            "include_daisy": bool(include_daisy),
+            "status": "runner_error",
+            "output_dir": "",
+            "Tn_GeV": np.nan,
+            "Tc_GeV": np.nan,
+            "Ts_false_GeV": np.nan,
+            "Ts_true_GeV": np.nan,
+            "Tc_minus_Tn_over_Tc": np.nan,
+            "S3_over_Tn": np.nan,
+            "phi_true_Tn_GeV": np.nan,
+            "phi_false_Tn_GeV": np.nan,
+            "vTn_over_Tn": np.nan,
+            "alpha": np.nan,
+            "beta_over_H": np.nan,
+            "omega_total_peak": np.nan,
+            "f_total_peak_mHz": np.nan,
+            "transition_error": error or "",
+        }
+
+    summary = result.get("finite_temperature_summary", None)
+    output_dir = result.get("output_dir", "")
+
+    if not isinstance(summary, Mapping):
+        return {
+            "c6_over_f2_TeV2": float(c6),
+            "c8_over_f4_TeV4": float(c8),
+            "f_GeV": float(f_GeV),
+            "include_daisy": bool(include_daisy),
+            "status": "no_summary",
+            "output_dir": str(output_dir),
+            "Tn_GeV": np.nan,
+            "Tc_GeV": np.nan,
+            "Ts_false_GeV": np.nan,
+            "Ts_true_GeV": np.nan,
+            "Tc_minus_Tn_over_Tc": np.nan,
+            "S3_over_Tn": np.nan,
+            "phi_true_Tn_GeV": np.nan,
+            "phi_false_Tn_GeV": np.nan,
+            "vTn_over_Tn": np.nan,
+            "alpha": np.nan,
+            "beta_over_H": np.nan,
+            "omega_total_peak": np.nan,
+            "f_total_peak_mHz": np.nan,
+            "transition_error": "",
+        }
+
+    key_T = summary.get("key_temperatures", {}) or {}
+    gw_scales = summary.get("gw_scales", {}) or {}
+    gw = summary.get("gw", {}) or {}
+    peaks = gw.get("peaks", {}) if isinstance(gw, Mapping) else {}
+    total_peak = peaks.get("total", {}) if isinstance(peaks, Mapping) else {}
+
+    main_transition = summary.get("main_transition", None)
+    transition_error = summary.get("transition_error", "")
+
+    if main_transition is not None:
+        status = "FOPT_with_nucleation"
+    elif transition_error:
+        status = "transition_error"
+    else:
+        status = "no_FOPT_or_no_nucleation"
+
+    Tc = _scan_float(key_T.get("Tc", np.nan))
+    Tn = _scan_float(key_T.get("Tn", np.nan))
+    supercooling = _scan_float(key_T.get("Tc_minus_Tn_over_Tc", np.nan))
+
+    if not np.isfinite(supercooling) and np.isfinite(Tc) and np.isfinite(Tn) and Tc > 0.0:
+        supercooling = (Tc - Tn) / Tc
+
+    return {
+        "c6_over_f2_TeV2": float(c6),
+        "c8_over_f4_TeV4": float(c8),
+        "f_GeV": float(f_GeV),
+        "include_daisy": bool(include_daisy),
+        "status": status,
+        "output_dir": str(output_dir),
+        "Tn_GeV": Tn,
+        "Tc_GeV": Tc,
+        "Ts_false_GeV": _scan_float(key_T.get("Ts_false", np.nan)),
+        "Ts_true_GeV": _scan_float(key_T.get("Ts_true", np.nan)),
+        "Tc_minus_Tn_over_Tc": supercooling,
+        "S3_over_Tn": _scan_float(key_T.get("S_over_Tn", np.nan)),
+        "phi_true_Tn_GeV": _scan_float(key_T.get("phi_true_Tn", np.nan)),
+        "phi_false_Tn_GeV": _scan_float(key_T.get("phi_false_Tn", np.nan)),
+        "vTn_over_Tn": _scan_float(key_T.get("vTn_over_Tn", np.nan)),
+        "alpha": _scan_float(gw_scales.get("gw_alpha", np.nan)),
+        "beta_over_H": _scan_float(gw_scales.get("gw_beta_over_H", np.nan)),
+        "omega_total_peak": _scan_float(total_peak.get("omega_peak", np.nan)),
+        "f_total_peak_mHz": _scan_float(total_peak.get("f_peak_mHz", np.nan)),
+        "transition_error": str(transition_error),
+    }
+
+def _write_eft68_scan_master_csv(
+    rows: Sequence[Mapping[str, Any]],
+    path: str | Path,
+) -> Path:
+    """Write the pure EFT68 scan/benchmark master table."""
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    fieldnames = [
+        "c6_over_f2_TeV2",
+        "c8_over_f4_TeV4",
+        "f_GeV",
+        "include_daisy",
+        "status",
+        "output_dir",
+        "Tn_GeV",
+        "Tc_GeV",
+        "Ts_false_GeV",
+        "Ts_true_GeV",
+        "Tc_minus_Tn_over_Tc",
+        "S3_over_Tn",
+        "phi_true_Tn_GeV",
+        "phi_false_Tn_GeV",
+        "vTn_over_Tn",
+        "alpha",
+        "beta_over_H",
+        "omega_total_peak",
+        "f_total_peak_mHz",
+        "transition_error",
+    ]
+
+    with open(path, "w", newline="", encoding="utf-8") as fobj:
+        writer = csv.DictWriter(fobj, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for row in rows:
+            writer.writerow({key: row.get(key, "") for key in fieldnames})
+
+    return path
+
+
+def run_04_eft68_pure_benchmark_grid(
+    *,
+    base_dir: str | Path = "04_EFT68_pure_benchmarks",
+    show: bool = False,
+    # ------------------------------------------------------------------
+    # Pure EFT68 benchmark grid.
+    # For each fixed c8 we run the three requested c6 values.
+    # ------------------------------------------------------------------
+    eft68_points: Mapping[float, Sequence[float]] | None = None,
+    # ------------------------------------------------------------------
+    # EFT baseline.
+    # ------------------------------------------------------------------
+    f_GeV: float = 1000.0,
+    m_h: float = DEFAULT_MH,
+    # ------------------------------------------------------------------
+    # Field-search controls.
+    # ------------------------------------------------------------------
+    phi_scan_range: tuple[float, float] | None = None,
+    n_phi_scan: int = 1400,
+    n_T_seeds: int = 3,
+    deltaX_target: float = 0.1,
+    # ------------------------------------------------------------------
+    # Temperature-search controls.
+    # ------------------------------------------------------------------
+    T_min: float = 1.0,
+    T_max: float = 250.0,
+    phitol: float = 1e-5,
+    overlapAngle: float = 45.0,
+    Tn_Ttol: float = 1e-3,
+    Tn_maxiter: int = 160,
+    # ------------------------------------------------------------------
+    # Bounce controls.
+    # ------------------------------------------------------------------
+    bounce_xguess: float | None = None,
+    bounce_thinCutoff: float = 1e-3,
+    bounce_npoints: int = 1200,
+    # ------------------------------------------------------------------
+    # GW controls.
+    # ------------------------------------------------------------------
+    gw_f_min_mHz: float = 1e-3,
+    gw_f_max_mHz: float = 1e5,
+    gw_n_freq: int = 2000,
+    gw_v_w: float = 1.0,
+    gw_epsilon_turb: float | None = 1.0,
+    gw_beta_over_H_override: float | None = None,
+    # ------------------------------------------------------------------
+    # Plot/diagnostic switches.
+    # ------------------------------------------------------------------
+    make_intro_plots: bool = True,
+    make_transition_plots: bool = True,
+    make_bounce_plots: bool = True,
+    make_gw_plots: bool = True,
+    verbose: bool = True,
+) -> list[dict[str, Any]]:
+    """
+    Run the pure c6/c8 EFT benchmark set.
+
+    - c8/f^4 = 0 with c6/f^2 = 3.0, 3.2, 3.4;
+    - c8/f^4 = 2 with c6/f^2 = 2.9, 3.1, 3.3;
+    - c8/f^4 = 5 with c6/f^2 = 2.5, 3.0, 3.3.
+
+    Daisy is kept off in this run.  Each point saves the full plot page,
+    GW spectrum table and thesis diagnostics.  A compact master CSV is also
+    written at
+
+        base_dir/run04_eft68_benchmark_summary.csv.
+    """
+    if eft68_points is None:
+        eft68_points = {
+            0.0: (3.2, 3.4, 3.5),
+            2.0: (3.0, 3.2, 3.3),
+            5.0: (2.8, 3.0, 3.1),
+        }
+
+    if phi_scan_range is None:
+        phi_scan_range = (-10, float(f_GeV))
+
+    base_dir = Path(base_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
+
+    master_rows: list[dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
+    master_csv_path = base_dir / "run04_eft68_benchmark_summary.csv"
+
+    include_daisy = False
+    for c8, c6_values in eft68_points.items():
+        c8_float = float(c8)
+        c8_base_dir = base_dir / f"c8f4{_format_value_for_path(c8_float)}"
+
+        for c6 in c6_values:
+            c6_float = float(c6)
+
+            print("\n" + "=" * 76)
+            print("Run 04 – pure EFT68 benchmark grid")
+            print("=" * 76)
+            print(f" c8/f^4      : {c8_float:g} TeV^-4")
+            print(f" c6/f^2      : {c6_float:g} TeV^-2")
+            print(f" f           : {f_GeV:g} GeV")
+            print(f" include_daisy: {include_daisy}")
+            print("=" * 76)
+
+            try:
+                result = run_all_examples(
+                    # ------------------------------------------------------
+                    # Pure EFT68 model definition.
+                    # ------------------------------------------------------
+                    c6_over_f2_TeV2=c6_float,
+                    c8_over_f4_TeV4=c8_float,
+                    f_GeV=f_GeV,
+                    m_h=m_h,
+                    use_glauber_measure=False,
+                    C_glauber=0.0,
+                    Lambda_glauber=1000.0,
+
+                    # ------------------------------------------------------
+                    # Output.
+                    # The automatic folder name already stores c6 and c8.
+                    # We additionally group folders by fixed c8.
+                    # ------------------------------------------------------
+                    run_tag=None,
+                    base_dir=c8_base_dir,
+                    show=show,
+
+                    # ------------------------------------------------------
+                    # Physics switches.
+                    # ------------------------------------------------------
+                    include_zeroT_loops=True,
+                    include_scalar_loops=True,
+                    renormalize_zeroT_loops=True,
+                    include_thermal=True,
+                    include_scalar_thermal=True,
+                    include_daisy=False,
+                    thermal_approx="spline",
+
+                    # ------------------------------------------------------
+                    # Finite-temperature search.
+                    # ------------------------------------------------------
+                    run_finite_temperature=True,
+                    T_min=T_min,
+                    T_max=T_max,
+                    phi_scan_range=phi_scan_range,
+                    n_phi_scan=n_phi_scan,
+                    n_T_seeds=n_T_seeds,
+                    deltaX_target=deltaX_target,
+                    phitol=phitol,
+                    overlapAngle=overlapAngle,
+                    Tn_Ttol=Tn_Ttol,
+                    Tn_maxiter=Tn_maxiter,
+                    verbose=verbose,
+
+                    # ------------------------------------------------------
+                    # Plot switches.
+                    # A2/D1 are global article diagnostics, not repeated here.
+                    # ------------------------------------------------------
+                    run_A2_benchmarks=False,
+                    run_D1_mean_field_map=False,
+                    make_intro_plots=make_intro_plots,
+                    make_transition_plots=make_transition_plots,
+                    make_bounce_plots=make_bounce_plots,
+                    make_gw_plots=make_gw_plots,
+
+                    # ------------------------------------------------------
+                    # Bounce and GW.
+                    # ------------------------------------------------------
+                    run_bounce=True,
+                    run_gw=True,
+                    bounce_xguess=bounce_xguess,
+                    bounce_thinCutoff=bounce_thinCutoff,
+                    bounce_npoints=bounce_npoints,
+                    gw_f_min_mHz=gw_f_min_mHz,
+                    gw_f_max_mHz=gw_f_max_mHz,
+                    gw_n_freq=gw_n_freq,
+                    gw_v_w=gw_v_w,
+                    gw_epsilon_turb=gw_epsilon_turb,
+                    gw_beta_over_H_override=gw_beta_over_H_override,
+
+                    # ------------------------------------------------------
+                    # Diagnostics.
+                    # ------------------------------------------------------
+                    save_diagnostics_table=True,
+                    save_fast_diagnostics=True,
+                    save_gw_spectrum_csv=True,
+                )
+
+                results.append(result)
+
+                row = _eft68_scan_row_from_result(
+                    result=result,
+                    c6=c6_float,
+                    c8=c8_float,
+                    f_GeV=f_GeV,
+                    include_daisy=include_daisy,
+                )
+
+            except Exception as err:
+                print("[run_04] Point failed:", repr(err))
+
+                row = _eft68_scan_row_from_result(
+                    result=None,
+                    c6=c6_float,
+                    c8=c8_float,
+                    f_GeV=f_GeV,
+                    include_daisy=include_daisy,
+                    error=repr(err),
+                )
+
+            master_rows.append(row)
+            _write_eft68_scan_master_csv(master_rows, master_csv_path)
+
+    print("\n" + "=" * 76)
+    print("Run 04 completed")
+    print("=" * 76)
+    print(f" Master CSV: {master_csv_path}")
+    print("=" * 76)
+
+    return results
+
+
+def run_05_eft68_pure_c6_scan(
+    *,
+    base_dir: str | Path = "05_EFT68_pure_c6_scan",
+    show: bool = False,
+    # ------------------------------------------------------------------
+    # Pure EFT68 c6 scan.
+    # For each fixed c8 we scan c6 on the same interval.
+    # ------------------------------------------------------------------
+    c68_scan_ranges: Mapping[float, tuple[float, float, int]] | None = None,
+    n_c6: int = 31,
+    # ------------------------------------------------------------------
+    # EFT baseline.
+    # ------------------------------------------------------------------
+    f_GeV: float = 1000.0,
+    m_h: float = DEFAULT_MH,
+    # ------------------------------------------------------------------
+    # Field-search controls.
+    # ------------------------------------------------------------------
+    phi_scan_range: tuple[float, float] | None = None,
+    n_phi_scan: int = 1200,
+    n_T_seeds: int = 3,
+    deltaX_target: float = 0.1,
+    # ------------------------------------------------------------------
+    # Temperature-search controls.
+    # For scans, we keep the same stable defaults used in run_03.
+    # ------------------------------------------------------------------
+    T_min: float = 1.0,
+    T_max: float = 250.0,
+    phitol: float = 1e-5,
+    overlapAngle: float = 45.0,
+    Tn_Ttol: float = 1e-3,
+    Tn_maxiter: int = 160,
+    # ------------------------------------------------------------------
+    # Bounce controls.
+    # Bounce is needed for the GW/thermodynamic diagnostics, but no bounce
+    # figures are saved.
+    # ------------------------------------------------------------------
+    bounce_xguess: float | None = None,
+    bounce_thinCutoff: float = 1e-3,
+    bounce_npoints: int = 1200,
+    # ------------------------------------------------------------------
+    # GW controls.
+    # No GW plots or spectrum CSV are saved; the GW calculator is still run
+    # to store alpha, beta/H and peak diagnostics.
+    # ------------------------------------------------------------------
+    gw_f_min_mHz: float = 1e-3,
+    gw_f_max_mHz: float = 1e5,
+    gw_n_freq: int = 1200,
+    gw_v_w: float = 1.0,
+    gw_epsilon_turb: float | None = 1.0,
+    gw_beta_over_H_override: float | None = None,
+    # ------------------------------------------------------------------
+    # Runtime controls.
+    # ------------------------------------------------------------------
+    verbose: bool = False,
+) -> list[dict[str, Any]]:
+    """
+    Run a pure EFT68 one-dimensional scan in c6 for fixed c8.
+
+    Output strategy:
+    - one folder per c6 and c8;
+    - no figures;
+    - no GW spectrum table;
+    - full thesis_diagnostics.csv/json inside each point folder;
+    - one master CSV at base_dir/run05_eft68_c6_scan_summary.csv.
+
+    This is the scan designed for later plots:
+    alpha(c6), beta/H(c6), Tn(c6), Tc(c6), and (Tc-Tn)/Tc
+    for each fixed c8.
+    """
+    if c68_scan_ranges is None:
+        c68_scan_ranges = {
+            0.0: (3.2, 3.55, n_c6),
+            2.0: (3.0, 3.35, n_c6),
+            5.0: (2.8, 3.15, n_c6),
+        }
+
+    if phi_scan_range is None:
+        phi_scan_range = (-10, float(f_GeV))
+
+    base_dir = Path(base_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
+
+    master_rows: list[dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
+    master_csv_path = base_dir / "run05_eft68_c6_scan_summary.csv"
+
+    include_daisy = False
+
+    for c8, scan_info in c68_scan_ranges.items():
+        c6_min, c6_max, n_6c = scan_info
+        c6_values = np.linspace(float(c6_min), float(c6_max), int(n_6c))
+
+        c8_float = float(c8)
+        c8_base_dir = base_dir / f"c8f4{_format_value_for_path(c8_float)}"
+
+        for c6 in c6_values:
+            c6_float = float(c6)
+
+            print("\n" + "=" * 76)
+            print("Run 05 – pure EFT68 c6 scan")
+            print("=" * 76)
+            print(f" c8/f^4      : {c8_float:g} TeV^-4")
+            print(f" c6/f^2      : {c6_float:g} TeV^-2")
+            print(f" f           : {f_GeV:g} GeV")
+            print(f" include_daisy: {include_daisy}")
+            print("=" * 76)
+
+            try:
+                result = run_all_examples(
+                    # ------------------------------------------------------
+                    # Pure EFT68 model definition.
+                    # ------------------------------------------------------
+                    c6_over_f2_TeV2=c6_float,
+                    c8_over_f4_TeV4=c8_float,
+                    f_GeV=f_GeV,
+                    m_h=m_h,
+                    use_glauber_measure=False,
+                    C_glauber=0.0,
+                    Lambda_glauber=1000.0,
+
+                    # ------------------------------------------------------
+                    # Output.
+                    # The automatic folder name already stores c6 and c8.
+                    # We additionally group folders by fixed c8.
+                    # ------------------------------------------------------
+                    run_tag=None,
+                    base_dir=c8_base_dir,
+                    show=show,
+
+                    # ------------------------------------------------------
+                    # Physics switches.
+                    # ------------------------------------------------------
+                    include_zeroT_loops=True,
+                    include_scalar_loops=True,
+                    renormalize_zeroT_loops=True,
+                    include_thermal=True,
+                    include_scalar_thermal=True,
+                    include_daisy=False,
+                    thermal_approx="spline",
+
+                    # ------------------------------------------------------
+                    # Finite-temperature search.
+                    # ------------------------------------------------------
+                    run_finite_temperature=True,
+                    T_min=T_min,
+                    T_max=T_max,
+                    phi_scan_range=phi_scan_range,
+                    n_phi_scan=n_phi_scan,
+                    n_T_seeds=n_T_seeds,
+                    deltaX_target=deltaX_target,
+                    phitol=phitol,
+                    overlapAngle=overlapAngle,
+                    Tn_Ttol=Tn_Ttol,
+                    Tn_maxiter=Tn_maxiter,
+                    verbose=verbose,
+
+                    # ------------------------------------------------------
+                    # No plots for the scan.
+                    # ------------------------------------------------------
+                    run_A2_benchmarks=False,
+                    run_D1_mean_field_map=False,
+                    make_intro_plots=False,
+                    make_transition_plots=False,
+                    make_bounce_plots=False,
+                    make_gw_plots=False,
+
+                    # ------------------------------------------------------
+                    # Bounce and GW diagnostics only.
+                    # ------------------------------------------------------
+                    run_bounce=True,
+                    run_gw=True,
+                    bounce_xguess=bounce_xguess,
+                    bounce_thinCutoff=bounce_thinCutoff,
+                    bounce_npoints=bounce_npoints,
+                    gw_f_min_mHz=gw_f_min_mHz,
+                    gw_f_max_mHz=gw_f_max_mHz,
+                    gw_n_freq=gw_n_freq,
+                    gw_v_w=gw_v_w,
+                    gw_epsilon_turb=gw_epsilon_turb,
+                    gw_beta_over_H_override=gw_beta_over_H_override,
+
+                    # ------------------------------------------------------
+                    # Save compact diagnostics only.
+                    # ------------------------------------------------------
+                    save_diagnostics_table=True,
+                    save_fast_diagnostics=False,
+                    save_gw_spectrum_csv=False,
+                )
+
+                results.append(result)
+
+                row = _eft68_scan_row_from_result(
+                    result=result,
+                    c6=c6_float,
+                    c8=c8_float,
+                    f_GeV=f_GeV,
+                    include_daisy=include_daisy,
+                )
+
+            except Exception as err:
+                print("[run_05] Point failed:", repr(err))
+
+                row = _eft68_scan_row_from_result(
+                    result=None,
+                    c6=c6_float,
+                    c8=c8_float,
+                    f_GeV=f_GeV,
+                    include_daisy=include_daisy,
+                    error=repr(err),
+                )
+
+            master_rows.append(row)
+            # Save after every point, so an interrupted scan still leaves
+            # a useful partial table.
+            _write_eft68_scan_master_csv(master_rows, master_csv_path)
+
+    print("\n" + "=" * 76)
+    print("Run 05 completed")
+    print("=" * 76)
+    print(f" Master CSV: {master_csv_path}")
+    print("=" * 76)
+
+    return results
+
 
 def run_planned_sequence(
     *,
@@ -3595,14 +4194,19 @@ def run_planned_sequence(
     run_01: bool = False,
     run_02: bool = False,
     run_03: bool = False,
+    run_04: bool = False,
+    run_05: bool = False,
 ) -> dict[str, Any]:
     """
-    Dispatcher for the first thesis-production sequence.
+    Dispatcher for the thesis-production sequence.
 
-    For now we keep only:
+    Available runs:
     - run_00: article/EFT diagnostic checks;
     - run_01: SM-like reference page;
-    - run_02: pure Gláuber benchmark grid.
+    - run_02: pure Gláuber benchmark grid;
+    - run_03: pure Gláuber C scan;
+    - run_04: pure c6/c8 EFT benchmark grid;
+    - run_05: pure c6 scan at fixed c8.
     """
 
     outputs: dict[str, Any] = {}
@@ -3622,6 +4226,15 @@ def run_planned_sequence(
             show=show
         )
 
+    if run_04:
+        outputs["04_eft68_pure_benchmarks"] = run_04_eft68_pure_benchmark_grid(
+            show=show
+        )
+
+    if run_05:
+        outputs["05_eft68_pure_c6_scan"] = run_05_eft68_pure_c6_scan(
+            show=show
+        )
     return outputs
 
 
@@ -3634,5 +4247,7 @@ if __name__ == "__main__":
         run_00=False,
         run_01=False,
         run_02=False,
-        run_03=True,
+        run_03=False,
+        run_04=False,
+        run_05=True,
     )

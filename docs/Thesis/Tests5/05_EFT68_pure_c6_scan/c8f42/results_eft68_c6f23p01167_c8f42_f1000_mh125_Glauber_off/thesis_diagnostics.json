@@ -1,0 +1,141 @@
+{
+  "label": "results_eft68_c6f23p01167_c8f42_f1000_mh125_Glauber_off",
+  "model_parameters": {
+    "c6_over_f2_TeV2": 3.0116666666666667,
+    "c8_over_f4_TeV4": 2.0,
+    "f_GeV": 1000.0,
+    "m_h": 125.0,
+    "v": 246.0,
+    "m_w": 80.36,
+    "m_z": 91.19,
+    "m_t": 173.1,
+    "use_glauber_measure": false,
+    "C_glauber": 0.0,
+    "Lambda_glauber": 1000.0
+  },
+  "scan_parameters": {
+    "T_min": 1.0,
+    "T_max": 250.0,
+    "phi_scan_range": [
+      -10,
+      1000.0
+    ],
+    "n_phi_scan": 1200,
+    "n_T_seeds": 3,
+    "deltaX_target": 0.1,
+    "x_eps": 0.001,
+    "T_eps": 0.01,
+    "deriv_order": 4,
+    "phitol": 1e-05,
+    "overlapAngle": 45.0,
+    "Tn_Ttol": 0.001,
+    "Tn_maxiter": 160,
+    "include_zeroT_loops": true,
+    "include_scalar_loops": true,
+    "include_thermal": true,
+    "include_scalar_thermal": true,
+    "include_daisy": false,
+    "renormalize_zeroT_loops": true,
+    "thermal_approx": "spline"
+  },
+  "key_temperatures": {
+    "Tn": 81.86199884751133,
+    "Tc": 94.32848758465933,
+    "Ts_false": 58.01827656249604,
+    "Ts_true": 95.51300781249967,
+    "S_at_Tn": 11460.866560939889,
+    "S_over_Tn": 140.00228093976364,
+    "false_phase_key": 2,
+    "true_phase_key": 0,
+    "phi_false_Tn": -5.128168574698017e-05,
+    "phi_true_Tn": 224.31262785608095,
+    "vTn_over_Tn": 2.74013133094783,
+    "Tc_minus_Tn_over_Tc": 0.13216037971518826
+  },
+  "gw_scales": {
+    "gw_T_star_GeV": 81.86199884751133,
+    "gw_alpha": 0.021976290788505923,
+    "gw_beta_over_H": 1256.3280203212842,
+    "gw_v_w": 1.0,
+    "gw_g_star": 106.75
+  },
+  "gw_peaks": {
+    "sw": {
+      "f_peak_mHz": 19.81135111804306,
+      "f_peak_Hz": 0.01981135111804306,
+      "omega_peak": 6.973800457817194e-17
+    },
+    "turb": {
+      "f_peak_mHz": 33.91892151805883,
+      "f_peak_Hz": 0.03391892151805883,
+      "omega_peak": 5.0668991817886625e-21
+    },
+    "coll": {
+      "f_peak_mHz": NaN,
+      "f_peak_Hz": NaN,
+      "omega_peak": NaN
+    },
+    "total": {
+      "f_peak_mHz": 19.81135111804306,
+      "f_peak_Hz": 0.01981135111804306,
+      "omega_peak": 6.974245988445653e-17
+    }
+  },
+  "gw_run_parameters": {
+    "g_star": 106.75,
+    "v_w": 1.0,
+    "epsilon_turb": 1.0,
+    "frequency_unit": "mHz"
+  },
+  "S3": 11457.35994589297,
+  "S3_over_T": 139.95944525169975,
+  "bounce_diagnostics": {
+    "label": "results_eft68_c6f23p01167_c8f42_f1000_mh125_Glauber_off",
+    "C": NaN,
+    "Lambda_GeV": NaN,
+    "finiteT": null,
+    "temperature_GeV": NaN,
+    "phi_metaMin": -5.128168574698017e-05,
+    "phi_absMin": 224.31262785608095,
+    "phi_bar": 115.74670017884853,
+    "phi_top": 76.7683788657774,
+    "V(phi_meta)": -114950124.22973412,
+    "V(phi_true)": -128192596.80767325,
+    "V(phi_top)": -113747619.05297743,
+    "DeltaV_true_minus_meta": -13242472.577939123,
+    "r0": 2.858008770492649e-06,
+    "phi0": 218.65207195810706,
+    "dphi0": -0.04171606185399819,
+    "rscale_cubic": 0.02858008770492649,
+    "rscale_curv": 0.02702932529716605,
+    "wall_r_hi": 0.12133070876026622,
+    "wall_thickness": 0.08289797737241786,
+    "S_total": 11457.35994589297,
+    "S_kin": 17189.103819374377,
+    "S_pot": -5731.7438734814095,
+    "S_interior": 0.0,
+    "S3_over_T": NaN,
+    "beta_rscale": 34.98939577528396,
+    "beta_curvature": 36.996853268979564,
+    "beta_wall": 12.063020494547361,
+    "Tn_from_transitionFinder_GeV": 81.86199884751133,
+    "Tc_from_transitionFinder_GeV": 94.32848758465933,
+    "T_spinodal_high_GeV": NaN,
+    "T_spinodal_low_GeV": NaN,
+    "gw_T_star_GeV": 81.86199884751133,
+    "gw_alpha": 0.021976290788505923,
+    "gw_beta_over_H": 1256.3280203212842,
+    "gw_R_star_times_H": NaN,
+    "gw_Gamma_Tstar_GeV4": NaN,
+    "gw_dT_for_beta_GeV": NaN,
+    "gw_f_sw_peak_Hz": NaN,
+    "gw_f_turb_peak_Hz": NaN,
+    "gw_f_coll_peak_Hz": NaN,
+    "gw_g_star": 106.75,
+    "gw_v_w": 1.0,
+    "omega_sw_peak": NaN,
+    "omega_turb_peak": NaN,
+    "omega_coll_peak": NaN,
+    "omega_tot_peak": NaN
+  }
+}
