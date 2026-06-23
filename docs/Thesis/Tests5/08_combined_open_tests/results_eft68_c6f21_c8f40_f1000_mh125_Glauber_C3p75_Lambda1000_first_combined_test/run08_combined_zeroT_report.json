@@ -1,0 +1,57 @@
+{
+  "interpretation": "Combined EFT68 + Gl\u00e1uber zero-temperature consistency check. The local electroweak conditions are safe when dV_at_v_numeric is close to zero and d2V_at_v_numeric is close to mh2_target.",
+  "parameters": {
+    "c6_over_f2_TeV2": 1.0,
+    "c8_over_f4_TeV4": 0.0,
+    "f_GeV": 1000.0,
+    "m_h": 125.0,
+    "v": 246.0,
+    "m_w": 80.36,
+    "m_z": 91.19,
+    "m_t": 173.1,
+    "use_glauber_measure": true,
+    "C_glauber": 3.75,
+    "Lambda_glauber": 1000.0
+  },
+  "limits": {
+    "f_GeV": 1000.0,
+    "Lambda_glauber_GeV": 1000.0,
+    "C_glauber": 3.75,
+    "phi_branch_GeV": 516.3977794943222,
+    "phi_scan_upper_GeV": 516.3977794943222,
+    "branch_over_v": 2.099177965424074,
+    "scan_upper_over_v": 2.099177965424074
+  },
+  "tree_level_report": {
+    "lambda_tree": 0.03832408976138542,
+    "mu2_tree": 5065.860308,
+    "a0_mean_field": 0.3544382334093464,
+    "combo_TeV2": 2.0,
+    "upper_c6_over_f2_TeV2_from_Eq_2_14": 4.266577095689914,
+    "passes_Eq_2_14": true,
+    "passes_EFT_tree_condition_Vv_lower_than_v_to_f": true,
+    "min_after_v_tree": -90492651.97444975,
+    "V_tree_v": -90492704.566488,
+    "sampled_min_phi_full_zeroT": 246.08202734244747,
+    "sampled_min_deltaV_full_zeroT": -2769652.388442427,
+    "dV_at_v_numeric": 6.295744087395629,
+    "d2V_at_v_numeric": 15625.069629120506,
+    "mh2_target": 15625.0
+  },
+  "loop_renormalized_report": {
+    "lambda_tree": 0.03832408976138542,
+    "mu2_tree": 5065.860308,
+    "a0_mean_field": 0.3544382334093464,
+    "combo_TeV2": 2.0,
+    "upper_c6_over_f2_TeV2_from_Eq_2_14": 4.266577095689914,
+    "passes_Eq_2_14": true,
+    "passes_EFT_tree_condition_Vv_lower_than_v_to_f": true,
+    "min_after_v_tree": -90492651.97444975,
+    "V_tree_v": -90492704.566488,
+    "sampled_min_phi_full_zeroT": 246.08202734244747,
+    "sampled_min_deltaV_full_zeroT": -14352179.32092161,
+    "dV_at_v_numeric": 6.2312754249669675,
+    "d2V_at_v_numeric": 15625.069498123452,
+    "mh2_target": 15625.0
+  }
+}

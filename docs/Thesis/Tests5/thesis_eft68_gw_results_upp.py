@@ -2764,6 +2764,102 @@ def _glauber_phi_scan_limit(
     phi_branch = float(Lambda) / np.sqrt(float(C))
     return float(branch_safety * phi_branch)
 
+def _combined_phi_scan_limit(
+    *,
+    C: float,
+    Lambda: float,
+    f_GeV: float,
+    branch_safety: float = 0.995,
+) -> float:
+    """
+    Safe field-search upper limit for combined EFT68 + Gláuber runs.
+
+    There are two independent field-space limitations:
+
+    1. EFT validity/cutoff scale:
+           |phi| <= f
+
+    2. Gláuber logarithmic branch:
+           phi_branch = Lambda / sqrt(C)
+
+    For combined runs, we keep the scan below both.  This does not mean
+    f and Lambda are physically identical; it only means that the numerical
+    scan should not probe field values beyond either validity limit.
+    """
+
+    f_limit = float(f_GeV)
+
+    if C <= 0.0:
+        return f_limit
+
+    phi_branch = float(Lambda) / np.sqrt(float(C))
+
+    if phi_branch <= DEFAULT_VEV:
+        raise ValueError(
+            "The Gláuber branch lies at or below the electroweak vacuum. "
+            f"phi_branch={phi_branch:.6g} GeV, v={DEFAULT_VEV:.6g} GeV. "
+            "This point is not a safe electroweak benchmark."
+        )
+
+    return float(min(f_limit, branch_safety * phi_branch))
+
+
+def _combined_zeroT_report(
+    *,
+    params: EFT68Parameters,
+    phi_limit: float,
+    include_zeroT_loops: bool = True,
+) -> dict[str, Any]:
+    """
+    Detailed T=0 consistency report for combined EFT68 + Gláuber points.
+
+    The central local checks are:
+        V'(v) = 0,
+        V''(v) = m_h^2.
+
+    We save both the tree-level and loop-renormalized reports because the
+    combined runs are exploratory and we want to see immediately if a point
+    is locally safe before interpreting its thermal transition.
+    """
+
+    if params.C_glauber > 0.0:
+        phi_branch = params.Lambda_glauber / np.sqrt(params.C_glauber)
+    else:
+        phi_branch = np.inf
+
+    tree_report = check_zero_temperature_physicality(
+        params,
+        include_zeroT_loops=False,
+        include_glauber=True,
+    )
+
+    full_report = check_zero_temperature_physicality(
+        params,
+        include_zeroT_loops=include_zeroT_loops,
+        include_glauber=True,
+    )
+
+    return {
+        "interpretation": (
+            "Combined EFT68 + Gláuber zero-temperature consistency check. "
+            "The local electroweak conditions are safe when dV_at_v_numeric "
+            "is close to zero and d2V_at_v_numeric is close to mh2_target."
+        ),
+        "parameters": asdict(params),
+        "limits": {
+            "f_GeV": float(params.f_GeV),
+            "Lambda_glauber_GeV": float(params.Lambda_glauber),
+            "C_glauber": float(params.C_glauber),
+            "phi_branch_GeV": float(phi_branch),
+            "phi_scan_upper_GeV": float(phi_limit),
+            "branch_over_v": float(phi_branch / params.v) if np.isfinite(phi_branch) else np.inf,
+            "scan_upper_over_v": float(phi_limit / params.v),
+        },
+        "tree_level_report": tree_report,
+        "loop_renormalized_report": full_report,
+    }
+
+
 # Runnings
 
 def run_00_article_checks(
@@ -4186,6 +4282,325 @@ def run_05_eft68_pure_c6_scan(
 
     return results
 
+def run_06_combined_benchmark_grid(
+    *,
+    base_dir: str | Path = "06_combined_benchmarks_DRAFT",
+    show: bool = False,
+) -> list[dict[str, Any]]:
+    """
+    Draft placeholder for the future combined benchmark grid.
+
+    Intended future purpose:
+    - analogous to run_02 and run_04;
+    - choose a small number of fixed EFT68 + Gláuber benchmark points;
+    - save full plots and GW spectra for each point.
+
+    This run is intentionally not implemented yet.  We will fill it after
+    run_08 tells us which combined parameter region is actually interesting.
+    """
+
+    print("\n[run_06] Draft placeholder only. No combined benchmark grid was run.")
+    print(f"[run_06] Suggested future output directory: {Path(base_dir)}")
+    return []
+
+
+def run_07_combined_scan(
+    *,
+    base_dir: str | Path = "07_combined_scan_DRAFT",
+    show: bool = False,
+) -> list[dict[str, Any]]:
+    """
+    Draft placeholder for the future combined scan.
+
+    Intended future purpose:
+    - analogous to run_03 and run_05;
+    - scan one parameter while fixing the others;
+    - save compact diagnostics only;
+    - later plot alpha, beta/H and (Tc-Tn)/Tc.
+
+    This run is intentionally not implemented yet.  We will fill it after
+    run_08 identifies a useful range of combined parameters.
+    """
+
+    print("\n[run_07] Draft placeholder only. No combined scan was run.")
+    print(f"[run_07] Suggested future output directory: {Path(base_dir)}")
+    return []
+
+
+def run_08_combined_open_test(
+    *,
+    base_dir: str | Path = "08_combined_open_tests",
+    show: bool = False,
+    # ------------------------------------------------------------------
+    # Combined EFT68 + Gláuber benchmark point.
+    # These are intentionally exposed as the first knobs of the run.
+    # ------------------------------------------------------------------
+    c6_over_f2_TeV2: float = 3.0,
+    c8_over_f4_TeV4: float = 2.0,
+    f_GeV: float = 1000.0,
+    C_glauber: float = 3.65,
+    Lambda_glauber: float = 1000.0,
+    m_h: float = DEFAULT_MH,
+    run_tag: str | None = None,
+    # ------------------------------------------------------------------
+    # Physics switches.
+    # For exploration, daisy is exposed but off by default.
+    # ------------------------------------------------------------------
+    include_daisy: bool = False,
+    include_zeroT_loops: bool = True,
+    include_scalar_loops: bool = True,
+    renormalize_zeroT_loops: bool = True,
+    include_thermal: bool = True,
+    include_scalar_thermal: bool = True,
+    thermal_approx: str = "spline",
+    # ------------------------------------------------------------------
+    # Field-search controls.
+    # The default scan upper bound is min(f, Gláuber branch).
+    # ------------------------------------------------------------------
+    phi_scan_branch_safety: float = 1.0,
+    phi_scan_range: tuple[float, float] | None = None,
+    n_phi_scan: int = 1600,
+    n_T_seeds: int = 3,
+    deltaX_target: float = 0.1,
+    C1_phi_max: float | None = None,
+    E3_phi_max: float | None = None,
+    # ------------------------------------------------------------------
+    # Temperature-search controls.
+    # These defaults are intentionally stable rather than extremely strict.
+    # ------------------------------------------------------------------
+    T_min: float = 1.0,
+    T_max: float = 250.0,
+    phitol: float = 1e-5,
+    overlapAngle: float = 45.0,
+    Tn_Ttol: float = 1e-3,
+    Tn_maxiter: int = 160,
+    # ------------------------------------------------------------------
+    # Derivative controls.
+    # ------------------------------------------------------------------
+    x_eps: float = 1e-3,
+    T_eps: float = 1e-2,
+    deriv_order: int = 4,
+    # ------------------------------------------------------------------
+    # Bounce controls.
+    # ------------------------------------------------------------------
+    bounce_xguess: float | None = None,
+    bounce_thinCutoff: float = 1e-3,
+    bounce_npoints: int = 1200,
+    # ------------------------------------------------------------------
+    # GW controls.
+    # ------------------------------------------------------------------
+    gw_f_min_mHz: float = 1e-3,
+    gw_f_max_mHz: float = 1e5,
+    gw_n_freq: int = 2000,
+    gw_g_star: float = 106.75,
+    gw_v_w: float = 1.0,
+    gw_dT_fraction: float = 1e-3,
+    gw_include_sw: bool = True,
+    gw_include_turb: bool = True,
+    gw_include_coll: bool = True,
+    gw_epsilon_turb: float | None = 1.0,
+    gw_kappa_coll: float | None = None,
+    gw_beta_over_H_override: float | None = None,
+    # ------------------------------------------------------------------
+    # Plot switches.
+    # We save the figures relevant to the tested point, but skip article-only
+    # plots A2 and D1.
+    # ------------------------------------------------------------------
+    make_intro_plots: bool = True,
+    make_transition_plots: bool = True,
+    make_bounce_plots: bool = True,
+    make_gw_plots: bool = True,
+    verbose: bool = True,
+) -> dict[str, Any]:
+    """
+    Open exploratory run for combined EFT68 + Gláuber points.
+
+    Purpose:
+    - test arbitrary values of c6/f^2, c8/f^4, C and Lambda;
+    - save all point-specific plots;
+    - skip article-only plots A2 and D1;
+    - save full diagnostics and GW spectrum table;
+    - save an additional zero-temperature consistency report.
+
+    This run is the discovery tool used before designing the final combined
+    benchmark grid and final combined scan.
+    """
+
+    params = EFT68Parameters(
+        c6_over_f2_TeV2=float(c6_over_f2_TeV2),
+        c8_over_f4_TeV4=float(c8_over_f4_TeV4),
+        f_GeV=float(f_GeV),
+        m_h=float(m_h),
+        use_glauber_measure=True,
+        C_glauber=float(C_glauber),
+        Lambda_glauber=float(Lambda_glauber),
+    )
+
+    phi_limit = _combined_phi_scan_limit(
+        C=float(C_glauber),
+        Lambda=float(Lambda_glauber),
+        f_GeV=float(f_GeV),
+        branch_safety=float(phi_scan_branch_safety),
+    )
+
+    if phi_scan_range is None:
+        phi_scan_range = (-10.0, phi_limit)
+
+    if C1_phi_max is None:
+        C1_phi_max = phi_limit
+
+    if E3_phi_max is None:
+        E3_phi_max = phi_limit
+
+    print("\n" + "=" * 76)
+    print("Run 08 – open combined EFT68 + Gláuber test")
+    print("=" * 76)
+    print(f" c6/f^2        : {c6_over_f2_TeV2:g} TeV^-2")
+    print(f" c8/f^4        : {c8_over_f4_TeV4:g} TeV^-4")
+    print(f" f             : {f_GeV:g} GeV")
+    print(f" C_Gláuber     : {C_glauber:g}")
+    print(f" Lambda_Gláuber: {Lambda_glauber:g} GeV")
+    print(f" phi_scan_range: {phi_scan_range}")
+    print(f" include_daisy : {include_daisy}")
+    print("=" * 76)
+
+    # Save an early T=0 check at the top-level base_dir as well.  This is useful
+    # if the thermal part fails before the standard thesis diagnostics are built.
+    base_dir = Path(base_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
+
+    early_report = _combined_zeroT_report(
+        params=params,
+        phi_limit=phi_limit,
+        include_zeroT_loops=include_zeroT_loops,
+    )
+
+    early_report_name = (
+        "run08_zeroT_precheck_"
+        f"c6f2{_format_value_for_path(c6_over_f2_TeV2)}_"
+        f"c8f4{_format_value_for_path(c8_over_f4_TeV4)}_"
+        f"C{_format_value_for_path(C_glauber)}_"
+        f"Lambda{_format_value_for_path(Lambda_glauber)}.json"
+    )
+    save_json(early_report, base_dir / early_report_name)
+
+    result = run_all_examples(
+        # ------------------------------------------------------------------
+        # Combined model definition.
+        # ------------------------------------------------------------------
+        c6_over_f2_TeV2=float(c6_over_f2_TeV2),
+        c8_over_f4_TeV4=float(c8_over_f4_TeV4),
+        f_GeV=float(f_GeV),
+        m_h=float(m_h),
+        use_glauber_measure=True,
+        C_glauber=float(C_glauber),
+        Lambda_glauber=float(Lambda_glauber),
+
+        # ------------------------------------------------------------------
+        # Output.
+        # The automatic directory already stores c6, c8, f, C and Lambda.
+        # run_tag is only for human labels like "test01".
+        # ------------------------------------------------------------------
+        run_tag=run_tag,
+        base_dir=base_dir,
+        show=show,
+
+        # ------------------------------------------------------------------
+        # Physics switches.
+        # ------------------------------------------------------------------
+        include_zeroT_loops=include_zeroT_loops,
+        include_scalar_loops=include_scalar_loops,
+        renormalize_zeroT_loops=renormalize_zeroT_loops,
+        include_thermal=include_thermal,
+        include_scalar_thermal=include_scalar_thermal,
+        include_daisy=include_daisy,
+        thermal_approx=thermal_approx,
+
+        # ------------------------------------------------------------------
+        # Derivative controls.
+        # ------------------------------------------------------------------
+        x_eps=x_eps,
+        T_eps=T_eps,
+        deriv_order=deriv_order,
+
+        # ------------------------------------------------------------------
+        # Finite-temperature search.
+        # ------------------------------------------------------------------
+        run_finite_temperature=True,
+        T_min=T_min,
+        T_max=T_max,
+        phi_scan_range=phi_scan_range,
+        n_phi_scan=n_phi_scan,
+        n_T_seeds=n_T_seeds,
+        deltaX_target=deltaX_target,
+        phitol=phitol,
+        overlapAngle=overlapAngle,
+        Tn_Ttol=Tn_Ttol,
+        Tn_maxiter=Tn_maxiter,
+        verbose=verbose,
+
+        # ------------------------------------------------------------------
+        # Plot switches.
+        # Save point-specific plots, skip article-only plots.
+        # ------------------------------------------------------------------
+        run_A2_benchmarks=False,
+        run_D1_mean_field_map=False,
+        make_intro_plots=make_intro_plots,
+        make_transition_plots=make_transition_plots,
+        make_bounce_plots=make_bounce_plots,
+        make_gw_plots=make_gw_plots,
+        C1_phi_max=C1_phi_max,
+        E3_phi_max=E3_phi_max,
+
+        # ------------------------------------------------------------------
+        # Bounce and GW.
+        # ------------------------------------------------------------------
+        run_bounce=True,
+        run_gw=True,
+        bounce_xguess=bounce_xguess,
+        bounce_thinCutoff=bounce_thinCutoff,
+        bounce_npoints=bounce_npoints,
+        gw_f_min_mHz=gw_f_min_mHz,
+        gw_f_max_mHz=gw_f_max_mHz,
+        gw_n_freq=gw_n_freq,
+        gw_g_star=gw_g_star,
+        gw_v_w=gw_v_w,
+        gw_dT_fraction=gw_dT_fraction,
+        gw_include_sw=gw_include_sw,
+        gw_include_turb=gw_include_turb,
+        gw_include_coll=gw_include_coll,
+        gw_epsilon_turb=gw_epsilon_turb,
+        gw_kappa_coll=gw_kappa_coll,
+        gw_beta_over_H_override=gw_beta_over_H_override,
+
+        # ------------------------------------------------------------------
+        # Diagnostics.
+        # ------------------------------------------------------------------
+        save_diagnostics_table=True,
+        save_fast_diagnostics=True,
+        save_gw_spectrum_csv=True,
+    )
+
+    output_dir = Path(result["output_dir"])
+
+    save_json(
+        _combined_zeroT_report(
+            params=params,
+            phi_limit=phi_limit,
+            include_zeroT_loops=include_zeroT_loops,
+        ),
+        output_dir / "run08_combined_zeroT_report.json",
+    )
+
+    print("\n" + "=" * 76)
+    print("Run 08 completed")
+    print("=" * 76)
+    print(f" Output directory: {output_dir}")
+    print(f" T=0 report      : {output_dir / 'run08_combined_zeroT_report.json'}")
+    print("=" * 76)
+
+    return result
+
 
 def run_planned_sequence(
     *,
@@ -4196,6 +4611,10 @@ def run_planned_sequence(
     run_03: bool = False,
     run_04: bool = False,
     run_05: bool = False,
+    run_06: bool = False,
+    run_07: bool = False,
+    run_08: bool = True,
+    run_08_config: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
     Dispatcher for the thesis-production sequence.
@@ -4206,7 +4625,10 @@ def run_planned_sequence(
     - run_02: pure Gláuber benchmark grid;
     - run_03: pure Gláuber C scan;
     - run_04: pure c6/c8 EFT benchmark grid;
-    - run_05: pure c6 scan at fixed c8.
+    - run_05: pure c6 scan at fixed c8;
+    - run_06: draft placeholder for combined benchmark grid;
+    - run_07: draft placeholder for combined scan;
+    - run_08: open exploratory combined EFT68 + Gláuber test.
     """
 
     outputs: dict[str, Any] = {}
@@ -4235,13 +4657,27 @@ def run_planned_sequence(
         outputs["05_eft68_pure_c6_scan"] = run_05_eft68_pure_c6_scan(
             show=show
         )
+
+    if run_06:
+        outputs["06_combined_benchmarks_DRAFT"] = run_06_combined_benchmark_grid(
+            show=show
+        )
+
+    if run_07:
+        outputs["07_combined_scan_DRAFT"] = run_07_combined_scan(
+            show=show
+        )
+
+    if run_08:
+        cfg = dict(run_08_config or {})
+        outputs["08_combined_open_test"] = run_08_combined_open_test(
+            show=show,
+            **cfg,
+        )
     return outputs
 
 
 if __name__ == "__main__":
-    # Safe default:
-    # run_00 is light and generates the article checks.
-    # run_01 and run_02 are off by default; turn them on when desired.
     run_planned_sequence(
         show=False,
         run_00=False,
@@ -4249,5 +4685,23 @@ if __name__ == "__main__":
         run_02=False,
         run_03=False,
         run_04=False,
-        run_05=True,
+        run_05=False,
+        run_06=False,
+        run_07=False,
+        run_08=True,
+        run_08_config={
+            "run_tag": "first_combined_test",
+            "c6_over_f2_TeV2": 3.0,
+            "c8_over_f4_TeV4": 2.0,
+            "f_GeV": 1000.0,
+            "C_glauber": 2.30,
+            "Lambda_glauber": 1000.0,
+            "include_daisy": False,
+            "Tn_Ttol": 1e-3,
+            "Tn_maxiter": 160,
+            "n_phi_scan": 1600,
+            "bounce_thinCutoff": 1e-3,
+            "bounce_npoints": 1200,
+            "gw_v_w": 1.0,
+        },
     )

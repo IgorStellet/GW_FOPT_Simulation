@@ -65,6 +65,8 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 DEFAULT_RUN02_DIR = HERE / "02_Glauber_pure_benchmarks"
 DEFAULT_RUN03_DIR = HERE / "03_Glauber_pure_C_scan"
+DEFAULT_RUN04_DIR = HERE / "04_EFT68_pure_benchmarks"
+DEFAULT_RUN05_DIR = HERE / "05_EFT68_pure_c6_scan"
 
 # The same sensitivity-curve colors used in the thesis GW plots.
 SENSITIVITY_COLORS = {
@@ -274,6 +276,56 @@ def _style_for_lambda(lambda_value: float) -> str:
             return style
     return "-."
 
+def _format_value_for_filename(value: float | int) -> str:
+    """Format numbers safely for filenames."""
+
+    value_float = float(value)
+
+    if np.isclose(value_float, round(value_float)):
+        text = str(int(round(value_float)))
+    else:
+        text = f"{value_float:.6g}"
+
+    return text.replace("-", "m").replace(".", "p")
+
+
+def _ordered_value_color_map(values: Sequence[float]) -> dict[float, str]:
+    """
+    Assign colors by value ordering.
+
+    Small  -> green
+    medium -> blue
+    large  -> purple
+
+    This is the same visual convention used for the three C curves in run_02.
+    Here we reuse it for the three c6 curves at fixed c8.
+    """
+
+    clean_values = sorted({float(value) for value in values if np.isfinite(float(value))})
+
+    if not clean_values:
+        return {}
+
+    if len(clean_values) == 1:
+        return {clean_values[0]: C_CURVE_COLORS["medium"]}
+
+    if len(clean_values) == 2:
+        return {
+            clean_values[0]: C_CURVE_COLORS["small"],
+            clean_values[1]: C_CURVE_COLORS["large"],
+        }
+
+    color_map: dict[float, str] = {}
+
+    for i, value in enumerate(clean_values):
+        if i == 0:
+            color_map[value] = C_CURVE_COLORS["small"]
+        elif i == len(clean_values) - 1:
+            color_map[value] = C_CURVE_COLORS["large"]
+        else:
+            color_map[value] = C_CURVE_COLORS["medium"]
+
+    return color_map
 
 # -----------------------------------------------------------------------------
 # Run 02: data discovery
@@ -1085,6 +1137,448 @@ def plot_run03_scan_observables(*, run03_dir: str | Path = DEFAULT_RUN03_DIR) ->
 
     return saved
 
+# -----------------------------------------------------------------------------
+# Run 04: EFT68 benchmark spectra
+# -----------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Run04Record:
+    """One run_04 pure EFT68 benchmark point."""
+
+    root: Path
+    c8: float
+    c6: float
+    spectrum_path: Path
+    diagnostics_path: Path | None
+    diagnostics: dict[str, Any]
+
+
+def _parse_c6_c8_from_folder(folder: Path) -> tuple[float, float]:
+    """Parse c6/f^2 and c8/f^4 from a result-folder name."""
+
+    name = folder.name
+
+    match = re.search(
+        r"c6f2(?P<c6>[0-9pm]+)_c8f4(?P<c8>[0-9pm]+)",
+        name,
+    )
+
+    if not match:
+        return np.nan, np.nan
+
+    c6 = _parse_safe_float_from_path_token(match.group("c6"))
+    c8 = _parse_safe_float_from_path_token(match.group("c8"))
+
+    return c6, c8
+
+
+def discover_run04_records(run04_dir: str | Path = DEFAULT_RUN04_DIR) -> list[Run04Record]:
+    """
+    Find all run_04 folders that contain a GW spectrum table.
+
+    Robustness:
+    - first tries to read c6/c8 from thesis_diagnostics.csv;
+    - if that fails, parses c6/c8 from the folder name;
+    - if the same point was run more than once, keeps the newest folder.
+    """
+
+    run04_dir = Path(run04_dir)
+    records: list[Run04Record] = []
+
+    if not run04_dir.exists():
+        print(f"[warning] Missing run_04 folder: {run04_dir}")
+        return records
+
+    for folder in sorted(run04_dir.rglob("results_*")):
+        if not folder.is_dir():
+            continue
+
+        spectrum_path = folder / "G0_gw_spectrum.csv"
+        if not spectrum_path.exists():
+            print(f"[run_04] Skipping {folder.name}: missing G0_gw_spectrum.csv")
+            continue
+
+        diagnostics_path = folder / "thesis_diagnostics.csv"
+        diagnostics = _read_flat_diagnostics_csv(diagnostics_path)
+
+        c6 = _first_finite_from_mapping(
+            diagnostics,
+            [
+                "model_parameters.c6_over_f2_TeV2",
+                "scan_parameters.c6_over_f2_TeV2",
+            ],
+        )
+        c8 = _first_finite_from_mapping(
+            diagnostics,
+            [
+                "model_parameters.c8_over_f4_TeV4",
+                "scan_parameters.c8_over_f4_TeV4",
+            ],
+        )
+
+        if not np.isfinite(c6) or not np.isfinite(c8):
+            c6_folder, c8_folder = _parse_c6_c8_from_folder(folder)
+            c6 = c6 if np.isfinite(c6) else c6_folder
+            c8 = c8 if np.isfinite(c8) else c8_folder
+
+        if not np.isfinite(c6) or not np.isfinite(c8):
+            print(f"[run_04] Skipping {folder.name}: could not infer c6/c8")
+            continue
+
+        records.append(
+            Run04Record(
+                root=folder,
+                c8=float(c8),
+                c6=float(c6),
+                spectrum_path=spectrum_path,
+                diagnostics_path=diagnostics_path if diagnostics_path.exists() else None,
+                diagnostics=diagnostics,
+            )
+        )
+
+    latest: dict[tuple[float, float], Run04Record] = {}
+
+    for record in records:
+        key = (
+            round(float(record.c8), 8),
+            round(float(record.c6), 8),
+        )
+        previous = latest.get(key)
+
+        if previous is None or record.root.stat().st_mtime >= previous.root.stat().st_mtime:
+            latest[key] = record
+
+    return sorted(
+        latest.values(),
+        key=lambda item: (item.c8, item.c6),
+    )
+
+
+def plot_run04_fixed_c8_spectra(
+    *,
+    run04_dir: str | Path = DEFAULT_RUN04_DIR,
+    y_limits: tuple[float, float] = (1e-21, 1e-9),
+    x_limits: tuple[float, float] = (1e-3, 1e5),
+) -> list[Path]:
+    """
+    Build fixed-c8 spectrum plots for run_04.
+
+    For each fixed c8/f^4, the three c6/f^2 curves are shown together.
+
+    Visual convention:
+    - small c6  -> green;
+    - medium c6 -> blue;
+    - large c6  -> purple;
+    - solid line: epsilon_turb = 0;
+    - dashed line: epsilon_turb = 1;
+    - shaded band: 0 <= epsilon_turb <= 1.
+    """
+
+    records = discover_run04_records(run04_dir)
+    output_dir = Path(run04_dir)
+    saved: list[Path] = []
+
+    if not records:
+        print("[run_04] No valid records found.")
+        return saved
+
+    for c8 in sorted({record.c8 for record in records}):
+        subset = [record for record in records if np.isclose(record.c8, c8)]
+
+        if not subset:
+            continue
+
+        color_map = _ordered_value_color_map([record.c6 for record in subset])
+
+        fig, ax = plt.subplots(figsize=(8.2, 5.2))
+
+        f_ref: np.ndarray | None = None
+        band_label_used = False
+
+        for record in sorted(subset, key=lambda item: item.c6):
+            f, omega_eps0, omega_eps1, _df = _load_spectrum_epsilon_band(record.spectrum_path)
+
+            if f_ref is None:
+                f_ref = f
+
+            color = color_map.get(record.c6, C_CURVE_COLORS["medium"])
+
+            mask0 = np.isfinite(f) & np.isfinite(omega_eps0) & (f > 0.0) & (omega_eps0 > 0.0)
+            mask1 = np.isfinite(f) & np.isfinite(omega_eps1) & (f > 0.0) & (omega_eps1 > 0.0)
+            mask_band = mask0 & mask1
+
+            if not np.any(mask0) and not np.any(mask1):
+                print(f"[run_04] No positive spectrum for {record.root}")
+                continue
+
+            if np.any(mask_band):
+                y_lo = np.minimum(omega_eps0[mask_band], omega_eps1[mask_band])
+                y_hi = np.maximum(omega_eps0[mask_band], omega_eps1[mask_band])
+
+                ax.fill_between(
+                    f[mask_band],
+                    y_lo,
+                    y_hi,
+                    color=color,
+                    alpha=0.15,
+                    linewidth=0.0,
+                    label=(
+                        r"$0\leq\epsilon_{\rm turb}\leq1$"
+                        if not band_label_used
+                        else "_nolegend_"
+                    ),
+                )
+                band_label_used = True
+
+            if np.any(mask0):
+                ax.loglog(
+                    f[mask0],
+                    omega_eps0[mask0],
+                    lw=2.45,
+                    ls="-",
+                    color=color,
+                    label=rf"$c_6/f^2={record.c6:.4g}$",
+                )
+
+            if np.any(mask1):
+                ax.loglog(
+                    f[mask1],
+                    omega_eps1[mask1],
+                    lw=2.15,
+                    ls="--",
+                    color=color,
+                    label="_nolegend_",
+                )
+
+        if f_ref is not None:
+            _draw_detector_sensitivities(ax, f_ref)
+
+        style_handles = [
+            Line2D(
+                [0],
+                [0],
+                color="black",
+                lw=2.2,
+                ls="-",
+                label=r"$\epsilon_{\rm turb}=0$",
+            ),
+            Line2D(
+                [0],
+                [0],
+                color="black",
+                lw=2.0,
+                ls="--",
+                label=r"$\epsilon_{\rm turb}=1$",
+            ),
+        ]
+
+        handles, labels = ax.get_legend_handles_labels()
+        handles = handles + style_handles
+        labels = labels + [handle.get_label() for handle in style_handles]
+
+        ax.set_xlim(*x_limits)
+        ax.set_ylim(*y_limits)
+        ax.set_xlabel(r"$f$ [mHz]")
+        ax.set_ylabel(r"$h^2\Omega_{\rm GW}(f)$")
+        ax.set_title(rf"Run 04: $c_8/f^4={c8:.4g}$ TeV$^{{-4}}$")
+        ax.grid(True, which="both", alpha=0.25)
+        ax.legend(handles, labels, loc="best", fontsize=8)
+        fig.tight_layout()
+
+        basename = f"run04_GW_spectra_c8f4{_format_value_for_filename(c8)}"
+        pdf_path, png_path = _save_figure(fig, output_dir, basename)
+        saved.extend([pdf_path, png_path])
+
+        print(f"[run_04] Saved {pdf_path}")
+
+    return saved
+
+
+# -----------------------------------------------------------------------------
+# Run 05: EFT68 c6-scan loading and plotting
+# -----------------------------------------------------------------------------
+
+
+def load_run05_summary(run05_dir: str | Path = DEFAULT_RUN05_DIR) -> pd.DataFrame:
+    """Load the run_05 master CSV."""
+
+    run05_dir = Path(run05_dir)
+    csv_path = run05_dir / "run05_eft68_c6_scan_summary.csv"
+
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Could not find run05 summary CSV: {csv_path}")
+
+    df = pd.read_csv(csv_path)
+
+    if "include_daisy" in df.columns:
+        if df["include_daisy"].dtype == object:
+            df["include_daisy"] = (
+                df["include_daisy"]
+                .astype(str)
+                .str.lower()
+                .isin(["true", "1", "yes"])
+            )
+        else:
+            df["include_daisy"] = df["include_daisy"].astype(bool)
+
+    numeric_columns = [
+        "c6_over_f2_TeV2",
+        "c8_over_f4_TeV4",
+        "f_GeV",
+        "Tn_GeV",
+        "Tc_GeV",
+        "Tc_minus_Tn_over_Tc",
+        "alpha",
+        "beta_over_H",
+        "omega_total_peak",
+        "f_total_peak_mHz",
+    ]
+
+    for col in numeric_columns:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    return df
+
+
+def _valid_eft68_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """Keep rows with finite c6 and c8."""
+
+    required = ["c6_over_f2_TeV2", "c8_over_f4_TeV4"]
+
+    for col in required:
+        if col not in df.columns:
+            raise ValueError(f"EFT68 summary is missing required column {col!r}")
+
+    mask = (
+        np.isfinite(df["c6_over_f2_TeV2"])
+        & np.isfinite(df["c8_over_f4_TeV4"])
+    )
+
+    return df.loc[mask].copy()
+
+
+def _plot_run05_observables_one_c8(
+    df: pd.DataFrame,
+    *,
+    output_dir: str | Path,
+    c8: float,
+) -> list[Path]:
+    """
+    Plot alpha(c6), beta/H(c6), and (Tc-Tn)/Tc(c6) for one fixed c8.
+
+    We use three y-axes because the three observables have very different
+    numerical scales.
+    """
+
+    output_dir = Path(output_dir)
+    data = _valid_eft68_rows(df)
+    data = data[np.isclose(data["c8_over_f4_TeV4"], float(c8))].sort_values("c6_over_f2_TeV2")
+
+    if data.empty:
+        return []
+
+    x = data["c6_over_f2_TeV2"].to_numpy(dtype=float)
+    alpha_scaled = 1.0e6 * data["alpha"].to_numpy(dtype=float)
+    beta = data["beta_over_H"].to_numpy(dtype=float)
+    supercooling = data["Tc_minus_Tn_over_Tc"].to_numpy(dtype=float)
+
+    fig, ax_alpha = plt.subplots(figsize=(8.5, 5.2))
+    ax_beta = ax_alpha.twinx()
+    ax_super = ax_alpha.twinx()
+
+    ax_super.spines["right"].set_position(("axes", 1.15))
+    ax_super.spines["right"].set_visible(True)
+
+    mask_alpha = np.isfinite(x) & np.isfinite(alpha_scaled)
+    mask_beta = np.isfinite(x) & np.isfinite(beta)
+    mask_super = np.isfinite(x) & np.isfinite(supercooling)
+
+    if np.any(mask_alpha):
+        ax_alpha.plot(
+            x[mask_alpha],
+            alpha_scaled[mask_alpha],
+            lw=2.4,
+            marker="o",
+            ms=4.0,
+            color=OBSERVABLE_COLORS["alpha"],
+            label=r"$10^6\alpha$",
+        )
+
+    if np.any(mask_beta):
+        ax_beta.plot(
+            x[mask_beta],
+            beta[mask_beta],
+            lw=2.4,
+            marker="s",
+            ms=3.8,
+            color=OBSERVABLE_COLORS["beta"],
+            label=r"$\beta/H$",
+        )
+
+    if np.any(mask_super):
+        ax_super.plot(
+            x[mask_super],
+            supercooling[mask_super],
+            lw=2.4,
+            marker="^",
+            ms=4.0,
+            color=OBSERVABLE_COLORS["supercooling"],
+            label=r"$(T_c-T_n)/T_c$",
+        )
+
+    ax_alpha.set_xlabel(r"$c_6/f^2$ [TeV$^{-2}$]")
+    ax_alpha.set_ylabel(r"$10^6\alpha$", color=OBSERVABLE_COLORS["alpha"])
+    ax_beta.set_ylabel(r"$\beta/H$", color=OBSERVABLE_COLORS["beta"])
+    ax_super.set_ylabel(r"$(T_c-T_n)/T_c$", color=OBSERVABLE_COLORS["supercooling"])
+
+    ax_alpha.tick_params(axis="y", labelcolor=OBSERVABLE_COLORS["alpha"])
+    ax_beta.tick_params(axis="y", labelcolor=OBSERVABLE_COLORS["beta"])
+    ax_super.tick_params(axis="y", labelcolor=OBSERVABLE_COLORS["supercooling"])
+
+    ax_alpha.set_title(rf"Run 05: $c_8/f^4={c8:.4g}$ TeV$^{{-4}}$")
+    ax_alpha.grid(True, alpha=0.25)
+
+    lines1, labels1 = ax_alpha.get_legend_handles_labels()
+    lines2, labels2 = ax_beta.get_legend_handles_labels()
+    lines3, labels3 = ax_super.get_legend_handles_labels()
+
+    ax_alpha.legend(
+        lines1 + lines2 + lines3,
+        labels1 + labels2 + labels3,
+        loc="best",
+        fontsize=9,
+    )
+
+    fig.tight_layout(rect=(0.0, 0.0, 0.86, 1.0))
+
+    basename = f"run05_observables_vs_c6_c8f4{_format_value_for_filename(c8)}"
+    return list(_save_figure(fig, output_dir, basename))
+
+
+def plot_run05_scan_observables(*, run05_dir: str | Path = DEFAULT_RUN05_DIR) -> list[Path]:
+    """Build all run_05 post-processing figures."""
+
+    run05_dir = Path(run05_dir)
+    df = load_run05_summary(run05_dir)
+
+    saved: list[Path] = []
+    data = _valid_eft68_rows(df)
+
+    for c8 in sorted(data["c8_over_f4_TeV4"].dropna().unique()):
+        saved.extend(
+            _plot_run05_observables_one_c8(
+                data,
+                output_dir=run05_dir,
+                c8=float(c8),
+            )
+        )
+
+    for path in saved:
+        print(f"[run_05] Saved {path}")
+
+    return saved
 
 # -----------------------------------------------------------------------------
 # Main dispatcher
@@ -1095,8 +1589,12 @@ def run_all_postprocessing(
     *,
     run02_dir: str | Path = DEFAULT_RUN02_DIR,
     run03_dir: str | Path = DEFAULT_RUN03_DIR,
+    run04_dir: str | Path = DEFAULT_RUN04_DIR,
+    run05_dir: str | Path = DEFAULT_RUN05_DIR,
     run_run02: bool = True,
     run_run03: bool = True,
+    run_run04: bool = True,
+    run_run05: bool = True,
 ) -> dict[str, Any]:
     """Run all available post-processing plots."""
 
@@ -1109,6 +1607,12 @@ def run_all_postprocessing(
     if run_run03:
         outputs["run03_scan_observables"] = plot_run03_scan_observables(run03_dir=run03_dir)
 
+    if run_run04:
+        outputs["run04_spectra"] = plot_run04_fixed_c8_spectra(run04_dir=run04_dir)
+
+    if run_run05:
+        outputs["run05_scan_observables"] = plot_run05_scan_observables(run05_dir=run05_dir)
+
     return outputs
 
 
@@ -1116,6 +1620,10 @@ if __name__ == "__main__":
     run_all_postprocessing(
         run02_dir=DEFAULT_RUN02_DIR,
         run03_dir=DEFAULT_RUN03_DIR,
-        run_run02=True,
-        run_run03=True,
+        run04_dir=DEFAULT_RUN04_DIR,
+        run05_dir=DEFAULT_RUN05_DIR,
+        run_run02=False,
+        run_run03=False,
+        run_run04=True,
+        run_run05=True,
     )

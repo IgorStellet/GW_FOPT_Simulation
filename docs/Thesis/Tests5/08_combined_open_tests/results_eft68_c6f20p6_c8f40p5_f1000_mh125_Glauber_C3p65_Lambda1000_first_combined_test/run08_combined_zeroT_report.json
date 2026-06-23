@@ -1,0 +1,57 @@
+{
+  "interpretation": "Combined EFT68 + Gl\u00e1uber zero-temperature consistency check. The local electroweak conditions are safe when dV_at_v_numeric is close to zero and d2V_at_v_numeric is close to mh2_target.",
+  "parameters": {
+    "c6_over_f2_TeV2": 0.6,
+    "c8_over_f4_TeV4": 0.5,
+    "f_GeV": 1000.0,
+    "m_h": 125.0,
+    "v": 246.0,
+    "m_w": 80.36,
+    "m_z": 91.19,
+    "m_t": 173.1,
+    "use_glauber_measure": true,
+    "C_glauber": 3.65,
+    "Lambda_glauber": 1000.0
+  },
+  "limits": {
+    "f_GeV": 1000.0,
+    "Lambda_glauber_GeV": 1000.0,
+    "C_glauber": 3.65,
+    "phi_branch_GeV": 523.4239225902137,
+    "phi_scan_upper_GeV": 523.4239225902137,
+    "branch_over_v": 2.127739522724446,
+    "scan_upper_over_v": 2.127739522724446
+  },
+  "tree_level_report": {
+    "lambda_tree": 0.07188705006938544,
+    "mu2_tree": 6053.705753065953,
+    "a0_mean_field": 0.37121971356334643,
+    "combo_TeV2": 1.2907739999999999,
+    "upper_c6_over_f2_TeV2_from_Eq_2_14": 4.221190095689914,
+    "passes_Eq_2_14": true,
+    "passes_EFT_tree_condition_Vv_lower_than_v_to_f": true,
+    "min_after_v_tree": -100316356.8843669,
+    "V_tree_v": -100316409.4736145,
+    "sampled_min_phi_full_zeroT": 246.08202734244747,
+    "sampled_min_deltaV_full_zeroT": -20815256.522614807,
+    "dV_at_v_numeric": 5.645362039407094,
+    "d2V_at_v_numeric": 15625.060387672282,
+    "mh2_target": 15625.0
+  },
+  "loop_renormalized_report": {
+    "lambda_tree": 0.07188705006938544,
+    "mu2_tree": 6053.705753065953,
+    "a0_mean_field": 0.37121971356334643,
+    "combo_TeV2": 1.2907739999999999,
+    "upper_c6_over_f2_TeV2_from_Eq_2_14": 4.221190095689914,
+    "passes_Eq_2_14": true,
+    "passes_EFT_tree_condition_Vv_lower_than_v_to_f": true,
+    "min_after_v_tree": -100316356.8843669,
+    "V_tree_v": -100316409.4736145,
+    "sampled_min_phi_full_zeroT": 246.08202734244747,
+    "sampled_min_deltaV_full_zeroT": -31571742.64367229,
+    "dV_at_v_numeric": 5.56422851798011,
+    "d2V_at_v_numeric": 15625.060222941023,
+    "mh2_target": 15625.0
+  }
+}
