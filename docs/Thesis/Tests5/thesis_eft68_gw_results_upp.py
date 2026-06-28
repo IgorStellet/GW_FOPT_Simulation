@@ -66,7 +66,7 @@ from CosmoTransitions.gravitational_Waves import (
 # Constants
 # -----------------------------------------------------------------------------
 
-DEFAULT_VEV = 246.0
+DEFAULT_VEV = 246.0 # GeV
 DEFAULT_MH = 125.0
 DEFAULT_MW = 80.36
 DEFAULT_MZ = 91.19
@@ -4690,11 +4690,11 @@ if __name__ == "__main__":
         run_07=False,
         run_08=True,
         run_08_config={
-            "run_tag": "first_combined_test",
-            "c6_over_f2_TeV2": 3.0,
-            "c8_over_f4_TeV4": 2.0,
+            "run_tag": "reunion_combined_test",
+            "c6_over_f2_TeV2": 2.0,
+            "c8_over_f4_TeV4": 0.0,
             "f_GeV": 1000.0,
-            "C_glauber": 2.30,
+            "C_glauber": 3.2,
             "Lambda_glauber": 1000.0,
             "include_daisy": False,
             "Tn_Ttol": 1e-3,
