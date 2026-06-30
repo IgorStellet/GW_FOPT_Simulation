@@ -1,0 +1,153 @@
+{
+  "label": "results_eft68_c6f20_c8f40_f801p283_mh125_Glauber_C6p23_Lambda2000",
+  "model_parameters": {
+    "c6_over_f2_TeV2": 0.0,
+    "c8_over_f4_TeV4": 0.0,
+    "f_GeV": 801.2830802150039,
+    "m_h": 125.0,
+    "v": 246.0,
+    "m_w": 80.36,
+    "m_z": 91.19,
+    "m_t": 173.1,
+    "use_glauber_measure": true,
+    "C_glauber": 6.23,
+    "Lambda_glauber": 2000.0
+  },
+  "derived_tree_coefficients": {
+    "glauber_scheme": "counterterm_subtracted",
+    "lambda_tree": 0.12909808976138543,
+    "mu2_tree_GeV2": 7812.5,
+    "a0_mean_field": 0.3998252334093464,
+    "glauber_t0": 0.09425367000000001,
+    "glauber_lambda_shift": 0.0,
+    "glauber_mu2_shift_after_lambda_GeV2": 0.0,
+    "lambda_tree_raw_glauber_equivalent": -1.069305746575934,
+    "mu2_tree_raw_glauber_equivalent_GeV2": 632207.952265538,
+    "combo_TeV2": 0.0
+  },
+  "scan_parameters": {
+    "T_min": 1.0,
+    "T_max": 250.0,
+    "phi_scan_range": [
+      -10.0,
+      801.2830802150039
+    ],
+    "n_phi_scan": 1200,
+    "n_T_seeds": 3,
+    "deltaX_target": 0.1,
+    "x_eps": 0.001,
+    "T_eps": 0.01,
+    "deriv_order": 4,
+    "phitol": 0.0001,
+    "overlapAngle": 45.0,
+    "Tn_Ttol": 0.01,
+    "Tn_maxiter": 160,
+    "include_zeroT_loops": true,
+    "include_scalar_loops": true,
+    "include_thermal": true,
+    "include_scalar_thermal": true,
+    "include_daisy": false,
+    "renormalize_zeroT_loops": true,
+    "thermal_approx": "spline"
+  },
+  "key_temperatures": {
+    "Tn": 84.69784878444169,
+    "Tc": 92.6273095561167,
+    "Ts_false": 75.86865859374743,
+    "Ts_true": 98.92946289062462,
+    "S_at_Tn": 11849.859797479321,
+    "S_over_Tn": 139.90744709039228,
+    "false_phase_key": 1,
+    "true_phase_key": 0,
+    "phi_false_Tn": -0.0011680455261928965,
+    "phi_true_Tn": 222.14835596601878,
+    "vTn_over_Tn": 2.622833509401075,
+    "Tc_minus_Tn_over_Tc": 0.08560607891640294
+  },
+  "gw_scales": {
+    "gw_T_star_GeV": 84.69784878444169,
+    "gw_alpha": 0.021428819088540888,
+    "gw_beta_over_H": 2653.2093536406646,
+    "gw_v_w": 1.0,
+    "gw_g_star": 106.75
+  },
+  "gw_peaks": {
+    "sw": {
+      "f_peak_mHz": 43.370823136714556,
+      "f_peak_Hz": 0.04337082313671456,
+      "omega_peak": 1.4559954456209167e-17
+    },
+    "turb": {
+      "f_peak_mHz": 73.1228951088625,
+      "f_peak_Hz": 0.0731228951088625,
+      "omega_peak": 1.0578992620156086e-21
+    },
+    "coll": {
+      "f_peak_mHz": NaN,
+      "f_peak_Hz": NaN,
+      "omega_peak": NaN
+    },
+    "total": {
+      "f_peak_mHz": 43.370823136714556,
+      "f_peak_Hz": 0.04337082313671456,
+      "omega_peak": 1.4560885514039408e-17
+    }
+  },
+  "gw_run_parameters": {
+    "g_star": 106.75,
+    "v_w": 1.0,
+    "epsilon_turb": 1.0,
+    "frequency_unit": "mHz"
+  },
+  "S3": 11849.55440768218,
+  "S3_over_T": 139.90384145221464,
+  "bounce_diagnostics": {
+    "label": "results_eft68_c6f20_c8f40_f801p283_mh125_Glauber_C6p23_Lambda2000",
+    "C": NaN,
+    "Lambda_GeV": NaN,
+    "finiteT": null,
+    "temperature_GeV": NaN,
+    "phi_metaMin": -0.0011680455261928965,
+    "phi_absMin": 222.14835596601878,
+    "phi_bar": 114.28972649029694,
+    "phi_top": 76.74555065945853,
+    "V(phi_meta)": -141280701.13531125,
+    "V(phi_true)": -151947432.83210236,
+    "V(phi_top)": -140519447.91539118,
+    "DeltaV_true_minus_meta": -10666731.696791112,
+    "r0": 3.5910348499812785e-06,
+    "phi0": 217.56407531809987,
+    "dphi0": -0.039164807210280386,
+    "rscale_cubic": 0.03591034849981278,
+    "rscale_curv": 0.03416987148239843,
+    "wall_r_hi": 0.1380558052958681,
+    "wall_thickness": 0.0945925708916853,
+    "S_total": 11849.55440768218,
+    "S_kin": 17784.445718519928,
+    "S_pot": -5934.891310837747,
+    "S_interior": 0.0,
+    "S3_over_T": NaN,
+    "beta_rscale": 27.84712601731541,
+    "beta_curvature": 29.265540287458208,
+    "beta_wall": 10.571654735392123,
+    "Tn_from_transitionFinder_GeV": 84.69784878444169,
+    "Tc_from_transitionFinder_GeV": 92.6273095561167,
+    "T_spinodal_high_GeV": NaN,
+    "T_spinodal_low_GeV": NaN,
+    "gw_T_star_GeV": 84.69784878444169,
+    "gw_alpha": 0.021428819088540888,
+    "gw_beta_over_H": 2653.2093536406646,
+    "gw_R_star_times_H": NaN,
+    "gw_Gamma_Tstar_GeV4": NaN,
+    "gw_dT_for_beta_GeV": NaN,
+    "gw_f_sw_peak_Hz": NaN,
+    "gw_f_turb_peak_Hz": NaN,
+    "gw_f_coll_peak_Hz": NaN,
+    "gw_g_star": 106.75,
+    "gw_v_w": 1.0,
+    "omega_sw_peak": NaN,
+    "omega_turb_peak": NaN,
+    "omega_coll_peak": NaN,
+    "omega_tot_peak": NaN
+  }
+}
