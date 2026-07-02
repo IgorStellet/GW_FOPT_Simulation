@@ -4554,50 +4554,653 @@ def run_05_eft68_pure_c6_scan(
 
     return results
 
-def run_06_combined_benchmark_grid(
+def _combined_scan_row_from_result(
     *,
-    base_dir: str | Path = "06_combined_benchmarks_DRAFT",
+    result: Mapping[str, Any] | None,
+    c6: float,
+    c8: float,
+    C: float,
+    Lambda: float,
+    f_GeV: float,
+    include_daisy: bool,
+    phi_limit: float,
+    scan_variable: str,
+    combo_label: str,
+    error: str | None = None,
+) -> dict[str, Any]:
+    """
+    Build one compact row for combined EFT68 + Gláuber scan master tables.
+
+    The per-run folder stores the full thesis_diagnostics.csv/json.  This row is
+    the light summary used later for alpha, beta/H, supercooling and GW-peak
+    plots in the combined case.
+    """
+
+    base = {
+        "combo_label": str(combo_label),
+        "scan_variable": str(scan_variable),
+        "c6_over_f2_TeV2": float(c6),
+        "c8_over_f4_TeV4": float(c8),
+        "C": float(C),
+        "Lambda_GeV": float(Lambda),
+        "f_GeV": float(f_GeV),
+        "include_daisy": bool(include_daisy),
+        "phi_limit_GeV": float(phi_limit),
+    }
+
+    empty = {
+        **base,
+        "status": "runner_error" if result is None else "no_summary",
+        "output_dir": "",
+        "Tn_GeV": np.nan,
+        "Tc_GeV": np.nan,
+        "Ts_false_GeV": np.nan,
+        "Ts_true_GeV": np.nan,
+        "Tc_minus_Tn_over_Tc": np.nan,
+        "S3_over_Tn": np.nan,
+        "phi_true_Tn_GeV": np.nan,
+        "phi_false_Tn_GeV": np.nan,
+        "vTn_over_Tn": np.nan,
+        "alpha": np.nan,
+        "beta_over_H": np.nan,
+        "omega_total_peak": np.nan,
+        "f_total_peak_mHz": np.nan,
+        "transition_error": error or "",
+    }
+
+    if result is None:
+        return empty
+
+    summary = result.get("finite_temperature_summary", None)
+    output_dir = result.get("output_dir", "")
+
+    if not isinstance(summary, Mapping):
+        empty["output_dir"] = str(output_dir)
+        return empty
+
+    key_T = summary.get("key_temperatures", {}) or {}
+    gw_scales = summary.get("gw_scales", {}) or {}
+    gw = summary.get("gw", {}) or {}
+    peaks = gw.get("peaks", {}) if isinstance(gw, Mapping) else {}
+    total_peak = peaks.get("total", {}) if isinstance(peaks, Mapping) else {}
+
+    main_transition = summary.get("main_transition", None)
+    transition_error = summary.get("transition_error", "")
+
+    if main_transition is not None:
+        status = "FOPT_with_nucleation"
+    elif transition_error:
+        status = "transition_error"
+    else:
+        status = "no_FOPT_or_no_nucleation"
+
+    Tc = _scan_float(key_T.get("Tc", np.nan))
+    Tn = _scan_float(key_T.get("Tn", np.nan))
+    supercooling = _scan_float(key_T.get("Tc_minus_Tn_over_Tc", np.nan))
+
+    if not np.isfinite(supercooling) and np.isfinite(Tc) and np.isfinite(Tn) and Tc > 0.0:
+        supercooling = (Tc - Tn) / Tc
+
+    return {
+        **base,
+        "status": status,
+        "output_dir": str(output_dir),
+        "Tn_GeV": Tn,
+        "Tc_GeV": Tc,
+        "Ts_false_GeV": _scan_float(key_T.get("Ts_false", np.nan)),
+        "Ts_true_GeV": _scan_float(key_T.get("Ts_true", np.nan)),
+        "Tc_minus_Tn_over_Tc": supercooling,
+        "S3_over_Tn": _scan_float(key_T.get("S_over_Tn", np.nan)),
+        "phi_true_Tn_GeV": _scan_float(key_T.get("phi_true_Tn", np.nan)),
+        "phi_false_Tn_GeV": _scan_float(key_T.get("phi_false_Tn", np.nan)),
+        "vTn_over_Tn": _scan_float(key_T.get("vTn_over_Tn", np.nan)),
+        "alpha": _scan_float(gw_scales.get("gw_alpha", np.nan)),
+        "beta_over_H": _scan_float(gw_scales.get("gw_beta_over_H", np.nan)),
+        "omega_total_peak": _scan_float(total_peak.get("omega_peak", np.nan)),
+        "f_total_peak_mHz": _scan_float(total_peak.get("f_peak_mHz", np.nan)),
+        "transition_error": str(transition_error),
+    }
+
+
+def _write_combined_scan_master_csv(
+    rows: Sequence[Mapping[str, Any]],
+    path: str | Path,
+) -> Path:
+    """Write the combined EFT68 + Gláuber scan master table."""
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    fieldnames = [
+        "combo_label",
+        "scan_variable",
+        "c6_over_f2_TeV2",
+        "c8_over_f4_TeV4",
+        "C",
+        "Lambda_GeV",
+        "f_GeV",
+        "include_daisy",
+        "phi_limit_GeV",
+        "status",
+        "output_dir",
+        "Tn_GeV",
+        "Tc_GeV",
+        "Ts_false_GeV",
+        "Ts_true_GeV",
+        "Tc_minus_Tn_over_Tc",
+        "S3_over_Tn",
+        "phi_true_Tn_GeV",
+        "phi_false_Tn_GeV",
+        "vTn_over_Tn",
+        "alpha",
+        "beta_over_H",
+        "omega_total_peak",
+        "f_total_peak_mHz",
+        "transition_error",
+    ]
+
+    with open(path, "w", newline="", encoding="utf-8") as fobj:
+        writer = csv.DictWriter(fobj, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for row in rows:
+            writer.writerow({key: row.get(key, "") for key in fieldnames})
+
+    return path
+
+
+def run_06_combined_C_scan(
+    *,
+    base_dir: str | Path = "06_combined_C_scan",
     show: bool = False,
+    # ------------------------------------------------------------------
+    # Combined EFT68 + Gláuber scan in C.
+    # Each entry is:
+    #     label: (c8/f^4, c6/f^2, C_min, C_max, n_C)
+    # ------------------------------------------------------------------
+    combined_C_scan_ranges: Mapping[str, tuple[float, float, float, float, int]] | None = None,
+    n_C: int = 31,
+    include_daisy_values: Sequence[bool] = (False,True),
+    # ------------------------------------------------------------------
+    # Shared EFT/Gláuber baseline.
+    # ------------------------------------------------------------------
+    f_GeV: float = 1000.0,
+    Lambda_glauber: float = 1000.0,
+    m_h: float = DEFAULT_MH,
+    # ------------------------------------------------------------------
+    # Field-search controls.
+    # ------------------------------------------------------------------
+    phi_scan_branch_safety: float = 1.0,
+    n_phi_scan: int = 1200,
+    n_T_seeds: int = 3,
+    deltaX_target: float = 0.1,
+    # ------------------------------------------------------------------
+    # Temperature-search controls.
+    # ------------------------------------------------------------------
+    T_min: float = 1.0,
+    T_max: float = 250.0,
+    phitol: float = 1e-4,
+    overlapAngle: float = 45.0,
+    Tn_Ttol: float = 1e-2,
+    Tn_maxiter: int = 160,
+    # ------------------------------------------------------------------
+    # Bounce controls.
+    # ------------------------------------------------------------------
+    bounce_xguess: float | None = None,
+    bounce_thinCutoff: float = 1e-3,
+    bounce_npoints: int = 1200,
+    # ------------------------------------------------------------------
+    # GW controls.
+    # ------------------------------------------------------------------
+    gw_f_min_mHz: float = 1e-3,
+    gw_f_max_mHz: float = 1e5,
+    gw_n_freq: int = 1200,
+    gw_v_w: float = 1.0,
+    gw_epsilon_turb: float | None = 1.0,
+    gw_beta_over_H_override: float | None = None,
+    # ------------------------------------------------------------------
+    # Runtime controls.
+    # ------------------------------------------------------------------
+    verbose: bool = False,
 ) -> list[dict[str, Any]]:
     """
-    Draft placeholder for the future combined benchmark grid.
+    Run the combined EFT68 + Gláuber scan in C.
 
-    Intended future purpose:
-    - analogous to run_02 and run_04;
-    - choose a small number of fixed EFT68 + Gláuber benchmark points;
-    - save full plots and GW spectra for each point.
+    Requested scan:
+    - c8/f^4 = 0, c6/f^2 = 1, C in [3.20, 3.55];
+    - c8/f^4 = 0, c6/f^2 = 2, C in [2.70, 3.05];
+    - c8/f^4 = 5, c6/f^2 = 1, C in [3.00, 3.35].
 
-    This run is intentionally not implemented yet.  We will fill it after
-    run_08 tells us which combined parameter region is actually interesting.
+    Output strategy:
+    - one folder per daisy choice, combination and C;
+    - no figures;
+    - no GW spectrum table;
+    - full thesis_diagnostics.csv/json inside each point folder;
+    - one master CSV at base_dir/run06_combined_C_scan_summary.csv.
     """
 
-    print("\n[run_06] Draft placeholder only. No combined benchmark grid was run.")
-    print(f"[run_06] Suggested future output directory: {Path(base_dir)}")
-    return []
+    if combined_C_scan_ranges is None:
+        combined_C_scan_ranges = {
+            "c8f4_0_c6f2_1": (0.0, 1.0, 3.20, 3.55, n_C),
+            "c8f4_0_c6f2_2": (0.0, 2.0, 2.70, 3.05, n_C),
+            "c8f4_5_c6f2_1": (5.0, 1.0, 3.00, 3.35, n_C),
+        }
+
+    base_dir = Path(base_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
+
+    master_rows: list[dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
+    master_csv_path = base_dir / "run06_combined_C_scan_summary.csv"
+
+    for include_daisy in include_daisy_values:
+        daisy_folder = "with_daisy" if include_daisy else "no_daisy"
+        daisy_base_dir = base_dir / daisy_folder
+
+        for combo_label, scan_info in combined_C_scan_ranges.items():
+            c8_float, c6_float, C_min, C_max, n_points = scan_info
+            C_values = np.linspace(float(C_min), float(C_max), int(n_points))
+
+            combo_base_dir = daisy_base_dir / str(combo_label)
+
+            for C in C_values:
+                C_float = float(C)
+                Lambda_float = float(Lambda_glauber)
+
+                phi_limit = _combined_phi_scan_limit(
+                    C=C_float,
+                    Lambda=Lambda_float,
+                    f_GeV=float(f_GeV),
+                    branch_safety=float(phi_scan_branch_safety),
+                )
+
+                print("\n" + "=" * 76)
+                print("Run 06 – combined EFT68 + Gláuber C-scan")
+                print("=" * 76)
+                print(f" combo_label   : {combo_label}")
+                print(f" c8/f^4        : {c8_float:g} TeV^-4")
+                print(f" c6/f^2        : {c6_float:g} TeV^-2")
+                print(f" C_Gláuber     : {C_float:g}")
+                print(f" Lambda        : {Lambda_float:g} GeV")
+                print(f" f             : {f_GeV:g} GeV")
+                print(f" include_daisy : {include_daisy}")
+                print(f" phi_limit     : {phi_limit:g} GeV")
+                print("=" * 76)
+
+                try:
+                    result = run_all_examples(
+                        # --------------------------------------------------
+                        # Combined model definition.
+                        # --------------------------------------------------
+                        c6_over_f2_TeV2=float(c6_float),
+                        c8_over_f4_TeV4=float(c8_float),
+                        f_GeV=float(f_GeV),
+                        m_h=m_h,
+                        use_glauber_measure=True,
+                        C_glauber=C_float,
+                        Lambda_glauber=Lambda_float,
+
+                        # --------------------------------------------------
+                        # Output.
+                        # Daisy and combination are separated by base_dir.
+                        # Automatic folder name stores c6, c8, C and Lambda.
+                        # --------------------------------------------------
+                        run_tag=None,
+                        base_dir=combo_base_dir,
+                        show=show,
+
+                        # --------------------------------------------------
+                        # Physics switches.
+                        # --------------------------------------------------
+                        include_zeroT_loops=True,
+                        include_scalar_loops=True,
+                        renormalize_zeroT_loops=True,
+                        include_thermal=True,
+                        include_scalar_thermal=True,
+                        include_daisy=bool(include_daisy),
+                        thermal_approx="spline",
+
+                        # --------------------------------------------------
+                        # Finite-temperature search.
+                        # --------------------------------------------------
+                        run_finite_temperature=True,
+                        T_min=T_min,
+                        T_max=T_max,
+                        phi_scan_range=(-10.0, phi_limit),
+                        n_phi_scan=n_phi_scan,
+                        n_T_seeds=n_T_seeds,
+                        deltaX_target=deltaX_target,
+                        phitol=phitol,
+                        overlapAngle=overlapAngle,
+                        Tn_Ttol=Tn_Ttol,
+                        Tn_maxiter=Tn_maxiter,
+                        verbose=verbose,
+
+                        # --------------------------------------------------
+                        # No plots for the scan.
+                        # --------------------------------------------------
+                        run_A2_benchmarks=False,
+                        run_D1_mean_field_map=False,
+                        make_intro_plots=False,
+                        make_transition_plots=False,
+                        make_bounce_plots=False,
+                        make_gw_plots=False,
+
+                        # --------------------------------------------------
+                        # Bounce and GW diagnostics only.
+                        # --------------------------------------------------
+                        run_bounce=True,
+                        run_gw=True,
+                        bounce_xguess=bounce_xguess,
+                        bounce_thinCutoff=bounce_thinCutoff,
+                        bounce_npoints=bounce_npoints,
+                        gw_f_min_mHz=gw_f_min_mHz,
+                        gw_f_max_mHz=gw_f_max_mHz,
+                        gw_n_freq=gw_n_freq,
+                        gw_v_w=gw_v_w,
+                        gw_epsilon_turb=gw_epsilon_turb,
+                        gw_beta_over_H_override=gw_beta_over_H_override,
+
+                        # --------------------------------------------------
+                        # Compact diagnostics.
+                        # --------------------------------------------------
+                        save_diagnostics_table=True,
+                        save_fast_diagnostics=False,
+                        save_gw_spectrum_csv=False,
+                    )
+
+                    results.append(result)
+
+                    row = _combined_scan_row_from_result(
+                        result=result,
+                        c6=float(c6_float),
+                        c8=float(c8_float),
+                        C=C_float,
+                        Lambda=Lambda_float,
+                        f_GeV=float(f_GeV),
+                        include_daisy=bool(include_daisy),
+                        phi_limit=phi_limit,
+                        scan_variable="C",
+                        combo_label=combo_label,
+                    )
+
+                except Exception as err:
+                    print("[run_06] Point failed:", repr(err))
+
+                    row = _combined_scan_row_from_result(
+                        result=None,
+                        c6=float(c6_float),
+                        c8=float(c8_float),
+                        C=C_float,
+                        Lambda=Lambda_float,
+                        f_GeV=float(f_GeV),
+                        include_daisy=bool(include_daisy),
+                        phi_limit=phi_limit,
+                        scan_variable="C",
+                        combo_label=combo_label,
+                        error=repr(err),
+                    )
+
+                master_rows.append(row)
+
+                # Save after every point, so an interrupted run leaves a
+                # useful partial table.
+                _write_combined_scan_master_csv(master_rows, master_csv_path)
+
+    print("\n" + "=" * 76)
+    print("Run 06 completed")
+    print("=" * 76)
+    print(f" Master CSV: {master_csv_path}")
+    print("=" * 76)
+
+    return results
 
 
-def run_07_combined_scan(
+def run_07_combined_c6_scan(
     *,
-    base_dir: str | Path = "07_combined_scan_DRAFT",
+    base_dir: str | Path = "07_combined_c6_scan",
     show: bool = False,
+    # ------------------------------------------------------------------
+    # Combined EFT68 + Gláuber scan in c6.
+    # Each entry is:
+    #     label: (c8/f^4, C, c6_min, c6_max, n_c6)
+    # ------------------------------------------------------------------
+    combined_c6_scan_ranges: Mapping[str, tuple[float, float, float, float, int]] | None = None,
+    n_c6: int = 31,
+    include_daisy_values: Sequence[bool] = (False,True),
+    # ------------------------------------------------------------------
+    # Shared EFT/Gláuber baseline.
+    # ------------------------------------------------------------------
+    f_GeV: float = 1000.0,
+    Lambda_glauber: float = 1000.0,
+    m_h: float = DEFAULT_MH,
+    # ------------------------------------------------------------------
+    # Field-search controls.
+    # ------------------------------------------------------------------
+    phi_scan_branch_safety: float = 1.0,
+    n_phi_scan: int = 1200,
+    n_T_seeds: int = 3,
+    deltaX_target: float = 0.1,
+    # ------------------------------------------------------------------
+    # Temperature-search controls.
+    # ------------------------------------------------------------------
+    T_min: float = 1.0,
+    T_max: float = 250.0,
+    phitol: float = 1e-4,
+    overlapAngle: float = 45.0,
+    Tn_Ttol: float = 1e-2,
+    Tn_maxiter: int = 160,
+    # ------------------------------------------------------------------
+    # Bounce controls.
+    # ------------------------------------------------------------------
+    bounce_xguess: float | None = None,
+    bounce_thinCutoff: float = 1e-3,
+    bounce_npoints: int = 1200,
+    # ------------------------------------------------------------------
+    # GW controls.
+    # ------------------------------------------------------------------
+    gw_f_min_mHz: float = 1e-3,
+    gw_f_max_mHz: float = 1e5,
+    gw_n_freq: int = 1200,
+    gw_v_w: float = 1.0,
+    gw_epsilon_turb: float | None = 1.0,
+    gw_beta_over_H_override: float | None = None,
+    # ------------------------------------------------------------------
+    # Runtime controls.
+    # ------------------------------------------------------------------
+    verbose: bool = False,
 ) -> list[dict[str, Any]]:
     """
-    Draft placeholder for the future combined scan.
+    Run the combined EFT68 + Gláuber scan in c6.
 
-    Intended future purpose:
-    - analogous to run_03 and run_05;
-    - scan one parameter while fixing the others;
-    - save compact diagnostics only;
-    - later plot alpha, beta/H and (Tc-Tn)/Tc.
+    Requested scan:
+    - c8/f^4 = 0, C = 1.0, c6/f^2 in [3.20, 3.45];
+    - c8/f^4 = 0, C = 3.2, c6/f^2 in [1.00, 1.75];
+    - c8/f^4 = 5, C = 3.2, c6/f^2 in [0.70, 1.25].
 
-    This run is intentionally not implemented yet.  We will fill it after
-    run_08 identifies a useful range of combined parameters.
+    Output strategy:
+    - one folder per daisy choice, combination and c6;
+    - no figures;
+    - no GW spectrum table;
+    - full thesis_diagnostics.csv/json inside each point folder;
+    - one master CSV at base_dir/run07_combined_c6_scan_summary.csv.
     """
 
-    print("\n[run_07] Draft placeholder only. No combined scan was run.")
-    print(f"[run_07] Suggested future output directory: {Path(base_dir)}")
-    return []
+    if combined_c6_scan_ranges is None:
+        combined_c6_scan_ranges = {
+            "c8f4_0_C_1": (0.0, 1.0, 3.20, 3.45, n_c6),
+            "c8f4_0_C_3p2": (0.0, 3.2, 1.00, 1.75, n_c6),
+            "c8f4_5_C_3p2": (5.0, 3.2, 0.70, 1.25, n_c6),
+        }
 
+    base_dir = Path(base_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
+
+    master_rows: list[dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
+    master_csv_path = base_dir / "run07_combined_c6_scan_summary.csv"
+
+    for include_daisy in include_daisy_values:
+        daisy_folder = "with_daisy" if include_daisy else "no_daisy"
+        daisy_base_dir = base_dir / daisy_folder
+
+        for combo_label, scan_info in combined_c6_scan_ranges.items():
+            c8_float, C_float, c6_min, c6_max, n_points = scan_info
+            c6_values = np.linspace(float(c6_min), float(c6_max), int(n_points))
+
+            Lambda_float = float(Lambda_glauber)
+            phi_limit = _combined_phi_scan_limit(
+                C=float(C_float),
+                Lambda=Lambda_float,
+                f_GeV=float(f_GeV),
+                branch_safety=float(phi_scan_branch_safety),
+            )
+
+            combo_base_dir = daisy_base_dir / str(combo_label)
+
+            for c6 in c6_values:
+                c6_float = float(c6)
+
+                print("\n" + "=" * 76)
+                print("Run 07 – combined EFT68 + Gláuber c6-scan")
+                print("=" * 76)
+                print(f" combo_label   : {combo_label}")
+                print(f" c8/f^4        : {c8_float:g} TeV^-4")
+                print(f" c6/f^2        : {c6_float:g} TeV^-2")
+                print(f" C_Gláuber     : {C_float:g}")
+                print(f" Lambda        : {Lambda_float:g} GeV")
+                print(f" f             : {f_GeV:g} GeV")
+                print(f" include_daisy : {include_daisy}")
+                print(f" phi_limit     : {phi_limit:g} GeV")
+                print("=" * 76)
+
+                try:
+                    result = run_all_examples(
+                        # --------------------------------------------------
+                        # Combined model definition.
+                        # --------------------------------------------------
+                        c6_over_f2_TeV2=c6_float,
+                        c8_over_f4_TeV4=float(c8_float),
+                        f_GeV=float(f_GeV),
+                        m_h=m_h,
+                        use_glauber_measure=True,
+                        C_glauber=float(C_float),
+                        Lambda_glauber=Lambda_float,
+
+                        # --------------------------------------------------
+                        # Output.
+                        # Daisy and combination are separated by base_dir.
+                        # Automatic folder name stores c6, c8, C and Lambda.
+                        # --------------------------------------------------
+                        run_tag=None,
+                        base_dir=combo_base_dir,
+                        show=show,
+
+                        # --------------------------------------------------
+                        # Physics switches.
+                        # --------------------------------------------------
+                        include_zeroT_loops=True,
+                        include_scalar_loops=True,
+                        renormalize_zeroT_loops=True,
+                        include_thermal=True,
+                        include_scalar_thermal=True,
+                        include_daisy=bool(include_daisy),
+                        thermal_approx="spline",
+
+                        # --------------------------------------------------
+                        # Finite-temperature search.
+                        # --------------------------------------------------
+                        run_finite_temperature=True,
+                        T_min=T_min,
+                        T_max=T_max,
+                        phi_scan_range=(-10.0, phi_limit),
+                        n_phi_scan=n_phi_scan,
+                        n_T_seeds=n_T_seeds,
+                        deltaX_target=deltaX_target,
+                        phitol=phitol,
+                        overlapAngle=overlapAngle,
+                        Tn_Ttol=Tn_Ttol,
+                        Tn_maxiter=Tn_maxiter,
+                        verbose=verbose,
+
+                        # --------------------------------------------------
+                        # No plots for the scan.
+                        # --------------------------------------------------
+                        run_A2_benchmarks=False,
+                        run_D1_mean_field_map=False,
+                        make_intro_plots=False,
+                        make_transition_plots=False,
+                        make_bounce_plots=False,
+                        make_gw_plots=False,
+
+                        # --------------------------------------------------
+                        # Bounce and GW diagnostics only.
+                        # --------------------------------------------------
+                        run_bounce=True,
+                        run_gw=True,
+                        bounce_xguess=bounce_xguess,
+                        bounce_thinCutoff=bounce_thinCutoff,
+                        bounce_npoints=bounce_npoints,
+                        gw_f_min_mHz=gw_f_min_mHz,
+                        gw_f_max_mHz=gw_f_max_mHz,
+                        gw_n_freq=gw_n_freq,
+                        gw_v_w=gw_v_w,
+                        gw_epsilon_turb=gw_epsilon_turb,
+                        gw_beta_over_H_override=gw_beta_over_H_override,
+
+                        # --------------------------------------------------
+                        # Compact diagnostics.
+                        # --------------------------------------------------
+                        save_diagnostics_table=True,
+                        save_fast_diagnostics=False,
+                        save_gw_spectrum_csv=False,
+                    )
+
+                    results.append(result)
+
+                    row = _combined_scan_row_from_result(
+                        result=result,
+                        c6=c6_float,
+                        c8=float(c8_float),
+                        C=float(C_float),
+                        Lambda=Lambda_float,
+                        f_GeV=float(f_GeV),
+                        include_daisy=bool(include_daisy),
+                        phi_limit=phi_limit,
+                        scan_variable="c6_over_f2_TeV2",
+                        combo_label=combo_label,
+                    )
+
+                except Exception as err:
+                    print("[run_07] Point failed:", repr(err))
+
+                    row = _combined_scan_row_from_result(
+                        result=None,
+                        c6=c6_float,
+                        c8=float(c8_float),
+                        C=float(C_float),
+                        Lambda=Lambda_float,
+                        f_GeV=float(f_GeV),
+                        include_daisy=bool(include_daisy),
+                        phi_limit=phi_limit,
+                        scan_variable="c6_over_f2_TeV2",
+                        combo_label=combo_label,
+                        error=repr(err),
+                    )
+
+                master_rows.append(row)
+
+                # Save after every point, so an interrupted run leaves a
+                # useful partial table.
+                _write_combined_scan_master_csv(master_rows, master_csv_path)
+
+    print("\n" + "=" * 76)
+    print("Run 07 completed")
+    print("=" * 76)
+    print(f" Master CSV: {master_csv_path}")
+    print("=" * 76)
+
+    return results
 
 def run_08_combined_open_test(
     *,
@@ -4877,15 +5480,15 @@ def run_08_combined_open_test(
 def run_planned_sequence(
     *,
     show: bool = False,
-    run_00: bool = True,
-    run_01: bool = False,
-    run_02: bool = False,
-    run_03: bool = False,
-    run_04: bool = False,
-    run_05: bool = False,
-    run_06: bool = False,
-    run_07: bool = False,
-    run_08: bool = True,
+    run_00: bool = False, # Ok
+    run_01: bool = False, # Ok
+    run_02: bool = False, # Ok
+    run_03: bool = False, # Ok
+    run_04: bool = False, # Ok
+    run_05: bool = False, # Ok
+    run_06: bool = True,
+    run_07: bool = True,
+    run_08: bool = False,
     run_08_config: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """
@@ -4931,12 +5534,12 @@ def run_planned_sequence(
         )
 
     if run_06:
-        outputs["06_combined_benchmarks_DRAFT"] = run_06_combined_benchmark_grid(
+        outputs["06_combined_C_scan"] = run_06_combined_C_scan(
             show=show
         )
 
     if run_07:
-        outputs["07_combined_scan_DRAFT"] = run_07_combined_scan(
+        outputs["07_combined_c6_scan"] =  run_07_combined_c6_scan(
             show=show
         )
 
@@ -4956,18 +5559,18 @@ if __name__ == "__main__":
         run_01=False, # Ok!
         run_02=False, # Ok!
         run_03=False, # Ok!
-        run_04=True, # Ok!
-        run_05=True, # Ok!
-        run_06=False,
-        run_07=False,
-        run_08=False, # Ok!
+        run_04=False, # Ok!
+        run_05=False, # Ok!
+        run_06=False, # Maybe
+        run_07=False, # Maybe
+        run_08=False,
         run_08_config={
             "run_tag": "test",
             "c6_over_f2_TeV2": 0.0,
             "c8_over_f4_TeV4": 0.0,
             "f_GeV": 1000.0,
-            "C_glauber": 6.65,
-            "Lambda_glauber": 2000.0,
+            "C_glauber": 3.83,
+            "Lambda_glauber": 1000.0,
             "include_daisy": True,
             "Tn_Ttol": 1e-2,
             "Tn_maxiter": 160,
