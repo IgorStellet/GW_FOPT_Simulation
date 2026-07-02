@@ -1,0 +1,2436 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../example_transitionFinder/">
+      
+      
+        <link rel="next" href="../../modules/helper_functions/Miscellaneous_functions/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Gravitattional Waves & Generic Potential full examples - CosmoTransitions (modernized)</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#end-to-end-showcase-from-a-corrected-higgs-measure-to-a-gw-spectrum" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="CosmoTransitions (modernized)" class="md-header__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosmoTransitions (modernized)
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Gravitattional Waves & Generic Potential full examples
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="CosmoTransitions (modernized)" class="md-nav__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CosmoTransitions (modernized)
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap & Flowchart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples (Core modules)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples (Core modules)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../example_tunneling1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling 1D full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../example_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gravitattional Waves & Generic Potential full examples
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gravitattional Waves & Generic Potential full examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#motivation-why-this-potential-produces-a-first-order-transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Motivation: why this potential produces a first-order transition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-script-actually-does-the-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this script actually does (the pipeline)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conventions-and-key-formulas-used-in-the-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conventions and key formulas used in the example
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Conventions and key formulas used in the example">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nucleation-condition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nucleation condition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#thermal-scales" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Thermal scales
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gw-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GW variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#figures-examples-ao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Figures / Examples (A…O)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Figures / Examples (A…O)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-a-zero-temperature-comparison-across-multiple-c" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example A — Zero-temperature comparison across multiple \(C\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-b-paper-potential-and-the-branch-structure-ln1-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example B — Paper potential and the branch structure (\(\ln|1-t|\))
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-c-key-thermal-scales-t_n-t_c-and-spinodals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example C — Key thermal scales: \(T_n\), \(T_c\), and spinodals
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-d-phi_mint-and-curvature-m2t-across-the-overlap-region" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example D — \(\phi_{\min}(T)\) and curvature \(m^2(T)\) across the overlap region
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-e-free-energy-difference-delta-vt-between-phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example E — Free-energy difference \(\Delta V(T)\) between phases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-f-schematic-phase-history-along-cooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example F — Schematic phase history along cooling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-g-direct-temperature-sweep-vphit-v_rm-reft" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example G — Direct temperature sweep: \(V(\phi,T)-V_{\rm ref}(T)\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-h-potential-geometry-at-t_n-and-the-inverted-potential-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example H — Potential geometry at \(T_n\) and the inverted-potential picture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-i-near-origin-behavior-and-the-exact-small-r-solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example I — Near-origin behavior and the exact small-\(r\) solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-j-inverted-potential-path-from-phi_0-to-the-false-vacuum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example J — Inverted-potential path from \(\phi_0\) to the false vacuum
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-k-the-bounce-profile-phir-with-the-interior-region-highlighted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example K — The bounce profile \(\phi(r)\) with the interior region highlighted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-l-spherical-maps-of-the-bubble-at-t0-2d-and-3d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example L — Spherical maps of the bubble at \(t=0\) (2D and 3D)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-m-ode-term-decomposition-along-the-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example M — ODE term decomposition along the profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-n-action-diagnostics-and-beta-proxies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example N — Action diagnostics and \(\beta\) proxies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-o-gravitational-wave-spectrum-at-t_approx-t_n" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example O — Gravitational-wave spectrum at \(T_\*\approx T_n\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-to-do-next-how-i-use-this-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What to do next (how I use this file)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#appendix-quick-map-between-figures-and-filenames" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Appendix: quick map between figures and filenames
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_1" id="__nav_5_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helper Functions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Helper Functions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/helper_functions/Miscellaneous_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Miscellaneous Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/helper_functions/Numerical_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Integration Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/helper_functions/Numerical_derivatives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Derivatives Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/helper_functions/interpolation_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interpolation Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Finite Temperature (One loop corrections)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Finite Temperature (One loop corrections)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/finiteT/Exact_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/finiteT/Spline_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spline Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/finiteT/Approx_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Approx Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/finiteT/Short_Hand_Jb%26Jf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Short Hand for All Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling (1D)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tunneling (1D)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/tunneling1D/single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Field functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/tunneling1D/tests_single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of SF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Transition Finder
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/transitionFinder/transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/transitionFinder/tests_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of TF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generic Potential
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Generic Potential
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/generic_potential/generic_potential/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Potential Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_6" id="__nav_5_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gravitational Waves (new)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Gravitational Waves (new)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../modules/gravitational_Waves/gravitational_Waves/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GW's spectra Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Codes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Codes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Paper_Glauber/example_paper_GWs.py" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Paper Function measure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#motivation-why-this-potential-produces-a-first-order-transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Motivation: why this potential produces a first-order transition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-script-actually-does-the-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this script actually does (the pipeline)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conventions-and-key-formulas-used-in-the-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conventions and key formulas used in the example
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Conventions and key formulas used in the example">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#nucleation-condition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nucleation condition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#thermal-scales" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Thermal scales
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gw-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GW variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#figures-examples-ao" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Figures / Examples (A…O)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Figures / Examples (A…O)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-a-zero-temperature-comparison-across-multiple-c" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example A — Zero-temperature comparison across multiple \(C\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-b-paper-potential-and-the-branch-structure-ln1-t" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example B — Paper potential and the branch structure (\(\ln|1-t|\))
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-c-key-thermal-scales-t_n-t_c-and-spinodals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example C — Key thermal scales: \(T_n\), \(T_c\), and spinodals
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-d-phi_mint-and-curvature-m2t-across-the-overlap-region" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example D — \(\phi_{\min}(T)\) and curvature \(m^2(T)\) across the overlap region
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-e-free-energy-difference-delta-vt-between-phases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example E — Free-energy difference \(\Delta V(T)\) between phases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-f-schematic-phase-history-along-cooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example F — Schematic phase history along cooling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-g-direct-temperature-sweep-vphit-v_rm-reft" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example G — Direct temperature sweep: \(V(\phi,T)-V_{\rm ref}(T)\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-h-potential-geometry-at-t_n-and-the-inverted-potential-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example H — Potential geometry at \(T_n\) and the inverted-potential picture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-i-near-origin-behavior-and-the-exact-small-r-solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example I — Near-origin behavior and the exact small-\(r\) solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-j-inverted-potential-path-from-phi_0-to-the-false-vacuum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example J — Inverted-potential path from \(\phi_0\) to the false vacuum
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-k-the-bounce-profile-phir-with-the-interior-region-highlighted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example K — The bounce profile \(\phi(r)\) with the interior region highlighted
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-l-spherical-maps-of-the-bubble-at-t0-2d-and-3d" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example L — Spherical maps of the bubble at \(t=0\) (2D and 3D)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-m-ode-term-decomposition-along-the-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example M — ODE term decomposition along the profile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-n-action-diagnostics-and-beta-proxies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example N — Action diagnostics and \(\beta\) proxies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-o-gravitational-wave-spectrum-at-t_approx-t_n" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example O — Gravitational-wave spectrum at \(T_\*\approx T_n\)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-to-do-next-how-i-use-this-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What to do next (how I use this file)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#appendix-quick-map-between-figures-and-filenames" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Appendix: quick map between figures and filenames
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="end-to-end-showcase-from-a-corrected-higgs-measure-to-a-gw-spectrum">End-to-end showcase: from a corrected Higgs measure to a GW spectrum<a class="headerlink" href="#end-to-end-showcase-from-a-corrected-higgs-measure-to-a-gw-spectrum" title="Permanent link">&para;</a></h1>
+<p>This example is a <strong>complete pipeline</strong> that takes a concrete finite-temperature effective potential,
+builds the full <strong>thermal history</strong> (phases + transitions), finds the <strong>nucleation temperature</strong>,
+solves the <strong>bounce</strong> at <span class="arithmatex">\(T_n\)</span>, and finally computes the <strong>gravitational-wave (GW) spectrum</strong>
+generated by the first-order phase transition.</p>
+<p>The goal is not just to “run a code”, but to <strong>see every physical step</strong> in a sequence of
+clean figures (A…O), each one validating a specific piece of the story.</p>
+<p>The full script to this example can be found and run at: </p>
+<p>```bash
+python docs/examples/Paper_Glauber/example_paper_GWs.py
+````</p>
+<hr />
+<h2 id="motivation-why-this-potential-produces-a-first-order-transition">Motivation: why this potential produces a first-order transition<a class="headerlink" href="#motivation-why-this-potential-produces-a-first-order-transition" title="Permanent link">&para;</a></h2>
+<p>The potential used here is the one discussed in the paper <em><a href="https://arxiv.org/pdf/2502.09593">“Cosmological phase transitions from the functional measure”</a></em>.
+The basic idea is that a <strong>modified functional measure</strong> changes the structure of the effective potential.
+This is not a random model-building trick: it is a correction to how the functional integral is defined and regulated,
+and it modifies the effective potential by an additional term with a characteristic branch point.</p>
+<p>Concretely, the total effective potential is written schematically as
+<span class="arithmatex">\(V(\phi,T)=V_0(\phi)+\Delta V_T(\phi,T)+\Delta V_{\rm daisy}(\phi,T)\)</span>,
+where</p>
+<ul>
+<li><span class="arithmatex">\(V_0(\phi)\)</span> contains the tree-level Higgs potential plus one-loop (Coleman–Weinberg–like) corrections
+  and the <strong>functional-measure</strong> contribution;</li>
+<li><span class="arithmatex">\(\Delta V_T\)</span> is the finite-temperature contribution computed from thermal integrals;</li>
+<li><span class="arithmatex">\(\Delta V_{\rm daisy}\)</span> is an (optional) resummation term that captures leading plasma effects.</li>
+</ul>
+<p>The measure deformation introduces the combination
+<span class="arithmatex">\(t(\phi)=C\,\phi^2/\Lambda^2\)</span>,
+with a special point at
+<span class="arithmatex">\(\phi_\star=\Lambda/\sqrt{C}\)</span>,
+where the logarithm in the measure term becomes singular (and the paper discusses how to interpret the domain).</p>
+<p>The consequence is that the potential can develop a <strong>barrier</strong> between <span class="arithmatex">\(\phi=0\)</span> and <span class="arithmatex">\(\phi\sim v\)</span>,
+making the electroweak-like transition <strong>first order</strong>.</p>
+<hr />
+<h2 id="what-this-script-actually-does-the-pipeline">What this script actually does (the pipeline)<a class="headerlink" href="#what-this-script-actually-does-the-pipeline" title="Permanent link">&para;</a></h2>
+<p>This example glues together three layers of the project:</p>
+<ol>
+<li><strong>Generic finite-<span class="arithmatex">\(T\)</span> potential interface (<code>generic_potential</code>)</strong></li>
+<li>wraps a user-supplied <span class="arithmatex">\(V(\phi,T)\)</span> into the canonical <span class="arithmatex">\((X,T)\)</span> interface expected by <code>transitionFinder</code>;</li>
+<li>
+<p>builds numerical derivatives:
+     $$
+     \nabla_X V,\qquad \nabla_X^2 V,\qquad \frac{\partial V}{\partial T},\qquad
+     \frac{\partial}{\partial T}\left(\nabla_X V\right).
+     $$</p>
+</li>
+<li>
+<p><strong>Thermal history (<code>transitionFinder</code>)</strong></p>
+</li>
+<li>traces temperature-dependent minima (phases),</li>
+<li>finds critical temperatures <span class="arithmatex">\(T_c\)</span>,</li>
+<li>
+<p>searches for nucleation temperatures <span class="arithmatex">\(T_n\)</span> using a nucleation criterion.</p>
+</li>
+<li>
+<p><strong>Bounce + gravitational waves (<code>SingleFieldInstanton</code> + <code>gravitational_Waves</code>)</strong></p>
+</li>
+<li>solves the bounce at <span class="arithmatex">\(T=T_n\)</span>,</li>
+<li>extracts <span class="arithmatex">\(S_3(T_n)\)</span> and related diagnostics,</li>
+<li>computes <span class="arithmatex">\((\alpha,\beta/H_\*,R_\*H_\*)\)</span> and the GW spectrum <span class="arithmatex">\(h^2\Omega_{\rm GW}(f)\)</span>.</li>
+</ol>
+<hr />
+<h2 id="conventions-and-key-formulas-used-in-the-example">Conventions and key formulas used in the example<a class="headerlink" href="#conventions-and-key-formulas-used-in-the-example" title="Permanent link">&para;</a></h2>
+<h3 id="nucleation-condition">Nucleation condition<a class="headerlink" href="#nucleation-condition" title="Permanent link">&para;</a></h3>
+<p>By default, nucleation is taken to occur when
+$$
+\frac{S_3(T)}{T}\approx 140,
+$$
+implemented through a criterion function of the form
+$$
+\text{nuclCriterion}(S,T)=\frac{S}{T}-140.
+$$</p>
+<h3 id="thermal-scales">Thermal scales<a class="headerlink" href="#thermal-scales" title="Permanent link">&para;</a></h3>
+<ul>
+<li><span class="arithmatex">\(T_c\)</span>: the <strong>critical</strong> temperature where the two phases are degenerate:
+  $$
+  \Delta V(T_c)=V_{\rm high}(T_c)-V_{\rm low}(T_c)=0.
+  $$</li>
+<li><span class="arithmatex">\(T_n\)</span>: the <strong>nucleation</strong> temperature where tunneling becomes efficient.</li>
+<li>Spinodals: temperatures where the minimum loses stability, detected by the smallest Hessian eigenvalue
+  crossing zero:
+  $$
+  m^2(T)=\min{\rm eig}\left[\nabla^2 V(\phi_{\min}(T),T)\right]\approx 0.
+  $$</li>
+</ul>
+<h3 id="gw-variables">GW variables<a class="headerlink" href="#gw-variables" title="Permanent link">&para;</a></h3>
+<p>The GW module is fed by the transition summary and returns (at <span class="arithmatex">\(T_*\approx T_n\)</span>):
+- <span class="arithmatex">\(\alpha(T_*)\)</span>: transition strength (latent heat relative to radiation density),
+- <span class="arithmatex">\(\beta/H_*\)</span>: inverse duration of the transition in Hubble units,
+- <span class="arithmatex">\(R_*H_*\)</span>: characteristic bubble scale in Hubble units,
+- peak frequencies for the different GW sources, and the full spectrum
+  $$
+  h^2\Omega_{\rm GW}(f)=h^2\Omega_{\rm sw}(f)+h^2\Omega_{\rm turb}(f)+h^2\Omega_{\rm coll}(f).
+  $$</p>
+<hr />
+<h2 id="figures-examples-ao">Figures / Examples (A…O)<a class="headerlink" href="#figures-examples-ao" title="Permanent link">&para;</a></h2>
+<p>Below, each block corresponds to one “Example” function in the script.
+Each section explains (i) what is plotted, (ii) what physics it checks,
+and (iii) what you should learn from it.</p>
+<p>For each example, I leave a clean placeholder where you can insert the generated image later.</p>
+<hr />
+<h3 id="example-a-zero-temperature-comparison-across-multiple-c">Example A — Zero-temperature comparison across multiple <span class="arithmatex">\(C\)</span><a class="headerlink" href="#example-a-zero-temperature-comparison-across-multiple-c" title="Permanent link">&para;</a></h3>
+<p><strong>Code:</strong> <code>example_A_fig1_multiC(...)</code><br />
+<strong>Outputs:</strong> <code>figA_&lt;tag&gt;.png</code></p>
+<p>This figure plots the <strong>zero-temperature shifted potential</strong>
+$$
+V(\phi,0)-V(0,0)
+$$
+for several values of the measure parameter <span class="arithmatex">\(C\)</span>, at fixed <span class="arithmatex">\(\Lambda\)</span>.</p>
+<p><strong>Purpose:</strong>
+- show how turning on <span class="arithmatex">\(C\)</span> deforms the potential relative to the <span class="arithmatex">\(C=0\)</span> (SM-like) case;
+- highlight when a barrier structure becomes plausible already at <span class="arithmatex">\(T=0\)</span>;
+- make visible the scale <span class="arithmatex">\(\phi=v\)</span> as a reference.</p>
+<p><strong>What to look for physically:</strong>
+- the relative depth of <span class="arithmatex">\(\phi=0\)</span> and <span class="arithmatex">\(\phi=v\)</span>,
+- whether the deformation pushes the broken minimum up/down,
+- how strongly the shape changes as <span class="arithmatex">\(C\)</span> varies.</p>
+<p><strong>Insert figure here:</strong>
+- <code>figA_&lt;tag&gt;.png</code></p>
+<blockquote>
+<p><img alt="figA" src="../Paper_Glauber/results_C_3.65/figA_paper.png" /></p>
+</blockquote>
+<hr />
+<h3 id="example-b-paper-potential-and-the-branch-structure-ln1-t">Example B — Paper potential and the branch structure (<span class="arithmatex">\(\ln|1-t|\)</span>)<a class="headerlink" href="#example-b-paper-potential-and-the-branch-structure-ln1-t" title="Permanent link">&para;</a></h3>
+<p><strong>Code:</strong> <code>example_B_paper_potential_with_inset(...)</code><br />
+<strong>Outputs:</strong> <code>figB_&lt;tag&gt;.png</code></p>
+<p>This figure shows the potential with <strong>real-part continuation</strong>
+(using <span class="arithmatex">\(\ln|1-t|\)</span>),
+so you can display both sides of the logarithmic singularity.</p>
+<p>The branch point is at
+$$
+\phi_\star=\frac{\Lambda}{\sqrt{C}}.
+$$</p>
+<p><strong>Purpose:</strong>
+- make the measure-induced structure explicit;
+- show the domain where the potential is physically meaningful without continuation;
+- use the inset to zoom into the electroweak-relevant region.</p>
+<p><strong>What to look for physically:</strong>
+- where the branch point sits compared to <span class="arithmatex">\(v\)</span>,
+- whether the deformation can influence the barrier region relevant for the transition.</p>
+<blockquote>
+<p><img alt="figB" src="../Paper_Glauber/results_C_3.65/figB_paper.png" /></p>
+</blockquote>
+<hr />
+<h3 id="example-c-key-thermal-scales-t_n-t_c-and-spinodals">Example C — Key thermal scales: <span class="arithmatex">\(T_n\)</span>, <span class="arithmatex">\(T_c\)</span>, and spinodals<a class="headerlink" href="#example-c-key-thermal-scales-t_n-t_c-and-spinodals" title="Permanent link">&para;</a></h3>
+<p><strong>Code:</strong> <code>example_C_transition_summary(...)</code><br />
+<strong>Outputs:</strong> <code>figC_&lt;tag&gt;.png</code></p>
+<p>This is the first “real” finite-<span class="arithmatex">\(T\)</span> physics step.</p>
+<p>It builds phases with <code>transitionFinder</code>, identifies the main first-order transition,
+and extracts:</p>
+<ul>
+<li><span class="arithmatex">\(T_n\)</span> (nucleation),</li>
+<li><span class="arithmatex">\(T_c\)</span> (degeneracy),</li>
+<li>spinodals (loss of stability) of both phases via <span class="arithmatex">\(m^2(T)\approx 0\)</span>.</li>
+</ul>
+<p><strong>Purpose:</strong>
+- certify that the thermal history is consistent,
+- show supercooling: typically <span class="arithmatex">\(T_n&lt;T_c\)</span>,
+- bracket nucleation between instability limits whenever possible.</p>
+<p><strong>What to look for physically:</strong>
+- is <span class="arithmatex">\(T_n\)</span> finite and inside a sensible interval,
+- are there clear spinodals,
+- does the ordering <span class="arithmatex">\(T_{\rm sp}^{\rm high} \gtrsim T_c \gtrsim T_n \gtrsim T_{\rm sp}^{\rm low}\)</span> make sense for this model.</p>
+<blockquote>
+<p><img alt="figC" src="../Paper_Glauber/results_C_3.65/figC_paper.png" /></p>
+</blockquote>
+<hr />
+<h3 id="example-d-phi_mint-and-curvature-m2t-across-the-overlap-region">Example D — <span class="arithmatex">\(\phi_{\min}(T)\)</span> and curvature <span class="arithmatex">\(m^2(T)\)</span> across the overlap region<a class="headerlink" href="#example-d-phi_mint-and-curvature-m2t-across-the-overlap-region" title="Permanent link">&para;</a></h3>
+<p><strong>Code:</strong> <code>example_D_phi_min_and_mass2_vs_T(...)</code><br />
+<strong>Outputs:</strong> <code>figD_&lt;tag&gt;.png</code>, <code>figD_full_&lt;tag&gt;.png</code></p>
+<p>This example makes the two phases “visible” as functions of temperature:</p>
+<ul>
+<li>the minima locations <span class="arithmatex">\(\phi_{\min}(T)\)</span> for both phases,</li>
+<li>the smallest Hessian eigenvalue along each phase:
+  $$
+  m^2(T)=\min{\rm eig}\left[\nabla^2 V(\phi_{\min}(T),T)\right].
+  $$</li>
+</ul>
+<p><strong>Purpose:</strong>
+- show the coexistence window where both minima exist,
+- visualize stability loss (spinodal behavior),
+- verify that the transitionFinder output is not a numerical artifact.</p>
+<p><strong>What to look for physically:</strong>
+- smooth tracking of minima,
+- <span class="arithmatex">\(m^2(T)&gt;0\)</span> in stable ranges,
+- near-zero crossing at spinodals.</p>
+<blockquote>
+<p><img alt="figD" src="../Paper_Glauber/results_C_3.65/figD_paper.png" /></p>
+<p><img alt="figD" src="../Paper_Glauber/results_C_3.65/figD_full_paper.png" /></p>
+</blockquote>
+<hr />
+<h3 id="example-e-free-energy-difference-delta-vt-between-phases">Example E — Free-energy difference <span class="arithmatex">\(\Delta V(T)\)</span> between phases<a class="headerlink" href="#example-e-free-energy-difference-delta-vt-between-phases" title="Permanent link">&para;</a></h3>
+<p><strong>Code:</strong> <code>example_E_deltaV_vs_T(...)</code><br />
+<strong>Outputs:</strong> <code>figE_&lt;tag&gt;.png</code></p>
+<p>This plots
+$$
+\Delta V(T)=V_{\rm high}(T)-V_{\rm low}(T)
+$$
+evaluated at the two minima.</p>
+<p><strong>Purpose:</strong>
+- directly confirm <span class="arithmatex">\(T_c\)</span> through <span class="arithmatex">\(\Delta V(T_c)\approx 0\)</span>,
+- show metastability at nucleation: <span class="arithmatex">\(\Delta V(T_n)&gt;0\)</span> (high-<span class="arithmatex">\(T\)</span> phase still above the low-<span class="arithmatex">\(T\)</span> phase when tunneling happens).</p>
+<p><strong>What to look for physically:</strong>
+- crossing near <span class="arithmatex">\(T_c\)</span>,
+- positive <span class="arithmatex">\(\Delta V\)</span> at <span class="arithmatex">\(T_n\)</span>,
+- monotonic trends consistent with supercooling.</p>
+<blockquote>
+<p><img alt="figA" src="../Paper_Glauber/results_C_3.65/figE_paper.png" /></p>
+</blockquote>
+<hr />
+<h3 id="example-f-schematic-phase-history-along-cooling">Example F — Schematic phase history along cooling<a class="headerlink" href="#example-f-schematic-phase-history-along-cooling" title="Permanent link">&para;</a></h3>
+<p><strong>Code:</strong> <code>example_F_phase_history_map(...)</code><br />
+<strong>Outputs:</strong> <code>figF_&lt;tag&gt;.png</code></p>
+<p>This is a compact “cartoon” of the thermal history:</p>
+<ul>
+<li>temperature axis shown as <strong>cooling</strong> (high <span class="arithmatex">\(T\)</span> → low <span class="arithmatex">\(T\)</span>),</li>
+<li>colored segments indicating which Phase is realized,</li>
+<li>vertical lines at transition temperatures.</li>
+</ul>
+<p><strong>Purpose:</strong>
+- present the transition sequence in one glance,
+- sanity-check: starting phase at high <span class="arithmatex">\(T\)</span>, ending phase at low <span class="arithmatex">\(T\)</span>.</p>
+<blockquote>
+<p><img alt="figF" src="../Paper_Glauber/results_C_3.65/figF_paper.png" /></p>
+</blockquote>
+<hr />
+<h3 id="example-g-direct-temperature-sweep-vphit-v_rm-reft">Example G — Direct temperature sweep: <span class="arithmatex">\(V(\phi,T)-V_{\rm ref}(T)\)</span><a class="headerlink" href="#example-g-direct-temperature-sweep-vphit-v_rm-reft" title="Permanent link">&para;</a></h3>
+<p><strong>Code:</strong> <code>example_G_T_scan(...)</code><br />
+<strong>Outputs:</strong> <code>figG_&lt;tag&gt;.png</code></p>
+<p>This plots the <em>full potential curves</em> at selected temperatures:
+below <span class="arithmatex">\(T_n\)</span>, near spinodals, at <span class="arithmatex">\(T_n\)</span>, at <span class="arithmatex">\(T_c\)</span>, etc.</p>
+<p><strong>Purpose:</strong>
+- visually confirm the barrier evolution with <span class="arithmatex">\(T\)</span>,
+- see directly how the two minima compete,
+- connect the abstract “phase curves” to an explicit potential landscape.</p>
+<p><strong>What to look for physically:</strong>
+- appearance/disappearance of the barrier,
+- relative depths swapping near <span class="arithmatex">\(T_c\)</span>,
+- the metastable minimum persisting down to <span class="arithmatex">\(T_n\)</span>.</p>
+<blockquote>
+<p><img alt="figG" src="../Paper_Glauber/results_C_3.65/figG_paper.png" /></p>
+</blockquote>
+<hr />
+<h3 id="example-h-potential-geometry-at-t_n-and-the-inverted-potential-picture">Example H — Potential geometry at <span class="arithmatex">\(T_n\)</span> and the inverted-potential picture<a class="headerlink" href="#example-h-potential-geometry-at-t_n-and-the-inverted-potential-picture" title="Permanent link">&para;</a></h3>
+<p><strong>Code:</strong> <code>example_H_potential_geometry(...)</code><br />
+<strong>Outputs:</strong> <code>figH1_&lt;tag&gt;.png</code>, <code>figH2_&lt;tag&gt;.png</code></p>
+<p>At this point the script switches to the bounce problem at <span class="arithmatex">\(T=T_n\)</span>.</p>
+<p>This example plots:</p>
+<ol>
+<li><span class="arithmatex">\(V(\phi,T_n)\)</span> with markers: <span class="arithmatex">\(\phi_{\rm meta}\)</span>, <span class="arithmatex">\(\phi_{\rm true}\)</span>, <span class="arithmatex">\(\phi_{\rm bar}\)</span>, <span class="arithmatex">\(\phi_{\rm top}\)</span>;</li>
+<li><span class="arithmatex">\(-V(\phi,T_n)\)</span> highlighting the shooting starting point <span class="arithmatex">\(\phi_0\)</span>.</li>
+</ol>
+<p><strong>Purpose:</strong>
+- make the bounce geometry tangible:
+  tunneling is motion in the <strong>inverted potential</strong> <span class="arithmatex">\(-V\)</span>.
+- display the key points that define the barrier and scales.</p>
+<blockquote>
+<p><img alt="figH1" src="../Paper_Glauber/results_C_3.65/figH1_paper.png" /></p>
+<p><img alt="figH2" src="../Paper_Glauber/results_C_3.65/figH2_paper.png" /></p>
+</blockquote>
+<hr />
+<h3 id="example-i-near-origin-behavior-and-the-exact-small-r-solution">Example I — Near-origin behavior and the exact small-<span class="arithmatex">\(r\)</span> solution<a class="headerlink" href="#example-i-near-origin-behavior-and-the-exact-small-r-solution" title="Permanent link">&para;</a></h3>
+<p><strong>Code:</strong> <code>example_I_local_quadratic_at_phi0(...)</code><br />
+<strong>Outputs:</strong> <code>figI_&lt;tag&gt;.png</code></p>
+<p>This focuses on the <strong>regularity condition</strong> at the bubble center.
+The bounce must satisfy <span class="arithmatex">\(\phi'(0)=0\)</span> and remain smooth.</p>
+<p>The code uses the model’s local expansion machinery (<code>exactSolution</code>) to show the
+small-<span class="arithmatex">\(r\)</span> behavior around <span class="arithmatex">\(\phi_0\)</span>.</p>
+<p><strong>Purpose:</strong>
+- verify the near-origin behavior is consistent with the ODE structure,
+- check that the interior fill is not producing unphysical artifacts.</p>
+<blockquote>
+<p><img alt="figI" src="../Paper_Glauber/results_C_3.65/figI_paper.png" /></p>
+</blockquote>
+<hr />
+<h3 id="example-j-inverted-potential-path-from-phi_0-to-the-false-vacuum">Example J — Inverted-potential path from <span class="arithmatex">\(\phi_0\)</span> to the false vacuum<a class="headerlink" href="#example-j-inverted-potential-path-from-phi_0-to-the-false-vacuum" title="Permanent link">&para;</a></h3>
+<p><strong>Code:</strong> <code>example_J_inverted_path(...)</code><br />
+<strong>Outputs:</strong> <code>figJ_&lt;tag&gt;.png</code></p>
+<p>This plots <span class="arithmatex">\(-V(\phi,T_n)\)</span> and highlights the segment corresponding to the “trajectory”
+from the starting point <span class="arithmatex">\(\phi_0\)</span> toward the false vacuum.</p>
+<p><strong>Purpose:</strong>
+- reinforce the mechanical analogy:
+  the bounce is like a particle moving in <span class="arithmatex">\(-V\)</span> with friction,
+  starting near the true side and asymptoting to the false vacuum.</p>
+<blockquote>
+<p><img alt="figJ" src="../Paper_Glauber/results_C_3.65/figJ_paper.png" /></p>
+</blockquote>
+<hr />
+<h3 id="example-k-the-bounce-profile-phir-with-the-interior-region-highlighted">Example K — The bounce profile <span class="arithmatex">\(\phi(r)\)</span> with the interior region highlighted<a class="headerlink" href="#example-k-the-bounce-profile-phir-with-the-interior-region-highlighted" title="Permanent link">&para;</a></h3>
+<p><strong>Code:</strong> <code>example_K_phi_of_r(...)</code><br />
+<strong>Outputs:</strong> <code>figK_&lt;tag&gt;.png</code></p>
+<p>This plots the actual bounce solution <span class="arithmatex">\(\phi(r)\)</span> and highlights:</p>
+<ul>
+<li>the initial shooting point <span class="arithmatex">\((r_0,\phi_0)\)</span>,</li>
+<li>the interior region <span class="arithmatex">\(r\in[0,r_0]\)</span> shaded for clarity.</li>
+</ul>
+<p><strong>Purpose:</strong>
+- show the bubble interior/exterior structure directly,
+- visually confirm the profile goes from true-like inside to false-like outside.</p>
+<blockquote>
+<p><img alt="figK" src="../Paper_Glauber/results_C_3.65/figK_paper.png" /></p>
+</blockquote>
+<hr />
+<h3 id="example-l-spherical-maps-of-the-bubble-at-t0-2d-and-3d">Example L — Spherical maps of the bubble at <span class="arithmatex">\(t=0\)</span> (2D and 3D)<a class="headerlink" href="#example-l-spherical-maps-of-the-bubble-at-t0-2d-and-3d" title="Permanent link">&para;</a></h3>
+<p><strong>Code:</strong> <code>example_L_spherical_maps(...)</code><br />
+<strong>Outputs:</strong> <code>figL1_&lt;tag&gt;.png</code>, <code>figL2_&lt;tag&gt;.png</code></p>
+<p>This is the “make it real” plot:</p>
+<ul>
+<li>a 2D spatial slice <span class="arithmatex">\(\phi(x,y)\)</span> at <span class="arithmatex">\(t=0\)</span> using <span class="arithmatex">\(\phi(\rho)\)</span> with <span class="arithmatex">\(\rho=\sqrt{x^2+y^2}\)</span>,</li>
+<li>a 3D surface view of <span class="arithmatex">\(\phi(x,y)\)</span>.</li>
+</ul>
+<p><strong>Purpose:</strong>
+- show the bubble as a spatial object,
+- connect the O(3) bounce profile to an actual nucleated bubble at an initial time slice.</p>
+<blockquote>
+<p><img alt="figL1" src="../Paper_Glauber/results_C_3.65/figL1_paper.png" /></p>
+<p><img alt="figL2" src="../Paper_Glauber/results_C_3.65/figL2_paper.png" /></p>
+</blockquote>
+<hr />
+<h3 id="example-m-ode-term-decomposition-along-the-profile">Example M — ODE term decomposition along the profile<a class="headerlink" href="#example-m-ode-term-decomposition-along-the-profile" title="Permanent link">&para;</a></h3>
+<p><strong>Code:</strong> <code>example_M_ode_terms(...)</code><br />
+<strong>Outputs:</strong> <code>figM_&lt;tag&gt;.png</code></p>
+<p>The bounce equation (in the one-field O(3) case) can be written schematically as
+$$
+\phi''(r)+\frac{\alpha}{r}\phi'(r)=\frac{dV}{d\phi}.
+$$</p>
+<p>This example plots, as functions of <span class="arithmatex">\(r\)</span>:</p>
+<ul>
+<li><span class="arithmatex">\(\phi''(r)\)</span> (acceleration),</li>
+<li><span class="arithmatex">\((\alpha/r)\phi'(r)\)</span> (friction),</li>
+<li><span class="arithmatex">\(V'(\phi(r))\)</span> (force),</li>
+</ul>
+<p>and overlays <span class="arithmatex">\(V(\phi(r))\)</span> on a secondary axis.</p>
+<p><strong>Purpose:</strong>
+- show explicitly where friction dominates,
+- show where the force term drives the field motion,
+- make the ODE mechanics transparent.</p>
+<blockquote>
+<p><img alt="figM" src="../Paper_Glauber/results_C_3.65/figM_paper.png" /></p>
+</blockquote>
+<hr />
+<h3 id="example-n-action-diagnostics-and-beta-proxies">Example N — Action diagnostics and <span class="arithmatex">\(\beta\)</span> proxies<a class="headerlink" href="#example-n-action-diagnostics-and-beta-proxies" title="Permanent link">&para;</a></h3>
+<p><strong>Code:</strong> <code>example_N_action_and_beta(...)</code><br />
+<strong>Outputs:</strong> <code>figN_&lt;tag&gt;.png</code></p>
+<p>This example prints the full action and its decomposition:</p>
+<p>$$
+S_{\rm total}=S_{\rm kin}+S_{\rm pot}+S_{\rm interior},
+$$
+and displays:</p>
+<ul>
+<li>action density components versus <span class="arithmatex">\(r\)</span>,</li>
+<li>cumulative action <span class="arithmatex">\(S(r)\)</span> building up to <span class="arithmatex">\(S_{\rm total}\)</span>.</li>
+</ul>
+<p>It also prints <span class="arithmatex">\(\beta_{\rm eff}\)</span> proxies from different geometric diagnostics.</p>
+<p><strong>Purpose:</strong>
+- verify numerically that the action bookkeeping is consistent,
+- see where the action accumulates (wall vs interior),
+- extract rough time scale proxies before going to the full GW step.</p>
+<blockquote>
+<p><img alt="figN" src="../Paper_Glauber/results_C_3.65/figN_paper.png" /></p>
+</blockquote>
+<hr />
+<h3 id="example-o-gravitational-wave-spectrum-at-t_approx-t_n">Example O — Gravitational-wave spectrum at <span class="arithmatex">\(T_\*\approx T_n\)</span><a class="headerlink" href="#example-o-gravitational-wave-spectrum-at-t_approx-t_n" title="Permanent link">&para;</a></h3>
+<p><strong>Code:</strong> <code>example_O_gravitational_wave_spectrum(...)</code><br />
+<strong>Outputs:</strong> <code>figO1_&lt;tag&gt;.png</code>, <code>figO2_&lt;tag&gt;.png</code></p>
+<p>This is the final payoff.</p>
+<p>Using the transition summary, the code builds a <code>GravitationalWaveCalculator</code>,
+extracts the key parameters at <span class="arithmatex">\(T_\*\approx T_n\)</span>:</p>
+<ul>
+<li><span class="arithmatex">\(T_*\)</span>,</li>
+<li><span class="arithmatex">\(\alpha(T_*)\)</span>,</li>
+<li><span class="arithmatex">\(\beta/H_*\)</span>,</li>
+<li><span class="arithmatex">\(R_*H_*\)</span>,</li>
+<li>peak frequencies (sound waves, turbulence, collisions),</li>
+</ul>
+<p>and computes
+$$
+h^2\Omega_{\rm GW}(f)
+$$
+over a wide frequency range, plotting:</p>
+<ol>
+<li>components + total,</li>
+<li>total only, with peak-frequency markers and detector sensitivity curves.</li>
+</ol>
+<p><strong>Purpose:</strong>
+- connect the microphysics (effective potential + bounce) to an observable,
+- see whether the signal sits near the LISA/DECIGO/BBO sensitivity windows,
+- build intuition for how <span class="arithmatex">\((\alpha,\beta/H_*)\)</span> shape the spectrum.</p>
+<p><strong>Insert figures here:</strong>
+- <code>figO1_&lt;tag&gt;.png</code>
+- <code>figO2_&lt;tag&gt;.png</code></p>
+<blockquote>
+<p><img alt="figO1" src="../Paper_Glauber/results_C_3.65/figO1_paper.png" /></p>
+<p><img alt="figO2" src="../Paper_Glauber/results_C_3.65/figO2_paper.png" /></p>
+</blockquote>
+<hr />
+<h2 id="what-to-do-next-how-i-use-this-file">What to do next (how I use this file)<a class="headerlink" href="#what-to-do-next-how-i-use-this-file" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Run the script for a given <span class="arithmatex">\((C,\Lambda)\)</span> and save figures in <code>results_C_&lt;C&gt;/</code>.</li>
+<li>Insert each <code>figX_&lt;tag&gt;.png</code> into the placeholders above.</li>
+<li>Optionally append a short “Results table” section by pasting the JSON diagnostics summary
+   (the script already saves <code>diagnostics_summary_C_&lt;C&gt;.json</code>).</li>
+</ol>
+<hr />
+<h2 id="appendix-quick-map-between-figures-and-filenames">Appendix: quick map between figures and filenames<a class="headerlink" href="#appendix-quick-map-between-figures-and-filenames" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A → <code>figA_&lt;tag&gt;.png</code></li>
+<li>B → <code>figB_&lt;tag&gt;.png</code></li>
+<li>C → <code>figC_&lt;tag&gt;.png</code></li>
+<li>D → <code>figD_&lt;tag&gt;.png</code>, <code>figD_full_&lt;tag&gt;.png</code></li>
+<li>E → <code>figE_&lt;tag&gt;.png</code></li>
+<li>F → <code>figF_&lt;tag&gt;.png</code></li>
+<li>G → <code>figG_&lt;tag&gt;.png</code></li>
+<li>H → <code>figH1_&lt;tag&gt;.png</code>, <code>figH2_&lt;tag&gt;.png</code></li>
+<li>I → <code>figI_&lt;tag&gt;.png</code></li>
+<li>J → <code>figJ_&lt;tag&gt;.png</code></li>
+<li>K → <code>figK_&lt;tag&gt;.png</code></li>
+<li>L → <code>figL1_&lt;tag&gt;.png</code>, <code>figL2_&lt;tag&gt;.png</code></li>
+<li>M → <code>figM_&lt;tag&gt;.png</code></li>
+<li>N → <code>figN_&lt;tag&gt;.png</code></li>
+<li>O → <code>figO1_&lt;tag&gt;.png</code>, <code>figO2_&lt;tag&gt;.png</code></li>
+</ul>
+<p>Figure with some different values of C's:</p>
+<blockquote>
+<p><img alt="figO2" src="../Paper_Glauber/results/fig_GW_multiC_LISA_DECIGO_BBO_PIS_s_channel_mHz.png" /></p>
+</blockquote>
+<hr />
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/mathjax-config.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

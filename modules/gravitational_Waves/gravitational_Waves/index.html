@@ -1,0 +1,2696 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../../generic_potential/generic_potential/">
+      
+      
+        <link rel="next" href="../../../examples/Paper_Glauber/example_paper_GWs.py">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>GW's spectra Functions - CosmoTransitions (modernized)</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#gravitational_waves" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-header__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            CosmoTransitions (modernized)
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              GW's spectra Functions
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to light"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to dark"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="CosmoTransitions (modernized)" class="md-nav__button md-logo" aria-label="CosmoTransitions (modernized)" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    CosmoTransitions (modernized)
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap & Flowchart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples (Core modules)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples (Core modules)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_tunneling1D/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling 1D full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder full example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/example_paper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gravitattional Waves & Generic Potential full examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modules
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Modules
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_1" id="__nav_5_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helper Functions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Helper Functions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Miscellaneous_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Miscellaneous Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Numerical_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Integration Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/Numerical_derivatives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Numerical Derivatives Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../helper_functions/interpolation_functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interpolation Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Finite Temperature (One loop corrections)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Finite Temperature (One loop corrections)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Exact_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exact Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Spline_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spline Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Approx_Thermal_Integrals/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Approx Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../finiteT/Short_Hand_Jb%26Jf/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Short Hand for All Thermal Integrals
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tunneling (1D)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tunneling (1D)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tunneling1D/single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Field functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tunneling1D/tests_single_field/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of SF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Finder
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Transition Finder
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../transitionFinder/transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transition Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../transitionFinder/tests_transitionFinder/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tests of TF functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Generic Potential
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Generic Potential
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../generic_potential/generic_potential/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Potential Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_6" id="__nav_5_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gravitational Waves (new)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Gravitational Waves (new)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GW's spectra Functions
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GW's spectra Functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-what-problem-this-module-solves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1) What problem this module solves
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-public-api-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2) Public API overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-stateful-engine-gravitationalwavecalculator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3) The stateful engine: GravitationalWaveCalculator
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3) The stateful engine: GravitationalWaveCalculator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-conceptual-role" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1. Conceptual role
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-construction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2. Construction
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-bubble-size-proxy-r_h_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6) Bubble size proxy: (R_H_)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6) Bubble size proxy: (R_H_)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-bubble_radius_over_hbeta_over_h-v_w10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1. bubble_radius_over_H(beta_over_H, v_w=1.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-nucleation-rate-gammat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7) Nucleation rate \(\Gamma(T)\)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7) Nucleation rate \(\Gamma(T)\)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-nucleation_ratet-a_scale10-use_linde_prefactortrue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1. nucleation_rate(T, *, A_scale=1.0, use_linde_prefactor=True)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7.1. nucleation_rate(T, *, A_scale=1.0, use_linde_prefactor=True)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-gw-spectra-sound-waves-turbulence-collisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8) GW spectra (sound waves, turbulence, collisions)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8) GW spectra (sound waves, turbulence, collisions)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-sound-waves-omega_sw_h2f" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1. Sound waves: omega_sw_h2(f, ...)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-turbulence-omega_turb_h2f" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2. Turbulence: omega_turb_h2(f, ...)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-bubble-collisions-envelope-omega_coll_h2f" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3. Bubble collisions (envelope): omega_coll_h2(f, ...)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84-total-spectrum-omega_total_h2f" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4. Total spectrum: omega_total_h2(f, ...)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-stateless-spectrum-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9) Stateless spectrum helpers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9) Stateless spectrum helpers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exported-stateless-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exported stateless helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-detector-sensitivity-curves-pis-s-channel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10) Detector sensitivity curves (PIS, s-channel)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10) Detector sensitivity curves (PIS, s-channel)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-what-these-functions-return" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1. What these functions return
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-frequency-convention-do-not-mix-this-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2. Frequency convention (do not mix this up)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-implementation-helper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3. Implementation helper
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-units-and-sanity-checks-my-save-your-future-self-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11) Units and sanity checks (my “save your future self” section)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11) Units and sanity checks (my “save your future self” section)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#practical-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Practical rule
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#another-implementation-note-same-spirit-as-the-alpha-comment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Another implementation note (same spirit as the \(\alpha\) comment)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-minimal-usage-sketch-end-to-end-logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12) Minimal usage sketch (end-to-end logic)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-known-limitations-by-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13) Known limitations (by design)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-function-by-function-index" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14) Function-by-function index
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="14) Function-by-function index">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#class-gravitationalwavecalculator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Class: GravitationalWaveCalculator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stateless-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stateless helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sensitivity-curves-pis-s-channel-arxiv200204615" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sensitivity curves (PIS, s-channel; arXiv:2002.04615)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Codes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Codes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/Paper_Glauber/example_paper_GWs.py" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Paper Function measure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-what-problem-this-module-solves" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1) What problem this module solves
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-public-api-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2) Public API overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-stateful-engine-gravitationalwavecalculator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3) The stateful engine: GravitationalWaveCalculator
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3) The stateful engine: GravitationalWaveCalculator">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-conceptual-role" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1. Conceptual role
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-construction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2. Construction
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-bubble-size-proxy-r_h_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6) Bubble size proxy: (R_H_)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6) Bubble size proxy: (R_H_)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-bubble_radius_over_hbeta_over_h-v_w10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1. bubble_radius_over_H(beta_over_H, v_w=1.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-nucleation-rate-gammat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7) Nucleation rate \(\Gamma(T)\)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7) Nucleation rate \(\Gamma(T)\)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#71-nucleation_ratet-a_scale10-use_linde_prefactortrue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7.1. nucleation_rate(T, *, A_scale=1.0, use_linde_prefactor=True)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7.1. nucleation_rate(T, *, A_scale=1.0, use_linde_prefactor=True)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#returns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Returns
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-gw-spectra-sound-waves-turbulence-collisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8) GW spectra (sound waves, turbulence, collisions)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8) GW spectra (sound waves, turbulence, collisions)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-sound-waves-omega_sw_h2f" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1. Sound waves: omega_sw_h2(f, ...)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82-turbulence-omega_turb_h2f" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2. Turbulence: omega_turb_h2(f, ...)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83-bubble-collisions-envelope-omega_coll_h2f" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3. Bubble collisions (envelope): omega_coll_h2(f, ...)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#84-total-spectrum-omega_total_h2f" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.4. Total spectrum: omega_total_h2(f, ...)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-stateless-spectrum-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9) Stateless spectrum helpers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9) Stateless spectrum helpers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exported-stateless-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exported stateless helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-detector-sensitivity-curves-pis-s-channel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10) Detector sensitivity curves (PIS, s-channel)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10) Detector sensitivity curves (PIS, s-channel)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-what-these-functions-return" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1. What these functions return
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-frequency-convention-do-not-mix-this-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2. Frequency convention (do not mix this up)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#103-implementation-helper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.3. Implementation helper
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11-units-and-sanity-checks-my-save-your-future-self-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11) Units and sanity checks (my “save your future self” section)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11) Units and sanity checks (my “save your future self” section)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#practical-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Practical rule
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#another-implementation-note-same-spirit-as-the-alpha-comment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Another implementation note (same spirit as the \(\alpha\) comment)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12-minimal-usage-sketch-end-to-end-logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12) Minimal usage sketch (end-to-end logic)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13-known-limitations-by-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13) Known limitations (by design)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#14-function-by-function-index" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        14) Function-by-function index
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="14) Function-by-function index">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#class-gravitationalwavecalculator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Class: GravitationalWaveCalculator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stateless-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stateless helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sensitivity-curves-pis-s-channel-arxiv200204615" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sensitivity curves (PIS, s-channel; arXiv:2002.04615)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="gravitational_waves"><code>gravitational_Waves</code><a class="headerlink" href="#gravitational_waves" title="Permanent link">&para;</a></h1>
+<p>High-level helpers to extract <strong>thermodynamic parameters</strong> relevant for <strong>gravitational-wave (GW)</strong> production from <strong>finite-temperature first-order phase transitions</strong>.</p>
+<p>This module is designed to sit <em>on top</em> of the core CosmoTransitions workflow:</p>
+<ul>
+<li><code>transitionFinder</code> builds the <strong>thermal phase structure</strong> (minima traced as a function of temperature);</li>
+<li><code>tunneling1D</code> / the unified backend inside <code>transitionFinder</code> computes the <strong>bounce</strong> and its action;</li>
+<li><strong>this module</strong> turns that into the numbers you actually plot in a GW paper:</li>
+<li>the slope $ d/dT [S_3(T)/T] $ and therefore <span class="arithmatex">\(\beta/H_*\)</span>,</li>
+<li>the strength parameter <span class="arithmatex">\(\alpha\)</span>,</li>
+<li><span class="arithmatex">\(R_* H_*\)</span> (characteristic bubble size in Hubble units),</li>
+<li>and the <strong>phenomenological GW spectra</strong> <span class="arithmatex">\(h^2\Omega(f)\)</span> (sound waves, turbulence, collisions).</li>
+</ul>
+<p>It also includes <strong>detector sensitivity fits</strong> (PIS, s-channel) from <a href="arXiv:2002.04615">arXiv:2002.04615</a> for LISA / DECIGO / BBO.</p>
+<hr />
+<h2 id="1-what-problem-this-module-solves">1) What problem this module solves<a class="headerlink" href="#1-what-problem-this-module-solves" title="Permanent link">&para;</a></h2>
+<p>In a thermal first-order transition, the key dynamical input is the <strong>thermal bounce action</strong></p>
+<p>$$
+S_3(T) \quad \Rightarrow \quad \frac{S_3(T)}{T},
+$$
+because the tunneling probability is exponentially sensitive to <span class="arithmatex">\(S_3/T\)</span>.</p>
+<p>A common “minimal GW forecast pipeline” is:</p>
+<ol>
+<li>find a temperature <span class="arithmatex">\(T_n\)</span> (nucleation) or <span class="arithmatex">\(T_*\)</span> (production/percolation);</li>
+<li>evaluate:</li>
+<li>$ \alpha(T_*) $ from the free-energy difference,</li>
+<li>$\beta/H_<em>(T_</em>) $ from the slope of <span class="arithmatex">\(S_3/T\)</span>,</li>
+<li><span class="arithmatex">\(R_*H_* \sim (8\pi)^{1/3} v_w/(\beta/H_*)\)</span>;</li>
+<li>plug those into GW fitting functions to get
+$$
+h^2\Omega_{\rm sw}(f),\quad h^2\Omega_{\rm turb}(f),\quad h^2\Omega_{\rm coll}(f),
+$$
+and compare to detector sensitivities.</li>
+</ol>
+<p>This module implements exactly that, with a clean separation between:</p>
+<ul>
+<li><strong>stateful</strong> computations (you <em>have phases and a potential</em> → compute <span class="arithmatex">\(S_3\)</span>, <span class="arithmatex">\(\alpha\)</span>, <span class="arithmatex">\(\beta/H_*\)</span>);</li>
+<li><strong>stateless</strong> spectra (you <em>already have <span class="arithmatex">\(\alpha,\beta/H_*,T_*,g_*,v_w\)</span></em> → compute spectra).</li>
+</ul>
+<hr />
+<h2 id="2-public-api-overview">2) Public API overview<a class="headerlink" href="#2-public-api-overview" title="Permanent link">&para;</a></h2>
+<p>Exported symbols:</p>
+<ul>
+<li><strong>Class</strong></li>
+<li>
+<p><code>GravitationalWaveCalculator</code></p>
+</li>
+<li>
+<p><strong>Stateless spectral helpers</strong></p>
+</li>
+<li><code>gw_f_sw_peak</code>, <code>gw_omega_sw_h2</code></li>
+<li><code>gw_h_star_Hz</code>, <code>gw_f_turb_peak</code>, <code>gw_omega_turb_h2</code></li>
+<li><code>gw_f_coll_peak</code>, <code>gw_omega_coll_h2</code></li>
+<li>
+<p><code>gw_omega_total_h2</code></p>
+</li>
+<li>
+<p><strong>Detector sensitivity fits</strong> (<a href="">arXiv:2002.04615</a>, PIS, s-channel)</p>
+</li>
+<li><code>lisa_sensitivity_s_pis</code></li>
+<li><code>decigo_sensitivity_s_pis</code></li>
+<li><code>bbo_sensitivity_s_pis</code></li>
+</ul>
+<hr />
+<h2 id="3-the-stateful-engine-gravitationalwavecalculator">3) The stateful engine: <code>GravitationalWaveCalculator</code><a class="headerlink" href="#3-the-stateful-engine-gravitationalwavecalculator" title="Permanent link">&para;</a></h2>
+<h3 id="31-conceptual-role">3.1. Conceptual role<a class="headerlink" href="#31-conceptual-role" title="Permanent link">&para;</a></h3>
+<p><code>GravitationalWaveCalculator</code> assumes you already built the phase structure with <code>transitionFinder</code>:</p>
+<ul>
+<li>you have a mapping <code>phases[key] -&gt; Phase</code>,</li>
+<li>each <code>Phase</code> contains splines for the minimum $ \phi_{\min}(T) $,</li>
+<li>and you choose which phase is “high-T/metastable” and which is “low-T/stable”.</li>
+</ul>
+<p>Then the class can do two essential jobs:</p>
+<ol>
+<li><strong>Compute</strong> <span class="arithmatex">\(S_3(T)\)</span> by calling the unified tunneling backend (<code>transitionFinder._solve_bounce</code>) between the two minima at that temperature.</li>
+<li>Differentiate <span class="arithmatex">\(S_3(T)/T\)</span> in <span class="arithmatex">\(T\)</span> using a robust finite-difference stencil, giving you $ \beta/H_* $.</li>
+</ol>
+<p>Once you have <span class="arithmatex">\(\alpha\)</span> and <span class="arithmatex">\(\beta/H_*\)</span>, the same instance can generate GW spectra (sound waves, turbulence, envelope collisions) using standard fits.</p>
+<hr />
+<h3 id="32-construction">3.2. Construction<a class="headerlink" href="#32-construction" title="Permanent link">&para;</a></h3>
+<p><strong>Signature</strong>
+<div class="highlight"><pre><span></span><code>GravitationalWaveCalculator(
+    V, dV, dVdT,
+    phases,
+    high_phase_key, low_phase_key,
+    *,
+    fullTunneling_params=None,
+)
+````
+
+#### Parameters
+
+* `V(x, T) -&gt; float`
+  Finite-temperature effective potential. Here it is treated as a **Helmholtz free-energy density**.
+
+* `dV(x, T) -&gt; ndarray`
+  Field-gradient $\partial V/\partial \phi_i$. Same shape as `x`.
+
+* `dVdT(x, T) -&gt; float`
+  Temperature derivative $\partial V/\partial T$ evaluated at the field point `x`.
+  This is only required if you want to compute `alpha()`.
+
+* `phases: Mapping[key, Phase]`
+  Output from `transitionFinder.traceMultiMin` (or equivalent pipeline).
+
+* `high_phase_key`, `low_phase_key`
+  Keys selecting the metastable high-T phase and stable low-T phase.
+
+* `fullTunneling_params: dict`
+  Passed through to `transitionFinder._solve_bounce` (e.g. backend options, tolerances).
+
+#### Notes
+
+* The class **pre-computes the overlapping temperature interval** where both phases exist.
+* A small internal cache stores computed values of $S_3(T)$ to avoid recomputing at repeated stencil points.
+
+---
+
+### 3.3. Internal: common temperature range
+
+The calculator enforces that both phases are defined at the temperature where you evaluate anything:
+
+* Let `Th = high_phase.T`, `Tl = low_phase.T`.
+  The overlap is:
+  $$
+  T_{\min}=\max(Th[0],Tl[0]),\quad
+  T_{\max}=\min(Th[-1],Tl[-1]).
+  $$
+* Any evaluation outside ([T_{\min},T_{\max}]) raises a `ValueError`.
+
+This is not pedantry: many numerical failures people attribute to “bounce instability”
+are just “you asked for tunneling at a temperature where one minimum doesn’t exist.”
+
+---
+
+## 4) Thermodynamic derivatives and (\beta/H_*)
+
+### 4.1. `dS_dT(T, dT)`
+
+Fourth-order central finite-difference estimate of
+$$
+\frac{d}{dT}\left[\frac{S_3(T)}{T}\right].
+$$
+
+It uses the standard 5-point stencil:
+
+$$ \left.\frac{d}{dT}\left[\frac{S_3}{T}\right]\right|_{T}
+\approx
+\frac{
+\frac{S_3(T - 2\Delta T)}{T - 2\Delta T} - 8\frac{S_3(T - \Delta T)}{T - \Delta T} + 8\frac{S_3(T + \Delta T)}{T + \Delta T} - \frac{S_3(T + 2\Delta T)}{T + 2\Delta T}
+  }{12\Delta T}.$$
+
+**Why fourth-order?**
+Because $S_3/T$ can be steep in the interesting region, and low-order derivatives
+will inject fake “features” into $\beta/H_*$ (which you’ll then mistakenly interpret
+as physics).
+
+#### Raises
+
+* `ValueError` if `dT &lt;= 0` or if any stencil temperature leaves $[T_{\min},T_{\max}]$
+* `RuntimeError` if the bounce action cannot be computed at any stencil point
+
+---
+
+### 4.2. `beta_over_H(Tn, dT, *, H=None)`
+
+Estimate:
+$$
+\frac{\beta}{H_*}\simeq
+T_n\left.\frac{d}{dT}\left[\frac{S_3(T)}{T}\right]\right|_{T=T_n}.
+$$
+
+This is the standard approximation under radiation-dominated cooling
+(and identifying the dominant time dependence of the nucleation rate with the
+temperature dependence of $S_3/T$).
+
+* If you pass `H`, the method additionally returns $\beta = (\beta/H_*)H_*$.
+
+#### Returns
+
+* `float` if `H is None`
+* `(beta_over_H, beta)` if `H` is provided
+
+#### Raises
+
+* `ValueError` if `H &lt;= 0`
+* plus anything raised by `dS_dT`
+
+---
+
+## 5) Strength parameter (\alpha)
+
+### 5.1. `alpha(T, g_star, *, return_delta_rho=False)`
+
+This implements the common thermodynamic definition:
+
+Treat (V(\phi,T)) as the **free-energy density** (F(\phi,T)).
+Then the energy density is
+$$
+\rho(\phi,T)=F(\phi,T)-T\frac{\partial F(\phi,T)}{\partial T}.
+$$
+Define the released energy density as the difference between the phases:
+$$
+\Delta\rho(T)=\rho_{\rm low}(T)-\rho_{\rm high}(T),
+$$
+and normalize to the radiation energy density
+$$
+\rho_{\rm rad}(T)=\frac{\pi^2}{30}g_*T^4,\qquad
+\alpha(T)=\frac{\Delta\rho(T)}{\rho_{\rm rad}(T)}.
+$$
+
+#### Parameters
+
+* `T`: temperature (typically $T_n$ or $T_*$)
+* `g_star`: effective relativistic d.o.f. at that temperature
+* `return_delta_rho`: if `True`, return `(alpha, delta_rho)`
+
+#### Raises
+
+* `ValueError` if `g_star &lt;= 0` or `T` outside the overlap interval
+* `AttributeError` if the instance was constructed without `dVdT`
+
+#### Important implementation note (read this once)
+
+The current implementation computes
+
+```text
+rho = V - (1/4) * T * dVdT
+</code></pre></div></p>
+<p>instead of
+<span class="arithmatex">\(\rho = V - T\partial_T V\)</span>.</p>
+<p>That <strong>extra factor (1/4)</strong> is not the standard textbook definition.
+If this factor is intentional in your convention (e.g. you are using a specific
+normalization of the thermal piece), document it consistently across the project.
+If it is not intentional, this is exactly the type of “small constant” that can
+silently shift (\alpha) by an (\mathcal{O}(1)) factor and mislead you later.
+(For the MD file: I’m flagging it as a convention-sensitive point so it doesn’t
+get buried.)</p>
+<hr />
+<h2 id="6-bubble-size-proxy-r_h_">6) Bubble size proxy: (R_<em>H_</em>)<a class="headerlink" href="#6-bubble-size-proxy-r_h_" title="Permanent link">&para;</a></h2>
+<h3 id="61-bubble_radius_over_hbeta_over_h-v_w10">6.1. <code>bubble_radius_over_H(beta_over_H, v_w=1.0)</code><a class="headerlink" href="#61-bubble_radius_over_hbeta_over_h-v_w10" title="Permanent link">&para;</a></h3>
+<p>Defines
+$$
+R_<em> \simeq \frac{(8\pi)^{1/3}v_w}{\beta}
+\quad\Rightarrow\quad
+R_</em>H_<em> \simeq \frac{(8\pi)^{1/3}v_w}{\beta/H_</em>}.
+$$</p>
+<p>Returns the <strong>dimensionless</strong> <span class="arithmatex">\(R_*H_*\)</span>.</p>
+<hr />
+<h2 id="7-nucleation-rate-gammat">7) Nucleation rate <span class="arithmatex">\(\Gamma(T)\)</span><a class="headerlink" href="#7-nucleation-rate-gammat" title="Permanent link">&para;</a></h2>
+<h3 id="71-nucleation_ratet-a_scale10-use_linde_prefactortrue">7.1. <code>nucleation_rate(T, *, A_scale=1.0, use_linde_prefactor=True)</code><a class="headerlink" href="#71-nucleation_ratet-a_scale10-use_linde_prefactortrue" title="Permanent link">&para;</a></h3>
+<p>Implements the semiclassical O(3) thermal rate:
+$$
+\Gamma(T)\simeq A(T)e^{-S_3(T)/T}.
+$$</p>
+<p>By default it uses the Linde prefactor:
+$$
+A_{\rm Linde}(T)\approx
+\left[\frac{S_3(T)}{2\pi T}\right]^{3/2}T^4.
+$$</p>
+<p>Alternatively, you can choose a simpler <span class="arithmatex">\(A(T)\approx A_{\rm scale}T^4\)</span>.</p>
+<h4 id="returns">Returns<a class="headerlink" href="#returns" title="Permanent link">&para;</a></h4>
+<ul>
+<li><span class="arithmatex">\(\Gamma(T)\)</span> in natural units (if (T) is GeV, this is typically GeV(^4))</li>
+</ul>
+<hr />
+<h2 id="8-gw-spectra-sound-waves-turbulence-collisions">8) GW spectra (sound waves, turbulence, collisions)<a class="headerlink" href="#8-gw-spectra-sound-waves-turbulence-collisions" title="Permanent link">&para;</a></h2>
+<p>The model here is intentionally “phenomenology-first”:
+you feed in <span class="arithmatex">\(\alpha, \beta/H_*, T_*, g_*, v_w\)</span>, and you get <span class="arithmatex">\(h^2\Omega(f)\)</span>.</p>
+<h3 id="81-sound-waves-omega_sw_h2f">8.1. Sound waves: <code>omega_sw_h2(f, ...)</code><a class="headerlink" href="#81-sound-waves-omega_sw_h2f" title="Permanent link">&para;</a></h3>
+<p>Uses the common fit:
+$$
+h^2\Omega_{\rm sw}(f)=
+h^2\Omega^{\rm peak}<em>{\rm sw},S</em>{\rm sw}(f),
+$$
+with
+$$
+h^2\Omega^{\rm peak}<em>{\rm sw}\propto
+\frac{v_w}{\beta/H</em><em>}
+\left(\frac{\kappa_{\rm sw}\alpha}{1+\alpha}\right)^2
+\left(\frac{100}{g_</em>}\right)^{1/3}
+Y_{\rm sup}.
+$$</p>
+<ul>
+<li>If <code>kappa_sw</code> is not provided, it uses a standard fit <span class="arithmatex">\(\kappa_{\rm sw}(\alpha)\)</span>.</li>
+<li>If <code>y_sup</code> is not provided, it estimates a suppression based on a fluid RMS velocity proxy.</li>
+</ul>
+<h3 id="82-turbulence-omega_turb_h2f">8.2. Turbulence: <code>omega_turb_h2(f, ...)</code><a class="headerlink" href="#82-turbulence-omega_turb_h2f" title="Permanent link">&para;</a></h3>
+<p>Implements a standard turbulent fit:
+$$
+h^2\Omega_{\rm turb}(f)=
+h^2\Omega^{\rm peak}<em>{\rm turb},S</em>{\rm turb}(f),
+$$
+with the extra <span class="arithmatex">\(h_*\)</span> scale (redshifted Hubble frequency at the transition).</p>
+<p><code>kappa_turb</code> can be specified directly, or built as
+<span class="arithmatex">\(\kappa_{\rm turb}=\epsilon\kappa_{\rm sw}\)</span>.
+(Just keep in mind: turbulence modeling is the least controlled piece of this pipeline.)</p>
+<h3 id="83-bubble-collisions-envelope-omega_coll_h2f">8.3. Bubble collisions (envelope): <code>omega_coll_h2(f, ...)</code><a class="headerlink" href="#83-bubble-collisions-envelope-omega_coll_h2f" title="Permanent link">&para;</a></h3>
+<p>Implements the scalar-field “envelope approximation” component.</p>
+<p>Default behavior:</p>
+<ul>
+<li><code>kappa_coll = 0.0</code> unless specified (appropriate for <strong>non-runaway</strong> walls).</li>
+</ul>
+<p>This is deliberate: in most thermal transitions, sound waves dominate;
+collisions only compete in runaway or very specific regimes.</p>
+<h3 id="84-total-spectrum-omega_total_h2f">8.4. Total spectrum: <code>omega_total_h2(f, ...)</code><a class="headerlink" href="#84-total-spectrum-omega_total_h2f" title="Permanent link">&para;</a></h3>
+<p>Convenience wrapper returning a dict:</p>
+<div class="highlight"><pre><span></span><code>{
+  &quot;sw&quot;: ...,
+  &quot;turb&quot;: ...,
+  &quot;coll&quot;: ...,
+  &quot;total&quot;: sw + turb + coll,
+}
+</code></pre></div>
+<p>You can toggle any component with <code>include_sw/include_turb/include_coll</code>.</p>
+<hr />
+<h2 id="9-stateless-spectrum-helpers">9) Stateless spectrum helpers<a class="headerlink" href="#9-stateless-spectrum-helpers" title="Permanent link">&para;</a></h2>
+<p>The <code>gw_*</code> functions reproduce the class spectrum methods but do <strong>not</strong> require
+a <code>GravitationalWaveCalculator</code> instance.</p>
+<p>Use these when:</p>
+<ul>
+<li>you already computed <span class="arithmatex">\(\alpha\)</span> and <span class="arithmatex">\(\beta/H_*\)</span> elsewhere,</li>
+<li>you are scanning a parameter space and want a fast spectrum call,</li>
+<li>you are validating the implementation by comparing class vs stateless output.</li>
+</ul>
+<h3 id="exported-stateless-helpers">Exported stateless helpers<a class="headerlink" href="#exported-stateless-helpers" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p>Peaks:</p>
+</li>
+<li>
+<p><code>gw_f_sw_peak(beta_over_H, T_star, g_star, v_w)</code></p>
+</li>
+<li><code>gw_h_star_Hz(T_star, g_star)</code></li>
+<li><code>gw_f_turb_peak(beta_over_H, T_star, g_star, v_w)</code></li>
+<li>
+<p><code>gw_f_coll_peak(beta_over_H, T_star, g_star, v_w)</code></p>
+</li>
+<li>
+<p>Spectra:</p>
+</li>
+<li>
+<p><code>gw_omega_sw_h2(f, *, alpha, beta_over_H, T_star, g_star, v_w, ...)</code></p>
+</li>
+<li><code>gw_omega_turb_h2(f, *, alpha, beta_over_H, T_star, g_star, v_w, ...)</code></li>
+<li><code>gw_omega_coll_h2(f, *, alpha, beta_over_H, T_star, g_star, v_w, ...)</code></li>
+<li><code>gw_omega_total_h2(f, *, alpha, beta_over_H, T_star, g_star, v_w, ...)</code></li>
+</ul>
+<hr />
+<h2 id="10-detector-sensitivity-curves-pis-s-channel">10) Detector sensitivity curves (PIS, s-channel)<a class="headerlink" href="#10-detector-sensitivity-curves-pis-s-channel" title="Permanent link">&para;</a></h2>
+<h3 id="101-what-these-functions-return">10.1. What these functions return<a class="headerlink" href="#101-what-these-functions-return" title="Permanent link">&para;</a></h3>
+<p>These are analytic polynomial-like fits from <em>arXiv:2002.04615</em> for the <strong>PIS sensitivity</strong>
+expressed as a GW energy density, i.e.
+$$
+h^2\Omega_{\rm sens,PIS}(f).
+$$</p>
+<p>They are provided for:</p>
+<ul>
+<li><code>lisa_sensitivity_s_pis(f_mHz)</code></li>
+<li><code>decigo_sensitivity_s_pis(f_mHz)</code></li>
+<li><code>bbo_sensitivity_s_pis(f_mHz)</code></li>
+</ul>
+<h3 id="102-frequency-convention-do-not-mix-this-up">10.2. Frequency convention (do not mix this up)<a class="headerlink" href="#102-frequency-convention-do-not-mix-this-up" title="Permanent link">&para;</a></h3>
+<p>These functions take <strong>frequency in mHz</strong>:</p>
+<ul>
+<li>argument name: <code>f_mHz</code></li>
+<li>internally: <span class="arithmatex">\(x_s = f/(1,{\rm mHz})\)</span>, so numerically <span class="arithmatex">\(x_s = f_{\rm mHz}\)</span></li>
+</ul>
+<p>They return <span class="arithmatex">\(h^2\Omega_{\rm sens,PIS}(f)\)</span> as a dimensionless array.</p>
+<h3 id="103-implementation-helper">10.3. Implementation helper<a class="headerlink" href="#103-implementation-helper" title="Permanent link">&para;</a></h3>
+<p><code>_pisc_poly_sum(f_mHz, terms, scale)</code> computes:
+$$
+{\rm scale}\times \sum_i c_i x^{p_i},
+\qquad x=f_{\rm mHz}.
+$$</p>
+<hr />
+<h2 id="11-units-and-sanity-checks-my-save-your-future-self-section">11) Units and sanity checks (my “save your future self” section)<a class="headerlink" href="#11-units-and-sanity-checks-my-save-your-future-self-section" title="Permanent link">&para;</a></h2>
+<p>This module mixes three unit conventions that you must keep consistent:</p>
+<ol>
+<li>
+<p><strong>Field theory / thermodynamics</strong>: natural units
+   Temperatures typically in <strong>GeV</strong>, potentials in <strong>GeV(^4)</strong>.</p>
+</li>
+<li>
+<p><strong>GW spectra</strong>: frequencies intended in <strong>Hz</strong>, output as <span class="arithmatex">\(h^2\Omega(f)\)</span> dimensionless.</p>
+</li>
+<li>
+<p><strong>Sensitivity fits</strong>: frequencies explicitly in <strong>mHz</strong> (per the fit convention in the paper).</p>
+</li>
+</ol>
+<h3 id="practical-rule">Practical rule<a class="headerlink" href="#practical-rule" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p>When plotting spectra against sensitivities:</p>
+</li>
+<li>
+<p>either convert your <strong>spectrum frequency grid</strong> to mHz when using the PIS fits,</p>
+</li>
+<li>or convert the PIS fit argument back to Hz by <code>f_mHz = 1e3 * f_Hz</code>.</li>
+</ul>
+<h3 id="another-implementation-note-same-spirit-as-the-alpha-comment">Another implementation note (same spirit as the <span class="arithmatex">\(\alpha\)</span> comment)<a class="headerlink" href="#another-implementation-note-same-spirit-as-the-alpha-comment" title="Permanent link">&para;</a></h3>
+<p>In the peak-frequency helpers the prefactors are labeled as “mHz” in comments,
+but the functions are documented as returning “Hz”.
+Make sure your plotting layer uses a consistent convention (or explicitly converts).</p>
+<hr />
+<h2 id="12-minimal-usage-sketch-end-to-end-logic">12) Minimal usage sketch (end-to-end logic)<a class="headerlink" href="#12-minimal-usage-sketch-end-to-end-logic" title="Permanent link">&para;</a></h2>
+<p>This is the conceptual flow (not a full example script):</p>
+<div class="highlight"><pre><span></span><code># 1) Build phases (transitionFinder)
+phases = traceMultiMin(...)
+
+# 2) Choose the tunneling pair and build a calculator
+gwcalc = GravitationalWaveCalculator(
+    V=V, dV=dV, dVdT=dVdT,
+    phases=phases,
+    high_phase_key=&quot;high&quot;,
+    low_phase_key=&quot;low&quot;,
+    fullTunneling_params={...},
+)
+
+# 3) Evaluate thermodynamics at Tn (or your chosen T*)
+betaH = gwcalc.beta_over_H(Tn, dT=0.1)
+alpha = gwcalc.alpha(Tn, g_star=106.75)
+RH    = gwcalc.bubble_radius_over_H(betaH, v_w=0.6)
+
+# 4) Build GW spectrum
+f = np.logspace(-5, 1, 2000)  # Hz
+spec = gwcalc.omega_total_h2(f, alpha=alpha, beta_over_H=betaH, T_star=Tn, g_star=106.75, v_w=0.6)
+
+# 5) Compare to sensitivity (convert frequency!)
+f_mHz = 1e3 * f
+lisa = lisa_sensitivity_s_pis(f_mHz)
+</code></pre></div>
+<hr />
+<h2 id="13-known-limitations-by-design">13) Known limitations (by design)<a class="headerlink" href="#13-known-limitations-by-design" title="Permanent link">&para;</a></h2>
+<p>This module intentionally does <em>not</em> try to decide the subtle physics choices for you:</p>
+<ul>
+<li>it does not compute percolation temperature, reheating, or full nucleation history;</li>
+<li>it does not solve hydrodynamics (so <span class="arithmatex">\(v_w\)</span>, <span class="arithmatex">\(\kappa\)</span>, and suppression factors are model-dependent);</li>
+<li>it does not validate whether bubble collisions should be included (default assumes non-runaway walls);</li>
+<li>it provides standard fits meant for quick forecasts and intuition building.</li>
+</ul>
+<p>That’s the point: it gives you a clean, inspectable “first-pass GW layer” on top of the
+core tunneling / phase-tracing machinery.</p>
+<hr />
+<h2 id="14-function-by-function-index">14) Function-by-function index<a class="headerlink" href="#14-function-by-function-index" title="Permanent link">&para;</a></h2>
+<h3 id="class-gravitationalwavecalculator">Class: <code>GravitationalWaveCalculator</code><a class="headerlink" href="#class-gravitationalwavecalculator" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>dS_dT(T, dT)</code></li>
+<li><code>beta_over_H(Tn, dT, *, H=None)</code></li>
+<li><code>alpha(T, g_star, *, return_delta_rho=False)</code></li>
+<li><code>omega_sw_h2(f, *, alpha, beta_over_H, T_star, g_star, v_w=1.0, ...)</code></li>
+<li><code>omega_turb_h2(f, *, alpha, beta_over_H, T_star, g_star, v_w=1.0, ...)</code></li>
+<li><code>omega_coll_h2(f, *, alpha, beta_over_H, T_star, g_star, v_w=1.0, ...)</code></li>
+<li><code>omega_total_h2(f, *, alpha, beta_over_H, T_star, g_star, v_w=1.0, ...)</code></li>
+<li><code>nucleation_rate(T, *, A_scale=1.0, use_linde_prefactor=True)</code></li>
+<li><code>bubble_radius_over_H(beta_over_H, v_w=1.0)</code></li>
+</ul>
+<h3 id="stateless-helpers">Stateless helpers<a class="headerlink" href="#stateless-helpers" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>gw_f_sw_peak</code>, <code>gw_omega_sw_h2</code></li>
+<li><code>gw_h_star_Hz</code>, <code>gw_f_turb_peak</code>, <code>gw_omega_turb_h2</code></li>
+<li><code>gw_f_coll_peak</code>, <code>gw_omega_coll_h2</code></li>
+<li><code>gw_omega_total_h2</code></li>
+</ul>
+<h3 id="sensitivity-curves-pis-s-channel-arxiv200204615">Sensitivity curves (PIS, s-channel; <em>arXiv:2002.04615</em>)<a class="headerlink" href="#sensitivity-curves-pis-s-channel-arxiv200204615" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>lisa_sensitivity_s_pis(f_mHz)</code></li>
+<li><code>decigo_sensitivity_s_pis(f_mHz)</code></li>
+<li><code>bbo_sensitivity_s_pis(f_mHz)</code></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../../javascripts/mathjax-config.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
