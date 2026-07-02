@@ -5561,15 +5561,15 @@ if __name__ == "__main__":
         run_03=False, # Ok!
         run_04=False, # Ok!
         run_05=False, # Ok!
-        run_06=False, # Maybe
-        run_07=False, # Maybe
-        run_08=False,
+        run_06=False, # Ok!
+        run_07=False, # Ok!
+        run_08=False, # Ok!
         run_08_config={
             "run_tag": "test",
-            "c6_over_f2_TeV2": 0.0,
+            "c6_over_f2_TeV2": 1.6,
             "c8_over_f4_TeV4": 0.0,
             "f_GeV": 1000.0,
-            "C_glauber": 3.83,
+            "C_glauber": 3.2,
             "Lambda_glauber": 1000.0,
             "include_daisy": True,
             "Tn_Ttol": 1e-2,

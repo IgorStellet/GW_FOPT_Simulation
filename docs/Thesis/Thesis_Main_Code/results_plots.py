@@ -63,6 +63,8 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 DEFAULT_RUN03_DIR = HERE / "03_Glauber_pure_C_scan"
 DEFAULT_RUN05_DIR = HERE / "05_EFT68_pure_c6_scan"
+DEFAULT_RUN06_DIR = HERE / "06_combined_C_scan"
+DEFAULT_RUN07_DIR = HERE / "07_combined_c6_scan"
 DEFAULT_OUTPUT_DIR = HERE / "results_runs"
 
 
@@ -1183,6 +1185,447 @@ def plot_relative_peak_effect(
     return saved
 
 
+
+
+# -----------------------------------------------------------------------------
+# Final combined-run plots: run 06 and run 07
+# -----------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class CombinedScanSpec:
+    """Specification for the final combined EFT68 + Gláuber scan plots."""
+
+    name: str
+    run_label: str
+    x_col: str
+    x_label: str
+    x_file_prefix: str
+    summary_filename: str
+    output_subdir: str
+
+
+RUN06_COMBINED = CombinedScanSpec(
+    name="run06",
+    run_label=r"Run 06: combined $\phi^6+\phi^8$ + Gláuber scan in $C$",
+    x_col="C",
+    x_label=r"$C$",
+    x_file_prefix="C",
+    summary_filename="run06_combined_C_scan_summary.csv",
+    output_subdir="combined_C_scan",
+)
+
+RUN07_COMBINED = CombinedScanSpec(
+    name="run07",
+    run_label=r"Run 07: combined $\phi^6+\phi^8$ + Gláuber scan in $c_6/f^2$",
+    x_col="c6_over_f2_TeV2",
+    x_label=r"$c_6/f^2$ [TeV$^{-2}$]",
+    x_file_prefix="c6f2",
+    summary_filename="run07_combined_c6_scan_summary.csv",
+    output_subdir="combined_c6_scan",
+)
+
+
+COMBINED_NUMERIC_COLUMNS = [
+    "c6_over_f2_TeV2",
+    "c8_over_f4_TeV4",
+    "C",
+    "Lambda_GeV",
+    "f_GeV",
+    "phi_limit_GeV",
+    "Tn_GeV",
+    "Tc_GeV",
+    "Tc_minus_Tn_over_Tc",
+    "alpha",
+    "beta_over_H",
+    "omega_total_peak",
+    "f_total_peak_mHz",
+]
+
+
+def load_combined_scan_summary(run_dir: str | Path, spec: CombinedScanSpec) -> pd.DataFrame:
+    """Load a combined-run master CSV and normalize types."""
+
+    path = Path(run_dir) / spec.summary_filename
+    if not path.exists():
+        raise FileNotFoundError(f"Could not find combined summary CSV: {path}")
+
+    df = pd.read_csv(path)
+    df = _numeric_columns(df, COMBINED_NUMERIC_COLUMNS)
+
+    if "include_daisy" not in df.columns:
+        raise ValueError(f"{path} does not contain include_daisy.")
+
+    if "combo_label" not in df.columns:
+        raise ValueError(f"{path} does not contain combo_label.")
+
+    if spec.x_col not in df.columns:
+        raise ValueError(f"{path} does not contain scan column {spec.x_col!r}.")
+
+    df["include_daisy"] = _as_bool_series(df["include_daisy"])
+    df["combo_label"] = df["combo_label"].astype(str)
+
+    return df
+
+
+def valid_combined_rows(df: pd.DataFrame, spec: CombinedScanSpec) -> pd.DataFrame:
+    """Keep combined-scan rows with nucleation and enough data for the final plots."""
+
+    required = ["combo_label", spec.x_col, "alpha", "Tc_GeV"]
+    for col in required:
+        if col not in df.columns:
+            raise ValueError(f"Missing required column {col!r} in {spec.name} summary.")
+
+    mask = np.ones(len(df), dtype=bool)
+
+    for col in [spec.x_col, "alpha", "Tc_GeV"]:
+        mask &= np.isfinite(df[col].to_numpy(dtype=float))
+
+    if "status" in df.columns:
+        status = df["status"].astype(str)
+        mask &= (
+            status.str.contains("nucleation", case=False, na=False).to_numpy()
+            | status.str.contains("FOPT", case=False, na=False).to_numpy()
+        )
+
+    return df.loc[mask].sort_values(["combo_label", "include_daisy", spec.x_col]).copy()
+
+
+def _combo_human_label(data: pd.DataFrame, spec: CombinedScanSpec) -> str:
+    """
+    Build a compact physics label for one fixed combined scan.
+
+    The scan variable is omitted from the fixed part, because it is already on
+    the x axis/color bar.
+    """
+
+    if data.empty:
+        return ""
+
+    row = data.iloc[0]
+    pieces: list[str] = []
+
+    c8 = _safe_float(row.get("c8_over_f4_TeV4"))
+    c6 = _safe_float(row.get("c6_over_f2_TeV2"))
+    C = _safe_float(row.get("C"))
+    Lambda = _safe_float(row.get("Lambda_GeV"))
+    f = _safe_float(row.get("f_GeV"))
+
+    if np.isfinite(c8):
+        pieces.append(rf"$c_8/f^4={_format_for_label(c8)}$ TeV$^{{-4}}$")
+
+    if spec.x_col != "c6_over_f2_TeV2" and np.isfinite(c6):
+        pieces.append(rf"$c_6/f^2={_format_for_label(c6)}$ TeV$^{{-2}}$")
+
+    if spec.x_col != "C" and np.isfinite(C):
+        pieces.append(rf"$C={_format_for_label(C)}$")
+
+    if np.isfinite(Lambda):
+        pieces.append(rf"$\Lambda={_format_for_label(Lambda)}$ GeV")
+
+    if np.isfinite(f):
+        pieces.append(rf"$f={_format_for_label(f)}$ GeV")
+
+    return ", ".join(pieces)
+
+
+def _combo_file_label(combo_label: str) -> str:
+    return (
+        str(combo_label)
+        .replace(" ", "_")
+        .replace("/", "_")
+        .replace("\\", "_")
+        .replace(".", "p")
+        .replace("-", "m")
+    )
+
+
+def _combined_daisy_values(data: pd.DataFrame) -> list[bool]:
+    """Return the daisy values present in a stable visual order."""
+
+    present = {bool(v) for v in data["include_daisy"].dropna().unique()}
+    return [value for value in [False, True] if value in present]
+
+
+def _auto_linear_limits(values: Sequence[float], pad_fraction: float = 0.08) -> tuple[float, float] | None:
+    arr = np.asarray(list(values), dtype=float)
+    arr = arr[np.isfinite(arr)]
+    if arr.size == 0:
+        return None
+
+    lo = float(np.nanmin(arr))
+    hi = float(np.nanmax(arr))
+
+    if np.isclose(lo, hi):
+        pad = max(abs(lo) * 0.1, 1.0e-3)
+        return lo - pad, hi + pad
+
+    pad = float(pad_fraction) * (hi - lo)
+    return lo - pad, hi + pad
+
+
+def plot_combined_alpha_tc_per_combo(
+    df: pd.DataFrame,
+    spec: CombinedScanSpec,
+    *,
+    output_dir: str | Path,
+) -> list[Path]:
+    """
+    For each combined scan, plot alpha and Tc versus the scan parameter.
+
+    One figure is produced per combo_label.  If both daisy choices are present,
+    they are distinguished by line style and marker; if only one is present,
+    the figure remains clean and uses the available branch only.
+    """
+
+    saved: list[Path] = []
+    output_dir = Path(output_dir)
+    data_all = valid_combined_rows(df, spec)
+
+    for combo_label in sorted(data_all["combo_label"].dropna().unique()):
+        data_combo = data_all[data_all["combo_label"] == str(combo_label)].copy()
+        if data_combo.empty:
+            continue
+
+        fig, ax_alpha = plt.subplots(figsize=(8.4, 5.15))
+        ax_tc = ax_alpha.twinx()
+
+        all_x: list[float] = []
+        all_alpha: list[float] = []
+        all_tc: list[float] = []
+
+        for include_daisy in _combined_daisy_values(data_combo):
+            branch = data_combo[data_combo["include_daisy"] == bool(include_daisy)].sort_values(spec.x_col)
+            if branch.empty:
+                continue
+
+            style = DAISY_STYLES[bool(include_daisy)]
+            x = branch[spec.x_col].to_numpy(dtype=float)
+            alpha = branch["alpha"].to_numpy(dtype=float)
+            tc = branch["Tc_minus_Tn_over_Tc"].to_numpy(dtype=float)
+
+            all_x.extend(x[np.isfinite(x)].tolist())
+            all_alpha.extend(alpha[np.isfinite(alpha)].tolist())
+            all_tc.extend(tc[np.isfinite(tc)].tolist())
+
+            mask_alpha = np.isfinite(x) & np.isfinite(alpha)
+            mask_tc = np.isfinite(x) & np.isfinite(tc)
+
+            if np.any(mask_alpha):
+                ax_alpha.plot(
+                    x[mask_alpha],
+                    alpha[mask_alpha],
+                    color=OBSERVABLE_COLORS["alpha"],
+                    lw=2.45,
+                    ls=style["ls"],
+                    marker=style["marker"],
+                    ms=3.7,
+                    label=rf"$\alpha$, {style['label']}",
+                )
+
+            if np.any(mask_tc):
+                ax_tc.plot(
+                    x[mask_tc],
+                    tc[mask_tc],
+                    color="#1f77b4",
+                    lw=2.45,
+                    ls=style["ls"],
+                    marker=style["marker"],
+                    ms=3.7,
+                    label=rf"$T_c-T_n/T_c$, {style['label']}",
+                )
+
+        xlim = _auto_linear_limits(all_x, pad_fraction=0.04)
+        if xlim is not None:
+            ax_alpha.set_xlim(*xlim)
+
+        ax_alpha.set_xlabel(spec.x_label)
+        ax_alpha.set_ylabel(r"$\alpha$", color=OBSERVABLE_COLORS["alpha"])
+        ax_tc.set_ylabel(r"$T_c$ [GeV]", color="#1f77b4")
+        ax_alpha.tick_params(axis="y", labelcolor=OBSERVABLE_COLORS["alpha"])
+        ax_tc.tick_params(axis="y", labelcolor="#1f77b4")
+
+        lines1, labels1 = ax_alpha.get_legend_handles_labels()
+        lines2, labels2 = ax_tc.get_legend_handles_labels()
+        ax_alpha.legend(lines1 + lines2, labels1 + labels2, loc="best", fontsize=8)
+
+        title_label = _combo_human_label(data_combo, spec)
+        ax_alpha.set_title(f"{spec.run_label}\n{title_label}")
+        ax_alpha.grid(True, alpha=0.25)
+        fig.tight_layout()
+
+        basename = f"{spec.name}_alpha_Tc_{_combo_file_label(str(combo_label))}"
+        saved.extend(_save_figure(fig, output_dir, basename))
+
+    return saved
+
+
+def plot_combined_peak_movement_per_combo(
+    df: pd.DataFrame,
+    spec: CombinedScanSpec,
+    *,
+    output_dir: str | Path,
+) -> list[Path]:
+    """
+    For each combined scan, plot the movement of the GW peak.
+
+    The axes are log-log and automatically zoomed to the actual peak cloud.
+    The color gradient encodes the scan parameter.
+    """
+
+    saved: list[Path] = []
+    output_dir = Path(output_dir)
+    data_all = valid_combined_rows(df, spec)
+
+    for combo_label in sorted(data_all["combo_label"].dropna().unique()):
+        data_combo = data_all[data_all["combo_label"] == str(combo_label)].copy()
+        data_combo = data_combo[
+            np.isfinite(data_combo["f_total_peak_mHz"])
+            & np.isfinite(data_combo["omega_total_peak"])
+            & (data_combo["f_total_peak_mHz"] > 0.0)
+            & (data_combo["omega_total_peak"] > 0.0)
+        ].copy()
+
+        if data_combo.empty:
+            continue
+
+        scan_values_all = data_combo[spec.x_col].to_numpy(dtype=float)
+        finite_scan = scan_values_all[np.isfinite(scan_values_all)]
+        if finite_scan.size == 0:
+            continue
+
+        norm = plt.Normalize(vmin=float(np.nanmin(finite_scan)), vmax=float(np.nanmax(finite_scan)))
+        cmap = plt.get_cmap("viridis")
+
+        fig, ax = plt.subplots(figsize=(7.85, 5.8))
+
+        f_all: list[float] = []
+        omega_all: list[float] = []
+
+        for include_daisy in _combined_daisy_values(data_combo):
+            branch = data_combo[data_combo["include_daisy"] == bool(include_daisy)].sort_values(spec.x_col)
+            if branch.empty:
+                continue
+
+            x = branch[spec.x_col].to_numpy(dtype=float)
+            f_peak = branch["f_total_peak_mHz"].to_numpy(dtype=float)
+            omega_peak = branch["omega_total_peak"].to_numpy(dtype=float)
+
+            mask = (
+                np.isfinite(x)
+                & np.isfinite(f_peak)
+                & np.isfinite(omega_peak)
+                & (f_peak > 0.0)
+                & (omega_peak > 0.0)
+            )
+            if not np.any(mask):
+                continue
+
+            x = x[mask]
+            f_peak = f_peak[mask]
+            omega_peak = omega_peak[mask]
+            colors = cmap(norm(x))
+
+            f_all.extend(f_peak.tolist())
+            omega_all.extend(omega_peak.tolist())
+
+            if len(f_peak) >= 2:
+                ax.plot(
+                    f_peak,
+                    omega_peak,
+                    color="0.35",
+                    lw=0.95,
+                    alpha=0.45,
+                    ls=DAISY_STYLES[bool(include_daisy)]["ls"],
+                )
+
+            ax.scatter(
+                f_peak,
+                omega_peak,
+                c=colors,
+                marker=DAISY_STYLES[bool(include_daisy)]["marker"],
+                s=54,
+                edgecolor="black",
+                linewidth=0.35,
+                zorder=4,
+                label=DAISY_STYLES[bool(include_daisy)]["label"],
+            )
+
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_xlim(*_log_padded_limits(f_all, fallback=(1e-3, 1e5)))
+        ax.set_ylim(*_log_padded_limits(omega_all, fallback=(1e-21, 1e-9)))
+        ax.set_xlabel(r"$f_{\rm peak}$ [mHz]")
+        ax.set_ylabel(r"$h^2\Omega_{\rm peak}$")
+
+        title_label = _combo_human_label(data_combo, spec)
+        ax.set_title(f"{spec.run_label}: peak motion\n{title_label}")
+        ax.grid(True, which="both", alpha=0.25)
+
+        handles, labels = ax.get_legend_handles_labels()
+        if handles:
+            # Remove duplicate labels when both branches have multiple points.
+            unique: dict[str, Any] = {}
+            for handle, label in zip(handles, labels):
+                unique[label] = handle
+            ax.legend(unique.values(), unique.keys(), loc="best", fontsize=8)
+
+        sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+        sm.set_array([])
+        cb = fig.colorbar(sm, ax=ax, pad=0.02)
+        cb.set_label(spec.x_label)
+
+        fig.tight_layout()
+
+        basename = f"{spec.name}_peak_movement_{_combo_file_label(str(combo_label))}"
+        saved.extend(_save_figure(fig, output_dir, basename))
+
+    return saved
+
+
+def make_minimal_plots_for_combined_scan(
+    run_dir: str | Path,
+    spec: CombinedScanSpec,
+    *,
+    output_dir: str | Path,
+) -> dict[str, list[Path]]:
+    """
+    Generate the final minimal combined-run plot set.
+
+    For three combo_label values, this produces:
+    - 3 figures with alpha and Tc versus the scan variable;
+    - 3 figures with peak movement in the (f_peak, Omega_peak) plane.
+
+    Therefore each combined run contributes six thesis figures.
+    """
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    df = load_combined_scan_summary(run_dir, spec)
+    valid = valid_combined_rows(df, spec)
+
+    if valid.empty:
+        print(f"[{spec.name}] No valid combined nucleation rows were found. Skipping.")
+        return {}
+
+    valid.to_csv(output_dir / f"{spec.name}_valid_nucleation_rows.csv", index=False)
+
+    outputs: dict[str, list[Path]] = {}
+    outputs["alpha_Tc"] = plot_combined_alpha_tc_per_combo(
+        df,
+        spec,
+        output_dir=output_dir,
+    )
+    outputs["peak_movement"] = plot_combined_peak_movement_per_combo(
+        df,
+        spec,
+        output_dir=output_dir,
+    )
+
+    return outputs
+
+
 # -----------------------------------------------------------------------------
 # High-level dispatchers
 # -----------------------------------------------------------------------------
@@ -1252,9 +1695,13 @@ def run_all_postprocessing(
     *,
     run03_dir: str | Path = DEFAULT_RUN03_DIR,
     run05_dir: str | Path = DEFAULT_RUN05_DIR,
+    run06_dir: str | Path = DEFAULT_RUN06_DIR,
+    run07_dir: str | Path = DEFAULT_RUN07_DIR,
     output_dir: str | Path = DEFAULT_OUTPUT_DIR,
     run_run03: bool = True,
     run_run05: bool = True,
+    run_run06: bool = True,
+    run_run07: bool = True,
 ) -> dict[str, Any]:
     """Generate every final figure and save everything under ``results_runs``."""
 
@@ -1276,6 +1723,26 @@ def run_all_postprocessing(
             output_dir=output_dir / "c6c8_pure",
         )
 
+    if run_run06:
+        try:
+            outputs["run06"] = make_minimal_plots_for_combined_scan(
+                run06_dir,
+                RUN06_COMBINED,
+                output_dir=output_dir / RUN06_COMBINED.output_subdir,
+            )
+        except FileNotFoundError as err:
+            print(f"[run06] {err}. Skipping combined C-scan plots.")
+
+    if run_run07:
+        try:
+            outputs["run07"] = make_minimal_plots_for_combined_scan(
+                run07_dir,
+                RUN07_COMBINED,
+                output_dir=output_dir / RUN07_COMBINED.output_subdir,
+            )
+        except FileNotFoundError as err:
+            print(f"[run07] {err}. Skipping combined c6-scan plots.")
+
     print("\n" + "=" * 76)
     print("Final post-processing finished")
     print("=" * 76)
@@ -1289,7 +1756,11 @@ if __name__ == "__main__":
     run_all_postprocessing(
         run03_dir=DEFAULT_RUN03_DIR,
         run05_dir=DEFAULT_RUN05_DIR,
+        run06_dir=DEFAULT_RUN06_DIR,
+        run07_dir=DEFAULT_RUN07_DIR,
         output_dir=DEFAULT_OUTPUT_DIR,
         run_run03=True,
         run_run05=True,
+        run_run06=True,
+        run_run07=True,
     )
