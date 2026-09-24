@@ -470,7 +470,7 @@ def provenance(settings, grid):
     }
     versions = {
         name: importlib.metadata.version(name)
-        for name in ("numpy", "scipy", "CosmoTransitions")
+        for name in ("numpy", "scipy", )
     }
     identity = {
         "schema_version": SCHEMA_VERSION,

@@ -17,10 +17,10 @@ não constitui outra implementação desses métodos.
 A parte polinomial do potencial é parametrizada diretamente por duas escalas de
 massa positivas:
 
-\[
+$$
 V_0(\phi)=-\frac{\mu^2}{2}\phi^2+\frac{\lambda}{4}\phi^4
           +\frac{\phi^6}{8m_6^2}+\frac{\phi^8}{16m_8^4}.
-\]
+$$
 
 Assim, `m6` e `m8` são dados em **GeV**. Diminuir uma dessas massas aumenta a
 deformação correspondente. A entrada `inf` desliga o operador; uma massa igual a
@@ -28,7 +28,7 @@ zero não faz isso. Não há um parâmetro independente `f` no modelo do artigo.
 
 A normalização segue as equações (421)–(425), pp. 133–134 da dissertação. Na
 notação anterior, os coeficientes que multiplicavam os operadores eram
-\(c_6/f^2=m_6^{-2}\) e \(c_8/f^4=m_8^{-4}\). Isso explica os três valores
+$c_6/f^2=m_6^{-2}$ e $c_8/f^4=m_8^{-4}$. Isso explica os três valores
 iniciais abaixo; a execução usa diretamente as massas, sem conversão entre
 parametrizações:
 
@@ -38,14 +38,14 @@ parametrizações:
 | Primeiro cenário com dimensão oito | `840.8964152537145` | `c8 = 2` |
 | Segundo cenário com dimensão oito | `668.740304976422` | `c8 = 5` |
 
-O setor de medida funcional usa \(\Lambda=1000\) GeV e a contribuição logarítmica
+O setor de medida funcional usa $Lambda=1000$ GeV e a contribuição logarítmica
 renormalizada da equação (428), p. 135. Os termos são combinados conforme a
 equação (444), p. 156, preservando as condições locais do vácuo eletrofraco a
 temperatura zero. A motivação científica e a discussão de degenerescências estão
 nas seções 5.6–5.7. As páginas indicadas são as páginas impressas da dissertação.
 
 Para `C > 0`, o argumento do logaritmo exige
-\(\phi<\Lambda/\sqrt C\). O limite de campo configurado não autoriza ultrapassar
+$\phi<\Lambda/\sqrt C$. O limite de campo configurado não autoriza ultrapassar
 essa fronteira. `m6` e `m8` são escalas dos coeficientes efetivos; identificá-las
 com o cutoff de uma teoria ultravioleta exige uma hipótese física adicional.
 
@@ -56,17 +56,17 @@ Não há comparação entre opções de ressoma nesta coleta. Essa prescrição 
 ressoma completa de Arnold–Espinosa; os resultados devem ser identificados pela
 prescrição efetivamente implementada.
 
-A nucleação é procurada pelo critério \(S_3(T_n)/T_n\simeq140\), com tolerância
+A nucleação é procurada pelo critério $S_3(T_n)/T_n\simeq140$, com tolerância
 absoluta padrão **0.5 no valor de `S3/T`**. Essa tolerância não significa uma
 incerteza de 0.5 GeV na temperatura. O intervalo inicial de busca é de 1 a 250 GeV.
 
-O cálculo de \(\beta/H\) usa uma derivada central de segunda ordem, com duas
+O cálculo de $\beta/H$ usa uma derivada central de segunda ordem, com duas
 avaliações da ação:
 
-\[
+$$
 \frac{\beta}{H}=T_n\frac{F(T_n+h)-F(T_n-h)}{2h},
 \qquad F(T)=\frac{S_3(T)}{T}.
-\]
+$$
 
 O passo padrão é `h = 0.5 GeV`. As amostras da ação são preservadas para que a
 derivada possa ser auditada. A opção `--beta-check` calcula também o stencil com
