@@ -19,6 +19,7 @@ from Articles.collect_data import (
     point_id,
     save_point,
     scan_points,
+    shard_points,
     single_writer,
 )
 from Articles.combined_model import CombinedPotential, ModelParameters
@@ -146,3 +147,15 @@ def test_output_lock_rejects_another_writer(tmp_path):
         single_writer(tmp_path),
     ):
         pass
+
+
+def test_shards_cover_each_point_exactly_once_and_preserve_coordinates():
+    points = list(scan_points((500, 1000), (0, 3.35), (math.inf, 668.740304976422)))
+    parts = [list(shard_points(points, index, 7)) for index in range(7)]
+    identities = [point_id(p) for part in parts for p in part]
+    assert len(identities) == len(set(identities)) == len(points)
+    assert set(identities) == {point_id(p) for p in points}
+    assert max(map(len, parts)) - min(map(len, parts)) <= 1
+    assert list(shard_points(points)) == points
+    with pytest.raises(ValueError, match="shard-count"):
+        list(shard_points(points, 2, 2))

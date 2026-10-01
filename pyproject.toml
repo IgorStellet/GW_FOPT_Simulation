@@ -50,3 +50,4 @@ docs = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py", "Lot_*.py"]
+cache_dir = "Articles/results/pytest-cache"

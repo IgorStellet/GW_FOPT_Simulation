@@ -1,5 +1,8 @@
 # Dados para o artigo sobre mecanismos combinados de FOPT
 
+Primeira execução: [guia rápido](QUICKSTART.md). Primeiro acesso e submissão:
+[roteiro do CHE](CLUSTER_CHE.md), com templates em [cluster/](cluster/).
+
 Esta pasta reúne a coleta de dados do artigo. O ponto de entrada é
 [`collect_data.py`](collect_data.py): ele percorre o espaço de parâmetros,
 identifica fases e transições, calcula os parâmetros termodinâmicos e grava os
@@ -133,6 +136,7 @@ os extremos. Para os números fracionários da linha de comando, use ponto decim
 | `--C MIN MAX STEP` | `0 10 0.02` | Intensidade adimensional da medida funcional |
 | `--m8 VALOR ...` | `inf 840.8964152537145 668.740304976422` | Cenários de dimensão oito, em GeV |
 | `--workers N` | `1` | Número de processos de cálculo |
+| `--shard-index N`, `--shard-count N` | `0`, `1` | Parte disjunta da grade para jobs independentes; cada parte precisa de sua pasta |
 | `--dry-run` | desligada | Inspecionar a campanha antes do cálculo |
 | `--max-points N` | sem limite | Limitar a quantidade de pontos a executar |
 | `--no-baselines` | desligada | Não acrescentar `m6 = inf`, `C = 0` nem o cenário `m8 = inf` à grade solicitada |

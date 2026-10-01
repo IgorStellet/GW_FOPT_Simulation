@@ -137,6 +137,19 @@ def scan_points(masses, couplings, m8_values, baselines=True):
         yield ModelParameters(m6_GeV=m6, m8_GeV=m8, C=C, Lambda_GeV=1000.0)
 
 
+def shard_points(points, index=0, count=1):
+    """Particiona a grade sem alterar coordenadas: posição % count == index.
+
+    Cada ponto pertence exatamente a uma parte. Todos os jobs devem usar a
+    mesma grade e count; index identifica a parte e começa em zero.
+    """
+    if count < 1 or not 0 <= index < count:
+        raise ValueError("Exige shard-count>=1 e 0<=shard-index<shard-count.")
+    for position, params in enumerate(points):
+        if position % count == index:
+            yield params
+
+
 def json_safe(value):
     """JSON estrito: massas desligadas são 'inf'; valores ausentes são null."""
     if isinstance(value, dict):
@@ -729,6 +742,8 @@ def main(argv=None):
     parser.add_argument("--m8", nargs="+", type=float, default=M8_SCENARIOS_GEV)
     parser.add_argument("--no-baselines", action="store_true")
     parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument("--shard-index", type=int, default=0)
+    parser.add_argument("--shard-count", type=int, default=1)
     parser.add_argument("--max-points", type=int)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--retry-failed", action="store_true")
@@ -766,6 +781,8 @@ def main(argv=None):
             raise ValueError("Exige m6>0, C>=0, workers>=1.")
         if args.max_points is not None and args.max_points < 1:
             raise ValueError("max-points deve ser positivo.")
+        if args.shard_count < 1 or not 0 <= args.shard_index < args.shard_count:
+            raise ValueError("Exige shard-count>=1 e 0<=shard-index<shard-count.")
         for m8 in args.m8:
             if math.isnan(m8) or m8 <= 0:
                 raise ValueError("m8 deve ser positivo ou inf.")
@@ -776,12 +793,19 @@ def main(argv=None):
             "include_baselines": not args.no_baselines,
             "Lambda_GeV": 1000.0,
         }
+        if args.shard_count != 1:
+            grid["shard_index"] = args.shard_index
+            grid["shard_count"] = args.shard_count
         n_mass = len(masses) + int(not args.no_baselines)
         n_C = len(couplings) + int(not args.no_baselines and 0 not in couplings)
         n_m8 = len(set(args.m8) | ({math.inf} if not args.no_baselines else set()))
         print(
             f"Grade: {n_mass * n_C * n_m8:,} pontos; m6 em GeV, C adimensional; Lambda=1000 GeV."
         )
+        total = n_mass * n_C * n_m8
+        part_size = max(0, (total - 1 - args.shard_index) // args.shard_count + 1)
+        if args.shard_count != 1:
+            print(f"Parte {args.shard_index}/{args.shard_count}: {part_size:,} pontos.")
         print(
             f"Ressoma gauge fixa; |S3/T-140|<={settings.action_tolerance}; beta ordem 2, h={settings.beta_step} GeV."
         )
@@ -793,7 +817,11 @@ def main(argv=None):
         Jb(np.array([0.0]), approx="spline")
         Jf(np.array([0.0]), approx="spline")
         manifest = provenance(settings, grid)
-        points = scan_points(masses, couplings, args.m8, not args.no_baselines)
+        points = shard_points(
+            scan_points(masses, couplings, args.m8, not args.no_baselines),
+            args.shard_index,
+            args.shard_count,
+        )
         count = run_scan(
             args.output,
             points,

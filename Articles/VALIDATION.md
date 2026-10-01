@@ -70,3 +70,73 @@ de 453.906 pontos **não foi executada** nesta validação.
 Antes dos resultados de publicação, ainda cabe verificar convergência nas
 fronteiras e regiões selecionadas, validade das hipóteses do potencial e dos
 templates GW, além da prescrição de detectabilidade escolhida para o artigo.
+
+## Revisão para execução no CHE
+
+Revisão local após sincronizar a branch e preservar o commit do usuário.
+**47 testes passaram**, com 31 avisos dos exemplos gráficos existentes. O
+backend Agg agora é configurado automaticamente nos testes; no Windows,
+conftest usa uma pasta exclusiva por execução para evitar a ACL do temporário
+global. O cache pytest fica em Articles/results, ignorado pelo Git.
+
+```bash
+python -m pytest -q --disable-warnings
+python -m ruff check Articles tests/conftest.py tests/test_article_core.py tests/test_article_scan.py tests/test_article_cluster.py
+bash -n Articles/cluster/smoke.slurm
+bash -n Articles/cluster/production.slurm
+```
+
+A suíte passa sem redirecionar manualmente PYTEST_DEBUG_TEMPROOT. Agora há 6
+testes de núcleo, 9 de coleta e 4 de cluster, além da suíte preexistente.
+As novas regressões verificam cobertura exata das partes, checkpoints fechados
+em journal DELETE, recusa de WAL pendente, restauração de observáveis e retomada
+após reparar um registro sem aumentar a quantidade de pontos.
+
+| Arquivo/conjunto | Conferência |
+|---|---|
+| combined_model.py | Leitura das prescrições, testes de massas/domínio e duas chamadas reais |
+| collect_data.py | Grade/partes, fases/bounces reais, paralelismo, gravação e retomada |
+| cluster_runner.py | Lotes reais de um ponto, cópia persistente e retomada para outra pasta local |
+| __init__.py | Importação e análise sintática |
+| .gitignore | Resultados continuam excluídos do versionamento |
+| README/QUICKSTART/CLUSTER_CHE | Chamadas, unidades, opções e referências conferidas |
+| VALIDATION.md | Atualização com evidências e limitações desta revisão |
+| test_article_core.py/test_article_scan.py | Testes científicos e de persistência passaram |
+| test_article_cluster.py/conftest.py | Checkpoints e preparação do ambiente de testes passaram |
+| smoke.slurm/production.slurm | Sintaxe Bash e finais de linha LF conferidos |
+| Núcleo alterado anteriormente | Suíte completa e nova comparação dos observáveis reais |
+
+Nova chamada real na grade de dois pontos:
+
+```bash
+python -m Articles.collect_data --output Articles/results/cluster_local_smoke --m6 1000 1000 5 --C 0 3.35 3.35 --m8 668.740304976422 --no-baselines --beta-check --workers 2
+```
+
+C=0: no_nucleation_found, cerca de 38 s; C=3.35: nucleated, cerca de 81 s,
+sem warnings nos dois pontos. Para o ponto nucleado:
+
+| Quantidade | Valor |
+|---|---:|
+| Tn [GeV] | 40.73800650428223 |
+| alpha_energy | 0.458758890225597 |
+| alpha_trace | 0.33289431716939344 |
+| beta/H | 116.72234483860271 |
+| f_sw_peak [Hz] | 0.00091334605711425 |
+| h²Omega_sw_peak | 8.061022207395195e-12 |
+
+Também executado cluster_runner --smoke --beta-check --batch-size 1: os mesmos
+dois pontos foram calculados em lotes, com cerca de 30 s e 73 s. Checkpoints
+foram publicados após cada ponto. A retomada em outro work-dir restaurou dois
+registros e executou zero pontos novos. integridade SQLite=ok; alpha_energy,
+alpha_trace, beta/H, amplitude e frequência coincidem entre banco, CSV,
+detalhes, execução direta, checkpoint e restauração.
+
+O banco ativo local usa WAL; a cópia persistente usa DELETE. Os scripts usam
+um nó e uma tarefa com CPUs por tarefa, e a produção divide a grade em 100
+partes disjuntas. O sinal antecipado solicita parar após o lote; não garante
+concluir um lote antes de SIGKILL. O último lote não publicado pode ser repetido.
+
+**Não houve execução no CHE nem submissão da campanha grande nesta revisão.**
+Login/endereço efetivos, Python, partição, quota, scratch e recursos precisam
+ser conferidos com a conta disponível. A validação Windows/Bash local não
+certifica configuração do scheduler nem convergência física da malha completa.
