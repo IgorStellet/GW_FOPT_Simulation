@@ -18,8 +18,10 @@ cd "${SLURM_SUBMIT_DIR:?}"
 if [[ -n "${FOPT_PYTHON_MODULE:-}" ]]; then
     module load "$FOPT_PYTHON_MODULE"
 fi
-: "${FOPT_RESULTS_ROOT:?Defina uma pasta persistente autorizada no CHE.}"
+: "${FOPT_RESULTS_ROOT:?Falta exportar FOPT_RESULTS_ROOT no terminal de submissão. Consulte Articles/CLUSTER_CHE.md e submeta com sbatch --export=ALL.}"
 python_executable="${FOPT_PYTHON:-$SLURM_SUBMIT_DIR/.venv/bin/python}"
+printf 'Destino persistente: %s\n' "$FOPT_RESULTS_ROOT"
+printf 'Python selecionado: %s\n' "$python_executable"
 export MPLBACKEND=Agg PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 scratch_root="${FOPT_SCRATCH_ROOT:-/scratch/local}"

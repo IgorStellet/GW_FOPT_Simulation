@@ -136,27 +136,54 @@ confirmado no nó. Não aponte esse scratch para uma montagem NFS.
 
 ## 5. Submeter o teste de dois pontos
 
-Na raiz do repositório, já com as variáveis exportadas:
+Na raiz do repositório, prepare as variáveis **na mesma sessão SSH** em que
+executará `sbatch`. Elas precisam ser exportadas novamente após sair do SSH e
+entrar em outra sessão. `FOPT_RESULTS_ROOT` é a pasta persistente dos resultados;
+`FOPT_PYTHON` é o interpretador do ambiente instalado na etapa 3.
 
 ```bash
-sbatch Articles/cluster/smoke.slurm
+export FOPT_PYTHON="$PWD/.venv-che311/bin/python"
+export FOPT_RESULTS_ROOT="$HOME/fopt-tests"
+mkdir -p "$FOPT_RESULTS_ROOT" Articles/results/logs
+"$FOPT_PYTHON" --version
+"$FOPT_PYTHON" -m Articles.collect_data --dry-run
+```
+
+Se escolheu outro nome para a venv, ajuste `FOPT_PYTHON`. Se esta pasta de
+resultados contém uma campanha de outra versão do código, escolha outra pasta.
+Somente após as duas chamadas Python acima funcionarem, submeta:
+
+```bash
+sbatch --export=ALL Articles/cluster/smoke.slurm
 squeue -u "$USER"
 ```
+
+`--export=ALL` transmite as variáveis exportadas ao job. O nome do diretório
+de resultados é uma escolha do usuário; o script exige essa escolha antes de
+iniciar o cálculo. Se aparecer `FOPT_RESULTS_ROOT: ...` no `.err`, o job não
+recebeu um valor não vazio e parou antes de chamar Python. Refaça os exports
+nesta sessão e faça uma nova submissão: o job anterior já terminou.
+Referência: [exportação de ambiente no sbatch](https://slurm.schedmd.com/sbatch.html).
 
 O Slurm informa um JOB_ID. O script reserva um nó, uma tarefa, duas CPUs e 4 GB
 por até 2h na fila debug. Ele calcula C=0 e C=3.35 para m6=1000 GeV e
 m8=668.740304976422 GeV, com beta-check. O checkpoint é feito a cada ponto.
 
-Monitore substituindo JOB_ID pelo número recebido:
+Monitore substituindo JOB_ID pelo número recebido. Os comandos abaixo retornam
+ao prompt e podem ser executados em sequência:
 
 ```bash
 scontrol show job JOB_ID
-tail -f Articles/results/logs/smoke-JOB_ID.out
+tail -n 80 Articles/results/logs/smoke-JOB_ID.out
 cat Articles/results/logs/smoke-JOB_ID.err
 sacct -j JOB_ID --format=JobID,State,Elapsed,AllocCPUS,MaxRSS,ExitCode
 ```
 
-Ctrl+C encerra apenas tail, não o job. Para cancelar o job, use `scancel JOB_ID`.
+Para acompanhar um job em execução continuamente, use separadamente
+`tail -f Articles/results/logs/smoke-JOB_ID.out`. Esse comando fica aberto,
+inclusive depois de o job terminar; use Ctrl+C para voltar ao prompt antes de
+executar outro comando. Ctrl+C encerra apenas tail, não o job.
+Para cancelar o job, use `scancel JOB_ID`.
 PD significa aguardando recursos; R significa executando. O log mostra checkpoints
 publicados, status dos pontos e quantidade confirmada. Confira os CSVs em
 `$FOPT_RESULTS_ROOT/smoke` e os valores de referência no QUICKSTART.
@@ -186,7 +213,7 @@ substitua o caminho abaixo pela pasta concedida ao seu usuário/projeto:
 export FOPT_RESULTS_ROOT=/CAMINHO/PERSISTENTE/AUTORIZADO/fopt-campaign
 mkdir -p "$FOPT_RESULTS_ROOT" Articles/results/logs
 "$FOPT_PYTHON" -m Articles.collect_data --dry-run --shard-count 100 --shard-index 0 --beta-check
-sbatch Articles/cluster/production.slurm
+sbatch --export=ALL Articles/cluster/production.slurm
 ```
 
 O template é um ponto de partida: generic, 3 dias, 4 CPUs e 8 GB por job;
