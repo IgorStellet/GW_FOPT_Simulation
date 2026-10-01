@@ -1,24 +1,8 @@
 # Primeira execução no CHE
 
 Este roteiro prepara o acesso, um teste de dois pontos e a campanha grande.
-Os modelos Slurm precisam ser conferidos com a configuração atual da sua conta.
 Não há submissão automática. A grade grande deve seguir o teste local e o teste
-no nó de cálculo. Nunca envie senhas para o GitHub ou para uma conversa.
-
-## O que aproveitar dos arquivos fornecidos
-
-- **user-guide-CHE-3_v0.1.pdf (2024)**: acesso SSH (p.12), armazenamento (p.9),
-  módulos (pp.18–19), filas (p.24) e submissão/monitoramento (pp.23–27).
-- **rosetta.pdf (2013)**: tabela comparativa; para CHE use a coluna Slurm.
-- **modelo.slurm**: mostra as diretivas, mas public/70 tarefas não são a
-  configuração deste código. A fila public não aparece na tabela de 2024.
-- **Cosmology_on_CHE_Setup_2019-08-28.rtf**: contexto histórico para CLASS e
-  MontePython. Não instale esses programas para esta coleta. Anaconda2, módulos
-  de 2019 e caminhos da conta de outro pesquisador não servem como configuração
-  atual do projeto, que requer Python >=3.11.
-
-Endereço, filas, módulos e quotas são referências do manual; confira-os na
-primeira sessão. Exemplos com SEU_USUARIO/CAMINHO/NOME precisam ser substituídos.
+no nó de cálculo.
 
 ## 1. Entrar pelo Windows
 

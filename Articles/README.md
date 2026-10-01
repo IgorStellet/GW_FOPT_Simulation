@@ -13,7 +13,6 @@ salvos.
 O cálculo reutiliza os módulos de [`src/CosmoTransitions`](../src/CosmoTransitions)
 para o potencial térmico, rastreamento de fases, bounce, derivadas e ondas
 gravitacionais. A camada do artigo organiza o modelo, a execução e a persistência;
-não constitui outra implementação desses métodos.
 
 ## 1. O modelo e suas unidades
 
@@ -27,7 +26,7 @@ $$
 
 Assim, `m6` e `m8` são dados em **GeV**. Diminuir uma dessas massas aumenta a
 deformação correspondente. A entrada `inf` desliga o operador; uma massa igual a
-zero não faz isso. Não há um parâmetro independente `f` no modelo do artigo.
+zero não faz isso.
 
 A normalização segue as equações (421)–(425), pp. 133–134 da dissertação. Na
 notação anterior, os coeficientes que multiplicavam os operadores eram
@@ -41,7 +40,7 @@ parametrizações:
 | Primeiro cenário com dimensão oito | `840.8964152537145` | `c8 = 2` |
 | Segundo cenário com dimensão oito | `668.740304976422` | `c8 = 5` |
 
-O setor de medida funcional usa $Lambda=1000$ GeV e a contribuição logarítmica
+O setor de medida funcional usa $\Lambda=1000$ GeV e a contribuição logarítmica
 renormalizada da equação (428), p. 135. Os termos são combinados conforme a
 equação (444), p. 156, preservando as condições locais do vácuo eletrofraco a
 temperatura zero. A motivação científica e a discussão de degenerescências estão
@@ -49,15 +48,12 @@ nas seções 5.6–5.7. As páginas indicadas são as páginas impressas da diss
 
 Para `C > 0`, o argumento do logaritmo exige
 $\phi<\Lambda/\sqrt C$. O limite de campo configurado não autoriza ultrapassar
-essa fronteira. `m6` e `m8` são escalas dos coeficientes efetivos; identificá-las
-com o cutoff de uma teoria ultravioleta exige uma hipótese física adicional.
+essa fronteira.
 
 ## 2. Prescrições físicas e numéricas
 
-O scan fixa a **ressoma térmica gauge simplificada usada na dissertação, ligada**.
-Não há comparação entre opções de ressoma nesta coleta. Essa prescrição não é a
-ressoma completa de Arnold–Espinosa; os resultados devem ser identificados pela
-prescrição efetivamente implementada.
+O scan fixa a **ressoma térmica  ligada**.
+Não há comparação entre opções de ressoma nesta coleta. 
 
 A nucleação é procurada pelo critério $S_3(T_n)/T_n\simeq140$, com tolerância
 absoluta padrão **0.5 no valor de `S3/T`**. Essa tolerância não significa uma
@@ -192,9 +188,7 @@ investigado e falha de cálculo. **Uma falha numérica nunca é um ponto não
 detectável.** Tampouco a ausência de uma raiz no intervalo escolhido prova que a
 transição não nucleia em nenhuma temperatura.
 
-Preserve os identificadores dos pontos ao cruzar tabelas. Não reduza
-automaticamente um ponto a uma única transição: a informação de fases e de
-transições deve orientar a seleção física. O critério aproximado `S3/T = 140`
+Preserve os identificadores dos pontos ao cruzar tabelas. O critério aproximado `S3/T = 140`
 não constitui, por si só, um cálculo de percolação ou de conclusão da transição.
 
 As colunas de frequência do coletor são expressas em **Hz**. As funções de
