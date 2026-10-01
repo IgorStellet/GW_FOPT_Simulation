@@ -21,8 +21,8 @@ printf 'Destino persistente: %s\n' "$FOPT_RESULTS_ROOT"
 printf 'Python selecionado: %s\n' "$python_executable"
 export MPLBACKEND=Agg PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
-scratch_root="${FOPT_SCRATCH_ROOT:-/scratch/local}"
-local_work="$scratch_root/$USER/fopt-smoke-$SLURM_JOB_ID"
+source "$SLURM_SUBMIT_DIR/Articles/cluster/job_environment.sh"
+prepare_local_work "fopt-smoke-$SLURM_JOB_ID"
 "$python_executable" -m Articles.cluster_runner \
     --smoke --beta-check --batch-size 1 \
     --workers "$SLURM_CPUS_PER_TASK" \

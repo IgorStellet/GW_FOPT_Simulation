@@ -26,7 +26,7 @@ import time
 import traceback
 import warnings
 from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
-from contextlib import contextmanager, redirect_stderr, redirect_stdout
+from contextlib import closing, contextmanager, redirect_stderr, redirect_stdout
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -560,7 +560,65 @@ def single_writer(output):
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
+class IncompatibleCampaignError(ValueError):
+    """A pasta pertence a outra definição de campanha; seus dados são preservados."""
+
+
+def validate_campaign(output: Path, manifest: dict) -> dict | None:
+    """Confere a identidade salva antes de abrir o banco para escrita.
+
+    O banco é a fonte da retomada. A consulta em modo somente leitura também
+    funciona com checkpoints em journal DELETE, sem convertê-los para WAL.
+    Uma pasta nova não é criada por esta verificação.
+    """
+    database = output / "scan.sqlite"
+    if not database.exists():
+        return None
+    with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)) as connection:
+        if not connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='metadata'"
+        ).fetchone():
+            return None
+        saved = connection.execute("SELECT value FROM metadata WHERE key='manifest'").fetchone()
+    if saved is None:
+        return None
+    previous = json.loads(saved[0])
+    if previous["fingerprint"] == manifest["fingerprint"]:
+        return previous
+
+    changes = []
+    for section, label in (
+        ("settings", "Configuração"), ("grid", "Grade"),
+        ("versions", "Biblioteca"), ("model_constants", "Constante do modelo"),
+        ("source_sha256", "Arquivo"),
+    ):
+        old_values, new_values = previous.get(section, {}), manifest.get(section, {})
+        for key in sorted(old_values.keys() | new_values.keys()):
+            if canonical_json(old_values.get(key)) != canonical_json(new_values.get(key)):
+                if section == "source_sha256":
+                    changes.append(f"  - {label}: {key} (alterado, adicionado ou removido)")
+                else:
+                    changes.append(
+                        f"  - {label} {key}: {canonical_json(old_values.get(key))}"
+                        f" -> {canonical_json(new_values.get(key))}"
+                    )
+    for key, label in (("python", "Python"), ("schema_version", "Formato do banco")):
+        if previous.get(key) != manifest.get(key):
+            changes.append(f"  - {label}: {previous.get(key)} -> {manifest.get(key)}")
+    difference = "\n".join(changes) or "  - Identificador da campanha diferente."
+    raise IncompatibleCampaignError(
+        "Campanha incompatível: configuração, código ou versões mudaram.\n"
+        f"Pasta existente: {output.resolve()}\n"
+        f"Diferenças em relação à campanha salva:\n{difference}\n"
+        "Os resultados anteriores foram preservados. Para uma nova campanha, "
+        "escolha uma pasta ainda não usada com --output.\n"
+        "Para retomar a antiga, use exatamente seu código, ambiente e configuração. "
+        "--retry-failed não substitui esta verificação."
+    )
+
+
 def open_database(output, manifest):
+    previous = validate_campaign(output, manifest)
     connection = sqlite3.connect(output / "scan.sqlite")
     connection.executescript("""
         PRAGMA journal_mode=WAL;
@@ -573,20 +631,12 @@ def open_database(output, manifest):
             point_id TEXT NOT NULL, transition_index INTEGER NOT NULL, record TEXT NOT NULL,
             PRIMARY KEY (point_id, transition_index));
     """)
-    old = connection.execute(
-        "SELECT value FROM metadata WHERE key='manifest'"
-    ).fetchone()
-    if old and json.loads(old[0])["fingerprint"] != manifest["fingerprint"]:
-        connection.close()
-        raise ValueError(
-            "Configuração, código ou versões mudaram. Use outra pasta --output."
-        )
     with connection:
         connection.execute(
             "INSERT OR IGNORE INTO metadata VALUES ('manifest',?)",
             (canonical_json(manifest),),
         )
-    if not old:
+    if previous is None:
         (output / "manifest.json").write_text(
             json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8"
         )
@@ -733,14 +783,14 @@ def main(argv=None):
         "--m6",
         nargs=3,
         type=float,
-        default=(500, 2000, 5),
+        default=(500.0, 2000.0, 5.0),
         metavar=("MIN", "MAX", "STEP"),
     )
     parser.add_argument(
         "--C",
         nargs=3,
         type=float,
-        default=(0, 10, 0.02),
+        default=(0.0, 10.0, 0.02),
         metavar=("MIN", "MAX", "STEP"),
     )
     parser.add_argument("--m8", nargs="+", type=float, default=M8_SCENARIOS_GEV)
@@ -749,7 +799,10 @@ def main(argv=None):
     parser.add_argument("--shard-index", type=int, default=0)
     parser.add_argument("--shard-count", type=int, default=1)
     parser.add_argument("--max-points", type=int)
-    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--dry-run", action="store_true",
+        help="Confere grade e compatibilidade de --output, sem calcular nem criar campanha.",
+    )
     parser.add_argument("--retry-failed", action="store_true")
     parser.add_argument("--export-only", action="store_true")
     parser.add_argument("--action-tolerance", type=float, default=0.5)
@@ -814,6 +867,8 @@ def main(argv=None):
             f"Ressoma gauge fixa; |S3/T-140|<={settings.action_tolerance}; beta ordem 2, h={settings.beta_step} GeV."
         )
         if args.dry_run:
+            validate_campaign(args.output, provenance(settings, grid))
+            print(f"Verificação concluída: pasta compatível ou nova em {args.output.resolve()}")
             return 0
         # Inicializa tabelas uma vez antes de criar processos (cache determinístico).
         from CosmoTransitions import Jb, Jf
@@ -839,6 +894,10 @@ def main(argv=None):
             f"Concluído: {count} pontos novos/reprocessados. Dados em {args.output.resolve()}"
         )
         return 0
+    except IncompatibleCampaignError as error:
+        # Não é erro de sintaxe dos argumentos. Mostra as diferenças sem uma
+        # lista longa de opções; mantém saída 2 para o Slurm detectar a parada.
+        parser.exit(2, f"{error}\n")
     except (ValueError, RuntimeError) as error:
         parser.error(str(error))
 

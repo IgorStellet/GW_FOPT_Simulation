@@ -24,7 +24,7 @@ Python >=3.11, no mesmo ambiente usado pelo terminal/editor:
 python -m pip install -e .
 python -m pip install pytest
 python -m pytest -q
-python -m Articles.collect_data --dry-run
+python -m Articles.collect_data --dry-run --output Articles/results/local_smoke --m6 1000 1000 5 --C 0 3.35 3.35 --m8 668.740304976422 --no-baselines --beta-check
 ```
 
 Grade de **dois pontos**: C=0 e 3.35, um cenário de massas; inclua beta-check:
@@ -38,6 +38,20 @@ alpha_trace~0.332894 e beta/H~116.722. Confira status e quality_flags.
 Repetir o mesmo comando retoma a campanha; para mudar a configuração, use
 outra pasta. Versões diferentes podem alterar resultados e a compatibilidade.
 
+Se aparecer **Campanha incompatível**, a pasta escolhida contém resultados
+obtidos com outro código, ambiente ou configuração. A mensagem lista as
+diferenças. Use uma pasta nova em `--output`, por exemplo
+`Articles/results/local_smoke_v2`, nas duas chamadas acima; preserve a antiga.
+Não apague `manifest.json` nem altere seu fingerprint para tentar retomar.
+`--dry-run` confere a mesma compatibilidade sem calcular ou criar a campanha.
+
+No PyCharm, configure Run com o módulo `Articles.collect_data`, diretório de
+trabalho na raiz do projeto e o interpretador em que instalou `-e .`. Em
+**Parameters**, cole os argumentos da chamada de dois pontos, começando em
+`--output`; não inclua `python -m Articles.collect_data`. Sem esses argumentos,
+o coletor escolhe a grade completa e a pasta padrão `Articles/results/combined`.
+Use a grade pequena antes de iniciar os 453.906 pontos do padrão.
+
 ## O que pode ser ajustado na chamada
 
 | Opção | Padrão | O que faz |
@@ -48,7 +62,7 @@ outra pasta. Versões diferentes podem alterar resultados e a compatibilidade.
 | `--output PASTA` | `Articles/results/combined` | Campanha e retomada |
 | `--workers N` | `1` | Processos em um único nó |
 | `--max-points N` | sem limite | Primeiros N pontos pendentes, não amostra aleatória |
-| `--dry-run` | desligado | Inspeciona a grade sem bounces |
+| `--dry-run` | desligado | Confere grade e compatibilidade da pasta, sem bounces |
 | `--no-baselines` | desligado | Não acrescenta C=0/m6=inf/m8=inf |
 | `--retry-failed` | desligado | Repete numerical_failure/observables_unresolved |
 | `--export-only` | desligado | Atualiza CSVs a partir do banco |

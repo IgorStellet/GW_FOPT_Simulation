@@ -4,11 +4,14 @@ import gzip
 import hashlib
 import json
 import math
+import sqlite3
+from contextlib import closing
 
 import numpy as np
 import pytest
 
 from Articles.collect_data import (
+    IncompatibleCampaignError,
     NucleationCriterion,
     Settings,
     canonical_json,
@@ -23,6 +26,7 @@ from Articles.collect_data import (
     scan_points,
     shard_points,
     single_writer,
+    validate_campaign,
 )
 from Articles.combined_model import CombinedPotential, ModelParameters
 from CosmoTransitions.transitionFinder import Phase
@@ -167,6 +171,75 @@ def test_output_lock_rejects_another_writer(tmp_path):
         single_writer(tmp_path),
     ):
         pass
+
+
+def test_campaign_mismatch_explains_changes_without_modifying_checkpoint(tmp_path):
+    old = {
+        "fingerprint": "old", "settings": {"beta_step": 0.5},
+        "grid": {"C_range": [0, 1, 0.1]}, "versions": {"numpy": "old"},
+        "python": "3.11.7", "source_sha256": {"Articles/collect_data.py": "old"},
+    }
+    new = {
+        **old, "fingerprint": "new", "settings": {"beta_step": 1.0},
+        "grid": {"C_range": [0, 2, 0.1]}, "versions": {"numpy": "new"},
+        "python": "3.12.3", "source_sha256": {"Articles/collect_data.py": "new"},
+    }
+    with closing(open_database(tmp_path, old)) as db:
+        save_point(db, tmp_path, ({"point_id": "kept", "status": "nucleated"}, [], {}))
+        db.execute("PRAGMA journal_mode=DELETE")
+    before = {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    with pytest.raises(IncompatibleCampaignError) as error:
+        open_database(tmp_path, new)
+    message = str(error.value)
+    for expected in ("beta_step", "C_range", "numpy", "Python", "Articles/collect_data.py", "--output"):
+        assert expected in message
+    assert {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()} == before
+    with closing(sqlite3.connect(tmp_path / "scan.sqlite")) as db:
+        assert db.execute("PRAGMA journal_mode").fetchone()[0] == "delete"
+        assert db.execute("SELECT point_id FROM points").fetchone()[0] == "kept"
+
+
+def test_dry_run_checks_compatibility_without_creating_or_running_campaign(tmp_path, monkeypatch, capsys):
+    import Articles.collect_data as collector
+
+    output = tmp_path / "new-campaign"
+    manifest = {"fingerprint": "current"}
+    monkeypatch.setattr(collector, "provenance", lambda *_: manifest)
+
+    def unexpected_scan(*args, **kwargs):
+        pytest.fail("--dry-run não deve iniciar a coleta.")
+
+    monkeypatch.setattr(collector, "run_scan", unexpected_scan)
+    assert collector.main(["--dry-run", "--output", str(output)]) == 0
+    assert not output.exists()
+    output.mkdir()
+    with closing(open_database(output, {"fingerprint": "earlier"})):
+        pass
+    with pytest.raises(SystemExit) as error:
+        collector.main(["--dry-run", "--output", str(output)])
+    assert error.value.code == 2
+    diagnostic = capsys.readouterr().err
+    assert "Campanha incompatível" in diagnostic
+    assert "usage:" not in diagnostic
+
+
+def test_explicit_default_axes_have_same_campaign_identity(tmp_path, monkeypatch):
+    import Articles.collect_data as collector
+
+    captured = []
+    real_provenance = collector.provenance
+
+    def capture(settings, grid):
+        manifest = real_provenance(settings, grid)
+        captured.append(manifest["fingerprint"])
+        return manifest
+
+    monkeypatch.setattr(collector, "provenance", capture)
+    common = ["--dry-run", "--output", str(tmp_path / "unused")]
+    assert collector.main(common) == 0
+    assert collector.main(common + ["--m6", "500", "2000", "5", "--C", "0", "10", "0.02"]) == 0
+    assert captured[0] == captured[1]
+    assert validate_campaign(tmp_path / "unused", {}) is None
 
 
 def test_shards_cover_each_point_exactly_once_and_preserve_coordinates():

@@ -121,8 +121,15 @@ def main(argv=None):
         parser.error("Pastas distintas e não aninhadas; lote/workers/partes positivos e índice válido.")
     if work.exists() and any(work.iterdir()):
         parser.error("work-dir deve estar vazio; restauração virá do checkpoint persistente.")
-    work.mkdir(parents=True, exist_ok=True)
-    output.mkdir(parents=True, exist_ok=True)
+    try:
+        work.mkdir(parents=True, exist_ok=True)
+        output.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        parser.exit(
+            2, f"Não foi possível preparar as pastas: {error}\n"
+            "--work-dir deve usar uma pasta local gravável; --output, uma pasta persistente gravável.\n"
+            "No Slurm, confira FOPT_SCRATCH_ROOT e FOPT_RESULTS_ROOT.\n",
+        )
     stop_requested = False
 
     def request_stop(signum, frame):

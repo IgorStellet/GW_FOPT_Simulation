@@ -185,3 +185,54 @@ em Linux/Python 3.11, além das entradas instaladas em 3.11/3.12/3.13.
 O Python 3.11.7 informado pelo usuário no CHE atende ao requisito; falta
 confirmar a preparação da venv e o piloto na conta do cluster. Não houve
 submissão remota nem execução da campanha completa nesta correção.
+
+## Compatibilidade das campanhas e temporário do job — 01/10/2026
+
+O erro local de retomada foi associado a uma campanha antiga em
+`Articles/results/combined`. O manifesto registra 24/09/2026; a comparação
+identificou alteração no coletor e inclusão posterior do runner. A proteção
+contra misturar resultados de códigos/ambientes/configurações diferentes foi
+mantida. Agora ela lista as diferenças e consulta o banco somente para leitura
+antes de configurá-lo para escrita. `--dry-run` também confere essa compatibilidade
+e não cria campanha. Os eixos padrão usam floats, assim escrever explicitamente
+os mesmos valores na chamada não produz uma incompatibilidade artificial.
+
+O log enviado do CHE para o job **107761** mostra que o Python iniciou, mas a
+criação de `/scratch/local/ftovar/...` falhou com PermissionError em `/scratch`.
+Os dois templates agora carregam `cluster/job_environment.sh`: usam a escolha
+explícita FOPT_SCRATCH_ROOT, ou procuram SLURM_TMPDIR, TMPDIR e /tmp. Criam uma
+pasta exclusiva com mktemp e imprimem o caminho. Uma escolha explícita inválida
+é rejeitada sem tentar criar sua raiz. Falhas ao preparar pastas na chamada
+direta do runner também recebem uma mensagem curta. O guia captura o número
+real retornado por sbatch, evitando usar JOB_ID literalmente.
+
+**60 testes passaram**, com 31 avisos dos exemplos anteriores: 6 de núcleo,
+13 de coleta, 13 de cluster e 28 anteriores. As regressões novas cobrem banco
+incompatível sem alteração dos arquivos/journal, diagnóstico das diferenças,
+dry-run sem cálculo/gravação, equivalência das chamadas padrão/explícita,
+falta de permissão na pasta de trabalho, escolhas de temporário e recusa de
+checkpoint incompatível sem substituir os dados persistentes. Ruff passou;
+a sintaxe dos quatro scripts Bash/Slurm foi conferida.
+
+Novo piloto executado:
+
+```bash
+python -m Articles.collect_data --output Articles/results/campaign_fix_20261001 --m6 1000 1000 5 --C 0 3.35 3.35 --m8 668.740304976422 --no-baselines --beta-check --workers 2
+```
+
+C=0: `no_nucleation_found`, 39.6 s; C=3.35: `nucleated`, 84.6 s.
+Tn=40.73800650428223 GeV, alpha_energy=0.458758890225597,
+alpha_trace=0.33289431716939344, beta/H=116.72234483860271,
+f_sw_peak=0.00091334605711425 Hz e h²Omega_sw_peak=8.061022207395195e-12.
+Esses observáveis coincidem entre SQLite, CSV e detalhes comprimidos; os inputs
+do espectro e amostras da ação também estão nos detalhes. Integridade SQLite=ok.
+Repetir o comando executou zero pontos novos; dry-run aceitou a campanha atual
+e rejeitou corretamente uma anterior, listando os arquivos alterados.
+
+O checkpoint foi publicado em `slurm_fix_20261001/smoke` e o próprio smoke.slurm
+foi executado localmente com Git Bash, variáveis Slurm simuladas e temporários
+preferenciais ausentes. Escolheu /tmp, restaurou os dois pontos, executou zero
+novos e publicou o checkpoint. Isso confere o fluxo do script e do runner;
+**não é uma submissão Slurm nem uma execução validada no CHE**. É necessário
+submeter novamente o piloto atualizado na conta e conferir seus logs antes da
+campanha grande. Os resultados locais continuam ignorados pelo Git.

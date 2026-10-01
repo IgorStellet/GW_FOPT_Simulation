@@ -54,9 +54,10 @@ cd GW_FOPT_Simulation
 bash Articles/cluster/setup_environment.sh python3
 export FOPT_PYTHON="$PWD/.venv-che311/bin/python"
 mkdir -p Articles/results/logs
-"$FOPT_PYTHON" -m Articles.collect_data --dry-run
+"$FOPT_PYTHON" -m Articles.collect_data --dry-run --output Articles/results/installation-check
 bash -n Articles/cluster/smoke.slurm
 bash -n Articles/cluster/production.slurm
+bash -n Articles/cluster/job_environment.sh
 ```
 
 Se já houver clone, use-o e confira `git status` antes de atualizar. Instale no
@@ -117,9 +118,12 @@ de 15 dias. /share/storage1 é área compartilhada para produtos científicos;
 autorizada com espaço para sua campanha. Os detalhes de fases podem ocupar
 dezenas de GB no scan grande; meça o piloto antes de extrapolar o armazenamento.
 
-/scratch/local pertence a cada nó; o manual informa remoção de arquivos antigos
-após 30 dias. Não é o destino final dos dados. Os templates usam scratch para
-SQLite ativo e copiam checkpoints para o destino persistente.
+O manual descreve /scratch/local, mas esse caminho pode estar ausente ou sem
+permissão no nó alocado, como ocorreu no job 107761. Os templates não presumem
+sua existência: criam uma pasta exclusiva no primeiro caminho gravável entre
+SLURM_TMPDIR, TMPDIR e /tmp, usando mktemp. Esses caminhos são avaliados dentro
+do job, no nó de cálculo. O `.out` informa o diretório efetivamente escolhido.
+O SQLite ativo fica nessa pasta temporária; checkpoints vão ao destino persistente.
 
 Para o teste pequeno, uma pasta na sua home é suficiente:
 
@@ -131,8 +135,16 @@ mkdir -p "$FOPT_RESULTS_ROOT" Articles/results/logs
 Mantenha `FOPT_PYTHON` apontando para o ambiente escolhido na etapa 3.
 Se o Python exige um módulo, exporte também o nome realmente usado:
 `export FOPT_PYTHON_MODULE=NOME_DO_MODULO`. Os scripts o carregam explicitamente.
-FOPT_SCRATCH_ROOT pode substituir /scratch/local somente por um disco local
-confirmado no nó. Não aponte esse scratch para uma montagem NFS.
+Para escolher outro disco local confirmado no nó, exporte FOPT_SCRATCH_ROOT com
+uma pasta **existente e gravável**. Uma escolha explícita inválida faz o job parar
+com uma mensagem clara. Para usar a seleção automática:
+
+```bash
+unset FOPT_SCRATCH_ROOT
+```
+
+Não use uma montagem NFS para o banco ativo. `/tmp` permite o teste pequeno;
+antes da campanha grande, confira o espaço do disco no nó de cálculo.
 
 ## 5. Submeter o teste de dois pontos
 
@@ -144,9 +156,10 @@ entrar em outra sessão. `FOPT_RESULTS_ROOT` é a pasta persistente dos resultad
 ```bash
 export FOPT_PYTHON="$PWD/.venv-che311/bin/python"
 export FOPT_RESULTS_ROOT="$HOME/fopt-tests"
+unset FOPT_SCRATCH_ROOT
 mkdir -p "$FOPT_RESULTS_ROOT" Articles/results/logs
 "$FOPT_PYTHON" --version
-"$FOPT_PYTHON" -m Articles.collect_data --dry-run
+"$FOPT_PYTHON" -m Articles.collect_data --dry-run --output "$FOPT_RESULTS_ROOT/smoke" --m6 1000 1000 5 --C 0 3.35 3.35 --m8 668.740304976422 --no-baselines --beta-check
 ```
 
 Se escolheu outro nome para a venv, ajuste `FOPT_PYTHON`. Se esta pasta de
@@ -154,7 +167,8 @@ resultados contém uma campanha de outra versão do código, escolha outra pasta
 Somente após as duas chamadas Python acima funcionarem, submeta:
 
 ```bash
-sbatch --export=ALL Articles/cluster/smoke.slurm
+job_id="$(sbatch --parsable --export=ALL Articles/cluster/smoke.slurm)"
+printf 'Job submetido: %s\n' "$job_id"
 squeue -u "$USER"
 ```
 
@@ -169,21 +183,25 @@ O Slurm informa um JOB_ID. O script reserva um nó, uma tarefa, duas CPUs e 4 GB
 por até 2h na fila debug. Ele calcula C=0 e C=3.35 para m6=1000 GeV e
 m8=668.740304976422 GeV, com beta-check. O checkpoint é feito a cada ponto.
 
-Monitore substituindo JOB_ID pelo número recebido. Os comandos abaixo retornam
-ao prompt e podem ser executados em sequência:
+O comando acima guarda o número real em `job_id`. Monitore na mesma sessão SSH:
 
 ```bash
-scontrol show job JOB_ID
-tail -n 80 Articles/results/logs/smoke-JOB_ID.out
-cat Articles/results/logs/smoke-JOB_ID.err
-sacct -j JOB_ID --format=JobID,State,Elapsed,AllocCPUS,MaxRSS,ExitCode
+scontrol show job "$job_id"
+tail -n 80 "Articles/results/logs/smoke-$job_id.out"
+cat "Articles/results/logs/smoke-$job_id.err"
+sacct -j "$job_id" --format=JobID,State,Elapsed,AllocCPUS,MaxRSS,ExitCode
 ```
 
+Após reconectar por SSH, defina `job_id=NUMERO_RECEBIDO` antes de monitorar.
+`NUMERO_RECEBIDO` e `JOB_ID` são indicações para substituir pelo número, não
+identificadores aceitos literalmente pelo Slurm. `scontrol show job JOB_ID`
+produz Invalid job id; isso não informa o estado do job submetido.
+
 Para acompanhar um job em execução continuamente, use separadamente
-`tail -f Articles/results/logs/smoke-JOB_ID.out`. Esse comando fica aberto,
+`tail -f "Articles/results/logs/smoke-$job_id.out"`. Esse comando fica aberto,
 inclusive depois de o job terminar; use Ctrl+C para voltar ao prompt antes de
 executar outro comando. Ctrl+C encerra apenas tail, não o job.
-Para cancelar o job, use `scancel JOB_ID`.
+Para cancelar o job, use `scancel "$job_id"`.
 PD significa aguardando recursos; R significa executando. O log mostra checkpoints
 publicados, status dos pontos e quantidade confirmada. Confira os CSVs em
 `$FOPT_RESULTS_ROOT/smoke` e os valores de referência no QUICKSTART.
@@ -212,7 +230,7 @@ substitua o caminho abaixo pela pasta concedida ao seu usuário/projeto:
 ```bash
 export FOPT_RESULTS_ROOT=/CAMINHO/PERSISTENTE/AUTORIZADO/fopt-campaign
 mkdir -p "$FOPT_RESULTS_ROOT" Articles/results/logs
-"$FOPT_PYTHON" -m Articles.collect_data --dry-run --shard-count 100 --shard-index 0 --beta-check
+"$FOPT_PYTHON" -m Articles.collect_data --dry-run --output "$FOPT_RESULTS_ROOT/production/part-0" --shard-count 100 --shard-index 0 --beta-check
 sbatch --export=ALL Articles/cluster/production.slurm
 ```
 
@@ -240,6 +258,9 @@ O scratch não é removido automaticamente: confira os checkpoints antes de limp
 
 Para retomar, submeta o mesmo script com o mesmo destino e código/ambiente. Cada
 job restaura seu checkpoint para um scratch novo e pula pontos já confirmados.
+Se aparecer Campanha incompatível, consulte as diferenças listadas: uma revisão
+de código/ambiente/configuração exige outra pasta persistente para resultados
+novos. Preserve a campanha anterior; não force sua mistura com a nova.
 Para repetir somente partes incompletas, restrinja o array na chamada, por exemplo
 `sbatch --array=4,7,12%2 Articles/cluster/production.slurm`. Não altere shard-count.
 Uma nova submissão não pode disputar uma parte ainda ativa: a trava rejeita isso.

@@ -38,7 +38,7 @@ environment_python="$environment_dir/bin/python"
 "$environment_python" -m pip install --upgrade pip
 "$environment_python" -m pip install -e "$repo_root" pytest
 "$environment_python" -m pip check
-"$environment_python" -m Articles.collect_data --dry-run
+"$environment_python" -m Articles.collect_data --dry-run --output "$environment_dir/installation-check"
 
 echo "Ambiente pronto. Use este Python para os testes e para os jobs:"
 printf 'export FOPT_PYTHON=%q\n' "$(cd -- "$environment_dir" && pwd)/bin/python"

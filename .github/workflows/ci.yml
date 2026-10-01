@@ -28,7 +28,7 @@ jobs:
         working-directory: ${{ runner.temp }}
         run: |
           python -m Articles.cluster_runner --help
-          python -m Articles.collect_data --dry-run
+          python -m Articles.collect_data --dry-run --output "$RUNNER_TEMP/entrypoint-check"
 
       - name: Check CHE setup with a Python that has no pip
         if: matrix.python-version == '3.11'
@@ -37,6 +37,7 @@ jobs:
           bash Articles/cluster/setup_environment.sh "$RUNNER_TEMP/python-no-pip/bin/python" "$RUNNER_TEMP/che-venv"
           bash -n Articles/cluster/smoke.slurm
           bash -n Articles/cluster/production.slurm
+          bash -n Articles/cluster/job_environment.sh
 
       - name: Lint article code
         run: |
