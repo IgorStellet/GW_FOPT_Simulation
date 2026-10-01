@@ -1,6 +1,7 @@
 """Checks of scientific conventions and crash-safe article collection."""
 
 import gzip
+import hashlib
 import json
 import math
 
@@ -17,6 +18,7 @@ from Articles.collect_data import (
     open_database,
     pending_points,
     point_id,
+    provenance,
     save_point,
     scan_points,
     shard_points,
@@ -24,6 +26,24 @@ from Articles.collect_data import (
 )
 from Articles.combined_model import CombinedPotential, ModelParameters
 from CosmoTransitions.transitionFinder import Phase
+
+
+def test_provenance_hashes_imported_core_even_without_repository_layout(tmp_path, monkeypatch):
+    import Articles.collect_data as collector
+
+    # Simula arquivos instalados em site-packages, sem uma pasta ROOT/src.
+    core = tmp_path / "site-packages" / "CosmoTransitions"
+    core.mkdir(parents=True)
+    (core / "__init__.py").write_bytes(b"installed core")
+    (core / "Jb_spline_v1.npz").write_bytes(b"installed thermal table")
+    monkeypatch.setattr(collector.CosmoTransitions, "__file__", str(core / "__init__.py"))
+    monkeypatch.setattr(collector, "ROOT", tmp_path / "absent-repository")
+    manifest = provenance(Settings(), {})
+    sources = manifest["source_sha256"]
+    assert sources["src/CosmoTransitions/__init__.py"] == hashlib.sha256(b"installed core").hexdigest()
+    assert sources["src/CosmoTransitions/Jb_spline_v1.npz"] == hashlib.sha256(b"installed thermal table").hexdigest()
+    assert "Articles/combined_model.py" in sources
+    assert manifest["git_commit"] is None
 
 
 def test_default_grid_contains_exact_endpoints_and_pure_limits():

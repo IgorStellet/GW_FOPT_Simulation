@@ -39,6 +39,7 @@ for _variable in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
 
 import numpy as np
 
+import CosmoTransitions
 from Articles.combined_model import CombinedPotential, ModelParameters
 from CosmoTransitions.generic_potential import (
     _build_phases_and_transitions,
@@ -472,15 +473,18 @@ def evaluate_point(params: ModelParameters, settings: Settings):
 
 def provenance(settings, grid):
     """Hash do código efetivo, e não apenas do último commit."""
-    paths = sorted((ROOT / "src/CosmoTransitions").glob("*.py")) + sorted(
-        (ROOT / "Articles").glob("*.py")
+    # Usa os arquivos realmente importados, também numa instalação por wheel.
+    # As chaves conservam os nomes do repositório para facilitar a auditoria.
+    packages = (
+        ("src/CosmoTransitions", Path(CosmoTransitions.__file__).resolve().parent),
+        ("Articles", Path(__file__).resolve().parent),
     )
-    # Inclui tabelas térmicas versionadas: também fazem parte do cálculo.
-    paths += sorted((ROOT / "src/CosmoTransitions").glob("*.npz"))
-    files = {
-        p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
-        for p in paths
-    }
+    files = {}
+    for label, folder in packages:
+        patterns = ("*.py", "*.npz") if label == "src/CosmoTransitions" else ("*.py",)
+        for pattern in patterns:
+            for path in sorted(folder.glob(pattern)):
+                files[f"{label}/{path.name}"] = hashlib.sha256(path.read_bytes()).hexdigest()
     versions = {
         name: importlib.metadata.version(name)
         for name in ("numpy", "scipy", )

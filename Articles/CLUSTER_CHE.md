@@ -51,12 +51,10 @@ mkdir -p "$HOME/projects"
 cd "$HOME/projects"
 git clone --branch codex/articles-combined-potential-scan https://github.com/IgorStellet/GW_FOPT_Simulation.git
 cd GW_FOPT_Simulation
-python3 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install -e .
-.venv/bin/python -m pip install pytest
+bash Articles/cluster/setup_environment.sh python3
+export FOPT_PYTHON="$PWD/.venv-che311/bin/python"
 mkdir -p Articles/results/logs
-.venv/bin/python -m Articles.collect_data --dry-run
+"$FOPT_PYTHON" -m Articles.collect_data --dry-run
 bash -n Articles/cluster/smoke.slurm
 bash -n Articles/cluster/production.slurm
 ```
@@ -66,12 +64,45 @@ ambiente que será usado pelo job. Não execute pip automaticamente nos nós de
 cálculo: eles podem não ter acesso à internet. Preserve clone e ambiente durante
 a campanha; alterações em fontes/versões podem invalidar a retomada.
 
+### Python 3.11 disponível, mas sem pip
+
+`python3 -m pip: No module named pip` no Python base não exige instalar outro
+Python. O script acima cria uma **nova** `.venv-che311`, instala pip nela com
+`ensurepip` e instala o projeto e pytest usando esse mesmo Python. Nenhum pacote
+é instalado em `/opt/spack`. Se a pasta já existir, o script para e a preserva;
+escolha outro nome, por exemplo:
+
+```bash
+bash Articles/cluster/setup_environment.sh python3 .venv-che311-nova
+export FOPT_PYTHON="$PWD/.venv-che311-nova/bin/python"
+```
+
+Se a preparação parar **depois** de criar o ambiente, não precisa recriá-lo.
+Para concluir a instalação na pasta criada, use (ajuste o nome se necessário):
+
+```bash
+export FOPT_PYTHON="$PWD/.venv-che311/bin/python"
+"$FOPT_PYTHON" --version
+"$FOPT_PYTHON" -m ensurepip --upgrade
+"$FOPT_PYTHON" -m pip install --upgrade pip
+"$FOPT_PYTHON" -m pip install -e . pytest
+"$FOPT_PYTHON" -m pip check
+```
+
+Se o módulo escolhido não oferecer `venv`/`ensurepip`, a preparação informa isso;
+procure outro módulo Python >=3.11 ou peça ao suporte o módulo apropriado.
+Carregar Python 3.11 não transforma uma venv antiga em uma venv 3.11. Evite
+`pip install` isolado: ele pode pertencer a outro Python. Confira sempre
+`"$FOPT_PYTHON" -m pip --version`. O erro de NumPy com versões só até 1.24.4
+também pode indicar um índice de pacotes limitado; se persistir no ambiente
+novo, registre a versão do Python/pip e consulte o índice autorizado pelo CHE.
+
 Para testar a suíte em um nó, peça uma sessão interativa permitida pela sua conta:
 
 ```bash
 srun --partition=debug --nodes=1 --ntasks=1 --cpus-per-task=2 --mem=4G --time=00:30:00 --pty bash -l
 cd "$HOME/projects/GW_FOPT_Simulation"
-.venv/bin/python -m pytest -q
+"$FOPT_PYTHON" -m pytest -q
 exit
 ```
 
@@ -94,10 +125,10 @@ Para o teste pequeno, uma pasta na sua home é suficiente:
 
 ```bash
 export FOPT_RESULTS_ROOT="$HOME/fopt-tests"
-export FOPT_PYTHON="$PWD/.venv/bin/python"
 mkdir -p "$FOPT_RESULTS_ROOT" Articles/results/logs
 ```
 
+Mantenha `FOPT_PYTHON` apontando para o ambiente escolhido na etapa 3.
 Se o Python exige um módulo, exporte também o nome realmente usado:
 `export FOPT_PYTHON_MODULE=NOME_DO_MODULO`. Os scripts o carregam explicitamente.
 FOPT_SCRATCH_ROOT pode substituir /scratch/local somente por um disco local
@@ -154,7 +185,7 @@ substitua o caminho abaixo pela pasta concedida ao seu usuário/projeto:
 ```bash
 export FOPT_RESULTS_ROOT=/CAMINHO/PERSISTENTE/AUTORIZADO/fopt-campaign
 mkdir -p "$FOPT_RESULTS_ROOT" Articles/results/logs
-.venv/bin/python -m Articles.collect_data --dry-run --shard-count 100 --shard-index 0 --beta-check
+"$FOPT_PYTHON" -m Articles.collect_data --dry-run --shard-count 100 --shard-index 0 --beta-check
 sbatch Articles/cluster/production.slurm
 ```
 

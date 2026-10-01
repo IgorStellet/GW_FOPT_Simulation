@@ -140,3 +140,48 @@ concluir um lote antes de SIGKILL. O último lote não publicado pode ser repeti
 Login/endereço efetivos, Python, partição, quota, scratch e recursos precisam
 ser conferidos com a conta disponível. A validação Windows/Bash local não
 certifica configuração do scheduler nem convergência física da malha completa.
+
+## Correção da instalação e da chamada do runner — 01/10/2026
+
+Revisão baseada no commit `c79361e`, preservando as alterações do usuário.
+O README não foi modificado. A falha do CI era `ModuleNotFoundError: Articles`:
+o pacote do artigo não fazia parte da instalação. Foi reproduzida localmente
+com o executável `pytest`, mesmo com os testes passando via `python -m pytest`.
+
+A instalação agora inclui `Articles` e `CosmoTransitions`, as duas tabelas
+térmicas NPZ e a licença `LICENSE.txt`. Instalação editável, construção de wheel
+e instalação do wheel em uma pasta isolada foram verificadas. As importações,
+as splines e os hashes dos arquivos instalados funcionaram fora do layout
+`ROOT/src`. As entradas `--help`/`--dry-run` funcionaram fora do checkout.
+`pip check` não encontrou dependências inconsistentes.
+
+**50 testes passaram** com o executável `pytest` (31 avisos dos exemplos
+gráficos). São 6 testes de núcleo, 10 de coleta, 6 de cluster e 28 anteriores.
+A saída esperada da rejeição de pastas aninhadas é agora capturada e conferida.
+O runner sem argumentos mostra ajuda, retorna zero e não inicia uma campanha;
+uma chamada incompleta continua retornando erro de uso. Ruff dos arquivos do
+artigo/testes passou; a sintaxe dos três scripts Bash/Slurm foi conferida.
+
+O piloto real foi executado novamente:
+
+```bash
+python -m Articles.cluster_runner --smoke --beta-check --batch-size 1 --workers 2 --output Articles/results/cluster_fix_20261001 --work-dir Articles/results/cluster_fix_scratch_20261001
+```
+
+C=0: `no_nucleation_found`, 34.6 s; C=3.35: `nucleated`, 77.1 s.
+Tn=40.73800650428223 GeV, alpha_energy=0.458758890225597,
+alpha_trace=0.33289431716939344, beta/H=116.72234483860271,
+beta/H com meio passo=116.04593094770735,
+f_sw_peak=0.00091334605711425 Hz e h²Omega_sw_peak=8.061022207395195e-12.
+Todos esses valores coincidiram entre SQLite, CSV e detalhes comprimidos.
+A integridade foi `ok` no banco local, checkpoint persistente e restauração.
+O checkpoint usa DELETE; os bancos locais usam WAL. A retomada em
+`cluster_fix_restored_20261001` restaurou os dois pontos sem recalculá-los.
+
+O script `cluster/setup_environment.sh` prepara uma venv nova com Python >=3.11
+e instala pip por `ensurepip`, inclusive quando o Python base não tem pip.
+Recusa sobrescrever ambientes existentes. O CI passa a conferir esse cenário
+em Linux/Python 3.11, além das entradas instaladas em 3.11/3.12/3.13.
+O Python 3.11.7 informado pelo usuário no CHE atende ao requisito; falta
+confirmar a preparação da venv e o piloto na conta do cluster. Não houve
+submissão remota nem execução da campanha completa nesta correção.

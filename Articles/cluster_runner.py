@@ -11,6 +11,7 @@ import argparse
 import shutil
 import signal
 import sqlite3
+import sys
 from contextlib import closing
 from pathlib import Path
 
@@ -85,7 +86,17 @@ def point_state(folder: Path) -> tuple[int, str | None]:
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        epilog=(
+            "Teste local (execute na raiz do repositório): "
+            "python -m Articles.cluster_runner --smoke --beta-check "
+            "--batch-size 1 --workers 2 --output Articles/results/runner_smoke "
+            "--work-dir Articles/results/runner_scratch_novo. "
+            "No CHE, use Articles/cluster/smoke.slurm."
+        ),
+    )
     parser.add_argument("--output", type=Path, required=True, help="Pasta persistente da parte.")
     parser.add_argument("--work-dir", type=Path, required=True, help="Pasta NOVA no disco local do nó.")
     parser.add_argument("--batch-size", type=int, default=100)
@@ -94,7 +105,13 @@ def main(argv=None):
     parser.add_argument("--shard-count", type=int, default=1)
     parser.add_argument("--smoke", action="store_true", help="Grade de dois pontos de validação.")
     parser.add_argument("--beta-check", action="store_true")
-    args = parser.parse_args(argv)
+    arguments = sys.argv[1:] if argv is None else list(argv)
+    # O botão Run do editor geralmente não fornece argumentos. Nesse caso,
+    # ensina a chamada e termina sem criar pastas ou iniciar a campanha grande.
+    if not arguments:
+        parser.print_help()
+        return 0
+    args = parser.parse_args(arguments)
     output, work = args.output.resolve(), args.work_dir.resolve()
     if (
         output == work or output in work.parents or work in output.parents

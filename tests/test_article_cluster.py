@@ -51,9 +51,38 @@ def test_live_wal_is_rejected_without_replacing_previous_checkpoint(tmp_path):
         database.close()
 
 
-def test_runner_rejects_overlapping_output_and_work_paths(tmp_path):
-    with pytest.raises(SystemExit):
+def test_runner_rejects_overlapping_output_and_work_paths(tmp_path, capsys):
+    with pytest.raises(SystemExit) as error:
         main(["--output", str(tmp_path), "--work-dir", str(tmp_path / "scratch")])
+    assert error.value.code == 2
+    # Esta mensagem é esperada: o teste verifica uma chamada inválida. Capturá-la
+    # evita que o editor apresente uma rejeição correta como erro inesperado.
+    assert "Pastas distintas e não aninhadas" in capsys.readouterr().err
+
+
+def test_runner_without_arguments_shows_help_without_starting_scan(tmp_path, monkeypatch, capsys):
+    import Articles.cluster_runner as runner
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("sys.argv", ["cluster_runner.py"])
+
+    def unexpected_collect(argv):
+        pytest.fail("Ajuda sem argumentos não deve iniciar a coleta.")
+
+    monkeypatch.setattr(runner, "collect_main", unexpected_collect)
+    assert runner.main() == 0
+    output = capsys.readouterr()
+    assert "--smoke" in output.out
+    assert "--work-dir" in output.out
+    assert output.err == ""
+    assert not list(tmp_path.iterdir())
+
+
+def test_runner_still_rejects_incomplete_arguments(tmp_path, capsys):
+    with pytest.raises(SystemExit) as error:
+        main(["--output", str(tmp_path / "shared")])
+    assert error.value.code == 2
+    assert "--work-dir" in capsys.readouterr().err
 
 
 def test_runner_continues_after_repair_that_does_not_increase_point_count(tmp_path, monkeypatch):

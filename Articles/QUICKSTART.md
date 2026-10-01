@@ -84,3 +84,22 @@ garante seleção de vácuo/percolação. Frequências CSV em Hz; núcleo recebe
 Dados em results não são enviados automaticamente ao GitHub.
 
 Cluster: [primeiro acesso, teste e produção no CHE](CLUSTER_CHE.md).
+
+## Executar o runner no editor ou no terminal
+
+`cluster_runner.py` coordena os lotes e checkpoints. Sem argumentos, mostra
+ajuda e encerra; para calcular, informe duas pastas distintas, sem uma dentro
+da outra. `--work-dir` deve estar vazio no início da chamada. Teste local:
+
+```bash
+python -m Articles.cluster_runner --smoke --beta-check --batch-size 1 --workers 2 --output Articles/results/runner_smoke --work-dir Articles/results/runner_scratch_novo
+```
+
+Na configuração Run do PyCharm, use o módulo `Articles.cluster_runner`, o
+mesmo interpretador em que instalou `-e .` e os argumentos acima a partir de
+`--smoke`. Para repetir, mantenha `--output` e escolha um novo `--work-dir`.
+No CHE, use o template Slurm; o disco de trabalho deve ser local ao nó.
+
+`test_article_cluster.py` testa cópia, restauração e validação das chamadas;
+não executa a campanha. Um teste que rejeita pastas aninhadas deve passar:
+a mensagem de rejeição é capturada e verificada pelo próprio teste.
