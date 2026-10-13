@@ -42,5 +42,5 @@ environment_python="$environment_dir/bin/python"
 
 echo "Ambiente pronto. Use este Python para os testes e para os jobs:"
 printf 'export FOPT_PYTHON=%q\n' "$(cd -- "$environment_dir" && pwd)/bin/python"
-echo '"$FOPT_PYTHON" -m pytest -q'
+echo '"$FOPT_PYTHON" -m pytest -q Articles/tests'
 echo "Os testes numéricos devem rodar em uma alocação Slurm. Consulte Articles/CLUSTER_CHE.md."

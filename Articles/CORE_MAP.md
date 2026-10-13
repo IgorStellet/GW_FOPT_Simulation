@@ -78,7 +78,11 @@ de V e as funções `run_00` a `run_08`, junto com muitos diagnósticos e gráfi
 coeficiente, usando o mesmo pipeline de fases/bounce/GW. No artigo,
 `ModelParameters` usa m6/m8 em GeV, `CombinedPotential` reúne a física e
 `collect_data` salva os resultados sem importar nem executar aquele script.
-A camada adaptativa substitui somente a escolha das coordenadas.
+A camada adaptativa substitui a escolha das coordenadas. A revisão v2
+verifica uma semente em C a cada m6 antes de aplicar a poda. O piloto usa
+`plot_results.py` para desenhar dados salvos e reconstruir espectros pelas
+funções sem estado do núcleo. `core_imports.py` aceita o pacote instalado ou
+src na raiz do checkout, sem duplicar as rotinas numéricas.
 
 As normalizações preservadas são phi^6/(8 m6²), phi^8/(16 m8^4), matching
 em v=246 GeV e mh=125 GeV, medida subtraída localmente, CW/contratermos e

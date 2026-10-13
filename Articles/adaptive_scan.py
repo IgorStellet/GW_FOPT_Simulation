@@ -33,9 +33,9 @@ class AdaptivePlan:
     seed_C: float = 3.83
     seed_m6_GeV: float = math.inf
     patience: int = 3
-    # O piloto calcula exatamente duas linhas de C, sem fingir que isso
-    # satisfaz o critério de três LINHAS vazias na direção de C.
-    row_limit: int | None = None
+    # Limites somente do piloto, aplicados DEPOIS de verificar a semente.
+    column_limit: int | None = None
+    C_steps_limit: int | None = None
 
     def axes(self):
         from Articles.collect_data import inclusive_axis
@@ -53,8 +53,9 @@ class AdaptivePlan:
             raise ValueError("seed-m6 deve ser inf ou pertencer à grade de m6.")
         if not self.m8_GeV or any(math.isnan(m) or m <= 0 for m in self.m8_GeV):
             raise ValueError("Cenários m8 devem ser positivos ou inf.")
-        if self.row_limit is not None and self.row_limit < 1:
-            raise ValueError("row-limit deve ser positivo.")
+        for name in ("column_limit", "C_steps_limit"):
+            if getattr(self, name) is not None and getattr(self, name) < 1:
+                raise ValueError(f"{name} deve ser positivo.")
         a, b, h, seed = (Decimal(str(x)) for x in (lo, hi, step, self.seed_C))
         # O passo é ancorado na semente: 3.83, 3.81, ...; inclui 0 e 10,
         # mesmo quando o último intervalo é menor que h.
@@ -64,7 +65,7 @@ class AdaptivePlan:
         return masses, cs
 
     def identity(self):
-        return {"strategy": "adaptive_v1", **asdict(self), "Lambda_GeV": 1000.0}
+        return {"strategy": "adaptive_v2_verified_columns", **asdict(self), "Lambda_GeV": 1000.0}
 
 
 def nucleation_decision(row, transitions):
@@ -77,116 +78,125 @@ def nucleation_decision(row, transitions):
 
 
 def trace_scan(plan, evaluate, report=None):
-    """Rastreia cada fatia; evaluate recebe ModelParameters e retorna decisão.
+    """Uma faixa de C por m6: primeiro verifica semente, depois aplica poda.
 
-    Procura primeiro uma semente VERIFICADA no m6 declarado, descendo C.
-    A regra das três linhas vazias só vale depois de encontrar essa semente.
-    Ilhas desconectadas além de três falhas não são cobertas pela hipótese
-    de continuação. Os trechos pulados são hipóteses, nunca resultados.
+    Toda nova massa repete a busca da primeira nucleação, sem patience.
+    Descemos C a partir da faixa anterior; se necessário, procuramos também
+    acima até C_max, evitando supor monotonicidade entre massas. Uma coluna
+    só conta como vazia depois de esgotar seu eixo C inteiro sem nucleação.
     """
     masses, cs = plan.axes()
     report = report if report is not None else {}
-    report.update(state="running", slices=[], assumption="connected_band_at_declared_resolution")
+    report.update(state="running", slices=[], assumption="connected_C_band_after_verified_seed")
     initial_i = masses.index(plan.seed_m6_GeV)
     initial_j = cs.index(plan.seed_C)
-
-    def point(j, i, m8):
-        return ModelParameters(m6_GeV=masses[i], m8_GeV=m8, C=cs[j])
+    decisions = {}
 
     def ask(j, i, m8):
-        decision = evaluate(point(j, i, m8))
-        if decision not in ("yes", "no"):
-            raise UnresolvedPoint(
-                f"Ponto inconclusivo C={cs[j]:g}, m6={masses[i]:g}, m8={m8:g}. "
-                "Nenhuma região foi podada a partir dele. Consulte details e "
-                "retome com --retry-failed; para mudar código/configuração, use outra pasta."
-            )
-        return decision
+        key = (j, i, m8)
+        if key not in decisions:
+            params = ModelParameters(m6_GeV=masses[i], m8_GeV=m8, C=cs[j])
+            decision = evaluate(params)
+            if decision not in ("yes", "no"):
+                raise UnresolvedPoint(
+                    f"Ponto inconclusivo C={cs[j]:g}, m6={masses[i]:g}, m8={m8:g}. "
+                    "Nenhuma região foi podada a partir dele. Consulte details e "
+                    "retome com --retry-failed; para mudar código/configuração, use outra pasta."
+                )
+            decisions[key] = decision
+        return decisions[key]
 
-    try:
-        for m8 in dict.fromkeys(plan.m8_GeV):
-            section = {"m8_GeV": m8, "rows": [], "C_stops": [], "bootstrap": []}
-            report["slices"].append(section)
-            # Uma semente que nucleia no modelo puro pode deixar de nuclear
-            # ao ligar m8. Não encerramos a busca só por essa suposição falhar.
-            seed_j = None
-            for j in range(initial_j, -1, -1):
-                d = ask(j, initial_i, m8)
-                section["bootstrap"].append({"C": cs[j], "decision": d})
+    def scan_column(i, start_j, section):
+        m8 = section["m8_GeV"]
+        column = {"m6_GeV": masses[i], "initial_C": cs[start_j], "bootstrap": [],
+                  "hits_C": [], "C_stops": [], "state": "searching_seed"}
+        section["columns"].append(column)
+        seed_j = None
+        searches = ((range(start_j, -1, -1), "decreasing_C"),
+                    (range(start_j + 1, len(cs)), "increasing_C_fallback"))
+        for candidates, name in searches:
+            for j in candidates:
+                d = ask(j, i, m8)
+                column["bootstrap"].append({"C": cs[j], "decision": d, "direction": name})
                 if d == "yes":
                     seed_j = j
                     break
-            if seed_j is None:
-                raise UnresolvedPoint(
-                    f"Nenhuma semente verificada em m6={plan.seed_m6_GeV:g}, m8={m8:g}. "
-                    "A busca limitada terminou; escolha --seed-m6/--seed-C em outra campanha."
-                )
-            section["verified_seed_C"] = cs[seed_j]
-
-            def scan_row(j, center, section=section, m8=m8):
-                row = {"C": cs[j], "seed_m6_GeV": masses[center], "hits_m6_GeV": [], "stops": []}
-                section["rows"].append(row)
-                at_center = ask(j, center, m8)
-                hits = [center] if at_center == "yes" else []
-                for direction, name in ((-1, "larger_m6"), (1, "smaller_m6")):
-                    trail = [center] if at_center == "no" else []
-                    i = center + direction
-                    while 0 <= i < len(masses) and len(trail) < plan.patience:
-                        d = ask(j, i, m8)
-                        if d == "yes":
-                            hits.append(i)
-                            trail = []
-                        else:
-                            trail.append(i)
-                        i += direction
-                    row["stops"].append({
-                        "direction": name,
-                        "reason": "consecutive_no_nucleation" if len(trail) >= plan.patience else "bound",
-                        "last_no_m6_GeV": [masses[k] for k in trail],
-                        "first_skipped_m6_GeV": masses[i] if 0 <= i < len(masses) else None,
-                    })
-                row["hits_m6_GeV"] = [masses[k] for k in sorted(set(hits))]
-                row["state"] = "complete"
-                # A mediana dos hits fica dentro da faixa e acompanha seu
-                # deslocamento; uma semente presa à borda pode perder a faixa
-                # inteira no próximo passo de C.
-                unique_hits = sorted(set(hits))
-                return unique_hits[len(unique_hits) // 2] if hits else None
-
-            center = scan_row(seed_j, initial_i)
-            assert center is not None  # nucleação do bootstrap foi verificada
-            seed_center = center
-            # No piloto: semente + próxima linha abaixo, duas linhas exatas.
-            directions = ((-1, "decreasing_C"), (1, "increasing_C")) if plan.row_limit else (
-                (1, "increasing_C"), (-1, "decreasing_C")
-            )
-            for direction, name in directions:
-                center = seed_center
-                empty_rows = []
-                j = seed_j + direction
-                while 0 <= j < len(cs):
-                    if plan.row_limit and len(section["rows"]) >= plan.row_limit:
-                        section["C_stops"].append({"direction": name, "reason": "row_limit"})
-                        break
-                    hit = scan_row(j, center)
-                    if hit is None:
-                        empty_rows.append(cs[j])
-                    else:
-                        center = hit
-                        empty_rows = []
-                    j += direction
-                    if len(empty_rows) >= plan.patience:
-                        break
+            if seed_j is not None:
+                break
+        if seed_j is None:
+            column.update(state="no_nucleation_on_grid", C_search_complete=True)
+            return None
+        column["verified_seed_C"] = cs[seed_j]
+        hits = {seed_j}
+        column["hits_C"] = [cs[seed_j]]
+        for direction, name in ((1, "increasing_C"), (-1, "decreasing_C")):
+            trail, steps = [], 0
+            j = seed_j + direction
+            reason = "bound"
+            while 0 <= j < len(cs):
+                if plan.C_steps_limit is not None and steps >= plan.C_steps_limit:
+                    reason = "pilot_step_limit"
+                    break
+                d = ask(j, i, m8)
+                steps += 1
+                if d == "yes":
+                    hits.add(j)
+                    column["hits_C"] = [cs[k] for k in sorted(hits)]
+                    trail = []
                 else:
-                    section["C_stops"].append({"direction": name, "reason": "bound"})
-                    continue
-                if len(empty_rows) >= plan.patience:
-                    section["C_stops"].append({
-                        "direction": name, "reason": "consecutive_empty_rows",
-                        "last_no_C": empty_rows,
-                        "first_skipped_C": cs[j] if 0 <= j < len(cs) else None,
-                    })
-        report["state"] = "pilot_complete" if plan.row_limit else "complete"
+                    trail.append(cs[j])
+                j += direction
+                if len(trail) >= plan.patience:
+                    reason = "consecutive_no_nucleation"
+                    break
+            next_unknown = j
+            # O bootstrap pode já ter calculado os C acima da fronteira.
+            # Não os rotulamos como pulados ao encerrar a expansão da faixa.
+            while 0 <= next_unknown < len(cs) and (next_unknown, i, m8) in decisions:
+                next_unknown += direction
+            column["C_stops"].append({
+                "direction": name, "reason": reason, "last_no_C": trail,
+                "first_after_walk_C": cs[j] if 0 <= j < len(cs) else None,
+                "first_skipped_C": cs[next_unknown] if 0 <= next_unknown < len(cs) else None,
+            })
+        column["state"] = "pilot_window" if any(
+            s["reason"] == "pilot_step_limit" for s in column["C_stops"]
+        ) else "complete"
+        # Reutilizamos o maior C observado, sem assumir que a próxima massa
+        # nucleie ali. A nova coluna sempre executa seu próprio bootstrap.
+        return max(hits)
+
+    try:
+        for m8 in dict.fromkeys(plan.m8_GeV):
+            section = {"m8_GeV": m8, "columns": [], "m6_stops": []}
+            report["slices"].append(section)
+            seed_j = scan_column(initial_i, initial_j, section)
+            for direction, name in ((-1, "larger_m6"), (1, "smaller_m6")):
+                start_j = seed_j if seed_j is not None else initial_j
+                has_verified_seed = seed_j is not None
+                empty_columns = []
+                i = initial_i + direction
+                reason = "bound"
+                while 0 <= i < len(masses):
+                    if plan.column_limit and len(section["columns"]) >= plan.column_limit:
+                        reason = "column_limit"
+                        break
+                    hit_j = scan_column(i, start_j, section)
+                    if hit_j is not None:
+                        start_j, has_verified_seed = hit_j, True
+                        empty_columns = []
+                    elif has_verified_seed:
+                        empty_columns.append(masses[i])
+                    i += direction
+                    if len(empty_columns) >= plan.patience:
+                        reason = "consecutive_empty_columns"
+                        break
+                section["m6_stops"].append({
+                    "direction": name, "reason": reason, "last_no_m6_GeV": empty_columns,
+                    "first_skipped_m6_GeV": masses[i] if 0 <= i < len(masses) else None,
+                })
+            section["has_verified_seed"] = any("verified_seed_C" in c for c in section["columns"])
+        report["state"] = "pilot_complete" if plan.column_limit or plan.C_steps_limit else "complete"
     except PointBudgetReached:
         report["state"] = "paused_point_budget"
     except UnresolvedPoint as error:

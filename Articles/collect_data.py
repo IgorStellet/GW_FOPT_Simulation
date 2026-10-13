@@ -3,7 +3,7 @@
 Execute na raiz: ``python -m Articles.collect_data --dry-run``.
 O módulo só coordena os cálculos: integrais térmicas, fases, bounce,
 derivadas e ondas gravitacionais continuam pertencendo a CosmoTransitions.
-Nenhuma figura é produzida. Consulte README.md para convenções e exemplos.
+O piloto também gera figuras diagnósticas. Consulte README.md para convenções.
 """
 
 from __future__ import annotations
@@ -39,15 +39,15 @@ for _variable in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
 
 import numpy as np
 
-import src.CosmoTransitions
 from Articles.combined_model import CombinedPotential, ModelParameters
-from src.CosmoTransitions.generic_potential import (
-    _build_phases_and_transitions,
-    build_finite_T_derivatives,
-)
-from src.CosmoTransitions.gravitational_Waves import (
+from Articles.core_imports import (
+    CosmoTransitions,
     GravitationalWaveCalculator,
+    Jb,
+    Jf,
+    _build_phases_and_transitions,
     bbo_sensitivity_s_pis,
+    build_finite_T_derivatives,
     decigo_sensitivity_s_pis,
     gw_f_sw_peak,
     gw_omega_sw_h2,
@@ -476,7 +476,7 @@ def provenance(settings, grid):
     # Usa os arquivos realmente importados, também numa instalação por wheel.
     # As chaves conservam os nomes do repositório para facilitar a auditoria.
     packages = (
-        ("src/CosmoTransitions", Path(src.CosmoTransitions.__file__).resolve().parent),
+        ("src/CosmoTransitions", Path(CosmoTransitions.__file__).resolve().parent),
         ("Articles", Path(__file__).resolve().parent),
     )
     files = {}
@@ -799,7 +799,10 @@ def main(argv=None):
     parser.add_argument("--seed-m6", type=float, default=math.inf)
     parser.add_argument("--patience", type=int, default=3)
     parser.add_argument("--scenario-index", type=int, choices=range(3))
-    parser.add_argument("--smoke", action="store_true", help="Piloto adaptativo de duas linhas de C.")
+    parser.add_argument("--smoke", action="store_true", help="Piloto com duas massas m6, busca de semente e gráficos.")
+    plots = parser.add_mutually_exclusive_group()
+    plots.add_argument("--plots", action="store_true", help="Gera mapas e espectros dos dados salvos.")
+    plots.add_argument("--no-plots", action="store_true", help="Desliga gráficos automáticos do piloto.")
     parser.add_argument("--no-baselines", action="store_true")
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--shard-index", type=int, default=0)
@@ -864,10 +867,14 @@ def main(argv=None):
             if args.smoke:
                 from dataclasses import replace
 
-                # O piloto mantém a regra de três pontos na direção de m6,
-                # mas limita explicitamente C a duas linhas. Não é produção.
-                plan = replace(plan, m6_range_GeV=(500.0, 2000.0, 750.0), row_limit=2)
+                # Exercita o salto inf -> primeiro m6 finito. A procura da
+                # semente não é truncada; depois dela limita a janela do piloto.
+                plan = replace(plan, m6_range_GeV=(500.0, 2000.0, 750.0),
+                               column_limit=2, C_steps_limit=3)
             masses, couplings = plan.axes()
+            if args.smoke:
+                print("Piloto: duas colunas m6; procura da semente sem corte por três ausências; "
+                      "até três passos de C por lado depois de cada semente.")
             print(f"Scan adaptativo: {len(scenarios)} fatia(s) m8, semente C={plan.seed_C:g}, "
                   f"m6={plan.seed_m6_GeV:g}; regra de {plan.patience} ausências consecutivas.")
             print(f"Bounds C=[{couplings[0]:g}, {couplings[-1]:g}], "
@@ -879,8 +886,14 @@ def main(argv=None):
                 validate_campaign(args.output, manifest)
                 print(f"Verificação concluída: pasta compatível ou nova em {args.output.resolve()}")
                 return 0
-            run_adaptive(args.output, plan, settings, manifest, args.max_points,
-                         args.retry_failed, args.retry_session)
+            try:
+                run_adaptive(args.output, plan, settings, manifest, args.max_points,
+                             args.retry_failed, args.retry_session)
+            finally:
+                if (args.plots or args.smoke and not args.no_plots) and (args.output / "adaptive_state.json").exists():
+                    from Articles.plot_results import plot_campaign
+
+                    plot_campaign(args.output)
             return 0
         if args.smoke or args.scenario_index is not None:
             raise ValueError("--smoke e --scenario-index são opções do scan adaptativo.")
@@ -922,8 +935,6 @@ def main(argv=None):
             print(f"Verificação concluída: pasta compatível ou nova em {args.output.resolve()}")
             return 0
         # Inicializa tabelas uma vez antes de criar processos (cache determinístico).
-        from CosmoTransitions import Jb, Jf
-
         Jb(np.array([0.0]), approx="spline")
         Jf(np.array([0.0]), approx="spline")
         manifest = provenance(settings, grid)
@@ -941,6 +952,10 @@ def main(argv=None):
             args.max_points,
             args.retry_failed,
         )
+        if args.plots:
+            from Articles.plot_results import plot_campaign
+
+            plot_campaign(args.output)
         print(
             f"Concluído: {count} pontos novos/reprocessados. Dados em {args.output.resolve()}"
         )

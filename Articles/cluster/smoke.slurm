@@ -27,8 +27,9 @@ prepare_local_work "fopt-smoke-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID-$SLURM_J
 # Teste 1: lógica de fronteiras e retomada, em temporários locais ao nó.
 "$python_executable" -m pytest -q Articles/tests --basetemp "$local_work/unit-tests"
 # O runner exige uma pasta vazia separada dos temporários do pytest.
+# Teste 2: duas colunas m6, semente própria em C e gráficos no checkpoint.
 "$python_executable" -m Articles.cluster_runner \
     --smoke --beta-check --batch-size 1 \
     --workers 1 --scenario-index "$SLURM_ARRAY_TASK_ID" \
     --work-dir "$local_work/campaign" \
-    --output "$FOPT_RESULTS_ROOT/smoke/m8-$SLURM_ARRAY_TASK_ID"
+    --output "$FOPT_RESULTS_ROOT/smoke_v2/m8-$SLURM_ARRAY_TASK_ID"

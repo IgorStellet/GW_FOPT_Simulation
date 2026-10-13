@@ -17,43 +17,84 @@ python -m Articles.run_local --dry-run
 python -m pytest -q Articles/tests
 ```
 
-Confere três ausências consecutivas nas duas direções de m6; reinício do
-contador após nucleação; três linhas de C vazias; limites; semente deslocada;
-falhas numéricas; matrizes e retomada por lotes, inclusive em outra pasta.
+Confere a busca sem poda antes da primeira nucleação em cada m6/m8, saltos
+abruptos da faixa, três ausências em C depois da semente, reinício do contador,
+três colunas m6 vazias somente após esgotar C, bounds, erros, retomada e plots.
 
-**Teste 2 — piloto real, duas linhas de C por cenário de m8:**
-
-```bash
-python -m Articles.run_local --smoke --beta-check --output Articles/results/pilot_adaptive
-```
-
-Inicia três processos independentes. Cada um verifica a semente, calcula a
-linha em que ela nucleia e a linha seguinte abaixo. O piloto usa m6 finito
-`2000, 1250, 500` GeV, além de `inf`, para exercitar três ausências sem centenas
-de bounces. Essa grade grosseira serve somente ao teste. A busca inicial da
-semente pode calcular outros C em m6=inf; portanto duas linhas completas não
-significam somente dois pontos, nem somente dois C avaliados no bootstrap.
-O teste controlado acima verifica a parada externa de três linhas vazias;
-um piloto limitado a duas linhas não pode verificá-la por si só.
-
-Para testar apenas uma fatia, use:
+**Teste 2 — piloto real com visualização, duas massas m6 por cenário de m8:**
 
 ```bash
-python -m Articles.collect_data --smoke --scenario-index 0 --beta-check --output Articles/results/pilot_m8_0
+python -m Articles.run_local --smoke --beta-check --output Articles/results/pilot_adaptive_v2
 ```
 
-Confira `adaptive_state.json`: estado `pilot_complete`, duas linhas completas,
-semente verificada e as paradas em m6. Um motivo `bound` indica que a grade
-acabou antes de três ausências; não equivale a uma fronteira fechada. Uma
-nucleação com beta/GW não resolvidos continua sendo `yes` para o scan, mas
-exige revisão dos observáveis antes da análise física.
+Inicia três processos independentes. Em cada m8, calcula a coluna m6=inf e
+em seguida m6=2000 GeV. **Cada coluna procura sua própria primeira nucleação
+em C, sem a regra dos três pontos nessa procura**, inclusive no primeiro
+salto de inf para massa finita. Depois da semente, o piloto avalia no máximo
+três passos de C para cada lado. A grade finita grosseira declarada é
+2000, 1250, 500 GeV, mas o limite de duas colunas deixa as duas últimas
+massas não calculadas. O piloto não é uma medição completa da faixa.
+
+Uma parada `pilot_step_limit` indica o limite de teste, sem excluir a região
+além dele. `consecutive_no_nucleation` guarda as três ausências após a semente;
+`bound` indica que o eixo acabou. A busca inicial da semente pode exigir muitos
+C; o limite de três passos do piloto só vale **depois** de encontrá-la.
+
+Para testar apenas uma fatia:
+
+```bash
+python -m Articles.collect_data --smoke --scenario-index 0 --beta-check --output Articles/results/pilot_m8_0_v2
+```
+
+Confira `adaptive_state.json`: estado `pilot_complete`, duas colunas em
+`slices[].columns`, suas sementes `verified_seed_C` e os motivos de parada.
+
+### Quais imagens abrir
+
+Em cada pasta `m8-0`, `m8-1`, `m8-2`, a subpasta `plots/` contém:
+
+| Arquivo | O que mostra |
+|---|---|
+| nucleation_map.png / .svg | C por m6, sementes verificadas e as três ausências que encerraram uma direção |
+| gw_spectra.png / .svg | Até três C selecionados, espectros e comparação dos picos acústicos com LISA, DECIGO e BBO |
+| selection.json | Pontos escolhidos, observáveis rejeitados, eficiências e versão gráfica |
+| spectrum_samples.csv | Frequências em Hz e componentes acústica, turbulência, colisões e total |
+
+O launcher também salva `pilot_adaptive_v2/plots/nucleation_overview.png`,
+comparando as três fatias. Verde: nucleação aceita; laranja: ausência encontrada;
+roxo: inconclusivo; cinza: não calculado. Círculo preto: semente; cruzes: três
+ausências de parada. Um losango vermelho sobre um hit indica observáveis sob
+revisão, sem apagar a nucleação aceita.
+
+Os espectros são reconstruídos dos parâmetros salvos, sem novos bounces.
+Somente transições aceitas com observáveis resolvidos entram no painel de GW;
+se não houver nenhuma, a imagem informa isso explicitamente. A seleção cobre
+C baixo/intermediário/alto dentre os disponíveis; em C empatado prefere m6
+finito. Não usa valor absoluto de alpha para esconder sinal inválido.
+
+As curvas disponíveis no núcleo são **PIS do canal acústico**, sensibilidades
+integradas de pico. Por isso o painel direito compara os picos acústicos com
+elas; o painel esquerdo mostra os espectros total e acústico. Cruzamentos do
+espectro total com PIS não são tratados como SNR ou garantia de detecção.
+A turbulência usa epsilon=0.05 e colisões kappa=0, conforme o manifesto.
+
+Para redesenhar imagens a partir de uma campanha já salva:
+
+```bash
+python -m Articles.plot_results --output Articles/results/pilot_adaptive_v2
+```
+
+Isso não retoma o scan nem altera os dados físicos. Também aceita uma única
+pasta `m8-N`. `--plots` permite gerar figuras fora do piloto; `--no-plots`
+desliga o desenho automático no coletor. O runner desenha uma vez ao publicar
+seu checkpoint final, inclusive diagnóstico parcial quando possível.
 
 ## Produção local, três frentes
 
 Depois dos testes, use uma pasta nova:
 
 ```bash
-python -m Articles.run_local --beta-check --output Articles/results/production_adaptive
+python -m Articles.run_local --beta-check --output Articles/results/production_adaptive_v2
 ```
 
 | Índice | m8 [GeV] | Pasta |
@@ -69,7 +110,7 @@ Não use `--workers 3` nem divida a sequência adaptativa em shards.
 Para uma única fatia de produção:
 
 ```bash
-python -m Articles.collect_data --scenario-index 1 --beta-check --output Articles/results/production_m8_1
+python -m Articles.collect_data --scenario-index 1 --beta-check --output Articles/results/production_m8_1_v2
 ```
 
 `collect_data` sem seleção percorre os três m8 sequencialmente na mesma pasta.
@@ -82,7 +123,7 @@ em que foi instalado `-e .`. Os argumentos começam em `--output`, sem `python -
 | Opção do coletor | Padrão | Uso |
 |---|---|---|
 | --strategy | adaptive | `grid` mantém a grade antiga para verificações |
-| --seed-C | 3.83 | Semente inicial; verificada em cada m8 |
+| --seed-C | 3.83 | C candidato inicial; confirmado independentemente em cada m6/m8 |
 | --seed-m6 | inf | Operador de dimensão seis inicialmente desligado |
 | --C MIN MAX STEP | 0 10 0.02 | Bounds e passo ancorado na semente |
 | --m6 MIN MAX STEP | 500 2000 5 | Grade finita de massas, em GeV; inf é incluído |
@@ -90,7 +131,8 @@ em que foi instalado `-e .`. Os argumentos começam em `--output`, sem `python -
 | --scenario-index | todos | Seleciona 0, 1 ou 2 dos m8 padrão |
 | --m8 VALOR ... | três cenários | Cenários personalizados; incompatível com scenario-index |
 | --max-points N | sem limite | Limita pontos novos/reprocessados por chamada |
-| --smoke | desligado | Duas linhas completas e grade grosseira de m6 |
+| --smoke | desligado | Duas colunas m6; busca da semente sem corte; até três passos C por lado depois dela; plots |
+| --plots / --no-plots | automático no piloto | Controla a geração de figuras do coletor |
 | --dry-run | desligado | Confere configuração e compatibilidade, sem bounces |
 | --retry-failed | desligado | Repete falhas/observáveis não resolvidos visitados |
 | --beta-check | desligado | Confere beta com h/2, preservando h=0.5 GeV |
@@ -107,18 +149,29 @@ não uniforme no coeficiente 1/m6². O salto entre inf e 2000 GeV também faz
 parte da resolução declarada. C segue 3.83, 3.85, ... para cima, e
 3.81, 3.79, ... para baixo; os bounds 0 e 10 são incluídos se alcançados.
 
-Se a semente em m6 declarado não nucleia, o bootstrap diminui C até verificar
-uma semente ou atingir C_min. A regra de três linhas vazias passa a valer
-somente após essa verificação. Cada linha explora m6 nas duas direções;
-a mediana dos pontos com nucleação serve de semente para a próxima linha.
-Após três linhas completas consecutivas sem nucleação, termina essa direção
-em C. As duas direções de C têm contadores e sementes independentes.
+Em cada novo m6, o programa parte do maior C nucleado na coluna anterior
+(3.83 inicialmente) e desce C até localizar nucleação, sem cortar após três
+ausências. Se chega a C_min sem semente, confere também os C acima da
+candidata até C_max, para não assumir que a faixa sempre se desloca para baixo.
+Uma coluna só é declarada vazia depois de esgotar a grade de C inteira.
 
-A busca pressupõe uma faixa que possa ser acompanhada nessa resolução.
-Ilhas além de três ausências, ou faixas que se deslocam mais que a janela
-pesquisada entre linhas, podem ser perdidas. Pontos pulados ficam como
-`not_evaluated`, nunca como exclusões físicas. Verifique fronteiras e ilhas
-com refinamentos `--strategy grid` antes de resultados de publicação.
+**Somente depois da semente verificada nessa mesma massa**, explora C para
+cima e para baixo; três ausências consecutivas encerram cada direção, com
+contadores independentes. Em seguida passa ao próximo m6 e repete a busca da
+semente. Três colunas m6 consecutivas completamente vazias encerram uma direção
+em m6, depois de já haver nucleação verificada. Antes da primeira semente de
+uma direção não se aplica essa poda. Os bounds sempre limitam o trabalho.
+
+A busca inicial pode aumentar o custo quando não há nucleação, porque exige
+conferir todos os C antes de declarar a coluna vazia. O programa não promete
+um número fixo de avaliações ou tempo de execução. `--max-points` permite
+limitar uma chamada e retomá-la depois, inclusive no meio do bootstrap.
+
+O salto abrupto da faixa entre massas não dispara mais a antiga parada de
+três C antes de uma semente. Ainda existem limites da amostragem: faixas mais
+estreitas que o passo de C podem ser perdidas, assim como ilhas além de três
+ausências após a semente ou além de três colunas vazias. Pontos pulados ficam
+`not_evaluated`; refinamentos `--strategy grid` podem conferir essas regiões.
 
 ## Dados e retomada
 
@@ -129,15 +182,17 @@ os índices das matrizes são locais, e `matrix_axes.json` identifica o m8.
 
 As células são `yes` (nucleação aceita), `no` (ausência encontrada),
 `unknown` (falha/inconclusivo) ou `not_evaluated`. `adaptive_state.json`
-registra os últimos três m6/C sem nucleação e o primeiro valor pulado.
+registra o bootstrap de cada m6, as três ausências em C, colunas vazias
+e o primeiro valor pulado. Os limites do piloto ficam explícitos.
 Beta/GW inconclusivos com nucleação aceita não encerram a faixa. Falhas
 numéricas ou nucleação fora da tolerância interrompem a campanha, com o
 ponto salvo, para não podar a região a partir de informação inconclusiva.
 
 Repita o mesmo comando para retomar. O banco reconstrói a sequência sem
 recalcular pontos confirmados. Código, ambiente e configuração devem coincidir
-com o manifesto. Não reutilize as pastas da grade antiga, nem as do piloto
-na produção. Para outra configuração, escolha outra pasta; não edite hashes.
+com o manifesto. Esta versão tem identidade `adaptive_v2_verified_columns`. Não reutilize
+pastas da versão anterior, nem as do piloto na produção. Use uma pasta nova,
+como `pilot_adaptive_v2`, preservando os resultados antigos. Para outra configuração, escolha outra pasta; não edite hashes.
 Para repetir uma falha transitória, acrescente `--retry-failed`. Se a falha
 persistir, o comando para novamente, sem um ciclo infinito.
 

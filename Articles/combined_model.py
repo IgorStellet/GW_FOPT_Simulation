@@ -27,9 +27,13 @@ import numpy as np
 from numpy.typing import ArrayLike
 from scipy.optimize import minimize_scalar
 
-from src.CosmoTransitions.finiteT import Jb, Jf
-from src.CosmoTransitions.generic_potential import scalar_to_vector_potential_1d
-from src.CosmoTransitions.helper_functions import gradientFunction, hessianFunction
+from Articles.core_imports import (
+    Jb,
+    Jf,
+    gradientFunction,
+    hessianFunction,
+    scalar_to_vector_potential_1d,
+)
 
 RESUMMATION_SCHEME = "fixed_thesis_gauge_Arnold_Espinosa"
 GOLDSTONE_SCHEME = "real_log_with_finite_step_zeroT_counterterms"

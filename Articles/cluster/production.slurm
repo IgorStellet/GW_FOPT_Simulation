@@ -39,7 +39,7 @@ trap forward_stop USR1
     --beta-check --batch-size "${FOPT_BATCH_SIZE:-5}" --workers 1 \
     --scenario-index "$SLURM_ARRAY_TASK_ID" \
     --work-dir "$local_work" \
-    --output "$FOPT_RESULTS_ROOT/production/m8-$SLURM_ARRAY_TASK_ID" &
+    --output "$FOPT_RESULTS_ROOT/production_v2/m8-$SLURM_ARRAY_TASK_ID" &
 runner_pid=$!
 # wait pode ser interrompido pelo sinal do Slurm; continue aguardando o job.
 while true; do

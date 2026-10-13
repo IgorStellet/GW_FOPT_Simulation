@@ -104,7 +104,8 @@ def main(argv=None):
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--shard-index", type=int, default=0)
     parser.add_argument("--shard-count", type=int, default=1)
-    parser.add_argument("--smoke", action="store_true", help="Piloto adaptativo de duas linhas de C.")
+    parser.add_argument("--smoke", action="store_true", help="Piloto de duas massas m6 com gráficos.")
+    parser.add_argument("--plots", action="store_true", help="Gera gráficos ao publicar o último checkpoint.")
     parser.add_argument("--beta-check", action="store_true")
     parser.add_argument("--scenario-index", type=int, choices=range(3))
     parser.add_argument("--strategy", choices=("adaptive", "grid"), default="adaptive")
@@ -160,13 +161,22 @@ def main(argv=None):
         "--m6", *map(str, args.m6), "--C", *map(str, args.C),
     ]
     if args.smoke:
-        common += ["--smoke"]
+        # O runner gera gráficos uma vez, no checkpoint final, em vez de
+        # repetir renderização após cada ponto de um lote pequeno.
+        common += ["--smoke", "--no-plots"]
     if args.scenario_index is not None:
         common += ["--scenario-index", str(args.scenario_index)]
     if args.retry_failed:
         common += ["--retry-failed", "--retry-session", uuid4().hex]
     if args.beta_check:
         common += ["--beta-check"]
+
+    def publish_plots():
+        if args.plots or args.smoke and (work / "adaptive_state.json").exists():
+            from Articles.plot_results import plot_campaign
+
+            plot_campaign(work)
+
     try:
         with single_writer(output):
             restore_campaign(output, work)
@@ -179,6 +189,10 @@ def main(argv=None):
                     # Publica esse progresso; incompatibilidade sem escrita
                     # preserva byte a byte o checkpoint anterior.
                     if point_state(work) != before:
+                        try:
+                            publish_plots()
+                        except Exception as error:  # noqa: BLE001 - preserve original failure
+                            print(f"Não foi possível gerar gráficos diagnósticos: {error}", file=sys.stderr)
                         copy_campaign(work, output)
                     raise
                 after = point_state(work)
@@ -186,6 +200,8 @@ def main(argv=None):
                 print(f"Checkpoint publicado: {after[0]} pontos em {output}", flush=True)
                 if after == before:
                     break
+            publish_plots()
+            copy_campaign(work, output)
     finally:
         if previous_handler is not None:
             signal.signal(signal.SIGUSR1, previous_handler)

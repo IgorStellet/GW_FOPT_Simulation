@@ -6,7 +6,7 @@ Primeira execução: [guia rápido](QUICKSTART.md). Primeiro acesso e submissão
 Esta pasta reúne a coleta de dados do artigo. O ponto de entrada é
 [`collect_data.py`](collect_data.py): ele percorre o espaço de parâmetros,
 identifica fases e transições, calcula os parâmetros termodinâmicos e grava os
-resultados. Os gráficos ficam para uma etapa posterior. Não é necessário repetir
+resultados. O piloto também produz mapas e espectros diagnósticos. Não é necessário repetir
 o cálculo de tunelamento para reconstruir os espectros a partir dos parâmetros
 salvos.
 
@@ -85,16 +85,20 @@ O padrão é `--strategy adaptive`, implementado em
 verifica uma semente e acompanha a faixa com nucleação. Todos os cálculos de
 cada ponto continuam sendo os do coletor e do núcleo existentes.
 
-1. Se necessário, diminui C em m6 fixo até verificar uma semente. Sem semente
-   até C_min, encerra com diagnóstico explícito; não declara o plano excluído.
-2. Na linha da semente, varia m6 nas duas direções. Três ausências consecutivas
-   encerram cada direção; qualquer nucleação reinicia o contador. Os bounds
-   também encerram a busca e ficam registrados como `bound`.
-3. Usa a mediana dos hits da linha como semente da seguinte. Explora primeiro
-   C crescente e depois decrescente, com contadores independentes. Três linhas
-   completas consecutivas sem nucleação encerram uma direção em C.
-4. O piloto limita explicitamente o trabalho a duas linhas completas de C e
-   inverte a prioridade para calcular primeiro a linha inferior.
+1. Em cada m6, inclusive o primeiro finito após inf, desce C a partir da
+   candidata herdada até encontrar uma nucleação verificada. Nessa busca não
+   se usa a regra de três ausências.
+2. Se não encontra semente até C_min, confere também os C acima da candidata
+   até C_max, sem pressupor monotonicidade. Só declara uma coluna vazia depois
+   de esgotar seu eixo C inteiro sem nucleação. Falhas interrompem com diagnóstico.
+3. Depois da semente confirmada **nessa coluna**, explora C nas duas direções;
+   três ausências consecutivas encerram cada direção, com reinício após um hit.
+4. Passa ao próximo m6 e verifica outra semente, reutilizando o maior C
+   nucleado como candidata. Três colunas m6 completamente vazias consecutivas
+   encerram uma direção em m6 somente após haver nucleação verificada.
+5. O piloto calcula duas colunas, m6=inf e 2000 GeV, com a procura de semente
+   sem corte. Depois de cada semente limita C a três passos por lado e gera
+   mapas/espectros. `pilot_step_limit` não é uma fronteira física.
 
 A massa inf desliga o operador; as massas finitas continuam positivas. Não
 se pesquisa acoplamento negativo. O passo de m6 é uniforme em GeV, portanto
@@ -102,7 +106,8 @@ não é uniforme em 1/m6². O padrão finito é 500..2000 GeV, passo 5 GeV;
 C é limitado a [0,10], passo 0.02, ancorado em 3.83. Incluem-se os extremos
 se a busca os alcançar. Os três m8 permanecem os da tabela anterior.
 
-A hipótese computacional é continuidade da faixa na resolução escolhida.
+O salto entre massas não depende mais de uma semente apenas herdada.
+A hipótese restante é uma faixa conectada de C depois de uma semente, na resolução escolhida.
 A regra dos três pontos não prova ausência de ilhas desconectadas. Regiões
 puladas são explicitamente não avaliadas; fronteiras, mudança de resolução
 e possíveis ilhas precisam de verificações direcionadas para publicação.
@@ -113,8 +118,8 @@ Instalação, testes e produção local em três processos independentes:
 python -m pip install -e . pytest
 python -m pytest -q Articles/tests
 python -m Articles.run_local --dry-run
-python -m Articles.run_local --smoke --beta-check --output Articles/results/pilot_adaptive
-python -m Articles.run_local --beta-check --output Articles/results/production_adaptive
+python -m Articles.run_local --smoke --beta-check --output Articles/results/pilot_adaptive_v2
+python -m Articles.run_local --beta-check --output Articles/results/production_adaptive_v2
 ```
 
 Execute produção depois de conferir os dois testes. Cada processo calcula
@@ -152,7 +157,9 @@ grade explícita em outra pasta.
 | manifest.json | Modelo, configuração, versões e hashes das fontes |
 | points.csv / transitions.csv | Diagnósticos e observáveis preservados do coletor |
 | details/*.json.gz | Fases, transições críticas, ações, avisos e erros |
-| adaptive_state.json | Sementes verificadas, linhas e evidência das paradas |
+| adaptive_state.json | Bootstrap, sementes verificadas por coluna m6 e evidência das paradas |
+| plots/*.png / .svg | Mapas do piloto, espectros e picos comparados às PIS |
+| plots/selection.json / spectrum_samples.csv | Seleção, exclusões e componentes espectrais em Hz |
 | matrix_m8_N.csv | Matriz C por m6: yes, no, unknown ou not_evaluated |
 | matrix_axes.json | Eixos e correspondência entre N e m8, por pasta |
 
@@ -160,20 +167,28 @@ grade explícita em outra pasta.
 continua `yes` mesmo que beta ou GW estejam não resolvidos. Uma falha numérica
 ou residual de nucleação não aceito é `unknown` e interrompe a busca, com
 registro salvo. Só `no_first_order_found` e `no_nucleation_found` contam como
-ausência para a poda. Os últimos três pontos ou linhas que justificam cada
+ausência para a poda. Os últimos três pontos de C ou colunas de m6 que justificam cada
 parada são salvos; atingir um bound é registrado separadamente.
 
 Repita o mesmo comando para retomar. A sequência é reconstruída a partir dos
 resultados gravados, sem repetir bounces confirmados. `--retry-failed` tenta
 reparar falhas/observáveis não resolvidos visitados, uma vez por chamada.
 Código, versões, parâmetros ou estratégia diferentes exigem outra pasta.
-Não reutilize a campanha antiga da grade nem os dados do piloto na produção.
+A identidade agora é `adaptive_v2_verified_columns`; use outra pasta para
+esta revisão e preserve a campanha anterior. Não reutilize dados do piloto na produção.
 `--export-only` atualiza points/transitions CSV a partir do banco; as matrizes
 adaptativas e o estado são regenerados ao retomar a busca.
 
 No cluster, [cluster_runner.py](cluster_runner.py) conserva o SQLite ativo no
 disco local e publica checkpoints fechados, com journal DELETE no destino
 persistente. [CLUSTER_CHE.md](CLUSTER_CHE.md) explica os três jobs, um por m8.
+
+Os gráficos não resolvem bounces novamente. `gw_spectra` separa o espectro
+à esquerda e a comparação dos picos acústicos com os detectores à direita.
+As curvas existentes são PIS de canal acústico; não se interpretam cruzamentos
+delas com o espectro total como SNR. Observáveis não resolvidos são omitidos dos
+espectros, com motivo em `selection.json`. Detalhes e comandos para redesenhar:
+[QUICKSTART.md](QUICKSTART.md).
 
 ## 6. Como interpretar as tabelas
 
@@ -237,7 +252,9 @@ Mapa e inventário das funções: [CORE_MAP.md](CORE_MAP.md).
 | Arquivo | Responsabilidade nesta coleta |
 |---|---|
 | `Articles/combined_model.py` | Define somente a física específica do potencial e diagnósticos em T=0 |
-| `Articles/adaptive_scan.py` | Continuação, contadores, fronteiras e matrizes |
+| `Articles/adaptive_scan.py` | Semente verificada por m6, faixas de C, paradas e matrizes |
+| `Articles/plot_results.py` | Mapas, reconstrução de espectros e comparação de picos/PIS sem bounces |
+| `Articles/core_imports.py` | Mesmo núcleo instalado ou a partir de src no checkout |
 | `Articles/run_local.py` | Três processos independentes, um por m8 |
 | `Articles/collect_data.py` | Coordena a estratégia, chama o núcleo e salva os resultados sem produzir figuras |
 | `src/CosmoTransitions/__init__.py` | Expõe a interface pública do pacote |

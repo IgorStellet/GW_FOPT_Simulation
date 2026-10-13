@@ -1,3 +1,103 @@
+# Validação v2: semente por m6 e gráficos — 13/10/2026
+
+Esta revisão substitui a continuação por linhas de C por colunas de m6.
+A primeira nucleação de cada massa é verificada em sua própria busca em C,
+inclusive no salto m6=inf -> 2000 GeV, antes da regra de três ausências.
+As mudanças de fontes continuam exclusivamente em Articles. O núcleo e
+as fórmulas físicas foram preservados.
+
+## Testes automatizados atuais
+
+```bash
+python -m pytest -q Articles/tests
+python -m pytest -q Articles/tests tests/test_article_core.py tests/test_article_scan.py tests/test_article_cluster.py -k "not slurm_scratch_selection"
+python -m ruff check Articles
+```
+
+**61 testes passaram** na seleção Python: 34 em Articles/tests e 27 existentes;
+Ruff passou. Os cinco testes antigos que iniciam Git Bash foram excluídos do
+comando local por sua restrição conhecida no sandbox Windows. Essa exclusão
+não constitui uma execução Bash aprovada. A CI Linux mantém a verificação da
+suíte existente e dos templates. Ambiente local: Python 3.12.14, NumPy 2.5.4,
+SciPy 1.18.1 e Matplotlib 3.11.2.
+
+Os novos casos controlados verificam:
+
+- Primeiro m6 finito exige **sete C sem nucleação antes de encontrar a semente**;
+  a busca não para no terceiro. Isso também vale com o limite de passos do piloto.
+- Uma mudança abrupta entre duas massas finitas exige outra busca de semente.
+- Depois de esgotar C descendente, a busca acima da candidata encontra uma
+  faixa deslocada para C maior, sem supor monotonicidade entre massas.
+- Cada m8 verifica sua própria semente, independentemente das outras fatias.
+- Só depois da semente se usa a regra de três ausências em C; um hit reinicia
+  o contador. Uma coluna m6 só é vazia depois de esgotar todos os C da grade.
+- A parada em m6 exige três colunas vazias depois de nucleação verificada;
+  colunas iniciais vazias não encerram a busca antes da primeira semente.
+- Falhas e limites de lote não viram ausências físicas. Retomada preserva
+  a ordem, evita repetir avaliações confirmadas e conserva matrizes/estado.
+
+## Piloto local e do cluster com gráficos
+
+O teste real preparado para o usuário é:
+
+```bash
+python -m Articles.run_local --smoke --beta-check --output Articles/results/pilot_adaptive_v2
+```
+
+Ele calcula m6=inf e 2000 GeV em cada um dos três m8. A busca de semente não
+é truncada. Depois dela, o piloto avalia até três passos de C por lado.
+`pilot_step_limit` indica uma faixa ainda aberta; não é fronteira física.
+A execução real desse piloto v2 completo está a cargo do usuário, antes da
+produção. A campanha completa e a submissão remota no CHE não foram iniciadas.
+
+O executor em lotes foi exercitado com um avaliador controlado: publicou o
+banco, o estado v2 e os gráficos PNG/SVG; ao restaurar em outra pasta não
+repetiu avaliações. Nesse caso a coluna finita só nucleia em C=3.69 após
+sete ausências a partir de C=3.83. O teste não é uma nova medição física.
+
+Os mapas mostram nucleação, ausência, inconclusivo e não calculado; marcam
+sementes, três ausências e o limite de janela do piloto. Os espectros são
+reconstruídos sem bounces: frequências Hz são convertidas para mHz ao chamar
+o núcleo, usando alpha_trace assinado, epsilon_turb=0.05 e kappa_coll=0.
+Observáveis não resolvidos são omitidos dos espectros com motivo explícito.
+A comparação dos detectores usa picos acústicos e curvas PIS, em outro painel;
+PIS não é tratada como ruído ponto a ponto nem como SNR total.
+
+PNG/SVG foram gerados e inspecionados visualmente. Os testes conferem que o
+SQLite físico não muda ao desenhar, que alpha inválido não vira espectro,
+que uma campanha sem observáveis resolvidos produz diagnóstico explícito e
+que três fatias podem ser comparadas sem fundir seus bancos. As amostras
+espectrais são exportadas para CSV em Hz e selection.json registra a seleção.
+
+Também foram redesenhados espectros dos **dados reais já salvos da v1**, sem
+recalcular as transições, para conferir o pós-processamento. Esses pontos não
+são apresentados como um scan novo da revisão v2.
+
+A seleção dos imports aceita tanto o pacote instalado como src na raiz do
+checkout. Foi conferido --dry-run nos três cenários e o modo pela raiz sem
+src no PYTHONPATH, preservando o ajuste recente do usuário para esse uso.
+O mesmo núcleo efetivamente importado continua identificado no manifesto.
+
+## Limites e retomada
+
+Use uma pasta nova: a identidade agora é adaptive_v2_verified_columns.
+Não reutilize os resultados v1 mudando seu manifesto. O bootstrap pode custar
+mais quando não há nucleação, porque verifica todo o eixo C antes de declarar
+uma massa vazia. Bounds e --max-points limitam o trabalho; nunca se corta uma
+busca de primeira semente apenas por três ausências.
+
+Faixas menores que o passo e ilhas além das podas posteriores à semente
+continuam exigindo refinamento dirigido. O piloto não pretende fechar toda
+a faixa de C. QUICKSTART.md e CLUSTER_CHE.md descrevem os limites, figuras e
+como encaminhar a produção depois da conferência do piloto.
+
+---
+
+# Histórico da v1 (busca por linhas de C)
+
+Os registros abaixo descrevem a versão anterior e não o fluxo ou os comandos
+recomendados para o piloto v2 atual.
+
 # Validação do scan adaptativo — 13/10/2026
 
 Esta revisão altera somente `Articles`. Os arquivos do núcleo, o script da

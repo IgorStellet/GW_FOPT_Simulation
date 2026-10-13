@@ -12,6 +12,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=Path("Articles/results/local_adaptive"))
     parser.add_argument("--smoke", action="store_true")
+    parser.add_argument("--plots", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--beta-check", action="store_true")
     parser.add_argument("--retry-failed", action="store_true")
@@ -25,7 +26,7 @@ def main(argv=None):
     common = ["--C", *map(str, args.C), "--m6", *map(str, args.m6),
               "--seed-C", str(args.seed_C), "--seed-m6", str(args.seed_m6),
               "--patience", str(args.patience)]
-    for name in ("smoke", "beta_check", "retry_failed"):
+    for name in ("smoke", "plots", "beta_check", "retry_failed"):
         if getattr(args, name):
             common.append("--" + name.replace("_", "-"))
     if args.max_points is not None:
@@ -55,6 +56,10 @@ def main(argv=None):
         raise
     for index, code in enumerate(codes):
         print(f"Fatia m8-{index}: saída {code}", flush=True)
+    if args.smoke or args.plots:
+        from Articles.plot_results import plot_overview
+
+        plot_overview(args.output)
     return 1 if any(codes) else 0
 
 

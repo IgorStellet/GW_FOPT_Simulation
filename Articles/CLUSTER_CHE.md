@@ -148,7 +148,7 @@ antes da campanha grande, confira o espaço do disco no nó de cálculo.
 
 ## 5. Os dois testes antes de produzir
 
-Use a branch atualizada e uma pasta nova para esta estratégia. Não reutilize
+Use a branch atualizada e uma pasta nova para `adaptive_v2_verified_columns`. Não reutilize
 checkpoints da grade antiga. Confirme partição, tempo e quota na sua conta;
 os valores dos templates são exemplos e não comprovam disponibilidade.
 
@@ -161,7 +161,7 @@ cd "$HOME/projects/GW_FOPT_Simulation"
 exit
 ```
 
-**Teste 2: piloto real de duas linhas completas por m8:**
+**Teste 2: piloto real de duas colunas m6 por m8, com gráficos:**
 
 ```bash
 mkdir -p Articles/results/logs
@@ -170,19 +170,40 @@ sbatch --export=ALL Articles/cluster/smoke.slurm
 
 O template cria um array de **três tarefas**, índices 0, 1, 2, uma por m8.
 Cada tarefa roda o teste de lógica e o piloto real. Os resultados ficam em
-`$FOPT_RESULTS_ROOT/smoke/m8-0`, `m8-1`, `m8-2`. Cada pasta tem banco, detalhes,
+`$FOPT_RESULTS_ROOT/smoke_v2/m8-0`, `m8-1`, `m8-2`. Cada pasta tem banco, detalhes,
 matriz e `adaptive_state.json`. Confira os três estados `pilot_complete` e
-as duas linhas completas antes da produção.
+as duas colunas, suas sementes verificadas e os gráficos antes da produção.
 
-O piloto usa m6=`inf, 2000, 1250, 500` GeV. A procura inicial da semente pode
-avaliar outros C em m6=inf antes das duas linhas; ela é limitada pelos bounds.
-Uma parada `bound` deve ser distinguida da regra de três ausências. A parada
-externa de três linhas vazias é exercitada no Teste 1; o piloto tem só duas.
+O piloto calcula m6=inf e 2000 GeV. A busca do primeiro C nucleado é refeita
+em cada massa, sem a regra dos três pontos até verificar a semente. Depois
+dela, avalia no máximo três passos C por lado. `pilot_step_limit` indica uma
+janela de teste, não ausência física. A parada de três colunas m6 vazias é
+verificada pelo Teste 1; o piloto é limitado a duas colunas.
+
+Os gráficos são produzidos com backend Agg, sem abrir janelas no nó, e vão
+junto com o checkpoint para cada `smoke_v2/m8-N/plots/`:
+`nucleation_map.png`, `gw_spectra.png` e versões SVG. `selection.json` explica
+quais transições foram usadas/omitidas; `spectrum_samples.csv` guarda os dados
+em Hz. A comparação dos detectores usa os picos acústicos e curvas PIS,
+separadamente dos espectros completos. Observáveis não resolvidos não viram
+espectros artificiais.
+
+Depois das três tarefas, para criar o mapa comparativo conjunto sem repetir
+cálculos de transição:
+
+```bash
+"$FOPT_PYTHON" -m Articles.plot_results --output "$FOPT_RESULTS_ROOT/smoke_v2"
+```
+
+Esse pós-processamento lê os bancos e também salva
+`smoke_v2/plots/nucleation_overview.png`. As imagens podem ser copiadas para
+seu computador junto com as pastas de resultados. Mantenha logs e
+`adaptive_state.json` para conferir as sementes e os motivos de parada.
 
 ## 6. Produção em três frentes, uma por m8
 
 ```bash
-"$FOPT_PYTHON" -m Articles.run_local --dry-run --beta-check --output "$FOPT_RESULTS_ROOT/production"
+"$FOPT_PYTHON" -m Articles.run_local --dry-run --beta-check --output "$FOPT_RESULTS_ROOT/production_v2"
 sbatch --export=ALL Articles/cluster/production.slurm
 ```
 
@@ -191,9 +212,9 @@ de entrada. Não execute `run_local` sem dry-run nesse nó.
 
 | Tarefa do array | m8 [GeV] | Destino persistente |
 |---|---:|---|
-| 0 | inf | production/m8-0 |
-| 1 | 840.8964152537145 | production/m8-1 |
-| 2 | 668.740304976422 | production/m8-2 |
+| 0 | inf | production_v2/m8-0 |
+| 1 | 840.8964152537145 | production_v2/m8-1 |
+| 2 | 668.740304976422 | production_v2/m8-2 |
 
 O array é `0-2%3`: no máximo três jobs simultâneos, cada um com uma CPU,
 uma tarefa e um processo de cálculo. Não há MPI. Dentro de cada m8 a busca é
@@ -243,7 +264,7 @@ física, resolução ou fontes exige outra pasta; não remova o manifesto.
 Para exercitar o mesmo runner localmente antes de submeter:
 
 ```bash
-python -m Articles.cluster_runner --smoke --scenario-index 0 --beta-check --batch-size 1 --output Articles/results/runner_pilot --work-dir Articles/results/scratch_pilot_novo
+python -m Articles.cluster_runner --smoke --scenario-index 0 --beta-check --batch-size 1 --output Articles/results/runner_pilot_v2 --work-dir Articles/results/scratch_pilot_v2_novo
 ```
 
 `--work-dir` deve estar vazio, ser distinto de `--output` e não estar dentro
@@ -258,8 +279,8 @@ quando o job terminar. O término de uma tarefa não significa que as demais
 terminaram; confira cada fatia e seu estado final `complete`.
 
 As matrizes usam `yes`, `no`, `unknown`, `not_evaluated`; `matrix_axes.json`
-identifica o m8 de cada pasta. `adaptive_state.json` guarda as sementes, os
-três últimos pontos/linhas que fecharam a direção, o primeiro pulado e bounds.
+identifica o m8 de cada pasta. `adaptive_state.json` guarda as sementes, o bootstrap de cada massa, os
+três últimos C ou colunas m6 vazias que fecharam a direção, o primeiro pulado e bounds.
 Não interprete pontos pulados como exclusão física. Confira a resolução das
 fronteiras e possíveis ilhas com scans direcionados antes do artigo.
 
