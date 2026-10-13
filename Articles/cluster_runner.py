@@ -1,6 +1,6 @@
 """Executa lotes no disco local e publica checkpoints após fechar o SQLite.
 
-Este módulo não implementa física. Chama collect_data.main com a mesma grade,
+Este módulo não implementa física. Chama collect_data.main com o mesmo scan,
 prescrições e retomada. --output é persistente; --work-dir deve ser local ao
 nó. Uma interrupção pode exigir repetir somente o último lote não publicado.
 """
@@ -14,6 +14,7 @@ import sqlite3
 import sys
 from contextlib import closing
 from pathlib import Path
+from uuid import uuid4
 
 from Articles.collect_data import main as collect_main
 from Articles.collect_data import single_writer
@@ -92,19 +93,27 @@ def main(argv=None):
         epilog=(
             "Teste local (execute na raiz do repositório): "
             "python -m Articles.cluster_runner --smoke --beta-check "
-            "--batch-size 1 --workers 2 --output Articles/results/runner_smoke "
+            "--batch-size 1 --scenario-index 0 --output Articles/results/runner_smoke "
             "--work-dir Articles/results/runner_scratch_novo. "
             "No CHE, use Articles/cluster/smoke.slurm."
         ),
     )
     parser.add_argument("--output", type=Path, required=True, help="Pasta persistente da parte.")
     parser.add_argument("--work-dir", type=Path, required=True, help="Pasta NOVA no disco local do nó.")
-    parser.add_argument("--batch-size", type=int, default=100)
+    parser.add_argument("--batch-size", type=int, default=5)
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--shard-index", type=int, default=0)
     parser.add_argument("--shard-count", type=int, default=1)
-    parser.add_argument("--smoke", action="store_true", help="Grade de dois pontos de validação.")
+    parser.add_argument("--smoke", action="store_true", help="Piloto adaptativo de duas linhas de C.")
     parser.add_argument("--beta-check", action="store_true")
+    parser.add_argument("--scenario-index", type=int, choices=range(3))
+    parser.add_argument("--strategy", choices=("adaptive", "grid"), default="adaptive")
+    parser.add_argument("--retry-failed", action="store_true")
+    parser.add_argument("--seed-C", type=float, default=3.83)
+    parser.add_argument("--seed-m6", type=float, default=float("inf"))
+    parser.add_argument("--patience", type=int, default=3)
+    parser.add_argument("--m6", nargs=3, type=float, default=(500, 2000, 5))
+    parser.add_argument("--C", nargs=3, type=float, default=(0, 10, 0.02))
     arguments = sys.argv[1:] if argv is None else list(argv)
     # O botão Run do editor geralmente não fornece argumentos. Nesse caso,
     # ensina a chamada e termina sem criar pastas ou iniciar a campanha grande.
@@ -112,6 +121,8 @@ def main(argv=None):
         parser.print_help()
         return 0
     args = parser.parse_args(arguments)
+    if args.strategy == "adaptive" and (args.workers != 1 or args.shard_count != 1 or args.shard_index):
+        parser.error("Adaptativo: um processo por m8; use três jobs --scenario-index 0/1/2.")
     output, work = args.output.resolve(), args.work_dir.resolve()
     if (
         output == work or output in work.parents or work in output.parents
@@ -144,12 +155,16 @@ def main(argv=None):
         "--output", str(work), "--workers", str(args.workers),
         "--max-points", str(args.batch_size),
         "--shard-index", str(args.shard_index), "--shard-count", str(args.shard_count),
+        "--strategy", args.strategy, "--seed-C", str(args.seed_C),
+        "--seed-m6", str(args.seed_m6), "--patience", str(args.patience),
+        "--m6", *map(str, args.m6), "--C", *map(str, args.C),
     ]
     if args.smoke:
-        common += [
-            "--m6", "1000", "1000", "5", "--C", "0", "3.35", "3.35",
-            "--m8", "668.740304976422", "--no-baselines",
-        ]
+        common += ["--smoke"]
+    if args.scenario_index is not None:
+        common += ["--scenario-index", str(args.scenario_index)]
+    if args.retry_failed:
+        common += ["--retry-failed", "--retry-session", uuid4().hex]
     if args.beta_check:
         common += ["--beta-check"]
     try:
@@ -157,7 +172,15 @@ def main(argv=None):
             restore_campaign(output, work)
             while not stop_requested:
                 before = point_state(work)
-                collect_main(common)
+                try:
+                    collect_main(common)
+                except BaseException:
+                    # Uma falha numérica adaptativa é salva antes de parar.
+                    # Publica esse progresso; incompatibilidade sem escrita
+                    # preserva byte a byte o checkpoint anterior.
+                    if point_state(work) != before:
+                        copy_campaign(work, output)
+                    raise
                 after = point_state(work)
                 copy_campaign(work, output)
                 print(f"Checkpoint publicado: {after[0]} pontos em {output}", flush=True)

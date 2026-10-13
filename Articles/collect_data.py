@@ -794,6 +794,12 @@ def main(argv=None):
         metavar=("MIN", "MAX", "STEP"),
     )
     parser.add_argument("--m8", nargs="+", type=float, default=M8_SCENARIOS_GEV)
+    parser.add_argument("--strategy", choices=("adaptive", "grid"), default="adaptive")
+    parser.add_argument("--seed-C", type=float, default=3.83)
+    parser.add_argument("--seed-m6", type=float, default=math.inf)
+    parser.add_argument("--patience", type=int, default=3)
+    parser.add_argument("--scenario-index", type=int, choices=range(3))
+    parser.add_argument("--smoke", action="store_true", help="Piloto adaptativo de duas linhas de C.")
     parser.add_argument("--no-baselines", action="store_true")
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--shard-index", type=int, default=0)
@@ -804,6 +810,7 @@ def main(argv=None):
         help="Confere grade e compatibilidade de --output, sem calcular nem criar campanha.",
     )
     parser.add_argument("--retry-failed", action="store_true")
+    parser.add_argument("--retry-session", help=argparse.SUPPRESS)
     parser.add_argument("--export-only", action="store_true")
     parser.add_argument("--action-tolerance", type=float, default=0.5)
     parser.add_argument("--beta-step", type=float, default=0.5)
@@ -833,6 +840,50 @@ def main(argv=None):
     )
     try:
         settings.validate()
+        if args.strategy == "adaptive":
+            from Articles.adaptive_scan import AdaptivePlan, run_adaptive
+
+            if args.workers != 1 or args.shard_count != 1 or args.shard_index != 0:
+                raise ValueError(
+                    "O scan adaptativo é sequencial por m8. Use Articles.run_local "
+                    "ou três jobs --scenario-index 0/1/2; --workers e shards são da grade legada."
+                )
+            if args.no_baselines:
+                raise ValueError("O adaptativo inclui m6=inf; --no-baselines exige --strategy grid.")
+            scenarios = tuple(dict.fromkeys(args.m8))
+            if args.scenario_index is not None:
+                if scenarios != M8_SCENARIOS_GEV:
+                    raise ValueError("--scenario-index seleciona os três m8 padrão; não combine com --m8.")
+                scenarios = (M8_SCENARIOS_GEV[args.scenario_index],)
+            if args.max_points is not None and args.max_points < 1:
+                raise ValueError("max-points deve ser positivo.")
+            plan = AdaptivePlan(
+                m6_range_GeV=tuple(args.m6), C_range=tuple(args.C), m8_GeV=scenarios,
+                seed_C=args.seed_C, seed_m6_GeV=args.seed_m6, patience=args.patience,
+            )
+            if args.smoke:
+                from dataclasses import replace
+
+                # O piloto mantém a regra de três pontos na direção de m6,
+                # mas limita explicitamente C a duas linhas. Não é produção.
+                plan = replace(plan, m6_range_GeV=(500.0, 2000.0, 750.0), row_limit=2)
+            masses, couplings = plan.axes()
+            print(f"Scan adaptativo: {len(scenarios)} fatia(s) m8, semente C={plan.seed_C:g}, "
+                  f"m6={plan.seed_m6_GeV:g}; regra de {plan.patience} ausências consecutivas.")
+            print(f"Bounds C=[{couplings[0]:g}, {couplings[-1]:g}], "
+                  f"m6 finito=[{masses[-1]:g}, {masses[1]:g}] GeV + inf. "
+                  f"Teto sem poda: {len(masses) * len(couplings) * len(scenarios):,}; "
+                  "quantidade real depende das fronteiras encontradas.")
+            manifest = provenance(settings, plan.identity())
+            if args.dry_run:
+                validate_campaign(args.output, manifest)
+                print(f"Verificação concluída: pasta compatível ou nova em {args.output.resolve()}")
+                return 0
+            run_adaptive(args.output, plan, settings, manifest, args.max_points,
+                         args.retry_failed, args.retry_session)
+            return 0
+        if args.smoke or args.scenario_index is not None:
+            raise ValueError("--smoke e --scenario-index são opções do scan adaptativo.")
         masses, couplings = inclusive_axis(*args.m6), inclusive_axis(*args.C)
         if masses[0] <= 0 or couplings[0] < 0 or args.workers < 1:
             raise ValueError("Exige m6>0, C>=0, workers>=1.")

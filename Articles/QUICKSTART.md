@@ -1,119 +1,145 @@
-# Guia rápido: coleta de dados do artigo
+# Início rápido: scan adaptativo do artigo
 
-O programa percorre (m6, C) para cenários de m8, procura fases, Tc e nucleação,
-calcula alpha_energy, alpha_trace, beta/H e o pico acústico de GW. Salva dados
-para análise posterior; não produz figuras. Execute na raiz do repositório.
-
-## Modelo fixado
-
-$$V_{\rm eff}=V_{\rm tree}+V_{\rm CW}+V_{\rm CT}+V_{\rm medida}+V_T+V_{\rm ring},$$
-$$V_{\rm tree}=-\mu^2\phi^2/2+\lambda\phi^4/4+\phi^6/(8m_6^2)+\phi^8/(16m_8^4).$$
-
-m6/m8, campo e temperatura em GeV; C adimensional. `inf` desliga um operador.
-lambda e mu² mantêm v=246 GeV e mh=125 GeV. A medida é logarítmica, com
-subtração local em v e domínio |phi|<Lambda/sqrt(C). Lambda=1000 GeV.
-CW usa Q=v e contratermos finitos; massas dos loops vêm do setor polinomial.
-Ressoma gauge simplificada da tese sempre ligada. GW usa alpha_trace,
-Tstar=Tn, g*=106.75 e vw=1. Detalhes das equações: [README](README.md).
-
-## Primeira chamada
-
-Python >=3.11, no mesmo ambiente usado pelo terminal/editor:
+Execute os comandos na raiz do repositório, com Python >=3.11.
+A física, as unidades, a notação `m6`/`m8` e os dados de GW foram preservados.
+O padrão agora é seguir a faixa com nucleação, sem percorrer toda a grade.
 
 ```bash
-python -m pip install -e .
-python -m pip install pytest
-python -m pytest -q
-python -m Articles.collect_data --dry-run --output Articles/results/local_smoke --m6 1000 1000 5 --C 0 3.35 3.35 --m8 668.740304976422 --no-baselines --beta-check
+python -m pip install -e . pytest
+python -m Articles.run_local --dry-run
 ```
 
-Grade de **dois pontos**: C=0 e 3.35, um cenário de massas; inclua beta-check:
+## Os dois testes antes da produção
+
+**Teste 1 — regra de parada e retomada, sem bounces reais:**
 
 ```bash
-python -m Articles.collect_data --output Articles/results/local_smoke --m6 1000 1000 5 --C 0 3.35 3.35 --m8 668.740304976422 --no-baselines --beta-check --workers 2
+python -m pytest -q Articles/tests
 ```
 
-Referência anterior: C=0 sem nucleação encontrada; C=3.35 com Tn~40.738 GeV,
-alpha_trace~0.332894 e beta/H~116.722. Confira status e quality_flags.
-Repetir o mesmo comando retoma a campanha; para mudar a configuração, use
-outra pasta. Versões diferentes podem alterar resultados e a compatibilidade.
+Confere três ausências consecutivas nas duas direções de m6; reinício do
+contador após nucleação; três linhas de C vazias; limites; semente deslocada;
+falhas numéricas; matrizes e retomada por lotes, inclusive em outra pasta.
 
-Se aparecer **Campanha incompatível**, a pasta escolhida contém resultados
-obtidos com outro código, ambiente ou configuração. A mensagem lista as
-diferenças. Use uma pasta nova em `--output`, por exemplo
-`Articles/results/local_smoke_v2`, nas duas chamadas acima; preserve a antiga.
-Não apague `manifest.json` nem altere seu fingerprint para tentar retomar.
-`--dry-run` confere a mesma compatibilidade sem calcular ou criar a campanha.
+**Teste 2 — piloto real, duas linhas de C por cenário de m8:**
 
-No PyCharm, configure Run com o módulo `Articles.collect_data`, diretório de
-trabalho na raiz do projeto e o interpretador em que instalou `-e .`. Em
-**Parameters**, cole os argumentos da chamada de dois pontos, começando em
-`--output`; não inclua `python -m Articles.collect_data`. Sem esses argumentos,
-o coletor escolhe a grade completa e a pasta padrão `Articles/results/combined`.
-Use a grade pequena antes de iniciar os 453.906 pontos do padrão.
+```bash
+python -m Articles.run_local --smoke --beta-check --output Articles/results/pilot_adaptive
+```
 
-## O que pode ser ajustado na chamada
+Inicia três processos independentes. Cada um verifica a semente, calcula a
+linha em que ela nucleia e a linha seguinte abaixo. O piloto usa m6 finito
+`2000, 1250, 500` GeV, além de `inf`, para exercitar três ausências sem centenas
+de bounces. Essa grade grosseira serve somente ao teste. A busca inicial da
+semente pode calcular outros C em m6=inf; portanto duas linhas completas não
+significam somente dois pontos, nem somente dois C avaliados no bootstrap.
+O teste controlado acima verifica a parada externa de três linhas vazias;
+um piloto limitado a duas linhas não pode verificá-la por si só.
 
-| Opção | Padrão | O que faz |
+Para testar apenas uma fatia, use:
+
+```bash
+python -m Articles.collect_data --smoke --scenario-index 0 --beta-check --output Articles/results/pilot_m8_0
+```
+
+Confira `adaptive_state.json`: estado `pilot_complete`, duas linhas completas,
+semente verificada e as paradas em m6. Um motivo `bound` indica que a grade
+acabou antes de três ausências; não equivale a uma fronteira fechada. Uma
+nucleação com beta/GW não resolvidos continua sendo `yes` para o scan, mas
+exige revisão dos observáveis antes da análise física.
+
+## Produção local, três frentes
+
+Depois dos testes, use uma pasta nova:
+
+```bash
+python -m Articles.run_local --beta-check --output Articles/results/production_adaptive
+```
+
+| Índice | m8 [GeV] | Pasta |
+|---|---:|---|
+| 0 | inf | m8-0 |
+| 1 | 840.8964152537145 | m8-1 |
+| 2 | 668.740304976422 | m8-2 |
+
+Cada processo percorre sua fatia sequencialmente: os próximos pontos dependem
+dos resultados anteriores. A separação por m8 permite três tarefas simultâneas;
+o ganho real depende do custo de cada fatia e dos recursos disponíveis.
+Não use `--workers 3` nem divida a sequência adaptativa em shards.
+Para uma única fatia de produção:
+
+```bash
+python -m Articles.collect_data --scenario-index 1 --beta-check --output Articles/results/production_m8_1
+```
+
+`collect_data` sem seleção percorre os três m8 sequencialmente na mesma pasta.
+O botão Run do PyCharm deve usar o módulo `Articles.run_local` ou
+`Articles.collect_data`, raiz do repositório como diretório e o mesmo Python
+em que foi instalado `-e .`. Os argumentos começam em `--output`, sem `python -m`.
+
+## Parâmetros e funcionamento
+
+| Opção do coletor | Padrão | Uso |
 |---|---|---|
-| `--m6 MIN MAX STEP` | `500 2000 5` | Eixo inclusivo de massas, GeV |
-| `--C MIN MAX STEP` | `0 10 0.02` | Eixo inclusivo de C |
-| `--m8 VALOR ...` | `inf 840.8964152537145 668.740304976422` | Cenários discretos, GeV |
-| `--output PASTA` | `Articles/results/combined` | Campanha e retomada |
-| `--workers N` | `1` | Processos em um único nó |
-| `--max-points N` | sem limite | Primeiros N pontos pendentes, não amostra aleatória |
-| `--dry-run` | desligado | Confere grade e compatibilidade da pasta, sem bounces |
-| `--no-baselines` | desligado | Não acrescenta C=0/m6=inf/m8=inf |
-| `--retry-failed` | desligado | Repete numerical_failure/observables_unresolved |
-| `--export-only` | desligado | Atualiza CSVs a partir do banco |
-| `--action-tolerance` | `0.5` | Faixa adimensional em S3/T-140 |
-| `--beta-step` | `0.5` | Passo térmico de beta, GeV; ordem sempre 2 |
-| `--beta-check` | desligado | Compara também h/2; mantém resultado principal com h |
-| `--T-min`, `--T-max` | `1`, `250` | Intervalo térmico, GeV |
-| `--phi-max` | `1000` | Janela de campo, limitada também pelo polo |
-| `--n-phi`, `--n-T-seeds` | `1200`, `5` | Busca inicial em campo/temperatura |
-| `--shard-index`, `--shard-count` | `0`, `1` | Parte disjunta da grade; índice começa em zero |
+| --strategy | adaptive | `grid` mantém a grade antiga para verificações |
+| --seed-C | 3.83 | Semente inicial; verificada em cada m8 |
+| --seed-m6 | inf | Operador de dimensão seis inicialmente desligado |
+| --C MIN MAX STEP | 0 10 0.02 | Bounds e passo ancorado na semente |
+| --m6 MIN MAX STEP | 500 2000 5 | Grade finita de massas, em GeV; inf é incluído |
+| --patience | 3 | Ausências consecutivas para fechar uma direção |
+| --scenario-index | todos | Seleciona 0, 1 ou 2 dos m8 padrão |
+| --m8 VALOR ... | três cenários | Cenários personalizados; incompatível com scenario-index |
+| --max-points N | sem limite | Limita pontos novos/reprocessados por chamada |
+| --smoke | desligado | Duas linhas completas e grade grosseira de m6 |
+| --dry-run | desligado | Confere configuração e compatibilidade, sem bounces |
+| --retry-failed | desligado | Repete falhas/observáveis não resolvidos visitados |
+| --beta-check | desligado | Confere beta com h/2, preservando h=0.5 GeV |
 
-Use ponto decimal; intervalos devem ser múltiplos inteiros dos passos.
-As referências puras usam massas infinitas. O padrão com referências tem
-453.906 pontos. Shards diferentes precisam de pastas diferentes e da mesma grade.
+Os demais controles físicos do coletor continuam disponíveis: `--T-min`,
+`--T-max`, `--phi-max`, `--n-phi`, `--n-T-seeds`, `--action-tolerance` e
+`--beta-step`. `--workers`, `--shard-count`, `--shard-index` e `--no-baselines`
+pertencem à execução `--strategy grid`. O launcher local expõe somente as
+opções comuns mostradas em `python -m Articles.run_local --help`.
 
-## O que não tem opção de terminal
+Diminuir m6 aumenta o operador de dimensão seis. Não se usa m6=0, nem se
+introduz coeficiente negativo. O passo de 5 GeV em m6 corresponde a um passo
+não uniforme no coeficiente 1/m6². O salto entre inf e 2000 GeV também faz
+parte da resolução declarada. C segue 3.83, 3.85, ... para cima, e
+3.81, 3.79, ... para baixo; os bounds 0 e 10 são incluídos se alcançados.
 
-Em `Settings`: g*, vw, alvo 140, limiar forte 1, tolerância relativa de beta 0.2,
-minima_phitol, x_eps/T_eps, deltaX_target, root_T_tolerance/root_maxiter e ordem
-das derivadas do potencial (4, distinta da ordem 2 de beta). Podem ser alterados
-na API/código, com outra campanha; não são opções de collect_data na chamada.
-Lambda é fixado pelo gerador. Ressoma, CW/Goldstones, massas dos loops e esquema
-de medida exigem alteração explícita do modelo; não há switches para alterná-los.
+Se a semente em m6 declarado não nucleia, o bootstrap diminui C até verificar
+uma semente ou atingir C_min. A regra de três linhas vazias passa a valer
+somente após essa verificação. Cada linha explora m6 nas duas direções;
+a mediana dos pontos com nucleação serve de semente para a próxima linha.
+Após três linhas completas consecutivas sem nucleação, termina essa direção
+em C. As duas direções de C têm contadores e sementes independentes.
 
-## Onde estão os dados
+A busca pressupõe uma faixa que possa ser acompanhada nessa resolução.
+Ilhas além de três ausências, ou faixas que se deslocam mais que a janela
+pesquisada entre linhas, podem ser perdidas. Pontos pulados ficam como
+`not_evaluated`, nunca como exclusões físicas. Verifique fronteiras e ilhas
+com refinamentos `--strategy grid` antes de resultados de publicação.
 
-`scan.sqlite`: principal e retomada; `points.csv`: todos os pontos e diagnósticos;
-`transitions.csv`: alpha_energy/trace, beta/H, Tc/Tn, campos, ação, pico GW e PIS;
-`details/*.json.gz`: fases e amostras da ação; `manifest.json`: configuração.
-Salva o **pico acústico**, não o espectro completo; os inputs permitem reconstruí-lo.
-Falha/célula vazia não é zero nem ausência física de FOPT. Status nucleated não
-garante seleção de vácuo/percolação. Frequências CSV em Hz; núcleo recebe mHz.
-Dados em results não são enviados automaticamente ao GitHub.
+## Dados e retomada
 
-Cluster: [primeiro acesso, teste e produção no CHE](CLUSTER_CHE.md).
+Cada pasta contém `scan.sqlite`, `manifest.json`, `points.csv`,
+`transitions.csv`, detalhes comprimidos, `adaptive_state.json`, matrizes CSV
+e `matrix_axes.json`. Na execução de três frentes há uma matriz por pasta;
+os índices das matrizes são locais, e `matrix_axes.json` identifica o m8.
 
-## Executar o runner no editor ou no terminal
+As células são `yes` (nucleação aceita), `no` (ausência encontrada),
+`unknown` (falha/inconclusivo) ou `not_evaluated`. `adaptive_state.json`
+registra os últimos três m6/C sem nucleação e o primeiro valor pulado.
+Beta/GW inconclusivos com nucleação aceita não encerram a faixa. Falhas
+numéricas ou nucleação fora da tolerância interrompem a campanha, com o
+ponto salvo, para não podar a região a partir de informação inconclusiva.
 
-`cluster_runner.py` coordena os lotes e checkpoints. Sem argumentos, mostra
-ajuda e encerra; para calcular, informe duas pastas distintas, sem uma dentro
-da outra. `--work-dir` deve estar vazio no início da chamada. Teste local:
+Repita o mesmo comando para retomar. O banco reconstrói a sequência sem
+recalcular pontos confirmados. Código, ambiente e configuração devem coincidir
+com o manifesto. Não reutilize as pastas da grade antiga, nem as do piloto
+na produção. Para outra configuração, escolha outra pasta; não edite hashes.
+Para repetir uma falha transitória, acrescente `--retry-failed`. Se a falha
+persistir, o comando para novamente, sem um ciclo infinito.
 
-```bash
-python -m Articles.cluster_runner --smoke --beta-check --batch-size 1 --workers 2 --output Articles/results/runner_smoke --work-dir Articles/results/runner_scratch_novo
-```
-
-Na configuração Run do PyCharm, use o módulo `Articles.cluster_runner`, o
-mesmo interpretador em que instalou `-e .` e os argumentos acima a partir de
-`--smoke`. Para repetir, mantenha `--output` e escolha um novo `--work-dir`.
-No CHE, use o template Slurm; o disco de trabalho deve ser local ao nó.
-
-`test_article_cluster.py` testa cópia, restauração e validação das chamadas;
-não executa a campanha. Um teste que rejeita pastas aninhadas deve passar:
-a mensagem de rejeição é capturada e verificada pelo próprio teste.
+Cluster e checkpoints em disco local: [CLUSTER_CHE.md](CLUSTER_CHE.md).
+Modelo e interpretação dos dados: [README.md](README.md).

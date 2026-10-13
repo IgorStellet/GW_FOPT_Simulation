@@ -1,3 +1,136 @@
+# Validação do scan adaptativo — 13/10/2026
+
+Esta revisão altera somente `Articles`. Os arquivos do núcleo, o script da
+dissertação, o modelo combinado e os testes anteriores foram preservados.
+As evidências históricas da grade estão ao final, separadas desta validação.
+
+## Teste 1: lógica, dados e retomada
+
+```bash
+python -m pytest -q Articles/tests
+python -m pytest -q Articles/tests tests/test_article_core.py tests/test_article_scan.py tests/test_article_cluster.py -k "not slurm_scratch_selection"
+python -m ruff check Articles
+```
+
+Resultado: **48 testes passaram** na suíte Python selecionada, incluindo
+21 testes adaptativos. Ruff passou. Python 3.12.14, NumPy 2.5.4, SciPy 1.18.1.
+Os cinco casos antigos `slurm_scratch_selection` foram tentados e bloqueados
+pelo sandbox Windows ao iniciar Git Bash (`NtCreateDirectoryObject`, acesso
+negado). Por isso foram excluídos da execução Python final; não são cinco
+verificações Slurm aprovadas. A suíte completa de exemplos gráficos não foi
+validada neste ambiente, que não dispõe de matplotlib no ambiente isolado.
+
+Cobertura adaptativa: três ausências consecutivas em ambas as direções;
+reinicialização por hit; três linhas vazias em C; bounds e semente decimal
+exata; bootstrap antes da poda em C; duas linhas no piloto; erros inconclusivos;
+limite por lote; matrizes; checkpoints fechados e restauração em outra pasta;
+três processos com saídas disjuntas; publicação do diagnóstico antes de parar.
+Também cobre retry de beta/GW persistentemente não resolvidos: um ponto é
+repetido no máximo uma vez por execução do runner, mesmo atravessando lotes.
+
+## Teste 2: fases e bounces reais, três m8
+
+```bash
+python -m Articles.run_local --smoke --beta-check --output Articles/results/adaptive_local_pilot
+```
+
+Os três processos terminaram com saída 0 e estado `pilot_complete`, com
+**duas linhas completas por fatia**, totalizando **32 avaliações reais**:
+
+| m8 [GeV] | Semente verificada C | Linhas completas C | Avaliações, incluindo bootstrap |
+|---|---:|---|---:|
+| inf | 3.83 | 3.83, 3.81 | 8 |
+| 840.8964152537145 | 3.79 | 3.79, 3.77 | 10 |
+| 668.740304976422 | 3.71 | 3.71, 3.69 | 14 |
+
+Todas as sementes usam m6=inf. Em cada uma das seis linhas, m6 finito
+`2000, 1250, 500` GeV produziu três ausências consecutivas. O fim do eixo
+coincide com o terceiro ponto no piloto; a verificação de que um quarto ponto
+é efetivamente pulado está no Teste 1. As matrizes contêm respectivamente
+2 hits e 6, 8, 12 ausências, incluindo os pontos do bootstrap. Células não
+avaliadas permanecem `not_evaluated`, sem valores físicos inventados.
+SQLite passou `integrity_check`; contagens de matrizes e banco coincidiram.
+
+Referências numéricas com m6=inf:
+
+| m8 [GeV] | C | Tn [GeV] | beta/H, h=0.5 GeV |
+|---|---:|---:|---:|
+| inf | 3.83 | 43.9415109 | 204.996110 |
+| inf | 3.81 | 50.6138941 | 378.666701 |
+| 840.8964152537145 | 3.79 | 39.8045600 | 130.771179 |
+| 840.8964152537145 | 3.77 | 48.0934738 | 308.942176 |
+| 668.740304976422 | 3.71 | 42.5506616 | 199.046854 |
+| 668.740304976422 | 3.69 | 49.3002461 | 334.357882 |
+
+Em m8≈840.90 GeV, C=3.79, `beta_step_sensitivity` marcou os observáveis como
+não resolvidos, embora a nucleação tenha sido aceita. O scan manteve o hit,
+sem converter a instabilidade de beta em ausência de nucleação. Para o ponto
+puro C=3.83, S3/Tn≈139.982752, dentro da tolerância absoluta de 0.5.
+
+O piloto foi executado durante o desenvolvimento; seu manifesto registra os
+hashes efetivamente usados. Ajustes posteriores na escolha da semente entre
+linhas e no controle de retry têm testes próprios. Não se deve reutilizar
+seus diretórios com fontes alteradas, nem editar o fingerprint.
+
+## Executor em lotes
+
+```bash
+python -m Articles.cluster_runner --smoke --scenario-index 0 --beta-check --batch-size 2 --output Articles/results/adaptive_runner_pilot --work-dir Articles/results/adaptive_runner_scratch
+```
+
+Concluiu oito avaliações reais em quatro lotes e publicou os checkpoints.
+A chamada seguinte na mesma execução encontrou zero pontos pendentes.
+Esse teste usa o executor do cluster no Windows, sem constituir submissão
+Slurm. Os templates atuais usam três tarefas de uma CPU, array 0-2%3, com
+pastas m8-0/1/2. O helper de scratch já existente foi preservado.
+
+Com o código final, foi executado também:
+
+```bash
+python -m Articles.cluster_runner --scenario-index 0 --C 3.83 3.83 0.02 --m6 2000 2000 5 --beta-check --batch-size 1 --output Articles/results/final_checkpoint_probe --work-dir Articles/results/final_checkpoint_scratch
+python -m Articles.cluster_runner --scenario-index 0 --C 3.83 3.83 0.02 --m6 2000 2000 5 --beta-check --batch-size 1 --output Articles/results/final_checkpoint_probe --work-dir Articles/results/final_checkpoint_restored
+```
+
+A primeira chamada calculou dois pontos reais em dois lotes, encerrando como
+`complete`; a segunda restaurou o checkpoint em outra pasta e calculou zero
+pontos. Não houve mudança de observáveis. Esta campanha curta termina nos
+bounds e não substitui o piloto de três ausências.
+
+## Regressão real do ponto combinado
+
+```bash
+python -m Articles.collect_data --scenario-index 2 --seed-C 3.35 --seed-m6 1000 --C 3.35 3.35 0.02 --m6 1000 1000 5 --beta-check --output Articles/results/final_combined_probe
+```
+
+Com o código final, a semente finita m6=1000 GeV, m8=668.740304976422 GeV,
+C=3.35 reproduziu Tn=40.7380065043 GeV, alpha_trace=0.3328943172 e
+beta/H=116.72234484, sem quality_flags. S3/Tn=140.11741377 foi aceito.
+A busca na direção de massa maior também avaliou m6=inf, com nucleação
+aceita em Tn=90.2844125271 GeV. A campanha terminou nos bounds.
+
+## Relação com a dissertação e limites
+
+Foi consultado o capítulo 5, seções 5.6–5.7 (pp. impressas 155–168; PDF
+163–176), especialmente a janela de nucleação dos mecanismos combinados,
+a cooperação de deformações pequenas e a degenerescência de observáveis.
+As faixas publicadas na dissertação não são usadas como um resultado físico
+universal no novo programa; a semente e os pontos de parada são calculados
+com as prescrições atuais.
+
+O scan completo não foi executado. A hipótese de continuação pode perder
+ilhas desconectadas ou faixas mais estreitas que os passos escolhidos.
+O piloto grosseiro não certifica fronteiras nem convergência física. O teste
+real no CHE permanece necessário na conta do usuário antes da produção.
+
+---
+
+# Histórico anterior: grade cartesiana
+
+Os registros abaixo pertencem à implementação anterior (até a revisão
+`ee96f52`) e não descrevem o padrão atual. Comandos históricos do runner
+podem usar opções que tinham outro significado naquela versão. Para as
+chamadas atuais, consulte QUICKSTART.md e CLUSTER_CHE.md.
+
 # Validação da implementação
 
 Verificação realizada em 24/09/2026, Windows, Python 3.12.14, NumPy 2.5.3,

@@ -78,107 +78,102 @@ as fases mantendo seu sinal. `alpha_energy` também é armazenada. Valores
 incompatíveis com as hipóteses do template não devem ser corrigidos tomando seu
 módulo. A configuração completa das previsões fica registrada com os dados.
 
-## 3. Instalação e primeira execução
+## 3. Busca adaptativa e primeira execução
 
-Use Python 3.11 ou posterior e execute os comandos a partir da raiz do
-repositório. Instale o projeto no ambiente Python que será usado no scan:
+O padrão é `--strategy adaptive`, implementado em
+[adaptive_scan.py](adaptive_scan.py). Parte de C=3.83 e m6=inf para cada m8,
+verifica uma semente e acompanha a faixa com nucleação. Todos os cálculos de
+cada ponto continuam sendo os do coletor e do núcleo existentes.
 
-```bash
-python -m pip install -e .
-python -m Articles.collect_data --help
-```
+1. Se necessário, diminui C em m6 fixo até verificar uma semente. Sem semente
+   até C_min, encerra com diagnóstico explícito; não declara o plano excluído.
+2. Na linha da semente, varia m6 nas duas direções. Três ausências consecutivas
+   encerram cada direção; qualquer nucleação reinicia o contador. Os bounds
+   também encerram a busca e ficam registrados como `bound`.
+3. Usa a mediana dos hits da linha como semente da seguinte. Explora primeiro
+   C crescente e depois decrescente, com contadores independentes. Três linhas
+   completas consecutivas sem nucleação encerram uma direção em C.
+4. O piloto limita explicitamente o trabalho a duas linhas completas de C e
+   inverte a prioridade para calcular primeiro a linha inferior.
 
-Comece conferindo a malha, sem calcular bounces:
+A massa inf desliga o operador; as massas finitas continuam positivas. Não
+se pesquisa acoplamento negativo. O passo de m6 é uniforme em GeV, portanto
+não é uniforme em 1/m6². O padrão finito é 500..2000 GeV, passo 5 GeV;
+C é limitado a [0,10], passo 0.02, ancorado em 3.83. Incluem-se os extremos
+se a busca os alcançar. Os três m8 permanecem os da tabela anterior.
 
-```bash
-python -m Articles.collect_data --dry-run
-```
+A hipótese computacional é continuidade da faixa na resolução escolhida.
+A regra dos três pontos não prova ausência de ilhas desconectadas. Regiões
+puladas são explicitamente não avaliadas; fronteiras, mudança de resolução
+e possíveis ilhas precisam de verificações direcionadas para publicação.
 
-A configuração padrão tem 301 valores finitos de `m6`, 501 valores de `C` e
-três cenários de `m8`. Com as referências em `m6 = inf`, são **453.906 pontos**:
-`(301 + 1) * 501 * 3`. É uma campanha grande; o comando de inspeção não estima
-seu tempo com base em um ponto representativo. O custo varia bastante entre
-pontos, sobretudo próximo a fronteiras de transição.
-
-Para exercitar uma malha pequena, use uma pasta separada:
-
-```bash
-python -m Articles.collect_data --output Articles/results/smoke --m6 950 1000 50 --C 3.2 3.3 0.1 --m8 inf --no-baselines --max-points 2
-```
-
-Esse exemplo limita o trabalho; não é um teste de convergência nem uma validação
-física do scan completo. A existência de FOPT depende dos parâmetros e das
-prescrições, não da finalidade do comando.
-
-A campanha padrão é iniciada com:
+Instalação, testes e produção local em três processos independentes:
 
 ```bash
-python -m Articles.collect_data --output Articles/results/combined
+python -m pip install -e . pytest
+python -m pytest -q Articles/tests
+python -m Articles.run_local --dry-run
+python -m Articles.run_local --smoke --beta-check --output Articles/results/pilot_adaptive
+python -m Articles.run_local --beta-check --output Articles/results/production_adaptive
 ```
 
-Para usar processos independentes, acrescente, por exemplo, `--workers 2`.
-O padrão é um processo. Ajuste o número à memória e aos núcleos disponíveis;
-mais processos não alteram a malha nem dispensam a convergência de cada ponto.
+Execute produção depois de conferir os dois testes. Cada processo calcula
+um m8 e usa sua própria pasta. `collect_data` também aceita
+`--scenario-index 0`, `1` ou `2`; sem essa opção calcula os três em sequência.
+Cada fatia é sequencial porque depende das decisões anteriores. O ganho de
+três tarefas simultâneas depende do balanceamento entre as fatias.
 
-## 4. Opções principais
+A grade antiga continua disponível com `--strategy grid`. Ela deve ser uma
+escolha explícita. Seu padrão histórico tinha 453.906 pontos; isso deixou de
+ser a quantidade de avaliações do scan padrão. O teto da grade adaptativa
+pode ser grande, mas ela calcula somente o que a busca solicita.
 
-Os intervalos de `m6` e `C` recebem mínimo, máximo e passo. A malha padrão inclui
-os extremos. Para os números fracionários da linha de comando, use ponto decimal.
+## 4. Configuração da campanha
 
-| Opção | Padrão | Finalidade |
-|---|---|---|
-| `--output PASTA` | `Articles/results/combined` | Pasta de uma campanha |
-| `--m6 MIN MAX STEP` | `500 2000 5` | Escalas de dimensão seis, em GeV |
-| `--C MIN MAX STEP` | `0 10 0.02` | Intensidade adimensional da medida funcional |
-| `--m8 VALOR ...` | `inf 840.8964152537145 668.740304976422` | Cenários de dimensão oito, em GeV |
-| `--workers N` | `1` | Número de processos de cálculo |
-| `--shard-index N`, `--shard-count N` | `0`, `1` | Parte disjunta da grade para jobs independentes; cada parte precisa de sua pasta |
-| `--dry-run` | desligada | Inspecionar a campanha antes do cálculo |
-| `--max-points N` | sem limite | Limitar a quantidade de pontos a executar |
-| `--no-baselines` | desligada | Não acrescentar `m6 = inf`, `C = 0` nem o cenário `m8 = inf` à grade solicitada |
-| `--retry-failed` | desligada | Tentar novamente pontos com falha de cálculo |
-| `--export-only` | desligada | Atualizar as tabelas exportadas sem calcular pontos |
-| `--action-tolerance VALOR` | `0.5` | Tolerância absoluta em `S3/T - 140` |
-| `--beta-step VALOR` | `0.5` | Passo da derivada em temperatura, em GeV |
-| `--beta-check` | desligada | Comparar derivadas com passos `h` e `h/2` |
-| `--T-min VALOR` | `1` | Limite inferior de temperatura, em GeV |
-| `--T-max VALOR` | `250` | Limite superior de temperatura, em GeV |
-| `--phi-max VALOR` | `1000` | Limite numérico de campo, em GeV, sujeito ao domínio do modelo |
-| `--n-phi N` | `1200` | Resolução inicial da busca em campo |
-| `--n-T-seeds N` | `5` | Número de temperaturas iniciais para localizar fases |
+[QUICKSTART.md](QUICKSTART.md) documenta todas as opções principais e exemplos.
+`--seed-C`, `--seed-m6`, `--patience`, `--C` e `--m6` controlam a busca.
+`--scenario-index` seleciona um dos três m8; `--m8` permite cenários próprios.
+`--max-points` é um limite por chamada, independente da identidade científica
+da campanha. `--dry-run` confere a identidade sem criar dados.
 
-As referências adicionais em `m6 = inf` são calculadas para os três valores de
-`m8`. Apenas a combinação `m6 = inf`, `m8 = inf` representa o setor de medida
-funcional puro. `C = 0` fornece o setor polinomial. Na malha padrão, `C = 0` já
-está incluído. Sem as referências adicionais, o padrão tem 452.403 pontos.
+Os parâmetros físicos e tolerâncias continuam em `Settings` e nas opções
+do coletor. `--beta-check` preserva a comparação h/h2. `--workers`, shards e
+`--no-baselines` continuam disponíveis somente para `--strategy grid`.
+O adaptativo sempre inclui m6=inf, mas não calcula automaticamente todos os
+C=0 nem acrescenta m8=inf a uma lista personalizada: os valores não visitados
+ficam não avaliados. Referências puras adicionais podem ser calculadas pela
+grade explícita em outra pasta.
 
-## 5. Arquivos produzidos e retomada
+## 5. Arquivos e retomada
 
-| Arquivo | Conteúdo e uso |
+| Arquivo | Conteúdo |
 |---|---|
-| `scan.sqlite` | Base principal, com gravação transacional por ponto; controla a retomada |
-| `manifest.json` | Configurações, versões e hashes das fontes usadas no cálculo |
-| `points.csv` | Uma linha por ponto executado, incluindo os que não produziram FOPT e os que falharam |
-| `transitions.csv` | Resultados das transições identificadas; um ponto pode ter mais de uma transição |
-| `details/<prefixo>/<id>_<hash>.json.gz` | Histórico das fases, transições críticas, amostras da ação, avisos e registro resumido da execução |
+| scan.sqlite | Pontos e transições, com commit por ponto; fonte da retomada |
+| manifest.json | Modelo, configuração, versões e hashes das fontes |
+| points.csv / transitions.csv | Diagnósticos e observáveis preservados do coletor |
+| details/*.json.gz | Fases, transições críticas, ações, avisos e erros |
+| adaptive_state.json | Sementes verificadas, linhas e evidência das paradas |
+| matrix_m8_N.csv | Matriz C por m6: yes, no, unknown ou not_evaluated |
+| matrix_axes.json | Eixos e correspondência entre N e m8, por pasta |
 
-Os CSVs são exportações para análise. A base SQLite é o registro usado para
-determinar o que já foi calculado. Não apague a base para atualizar uma tabela:
-use `--export-only` com a configuração da campanha. Os arquivos comprimidos
-contêm os diagnósticos que não cabem adequadamente em colunas escalares. SQLite
-é atualizado a cada ponto; CSVs são atualizados ao terminar a execução, inclusive
-na saída tratada por interrupção. Uma interrupção forçada pode deixar os CSVs
-desatualizados; `--export-only` recupera a exportação a partir do banco.
+`scan_decision` é independente do status dos observáveis: uma FOPT aceita
+continua `yes` mesmo que beta ou GW estejam não resolvidos. Uma falha numérica
+ou residual de nucleação não aceito é `unknown` e interrompe a busca, com
+registro salvo. Só `no_first_order_found` e `no_nucleation_found` contam como
+ausência para a poda. Os últimos três pontos ou linhas que justificam cada
+parada são salvos; atingir um bound é registrado separadamente.
 
-Para retomar, execute novamente o mesmo comando e a mesma pasta de saída. Os
-pontos já registrados são reaproveitados. Um ponto que estava em cálculo no
-momento de uma interrupção pode precisar ser calculado novamente. Use
-`--retry-failed` quando quiser repetir falhas registradas, preservando a distinção
-entre falha numérica e resultado físico.
+Repita o mesmo comando para retomar. A sequência é reconstruída a partir dos
+resultados gravados, sem repetir bounces confirmados. `--retry-failed` tenta
+reparar falhas/observáveis não resolvidos visitados, uma vez por chamada.
+Código, versões, parâmetros ou estratégia diferentes exigem outra pasta.
+Não reutilize a campanha antiga da grade nem os dados do piloto na produção.
+`--export-only` atualiza points/transitions CSV a partir do banco; as matrizes
+adaptativas e o estado são regenerados ao retomar a busca.
 
-Não misture resultados de prescrições ou resoluções diferentes na mesma pasta.
-Mantenha o comando e o manifesto de cada campanha; a verificação da configuração
-e das fontes protege a retomada contra combinações incompatíveis.
+No cluster, [cluster_runner.py](cluster_runner.py) conserva o SQLite ativo no
+disco local e publica checkpoints fechados, com journal DELETE no destino
+persistente. [CLUSTER_CHE.md](CLUSTER_CHE.md) explica os três jobs, um por m8.
 
 ## 6. Como interpretar as tabelas
 
@@ -237,10 +232,14 @@ as demais degenerescências críticas ficam nos detalhes.
 
 ## Organização e relação com o núcleo
 
+Mapa e inventário das funções: [CORE_MAP.md](CORE_MAP.md).
+
 | Arquivo | Responsabilidade nesta coleta |
 |---|---|
 | `Articles/combined_model.py` | Define somente a física específica do potencial e diagnósticos em T=0 |
-| `Articles/collect_data.py` | Configura a malha, chama o núcleo e salva os resultados sem produzir figuras |
+| `Articles/adaptive_scan.py` | Continuação, contadores, fronteiras e matrizes |
+| `Articles/run_local.py` | Três processos independentes, um por m8 |
+| `Articles/collect_data.py` | Coordena a estratégia, chama o núcleo e salva os resultados sem produzir figuras |
 | `src/CosmoTransitions/__init__.py` | Expõe a interface pública do pacote |
 | `finiteT.py` | Integrais térmicas e splines de Jb/Jf |
 | `helper_functions.py` | Pesos de diferenças finitas, gradiente, Hessiana, interpolação e integradores |
@@ -249,7 +248,8 @@ as demais degenerescências críticas ficam nos detalhes.
 | `tunneling1D.py` | Bounce O(3), integração radial e ação euclidiana |
 | `gravitational_Waves.py` | Termodinâmica, beta/H, espectros e ajustes PIS |
 
-Não importamos o script da dissertação. As alterações pequenas no núcleo
+Esta revisão altera somente Articles; o núcleo permanece intacto. Não importamos
+o script da dissertação. As alterações já existentes na branch no núcleo
 acrescentam `order=2` sem remover o padrão anterior `order=4`, refinam os mínimos
 antes de calcular a ação, explicitam as duas convenções de alpha e corrigem
 unidades em turbulência/saídas Hz e a ordenação de fases recebidas fora de ordem.
@@ -261,13 +261,12 @@ Os testes e a execução de validação estão descritos em [VALIDATION.md](VALI
 
 ## 7. Refinamento para resultados de publicação
 
-A malha fina facilita investigar faixas estreitas, mas uma única resolução não
-certifica convergência. Primeiro localize as regiões de interesse; depois
+Uma única resolução e a regra de três ausências não certificam convergência. Primeiro localize as regiões de interesse; depois
 recalcule fronteiras, pontos representativos e regiões com beta instável em
 outra pasta. Por exemplo:
 
 ```bash
-python -m Articles.collect_data --output Articles/results/refinement --m6 750 850 2 --C 3.0 3.4 0.005 --m8 inf --beta-check
+python -m Articles.collect_data --strategy grid --output Articles/results/refinement --m6 750 850 2 --C 3.0 3.4 0.005 --m8 inf --beta-check
 ```
 
 Compare os resultados com variações do passo em temperatura, resolução da busca

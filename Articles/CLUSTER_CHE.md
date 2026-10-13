@@ -1,7 +1,7 @@
 # Primeira execução no CHE
 
-Este roteiro prepara o acesso, um teste de dois pontos e a campanha grande.
-Não há submissão automática. A grade grande deve seguir o teste local e o teste
+Este roteiro prepara o acesso, dois testes e a campanha adaptativa em três fatias de m8.
+Não há submissão automática. A produção deve seguir o teste local e o teste
 no nó de cálculo.
 
 ## 1. Entrar pelo Windows
@@ -103,7 +103,7 @@ Para testar a suíte em um nó, peça uma sessão interativa permitida pela sua 
 ```bash
 srun --partition=debug --nodes=1 --ntasks=1 --cpus-per-task=2 --mem=4G --time=00:30:00 --pty bash -l
 cd "$HOME/projects/GW_FOPT_Simulation"
-"$FOPT_PYTHON" -m pytest -q
+"$FOPT_PYTHON" -m pytest -q Articles/tests
 exit
 ```
 
@@ -146,147 +146,122 @@ unset FOPT_SCRATCH_ROOT
 Não use uma montagem NFS para o banco ativo. `/tmp` permite o teste pequeno;
 antes da campanha grande, confira o espaço do disco no nó de cálculo.
 
-## 5. Submeter o teste de dois pontos
+## 5. Os dois testes antes de produzir
 
-Na raiz do repositório, prepare as variáveis **na mesma sessão SSH** em que
-executará `sbatch`. Elas precisam ser exportadas novamente após sair do SSH e
-entrar em outra sessão. `FOPT_RESULTS_ROOT` é a pasta persistente dos resultados;
-`FOPT_PYTHON` é o interpretador do ambiente instalado na etapa 3.
+Use a branch atualizada e uma pasta nova para esta estratégia. Não reutilize
+checkpoints da grade antiga. Confirme partição, tempo e quota na sua conta;
+os valores dos templates são exemplos e não comprovam disponibilidade.
+
+**Teste 1: lógica e persistência**, em uma alocação de cálculo:
 
 ```bash
-export FOPT_PYTHON="$PWD/.venv-che311/bin/python"
-export FOPT_RESULTS_ROOT="$HOME/fopt-tests"
-unset FOPT_SCRATCH_ROOT
-mkdir -p "$FOPT_RESULTS_ROOT" Articles/results/logs
-"$FOPT_PYTHON" --version
-"$FOPT_PYTHON" -m Articles.collect_data --dry-run --output "$FOPT_RESULTS_ROOT/smoke" --m6 1000 1000 5 --C 0 3.35 3.35 --m8 668.740304976422 --no-baselines --beta-check
+srun --partition=debug --nodes=1 --ntasks=1 --cpus-per-task=1 --mem=4G --time=00:30:00 --pty bash -l
+cd "$HOME/projects/GW_FOPT_Simulation"
+"$FOPT_PYTHON" -m pytest -q Articles/tests
+exit
 ```
 
-Se escolheu outro nome para a venv, ajuste `FOPT_PYTHON`. Se esta pasta de
-resultados contém uma campanha de outra versão do código, escolha outra pasta.
-Somente após as duas chamadas Python acima funcionarem, submeta:
+**Teste 2: piloto real de duas linhas completas por m8:**
 
 ```bash
-job_id="$(sbatch --parsable --export=ALL Articles/cluster/smoke.slurm)"
-printf 'Job submetido: %s\n' "$job_id"
-squeue -u "$USER"
+mkdir -p Articles/results/logs
+sbatch --export=ALL Articles/cluster/smoke.slurm
 ```
 
-`--export=ALL` transmite as variáveis exportadas ao job. O nome do diretório
-de resultados é uma escolha do usuário; o script exige essa escolha antes de
-iniciar o cálculo. Se aparecer `FOPT_RESULTS_ROOT: ...` no `.err`, o job não
-recebeu um valor não vazio e parou antes de chamar Python. Refaça os exports
-nesta sessão e faça uma nova submissão: o job anterior já terminou.
-Referência: [exportação de ambiente no sbatch](https://slurm.schedmd.com/sbatch.html).
+O template cria um array de **três tarefas**, índices 0, 1, 2, uma por m8.
+Cada tarefa roda o teste de lógica e o piloto real. Os resultados ficam em
+`$FOPT_RESULTS_ROOT/smoke/m8-0`, `m8-1`, `m8-2`. Cada pasta tem banco, detalhes,
+matriz e `adaptive_state.json`. Confira os três estados `pilot_complete` e
+as duas linhas completas antes da produção.
 
-O Slurm informa um JOB_ID. O script reserva um nó, uma tarefa, duas CPUs e 4 GB
-por até 2h na fila debug. Ele calcula C=0 e C=3.35 para m6=1000 GeV e
-m8=668.740304976422 GeV, com beta-check. O checkpoint é feito a cada ponto.
+O piloto usa m6=`inf, 2000, 1250, 500` GeV. A procura inicial da semente pode
+avaliar outros C em m6=inf antes das duas linhas; ela é limitada pelos bounds.
+Uma parada `bound` deve ser distinguida da regra de três ausências. A parada
+externa de três linhas vazias é exercitada no Teste 1; o piloto tem só duas.
 
-O comando acima guarda o número real em `job_id`. Monitore na mesma sessão SSH:
-
-```bash
-scontrol show job "$job_id"
-tail -n 80 "Articles/results/logs/smoke-$job_id.out"
-cat "Articles/results/logs/smoke-$job_id.err"
-sacct -j "$job_id" --format=JobID,State,Elapsed,AllocCPUS,MaxRSS,ExitCode
-```
-
-Após reconectar por SSH, defina `job_id=NUMERO_RECEBIDO` antes de monitorar.
-`NUMERO_RECEBIDO` e `JOB_ID` são indicações para substituir pelo número, não
-identificadores aceitos literalmente pelo Slurm. `scontrol show job JOB_ID`
-produz Invalid job id; isso não informa o estado do job submetido.
-
-Para acompanhar um job em execução continuamente, use separadamente
-`tail -f "Articles/results/logs/smoke-$job_id.out"`. Esse comando fica aberto,
-inclusive depois de o job terminar; use Ctrl+C para voltar ao prompt antes de
-executar outro comando. Ctrl+C encerra apenas tail, não o job.
-Para cancelar o job, use `scancel "$job_id"`.
-PD significa aguardando recursos; R significa executando. O log mostra checkpoints
-publicados, status dos pontos e quantidade confirmada. Confira os CSVs em
-`$FOPT_RESULTS_ROOT/smoke` e os valores de referência no QUICKSTART.
-
-## 6. Por que estas diretivas diferem do modelo de 70 tarefas
-
-O coletor usa multiprocessing dentro de um nó. A alocação correta é
-`--nodes=1 --ntasks=1 --cpus-per-task=N`, com `--workers N`. Pedir 70 tarefas
-não faz o programa distribuir trabalho em 70 processos MPI ou em vários nós.
-Um array Slurm permite distribuir partes independentes para vários nós.
-
-SQLite em WAL não deve operar em filesystem de rede. cluster_runner chama o
-coletor em lotes no scratch local; quando o coletor fecha o banco e os workers,
-copia detalhes/CSV e publica o banco por último. A cópia persistente usa journal
-DELETE. Nunca copie manualmente apenas scan.sqlite de um banco WAL ativo.
-
-Referências técnicas: [Slurm sbatch](https://slurm.schedmd.com/sbatch.html),
-[SQLite WAL](https://www.sqlite.org/wal.html).
-
-## 7. Campanha grande, depois dos testes
-
-Primeiro confirme quota, partição, memória por worker e tempo observado. Escolha
-um destino persistente autorizado para produção, diferente do teste. Por exemplo,
-substitua o caminho abaixo pela pasta concedida ao seu usuário/projeto:
+## 6. Produção em três frentes, uma por m8
 
 ```bash
-export FOPT_RESULTS_ROOT=/CAMINHO/PERSISTENTE/AUTORIZADO/fopt-campaign
-mkdir -p "$FOPT_RESULTS_ROOT" Articles/results/logs
-"$FOPT_PYTHON" -m Articles.collect_data --dry-run --output "$FOPT_RESULTS_ROOT/production/part-0" --shard-count 100 --shard-index 0 --beta-check
+"$FOPT_PYTHON" -m Articles.run_local --dry-run --beta-check --output "$FOPT_RESULTS_ROOT/production"
 sbatch --export=ALL Articles/cluster/production.slurm
 ```
 
-O template é um ponto de partida: generic, 3 dias, 4 CPUs e 8 GB por job;
-array 0–99, no máximo 2 jobs simultâneos (8 CPUs no total). Não é uma medição de
-memória suficiente nem uma garantia de terminar em 3 dias. Ajuste recursos depois
-do piloto, respeitando as regras da conta. GPU não acelera este código.
+`run_local --dry-run` aqui apenas confere as configurações, sem bounces no nó
+de entrada. Não execute `run_local` sem dry-run nesse nó.
 
-As 453.906 coordenadas são repartidas pela posição na grade módulo 100. As partes
-0–5 têm 4.540 pontos; 6–99 têm 4.539. Cada ponto pertence exatamente a uma parte;
-nenhuma precisão é reduzida pela distribuição. Toda parte recebe a mesma grade,
-prescrições e beta-check. As pastas finais são `production/part-0` até `part-99`.
+| Tarefa do array | m8 [GeV] | Destino persistente |
+|---|---:|---|
+| 0 | inf | production/m8-0 |
+| 1 | 840.8964152537145 | production/m8-1 |
+| 2 | 668.740304976422 | production/m8-2 |
 
-Se mudar a quantidade de partes, ajuste simultaneamente `#SBATCH --array` e
-`--shard-count`, e use outra campanha. Trocar apenas a concorrência `%2`, CPUs
-ou batch-size não altera a definição física nem a distribuição dos pontos.
+O array é `0-2%3`: no máximo três jobs simultâneos, cada um com uma CPU,
+uma tarefa e um processo de cálculo. Não há MPI. Dentro de cada m8 a busca é
+sequencial: as decisões dependem dos resultados anteriores. A distribuição
+por m8 não garante speedup exatamente 3, pois os tempos das fatias diferem.
+Não use a partição antiga em 100 shards no scan adaptativo.
 
-Checkpoint padrão a cada 100 pontos novos. Em corte abrupto, resultados do último
-lote ainda não publicado podem precisar ser recalculados; checkpoints anteriores
-permanecem válidos. O sinal 5 min antes do limite pede parada ao coordenador após
-o lote atual. Ele não garante que um lote demorado termine nesse prazo.
-O scratch não é removido automaticamente: confira os checkpoints antes de limpeza.
+O padrão tem C em [0,10], passo 0.02, semente 3.83; m6 finito em
+[500,2000] GeV, passo 5 GeV, mais inf; regra de três ausências. O piloto usa
+outra grade e outra identidade. Para personalizar a produção, altere os
+argumentos do runner no template e use outro destino persistente.
+Todos os parâmetros da busca estão disponíveis no runner: `--C`, `--m6`,
+`--seed-C`, `--seed-m6`, `--patience`, `--scenario-index`, `--retry-failed`.
 
-## 8. Retomar e analisar
+## 7. Checkpoints, interrupções e retomada
 
-Para retomar, submeta o mesmo script com o mesmo destino e código/ambiente. Cada
-job restaura seu checkpoint para um scratch novo e pula pontos já confirmados.
-Se aparecer Campanha incompatível, consulte as diferenças listadas: uma revisão
-de código/ambiente/configuração exige outra pasta persistente para resultados
-novos. Preserve a campanha anterior; não force sua mistura com a nova.
-Para repetir somente partes incompletas, restrinja o array na chamada, por exemplo
-`sbatch --array=4,7,12%2 Articles/cluster/production.slurm`. Não altere shard-count.
-Uma nova submissão não pode disputar uma parte ainda ativa: a trava rejeita isso.
+O runner calcula lotes de cinco pontos novos por padrão e fecha o SQLite
+antes de publicar. Cada ponto já fica confirmado no banco local imediatamente;
+se o nó for encerrado abruptamente, o último lote ainda não publicado pode
+precisar ser repetido. Para checkpoints mais frequentes:
 
-Job COMPLETED pode significar saída após o aviso de tempo, não que todas as
-coordenadas foram investigadas. Compare o total confirmado com o tamanho esperado
-da parte. Falhas numéricas também são registros; verifique seus status e flags.
-O wrapper não repete falhas automaticamente, pois repetir sempre o mesmo erro
-poderia impedir terminar a parte. Revisões físicas devem formar outra campanha.
-
-Para análises, leia os points.csv/transitions.csv de todas as partes, associando
-point_id e transition_index. Não leia apenas part-0 nem sobrescreva manifestos
-das outras partes. Espectros completos continuam reconstruíveis a partir dos
-parâmetros; nenhuma curva completa é gravada pelo template.
-
-Para baixar um teste no PowerShell do seu computador:
-
-```powershell
-scp -P 13900 -r SEU_USUARIO@152.84.248.250:/home/SEU_USUARIO/fopt-tests/smoke .
+```bash
+export FOPT_BATCH_SIZE=1
+sbatch --export=ALL Articles/cluster/production.slurm
 ```
 
-Para produção, use o caminho persistente escolhido e planeje a transferência
-conforme o volume. Não apague a única cópia dos detalhes ao baixar somente CSVs.
+Lotes menores aumentam o custo das cópias. O sinal USR1 é encaminhado ao
+coordenador; ele termina o lote atual, publica e sai. O aviso de cinco minutos
+não garante que um ponto difícil termine a tempo. A retomada usa o último
+checkpoint confirmado. Não há submissão automática de jobs novos.
 
-## Resumo das decisões que faltam no primeiro acesso
+Submeta de novo o mesmo template, sem alterar código, versões ou parâmetros.
+Cada tarefa restaura sua fatia em uma pasta local exclusiva nova e reconstrói
+as decisões a partir do SQLite, sem repetir pontos confirmados. Para retomar
+somente uma fatia:
 
-Nome de usuário/endereço/porta efetivos; módulo Python >=3.11; partição permitida;
-pasta persistente e quota; scratch local; memória/tempo do piloto. Com essas
-informações e o teste bem-sucedido, os templates tornam a submissão concreta.
+```bash
+sbatch --export=ALL --array=1 Articles/cluster/production.slurm
+```
+
+Se houver ponto inconclusivo, a tarefa para e publica o diagnóstico já salvo;
+falha não conta como ausência para encerrar uma direção. Consulte os detalhes.
+Para repetir uma falha transitória, acrescente `--retry-failed` ao runner e
+submeta novamente a fatia. Uma falha persistente para novamente. Mudança na
+física, resolução ou fontes exige outra pasta; não remova o manifesto.
+
+Para exercitar o mesmo runner localmente antes de submeter:
+
+```bash
+python -m Articles.cluster_runner --smoke --scenario-index 0 --beta-check --batch-size 1 --output Articles/results/runner_pilot --work-dir Articles/results/scratch_pilot_novo
+```
+
+`--work-dir` deve estar vazio, ser distinto de `--output` e não estar dentro
+dele nem contê-lo. Ao repetir, escolha uma pasta de trabalho nova e mantenha
+o destino persistente. Sem argumentos, o runner só mostra ajuda.
+
+## 8. Acompanhar e conferir
+
+Use `squeue -u "$USER"` e os logs `scan-ARRAY_INDICE.out/.err` ou
+`smoke-ARRAY_INDICE.out/.err`. Consulte `sacct -j ID --format=JobID,State,Elapsed,ExitCode`
+quando o job terminar. O término de uma tarefa não significa que as demais
+terminaram; confira cada fatia e seu estado final `complete`.
+
+As matrizes usam `yes`, `no`, `unknown`, `not_evaluated`; `matrix_axes.json`
+identifica o m8 de cada pasta. `adaptive_state.json` guarda as sementes, os
+três últimos pontos/linhas que fecharam a direção, o primeiro pulado e bounds.
+Não interprete pontos pulados como exclusão física. Confira a resolução das
+fronteiras e possíveis ilhas com scans direcionados antes do artigo.
+
+O acesso ao CHE e a submissão remota precisam ser feitos na sua conta.
+A validação local de checkpoint não constitui uma execução remota no Slurm.

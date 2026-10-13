@@ -2,16 +2,16 @@
 #SBATCH --job-name=fopt-scan
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
 #SBATCH --time=3-00:00:00
 #SBATCH --partition=generic
-#SBATCH --array=0-99%2
+#SBATCH --array=0-2%3
 #SBATCH --signal=B:USR1@300
 #SBATCH --output=Articles/results/logs/scan-%A_%a.out
 #SBATCH --error=Articles/results/logs/scan-%A_%a.err
 
-# 100 partes disjuntas; no máximo 2 jobs de 4 CPUs simultâneos neste exemplo.
+# Três fatias independentes: uma por m8; um processo sequencial por fatia.
 # Confirme partição, memória, tempo e quota com o CHE antes de submeter.
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?}"
@@ -19,7 +19,7 @@ if [[ -n "${FOPT_PYTHON_MODULE:-}" ]]; then
     module load "$FOPT_PYTHON_MODULE"
 fi
 : "${FOPT_RESULTS_ROOT:?Falta exportar FOPT_RESULTS_ROOT no terminal de submissão. Consulte Articles/CLUSTER_CHE.md e submeta com sbatch --export=ALL.}"
-python_executable="${FOPT_PYTHON:-$SLURM_SUBMIT_DIR/.venv/bin/python}"
+python_executable="${FOPT_PYTHON:-$SLURM_SUBMIT_DIR/.venv-che311/bin/python}"
 printf 'Destino persistente: %s\n' "$FOPT_RESULTS_ROOT"
 printf 'Python selecionado: %s\n' "$python_executable"
 export MPLBACKEND=Agg PYTHONUNBUFFERED=1
@@ -35,12 +35,11 @@ forward_stop() {
     fi
 }
 trap forward_stop USR1
-# Se alterar a quantidade de partes, altere também array=0-(count-1).
 "$python_executable" -m Articles.cluster_runner \
-    --beta-check --batch-size 100 --workers "$SLURM_CPUS_PER_TASK" \
-    --shard-count 100 --shard-index "$SLURM_ARRAY_TASK_ID" \
+    --beta-check --batch-size "${FOPT_BATCH_SIZE:-5}" --workers 1 \
+    --scenario-index "$SLURM_ARRAY_TASK_ID" \
     --work-dir "$local_work" \
-    --output "$FOPT_RESULTS_ROOT/production/part-$SLURM_ARRAY_TASK_ID" &
+    --output "$FOPT_RESULTS_ROOT/production/m8-$SLURM_ARRAY_TASK_ID" &
 runner_pid=$!
 # wait pode ser interrompido pelo sinal do Slurm; continue aguardando o job.
 while true; do
