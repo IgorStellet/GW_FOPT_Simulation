@@ -39,13 +39,13 @@ for _variable in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
 
 import numpy as np
 
-import CosmoTransitions
+import src.CosmoTransitions
 from Articles.combined_model import CombinedPotential, ModelParameters
-from CosmoTransitions.generic_potential import (
+from src.CosmoTransitions.generic_potential import (
     _build_phases_and_transitions,
     build_finite_T_derivatives,
 )
-from CosmoTransitions.gravitational_Waves import (
+from src.CosmoTransitions.gravitational_Waves import (
     GravitationalWaveCalculator,
     bbo_sensitivity_s_pis,
     decigo_sensitivity_s_pis,
@@ -476,7 +476,7 @@ def provenance(settings, grid):
     # Usa os arquivos realmente importados, também numa instalação por wheel.
     # As chaves conservam os nomes do repositório para facilitar a auditoria.
     packages = (
-        ("src/CosmoTransitions", Path(CosmoTransitions.__file__).resolve().parent),
+        ("src/CosmoTransitions", Path(src.CosmoTransitions.__file__).resolve().parent),
         ("Articles", Path(__file__).resolve().parent),
     )
     files = {}
