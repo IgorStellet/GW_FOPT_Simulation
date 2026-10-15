@@ -24,7 +24,7 @@ três colunas m6 vazias somente após esgotar C, bounds, erros, retomada e plots
 **Teste 2 — piloto real com visualização, duas massas m6 por cenário de m8:**
 
 ```bash
-python -m Articles.run_local --smoke --beta-check --output Articles/results/pilot_adaptive_v2
+python -m Articles.run_local --smoke --beta-check --output Articles/results/pilot_adaptive_v3
 ```
 
 Inicia três processos independentes. Em cada m8, calcula a coluna m6=inf e
@@ -43,7 +43,7 @@ C; o limite de três passos do piloto só vale **depois** de encontrá-la.
 Para testar apenas uma fatia:
 
 ```bash
-python -m Articles.collect_data --smoke --scenario-index 0 --beta-check --output Articles/results/pilot_m8_0_v2
+python -m Articles.collect_data --smoke --scenario-index 0 --beta-check --output Articles/results/pilot_m8_0_v3
 ```
 
 Confira `adaptive_state.json`: estado `pilot_complete`, duas colunas em
@@ -60,7 +60,7 @@ Em cada pasta `m8-0`, `m8-1`, `m8-2`, a subpasta `plots/` contém:
 | selection.json | Pontos escolhidos, observáveis rejeitados, eficiências e versão gráfica |
 | spectrum_samples.csv | Frequências em Hz e componentes acústica, turbulência, colisões e total |
 
-O launcher também salva `pilot_adaptive_v2/plots/nucleation_overview.png`,
+O launcher também salva `pilot_adaptive_v3/plots/nucleation_overview.png`,
 comparando as três fatias. Verde: nucleação aceita; laranja: ausência encontrada;
 roxo: inconclusivo; cinza: não calculado. Círculo preto: semente; cruzes: três
 ausências de parada. Um losango vermelho sobre um hit indica observáveis sob
@@ -81,7 +81,7 @@ A turbulência usa epsilon=0.05 e colisões kappa=0, conforme o manifesto.
 Para redesenhar imagens a partir de uma campanha já salva:
 
 ```bash
-python -m Articles.plot_results --output Articles/results/pilot_adaptive_v2
+python -m Articles.plot_results --output Articles/results/pilot_adaptive_v3
 ```
 
 Isso não retoma o scan nem altera os dados físicos. Também aceita uma única
@@ -94,7 +94,7 @@ seu checkpoint final, inclusive diagnóstico parcial quando possível.
 Depois dos testes, use uma pasta nova:
 
 ```bash
-python -m Articles.run_local --beta-check --output Articles/results/production_adaptive_v2
+python -m Articles.run_local --beta-check --output Articles/results/production_adaptive_v3
 ```
 
 | Índice | m8 [GeV] | Pasta |
@@ -110,7 +110,7 @@ Não use `--workers 3` nem divida a sequência adaptativa em shards.
 Para uma única fatia de produção:
 
 ```bash
-python -m Articles.collect_data --scenario-index 1 --beta-check --output Articles/results/production_m8_1_v2
+python -m Articles.collect_data --scenario-index 1 --beta-check --output Articles/results/production_m8_1_v3
 ```
 
 `collect_data` sem seleção percorre os três m8 sequencialmente na mesma pasta.
@@ -185,16 +185,45 @@ As células são `yes` (nucleação aceita), `no` (ausência encontrada),
 registra o bootstrap de cada m6, as três ausências em C, colunas vazias
 e o primeiro valor pulado. Os limites do piloto ficam explícitos.
 Beta/GW inconclusivos com nucleação aceita não encerram a faixa. Falhas
-numéricas ou nucleação fora da tolerância interrompem a campanha, com o
-ponto salvo, para não podar a região a partir de informação inconclusiva.
+numéricas ou nucleação fora da tolerância ficam unknown após a tentativa
+limitada de recuperação. A busca continua sem usar esses pontos para podar.
+O modo --on-unresolved stop mantém a interrupção estrita opcional.
 
 Repita o mesmo comando para retomar. O banco reconstrói a sequência sem
 recalcular pontos confirmados. Código, ambiente e configuração devem coincidir
-com o manifesto. Esta versão tem identidade `adaptive_v2_verified_columns`. Não reutilize
+com o manifesto. Esta versão tem identidade `adaptive_v3_audited_unknowns`. Não reutilize
 pastas da versão anterior, nem as do piloto na produção. Use uma pasta nova,
-como `pilot_adaptive_v2`, preservando os resultados antigos. Para outra configuração, escolha outra pasta; não edite hashes.
+como `pilot_adaptive_v3`, preservando os resultados antigos. Para outra configuração, escolha outra pasta; não edite hashes.
 Para repetir uma falha transitória, acrescente `--retry-failed`. Se a falha
-persistir, o comando para novamente, sem um ciclo infinito.
+persistir, permanece unknown e a busca segue, sem um ciclo infinito de retries.
 
 Cluster e checkpoints em disco local: [CLUSTER_CHE.md](CLUSTER_CHE.md).
 Modelo e interpretação dos dados: [README.md](README.md).
+
+
+## Encerramento e pontos inconclusivos (v3)
+
+```bash
+python -m Articles.status --output Articles/results/production_adaptive_v3
+python -m Articles.status --output Articles/results/production_adaptive_v3 --json
+```
+
+O estado mostra se foi campanha completa, piloto, limite de pontos ou falha.
+A v3 tenta recuperar um ponto inconclusivo uma vez, sem relaxar S3/T. Se o erro
+persistir, registra unknown e continua os outros C/m6. Unknown interrompe a
+contagem de ausências; uma coluna com unknown não pode fechar o eixo m6 como
+coluna vazia. O estado final ganha _with_unresolved e os executores retornam 3
+quando há revisão pendente. Esse código não apaga o scan nem indica que toda
+sua busca parou. O modo estrito opcional é --on-unresolved stop.
+
+A grade mantém o passo C=0.02 ancorado em 3.83, acrescentando C=1 e C=3.2 como
+cortes de referência exatos. A faixa c6/f²=3.2..3.45 TeV^-2 da dissertação em
+C=1 corresponde a m6 aproximadamente 538..559 GeV, dentro de 500..2000. A
+figura da dissertação é sem daisy; esta campanha continua com daisy ligado.
+O piloto de duas massas não pretende mapear essa região de m6 baixo.
+
+run_local sem argumentos executa produção; --smoke executa o piloto. A saída
+padrão é Articles/results/production_adaptive_v3, ancorada na raiz do checkout
+mesmo ao iniciar pelo botão Run. O resumo final informa o estado de cada m8.
+Não reutilize manifestos/dados v2 como v3: todas as mudanças estão em Articles,
+mas seus hashes numéricos fazem parte da identidade da campanha.

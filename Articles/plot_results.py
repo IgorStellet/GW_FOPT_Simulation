@@ -238,6 +238,8 @@ def plot_campaign(folder, max_spectra=3):
         axis.grid(True, which="major", alpha=0.2)
     state = campaign["state"].get("state", "sem estado")
     state_label = {"pilot_complete": "piloto concluído", "complete": "concluído",
+                   "pilot_complete_with_unresolved": "piloto concluído com inconclusivos",
+                   "complete_with_unresolved": "busca concluída com inconclusivos",
                    "paused_point_budget": "parcial — limite de pontos", "unresolved": "inconclusivo",
                    "interrupted": "interrompido", "running": "em cálculo"}.get(state, state)
     m8_label = ", ".join(_mass_label(m) for m in campaign["axes"]["m8_GeV"])

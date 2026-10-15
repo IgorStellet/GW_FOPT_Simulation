@@ -113,6 +113,7 @@ def test_bounds_and_exact_seed_are_preserved():
     masses, cs = AdaptivePlan().axes()
     assert (cs[0], cs[-1]) == (0, 10)
     assert 3.83 in cs and 3.81 in cs and 3.85 in cs
+    assert 1.0 in cs and 3.2 in cs  # Cortes exatos de referência da dissertação.
     assert masses[0] == math.inf and masses[1] == 2000 and masses[-1] == 500
     report = trace_scan(plan(C_range=(1, 1, 0.1)), lambda _: "yes")
     assert all(s["reason"] == "bound" for s in report["slices"][0]["columns"][0]["C_stops"])
@@ -133,9 +134,49 @@ def test_pilot_has_two_columns_and_does_not_truncate_seed_search():
 def test_failure_aborts_without_closing_a_boundary():
     report = {}
     with pytest.raises(UnresolvedPoint, match="Nenhuma região"):
-        trace_scan(plan(), lambda x: "unknown" if x.C == 1.2 else "yes", report)
+        trace_scan(plan(on_unresolved="stop"), lambda x: "unknown" if x.C == 1.2 else "yes", report)
     assert report["state"] == "unresolved"
     assert not report["slices"][0]["columns"][0]["C_stops"]
+
+
+def test_unknown_does_not_stop_later_C_or_finite_masses():
+    p = plan(m6_range_GeV=(500, 2000, 500), seed_m6_GeV=math.inf)
+    def evaluate(x):
+        if math.isinf(x.m6_GeV):
+            return "unknown" if x.C == 0.7 else "yes" if x.C == 1 else "no"
+        return "yes" if x.C == 0.2 else "no"
+    report = trace_scan(p, evaluate)
+    assert report["state"] == "complete_with_unresolved"
+    assert report["unresolved_points"] == [{"C": 0.7, "m6_GeV": math.inf, "m8_GeV": math.inf}]
+    cols = report["slices"][0]["columns"]
+    assert any(c["m6_GeV"] == 500 and c["verified_seed_C"] == 0.2 for c in cols)
+    assert cols[0]["C_stops"][1]["last_no_C"] == [0.6, 0.5, 0.4]
+
+
+def test_unknown_seed_candidates_are_skipped_and_not_classified_as_empty_columns():
+    p = plan(m6_range_GeV=(500, 2000, 500), seed_m6_GeV=math.inf)
+    def evaluate(x):
+        if x.m6_GeV == 500 or math.isinf(x.m6_GeV):
+            return "yes" if x.C == 1 else "no"
+        return "unknown" if x.C == 1 else "no"
+    report = trace_scan(p, evaluate)
+    cols = report["slices"][0]["columns"]
+    assert cols[-1]["m6_GeV"] == 500
+    assert all(c["state"] == "unresolved_no_seed" for c in cols[1:-1])
+    assert all(s["reason"] != "consecutive_empty_columns" for s in report["slices"][0]["m6_stops"])
+
+
+def test_all_unknowns_are_bounded_and_never_become_a_physical_exclusion():
+    p = plan(m6_range_GeV=(1000, 1000, 1), C_range=(0, 1, 0.1), seed_m6_GeV=math.inf)
+    report = trace_scan(p, lambda _: "unknown")
+    assert report["state"] == "complete_with_unresolved"
+    assert len(report["unresolved_points"]) == 22
+    assert all(c["state"] == "unresolved_no_seed" for c in report["slices"][0]["columns"])
+
+
+def test_unknown_before_seed_does_not_prevent_verified_nucleation():
+    report = trace_scan(plan(column_limit=1), lambda x: "yes" if x.C == 0.5 else "unknown")
+    assert report["slices"][0]["columns"][0]["verified_seed_C"] == 0.5
 
 
 def test_accepted_nucleation_with_unresolved_observables_is_still_a_hit():

@@ -221,3 +221,14 @@ Reexports: funções térmicas, auxiliares, bounce, fases, GW e adaptadores.
 - `SingleFieldInstanton`: `__init__`, `dV`, `dV_from_absMin`, `d2V`, `findBarrierLocation`, `findRScale`, `exactSolution`, `initialConditions`, `_normalize_tolerances`, `equationOfMotion`, `integrateProfile`, `integrateAndSaveProfile`, `findProfile`, `findAction`, `evenlySpacedPhi`, `actionBreakdown`, `wallDiagnostics`, `betaEff`
 
 Inventário: 143 funções/métodos definidos no escopo dos módulos e classes; funções locais aninhadas permanecem detalhes internos das rotinas listadas.
+
+
+## Recuperação e auditoria v3
+
+`collect_data.evaluate_point` executa a tentativa padrão e, quando a nucleação
+é inconclusiva, uma tentativa limitada com fases/minimização/raiz refinadas.
+Reutiliza o mesmo núcleo sem alterar fontes, aliases ou solver de bounce.
+As tentativas e seus erros são preservados; ações negativas são rejeitadas.
+`status.py` lê estado/CSV para explicar o encerramento sem alterar o SQLite.
+O scan distingue complete de complete_with_unresolved e preserva os detalhes
+originais de falhas, inclusive S3/T fora da tolerância.

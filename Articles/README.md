@@ -90,7 +90,7 @@ cada ponto continuam sendo os do coletor e do núcleo existentes.
    se usa a regra de três ausências.
 2. Se não encontra semente até C_min, confere também os C acima da candidata
    até C_max, sem pressupor monotonicidade. Só declara uma coluna vazia depois
-   de esgotar seu eixo C inteiro sem nucleação. Falhas interrompem com diagnóstico.
+   de esgotar seu eixo C inteiro sem nucleação. Inconclusivos são auditados e não contam como ausência.
 3. Depois da semente confirmada **nessa coluna**, explora C nas duas direções;
    três ausências consecutivas encerram cada direção, com reinício após um hit.
 4. Passa ao próximo m6 e verifica outra semente, reutilizando o maior C
@@ -118,8 +118,8 @@ Instalação, testes e produção local em três processos independentes:
 python -m pip install -e . pytest
 python -m pytest -q Articles/tests
 python -m Articles.run_local --dry-run
-python -m Articles.run_local --smoke --beta-check --output Articles/results/pilot_adaptive_v2
-python -m Articles.run_local --beta-check --output Articles/results/production_adaptive_v2
+python -m Articles.run_local --smoke --beta-check --output Articles/results/pilot_adaptive_v3
+python -m Articles.run_local --beta-check --output Articles/results/production_adaptive_v3
 ```
 
 Execute produção depois de conferir os dois testes. Cada processo calcula
@@ -164,9 +164,10 @@ grade explícita em outra pasta.
 | matrix_axes.json | Eixos e correspondência entre N e m8, por pasta |
 
 `scan_decision` é independente do status dos observáveis: uma FOPT aceita
-continua `yes` mesmo que beta ou GW estejam não resolvidos. Uma falha numérica
-ou residual de nucleação não aceito é `unknown` e interrompe a busca, com
-registro salvo. Só `no_first_order_found` e `no_nucleation_found` contam como
+continua `yes` mesmo que beta ou GW estejam não resolvidos. Uma falha numérica ou residual de nucleação não aceito é `unknown`. Após uma
+recuperação numérica limitada, o scan padrão continua nos próximos C/m6, com
+registro salvo. Um unknown quebra a sequência de ausências consecutivas.
+`--on-unresolved stop` mantém a interrupção estrita opcional. Só `no_first_order_found` e `no_nucleation_found` contam como
 ausência para a poda. Os últimos três pontos de C ou colunas de m6 que justificam cada
 parada são salvos; atingir um bound é registrado separadamente.
 
@@ -174,8 +175,9 @@ Repita o mesmo comando para retomar. A sequência é reconstruída a partir dos
 resultados gravados, sem repetir bounces confirmados. `--retry-failed` tenta
 reparar falhas/observáveis não resolvidos visitados, uma vez por chamada.
 Código, versões, parâmetros ou estratégia diferentes exigem outra pasta.
-A identidade agora é `adaptive_v2_verified_columns`; use outra pasta para
-esta revisão e preserve a campanha anterior. Não reutilize dados do piloto na produção.
+A identidade agora é `adaptive_v3_audited_unknowns`; use outra pasta para
+esta revisão e preserve a campanha anterior. A v3 inclui os cortes exatos C=1 e
+C=3.2, além da grade ancorada em 3.83 e dos extremos 0 e 10. Não reutilize dados do piloto na produção.
 `--export-only` atualiza points/transitions CSV a partir do banco; as matrizes
 adaptativas e o estado são regenerados ao retomar a busca.
 
@@ -299,3 +301,40 @@ Para os gráficos do artigo, a estrutura dos dados permite comparar o plano
 super-resfriamento, alpha e beta/H, reconstruir espectros selecionados e procurar
 pontos com previsões semelhantes. A interpretação das degenerescências continua
 dependendo das hipóteses físicas registradas em cada campanha.
+
+
+## Diagnóstico de encerramento e recuperação v3
+
+```bash
+python -m Articles.status --output Articles/results/production_adaptive_v3
+```
+
+O diagnóstico lê JSON/CSV, sem calcular bounces nem modificar a campanha.
+Mostra estado, número de pontos e colunas m6 finitas, intervalo C calculado,
+paradas em massa e caminhos dos detalhes inconclusivos. `complete` e
+`pilot_complete` significam término sem pontos inconclusivos na busca visitada.
+`complete_with_unresolved` e `pilot_complete_with_unresolved` significam que a
+busca terminou, mas contém pontos a revisar; não certificam ausência nesses
+pontos. O launcher e o runner retornam código 3 nesse caso, depois de salvar os
+resultados e figuras. `paused_point_budget` é um checkpoint parcial normal.
+
+A recuperação automática é limitada a uma tentativa: duplica a grade de campo,
+aumenta as sementes térmicas, reduz os passos do rastreamento e as tolerâncias
+numéricas de mínimos/raiz. Conserva potencial, solver de bounce, ressoma,
+alvo/tolerância S3/T e passo de beta. As duas tentativas e seus parâmetros ficam
+nos detalhes; falhas persistentes continuam unknown. `--recovery-attempts 0` no
+coletor desliga essa tentativa. Ações negativas são rejeitadas e preservadas nos diagnósticos, sem alimentar a raiz como uma amostra física.
+
+Inconclusivos não viram no, não fecham uma fronteira e não tornam uma coluna
+vazia. A busca segue sem nova avaliação infinita do mesmo erro. As três
+negativas de parada devem ser consecutivas, sem unknown entre elas. Antes da
+primeira semente continua a busca completa dentro dos bounds, mesmo havendo
+falhas. Uma execução com pontos inconclusivos exige revisão/refinamento para
+publicação; a regra de três ausências também continua sujeita à hipótese de
+uma faixa conectada e à resolução adotada.
+
+O PyCharm pode iniciar run_local.py diretamente. Caminhos relativos de saída
+são resolvidos pela raiz do repositório, evitando Articles/Articles/results;
+os subprocessos também usam essa raiz. O modo PILOTO/PRODUÇÃO e os estados das
+três fatias aparecem explicitamente no terminal. Executar sem --smoke inicia
+produção. Use uma pasta nova ao mudar de v2 para v3.

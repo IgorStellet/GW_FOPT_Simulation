@@ -1,288 +1,205 @@
-# Primeira execução no CHE
+# CHE: ambiente, validação e produção em três fatias
 
-Este roteiro prepara o acesso, dois testes e a campanha adaptativa em três fatias de m8.
-Não há submissão automática. A produção deve seguir o teste local e o teste
-no nó de cálculo.
+Este roteiro usa o estado informado pelo usuário em 15/10/2026. Os templates
+v3 usam milliways-ext. A consulta real mostrou MaxTime=15:00:00 e os nós
+milliways01/03 parcialmente ocupados; milliways02 estava down*. O manual de
+2024 não descreve toda essa configuração. Consulte novamente antes de escolher
+recursos. A divergência entre milliways-int no sinfo e o erro do scontrol não
+foi resolvida; não se presume acesso/configuração dessa partição.
 
-## 1. Entrar pelo Windows
+Todas as fontes modificadas ficam em Articles. Não atualize o checkout nem o
+ambiente enquanto houver jobs usando esses arquivos. Uma atualização numérica
+exige novo destino: checkpoints v2 não são retomados como v3.
 
-No PowerShell, segundo o manual de 2024:
+## 1. Ambiente persistente no nó de entrada
 
-```powershell
-ssh -p 13900 SEU_USUARIO@152.84.248.250
-```
-
-Confirme endereço/porta e a chave do servidor com a administração se necessário.
-Na autenticação por senha, os caracteres podem não aparecer enquanto você digita.
-Após entrar, os próximos comandos são Linux, executados no CHE. `exit` encerra
-o SSH. Não é necessário instalar uma interface gráfica para usar o cluster.
-
-O nó de entrada serve para preparar arquivos, ambientes e submeter jobs. A coleta
-com bounces deve executar numa alocação Slurm, não diretamente no nó de entrada.
-
-## 2. Conferir ambiente e recursos
+Entre pela conexão SSH habitual. Na raiz do checkout:
 
 ```bash
-hostname
-pwd
-module avail
-module list
-python3 --version
-sinfo -a
-sinfo -N
-quota -s
-df -h /home /scratch/local
-```
-
-Se quota ou algum caminho não existir, peça a alternativa ao suporte. O scratch
-local é relevante no nó de cálculo; sua presença no nó de entrada não é garantia.
-Se Python for anterior a 3.11, procure um módulo Python/Miniconda atual e carregue
-o nome realmente disponível com `module load NOME`. Não use o módulo Anaconda2.
-A venv deve ser criada com o Python escolhido. Nenhum MPI/GPU é exigido pelo scan.
-
-O manual lista debug com limite de 2h e generic com 15 dias. Existem filas
-restritas a grupos, inclusive milliways/cosmoobs. Consulte sinfo e a administração
-para saber a sua permissão; o roteiro não pressupõe acesso a essas filas.
-
-## 3. Preparar o repositório e o Python
-
-```bash
-mkdir -p "$HOME/projects"
-cd "$HOME/projects"
-git clone --branch codex/articles-combined-potential-scan https://github.com/IgorStellet/GW_FOPT_Simulation.git
-cd GW_FOPT_Simulation
-bash Articles/cluster/setup_environment.sh python3
-export FOPT_PYTHON="$PWD/.venv-che311/bin/python"
-mkdir -p Articles/results/logs
-"$FOPT_PYTHON" -m Articles.collect_data --dry-run --output Articles/results/installation-check
-bash -n Articles/cluster/smoke.slurm
-bash -n Articles/cluster/production.slurm
-bash -n Articles/cluster/job_environment.sh
-```
-
-Se já houver clone, use-o e confira `git status` antes de atualizar. Instale no
-ambiente que será usado pelo job. Não execute pip automaticamente nos nós de
-cálculo: eles podem não ter acesso à internet. Preserve clone e ambiente durante
-a campanha; alterações em fontes/versões podem invalidar a retomada.
-
-### Python 3.11 disponível, mas sem pip
-
-`python3 -m pip: No module named pip` no Python base não exige instalar outro
-Python. O script acima cria uma **nova** `.venv-che311`, instala pip nela com
-`ensurepip` e instala o projeto e pytest usando esse mesmo Python. Nenhum pacote
-é instalado em `/opt/spack`. Se a pasta já existir, o script para e a preserva;
-escolha outro nome, por exemplo:
-
-```bash
-bash Articles/cluster/setup_environment.sh python3 .venv-che311-nova
-export FOPT_PYTHON="$PWD/.venv-che311-nova/bin/python"
-```
-
-Se a preparação parar **depois** de criar o ambiente, não precisa recriá-lo.
-Para concluir a instalação na pasta criada, use (ajuste o nome se necessário):
-
-```bash
-export FOPT_PYTHON="$PWD/.venv-che311/bin/python"
-"$FOPT_PYTHON" --version
-"$FOPT_PYTHON" -m ensurepip --upgrade
-"$FOPT_PYTHON" -m pip install --upgrade pip
-"$FOPT_PYTHON" -m pip install -e . pytest
-"$FOPT_PYTHON" -m pip check
-```
-
-Se o módulo escolhido não oferecer `venv`/`ensurepip`, a preparação informa isso;
-procure outro módulo Python >=3.11 ou peça ao suporte o módulo apropriado.
-Carregar Python 3.11 não transforma uma venv antiga em uma venv 3.11. Evite
-`pip install` isolado: ele pode pertencer a outro Python. Confira sempre
-`"$FOPT_PYTHON" -m pip --version`. O erro de NumPy com versões só até 1.24.4
-também pode indicar um índice de pacotes limitado; se persistir no ambiente
-novo, registre a versão do Python/pip e consulte o índice autorizado pelo CHE.
-
-Para testar a suíte em um nó, peça uma sessão interativa permitida pela sua conta:
-
-```bash
-srun --partition=debug --nodes=1 --ntasks=1 --cpus-per-task=2 --mem=4G --time=00:30:00 --pty bash -l
 cd "$HOME/projects/GW_FOPT_Simulation"
-"$FOPT_PYTHON" -m pytest -q Articles/tests
-exit
+git status --short
+git branch --show-current
+module list
+export FOPT_PYTHON_MODULE=python/3.11.7-gcc-12.2.0
+module load "$FOPT_PYTHON_MODULE"
+python3 --version
 ```
 
-Se debug não estiver disponível, use a partição confirmada. A execução completa
-inclui exemplos numéricos e pode precisar de mais tempo; ajuste após medir.
+A branch é codex/articles-combined-potential-scan. Depois de todos os jobs
+anteriores desse checkout terminarem, atualize com git pull --ff-only. Preserve
+alterações locais e resultados. Se ainda não tem clone, clone essa branch na
+pasta de projetos da sua home.
 
-## 4. Escolher onde salvar
-
-O manual descreve /home com quota soft de 30 GB e hard de 150 GB, com grace
-de 15 dias. /share/storage1 é área compartilhada para produtos científicos;
-/share/storage2 destina-se principalmente ao grupo CONNIE. Confirme uma pasta
-autorizada com espaço para sua campanha. Os detalhes de fases podem ocupar
-dezenas de GB no scan grande; meça o piloto antes de extrapolar o armazenamento.
-
-O manual descreve /scratch/local, mas esse caminho pode estar ausente ou sem
-permissão no nó alocado, como ocorreu no job 107761. Os templates não presumem
-sua existência: criam uma pasta exclusiva no primeiro caminho gravável entre
-SLURM_TMPDIR, TMPDIR e /tmp, usando mktemp. Esses caminhos são avaliados dentro
-do job, no nó de cálculo. O `.out` informa o diretório efetivamente escolhido.
-O SQLite ativo fica nessa pasta temporária; checkpoints vão ao destino persistente.
-
-Para o teste pequeno, uma pasta na sua home é suficiente:
+Uma venv concluída permanece instalada depois do logout. Apenas módulo e
+variáveis da sessão precisam ser selecionados novamente. Não reinstale pacotes
+em cada login ou nos nós de cálculo. Para uma instalação NOVA, uma única vez:
 
 ```bash
-export FOPT_RESULTS_ROOT="$HOME/fopt-tests"
+bash Articles/cluster/setup_environment.sh python3 .venv-che311
+```
+
+O script preserva diretórios existentes. Se a instalação anterior parou depois
+de criar a venv, conclua nela usando seu próprio Python e pip, sem apagar nada.
+Se ela pertence a um Python antigo, escolha outro nome para uma venv nova.
+
+Em cada nova sessão (ajuste o nome se sua venv for diferente):
+
+```bash
+export FOPT_PYTHON="$PWD/.venv-che311/bin/python"
+export FOPT_RESULTS_ROOT="$HOME/fopt-articles-v3"
 mkdir -p "$FOPT_RESULTS_ROOT" Articles/results/logs
-```
-
-Mantenha `FOPT_PYTHON` apontando para o ambiente escolhido na etapa 3.
-Se o Python exige um módulo, exporte também o nome realmente usado:
-`export FOPT_PYTHON_MODULE=NOME_DO_MODULO`. Os scripts o carregam explicitamente.
-Para escolher outro disco local confirmado no nó, exporte FOPT_SCRATCH_ROOT com
-uma pasta **existente e gravável**. Uma escolha explícita inválida faz o job parar
-com uma mensagem clara. Para usar a seleção automática:
-
-```bash
+"$FOPT_PYTHON" --version
+"$FOPT_PYTHON" -m pip check
 unset FOPT_SCRATCH_ROOT
 ```
 
-Não use uma montagem NFS para o banco ativo. `/tmp` permite o teste pequeno;
-antes da campanha grande, confira o espaço do disco no nó de cálculo.
+O Python do job é esse caminho absoluto; o prefixo (base) no terminal não
+substitui essa seleção. O projeto exige Python >=3.11. A venv depende do mesmo
+módulo base com que foi criada. bash executa setup_environment.sh; sh não é a
+chamada adequada para esse script.
 
-## 5. Os dois testes antes de produzir
-
-Use a branch atualizada e uma pasta nova para `adaptive_v2_verified_columns`. Não reutilize
-checkpoints da grade antiga. Confirme partição, tempo e quota na sua conta;
-os valores dos templates são exemplos e não comprovam disponibilidade.
-
-**Teste 1: lógica e persistência**, em uma alocação de cálculo:
+## 2. Recursos e escolha de partição
 
 ```bash
-srun --partition=debug --nodes=1 --ntasks=1 --cpus-per-task=1 --mem=4G --time=00:30:00 --pty bash -l
-cd "$HOME/projects/GW_FOPT_Simulation"
-"$FOPT_PYTHON" -m pytest -q Articles/tests
-exit
+sinfo -a
+scontrol -a show partition
+scontrol show partition milliways-ext
+scontrol show node milliways03
+type -a sbatch sinfo scontrol
+quota -s
 ```
 
-**Teste 2: piloto real de duas colunas m6 por m8, com gráficos:**
+Mais CPUs no nó não prova maior desempenho por processo. No benchmark do
+usuário, o ponto C=3.83, m6=m8=inf, com beta-check levou aproximadamente 59 s no
+Milliways, contra 429.6 s em c003. Esse é um resultado de um ponto, não uma
+previsão do tempo de toda a campanha.
+
+O array 0-2%3 já usa até TRÊS CPUs simultâneas: três jobs, cada um com uma tarefa
+e uma CPU, uma por m8. A busca dentro de m8 é sequencial. Aumentar ntasks ou
+cpus-per-task não cria paralelismo adicional nesse código. Não use o modelo
+ntasks=70 para um único processo Python. As medições do piloto mostraram menos
+de 200 MB por tarefa; mantenha 4 GB no piloto e 8 GB na produção enquanto mede
+regiões mais difíceis. Não há MPI/GPU nesta execução.
+
+milliways03 pode ser fixado com --nodelist=milliways03. O template não fixa nó:
+permite ao escalonador escolher um disponível na partição. Não selecione um nó
+down*. Se quiser comparar milliways01, repita um ponto em destino NOVO e preserve
+o mesmo código, versões e parâmetros. Memória adicional não acelera um cálculo
+que já cabe na memória reservada.
+
+## 3. Teste 1 e piloto real (teste 2)
+
+O template smoke roda a suíte de lógica/persistência e depois o piloto real em
+cada tarefa. Submeta da raiz e selecione o nó medido:
 
 ```bash
-mkdir -p Articles/results/logs
-sbatch --export=ALL Articles/cluster/smoke.slurm
+sbatch --export=ALL --nodelist=milliways03 Articles/cluster/smoke.slurm
+squeue -r -u "$USER"
 ```
 
-O template cria um array de **três tarefas**, índices 0, 1, 2, uma por m8.
-Cada tarefa roda o teste de lógica e o piloto real. Os resultados ficam em
-`$FOPT_RESULTS_ROOT/smoke_v2/m8-0`, `m8-1`, `m8-2`. Cada pasta tem banco, detalhes,
-matriz e `adaptive_state.json`. Confira os três estados `pilot_complete` e
-as duas colunas, suas sementes verificadas e os gráficos antes da produção.
+O limite do piloto é 2 horas. Para alterar o limite sem editar o template, use
+--time=03:00:00 (deve respeitar MaxTime da partição). Os resultados ficam em:
 
-O piloto calcula m6=inf e 2000 GeV. A busca do primeiro C nucleado é refeita
-em cada massa, sem a regra dos três pontos até verificar a semente. Depois
-dela, avalia no máximo três passos C por lado. `pilot_step_limit` indica uma
-janela de teste, não ausência física. A parada de três colunas m6 vazias é
-verificada pelo Teste 1; o piloto é limitado a duas colunas.
+- $FOPT_RESULTS_ROOT/smoke_v3/m8-0
+- $FOPT_RESULTS_ROOT/smoke_v3/m8-1
+- $FOPT_RESULTS_ROOT/smoke_v3/m8-2
 
-Os gráficos são produzidos com backend Agg, sem abrir janelas no nó, e vão
-junto com o checkpoint para cada `smoke_v2/m8-N/plots/`:
-`nucleation_map.png`, `gw_spectra.png` e versões SVG. `selection.json` explica
-quais transições foram usadas/omitidas; `spectrum_samples.csv` guarda os dados
-em Hz. A comparação dos detectores usa os picos acústicos e curvas PIS,
-separadamente dos espectros completos. Observáveis não resolvidos não viram
-espectros artificiais.
+Cada piloto tem duas colunas m6: inf e 2000 GeV. Em toda coluna procura a
+primeira nucleação sem corte por três ausências. Depois dela, o piloto limita
+a expansão a três passos C por lado. pilot_step_limit é limite de teste e não
+fronteira física. O piloto não substitui a produção, nem examina m6~550 GeV.
 
-Depois das três tarefas, para criar o mapa comparativo conjunto sem repetir
-cálculos de transição:
+A v3 tenta recuperar um ponto inconclusivo uma vez. Se não consegue, grava
+unknown e continua os outros C/m6. Unknown quebra a sequência de negativas;
+uma coluna com unknown nunca conta como uma coluna vazia para encerrar m6.
+Nenhuma falha é convertida em no. complete_with_unresolved e
+pilot_complete_with_unresolved exigem revisão; os executores retornam código 3
+nesse caso depois de publicar os dados e figuras. --on-unresolved stop no
+runner/coletor ativa a interrupção estrita opcional.
+
+Depois que as tarefas terminarem:
 
 ```bash
-"$FOPT_PYTHON" -m Articles.plot_results --output "$FOPT_RESULTS_ROOT/smoke_v2"
+"$FOPT_PYTHON" -m Articles.status --output "$FOPT_RESULTS_ROOT/smoke_v3"
+"$FOPT_PYTHON" -m Articles.plot_results --output "$FOPT_RESULTS_ROOT/smoke_v3"
 ```
 
-Esse pós-processamento lê os bancos e também salva
-`smoke_v2/plots/nucleation_overview.png`. As imagens podem ser copiadas para
-seu computador junto com as pastas de resultados. Mantenha logs e
-`adaptive_state.json` para conferir as sementes e os motivos de parada.
+Confira pilot_complete nas três fatias, as duas massas, sementes verificadas e
+os plots. Se houver sufixo _with_unresolved, examine os detalhes mostrados pelo
+diagnóstico antes de usar esses pontos. Cada plots/ contém nucleation_map.png,
+gw_spectra.png, versões SVG, selection.json e spectrum_samples.csv. O mapa
+conjunto é smoke_v3/plots/nucleation_overview.png. Copie as imagens por SCP ou
+WinSCP para visualizar no computador. As figuras usam Agg e não abrem janelas.
 
-## 6. Produção em três frentes, uma por m8
+## 4. Produção e retomada em alocações de 14 horas
 
-```bash
-"$FOPT_PYTHON" -m Articles.run_local --dry-run --beta-check --output "$FOPT_RESULTS_ROOT/production_v2"
-sbatch --export=ALL Articles/cluster/production.slurm
-```
-
-`run_local --dry-run` aqui apenas confere as configurações, sem bounces no nó
-de entrada. Não execute `run_local` sem dry-run nesse nó.
-
-| Tarefa do array | m8 [GeV] | Destino persistente |
-|---|---:|---|
-| 0 | inf | production_v2/m8-0 |
-| 1 | 840.8964152537145 | production_v2/m8-1 |
-| 2 | 668.740304976422 | production_v2/m8-2 |
-
-O array é `0-2%3`: no máximo três jobs simultâneos, cada um com uma CPU,
-uma tarefa e um processo de cálculo. Não há MPI. Dentro de cada m8 a busca é
-sequencial: as decisões dependem dos resultados anteriores. A distribuição
-por m8 não garante speedup exatamente 3, pois os tempos das fatias diferem.
-Não use a partição antiga em 100 shards no scan adaptativo.
-
-O padrão tem C em [0,10], passo 0.02, semente 3.83; m6 finito em
-[500,2000] GeV, passo 5 GeV, mais inf; regra de três ausências. O piloto usa
-outra grade e outra identidade. Para personalizar a produção, altere os
-argumentos do runner no template e use outro destino persistente.
-Todos os parâmetros da busca estão disponíveis no runner: `--C`, `--m6`,
-`--seed-C`, `--seed-m6`, `--patience`, `--scenario-index`, `--retry-failed`.
-
-## 7. Checkpoints, interrupções e retomada
-
-O runner calcula lotes de cinco pontos novos por padrão e fecha o SQLite
-antes de publicar. Cada ponto já fica confirmado no banco local imediatamente;
-se o nó for encerrado abruptamente, o último lote ainda não publicado pode
-precisar ser repetido. Para checkpoints mais frequentes:
+Depois de validar a revisão nova:
 
 ```bash
 export FOPT_BATCH_SIZE=1
-sbatch --export=ALL Articles/cluster/production.slurm
+"$FOPT_PYTHON" -m Articles.run_local --dry-run --beta-check --output "$FOPT_RESULTS_ROOT/production_v3"
+sbatch --export=ALL --nodelist=milliways03 Articles/cluster/production.slurm
 ```
 
-Lotes menores aumentam o custo das cópias. O sinal USR1 é encaminhado ao
-coordenador; ele termina o lote atual, publica e sai. O aviso de cinco minutos
-não garante que um ponto difícil termine a tempo. A retomada usa o último
-checkpoint confirmado. Não há submissão automática de jobs novos.
+O template já pede milliways-ext, 14 horas, três tarefas e aviso USR1 de 15
+minutos. Isso cabe no MaxTime=15 horas observado. O aviso pede ao coordenador
+que termine o lote e publique antes de sair; não garante que um ponto patológico
+termine dentro do aviso. Com lote 1, só o ponto em andamento ainda não publicado
+pode precisar ser repetido após encerramento abrupto.
 
-Submeta de novo o mesmo template, sem alterar código, versões ou parâmetros.
-Cada tarefa restaura sua fatia em uma pasta local exclusiva nova e reconstrói
-as decisões a partir do SQLite, sem repetir pontos confirmados. Para retomar
-somente uma fatia:
+| Índice | m8 [GeV] | Destino |
+|---|---:|---|
+| 0 | inf | production_v3/m8-0 |
+| 1 | 840.8964152537145 | production_v3/m8-1 |
+| 2 | 668.740304976422 | production_v3/m8-2 |
+
+Mantenha fontes, venv e parâmetros fixos durante a campanha. Ao terminar uma
+alocação ainda parcial, repita a mesma submissão com o mesmo destino. Não há
+resubmissão automática. Para retomar só uma fatia:
 
 ```bash
-sbatch --export=ALL --array=1 Articles/cluster/production.slurm
+sbatch --export=ALL --nodelist=milliways03 --array=1 Articles/cluster/production.slurm
 ```
 
-Se houver ponto inconclusivo, a tarefa para e publica o diagnóstico já salvo;
-falha não conta como ausência para encerrar uma direção. Consulte os detalhes.
-Para repetir uma falha transitória, acrescente `--retry-failed` ao runner e
-submeta novamente a fatia. Uma falha persistente para novamente. Mudança na
-física, resolução ou fontes exige outra pasta; não remova o manifesto.
+A conclusão física exige complete nas três fatias; uma saída Slurm COMPLETED
+pode corresponder apenas à parada para checkpoint. Um estado final com
+inconclusivos guarda a cobertura pendente. Para tentar novamente esses pontos
+sem mudar fontes/versões, use --retry-failed no runner do template; uma mudança
+numérica exige nova campanha. Não altere/apague o manifesto para forçar retomada.
 
-Para exercitar o mesmo runner localmente antes de submeter:
+Os bounds são C=0..10 com passo 0.02 ancorado em 3.83, mais C=1 e C=3.2 exatos;
+m6=500..2000 GeV, passo 5, mais inf. Três ausências verificadas consecutivas
+fecham uma direção C somente após semente nessa coluna. Três colunas completas
+sem hit nem unknown fecham m6, depois de já haver semente. A poda pressupõe uma
+faixa conectada na resolução adotada; possíveis ilhas exigem scans dirigidos.
+
+## 5. Logs, métricas e espaço em disco
 
 ```bash
-python -m Articles.cluster_runner --smoke --scenario-index 0 --beta-check --batch-size 1 --output Articles/results/runner_pilot_v2 --work-dir Articles/results/scratch_pilot_v2_novo
+squeue -r -u "$USER"
+tail -n 60 Articles/results/logs/scan-ID_DO_ARRAY_*.out
+tail -n 40 Articles/results/logs/scan-ID_DO_ARRAY_*.err
+"$FOPT_PYTHON" -m Articles.status --output "$FOPT_RESULTS_ROOT/production_v3"
 ```
 
-`--work-dir` deve estar vazio, ser distinto de `--output` e não estar dentro
-dele nem contê-lo. Ao repetir, escolha uma pasta de trabalho nova e mantenha
-o destino persistente. Sem argumentos, o runner só mostra ajuda.
+Use o ID realmente retornado pelo sbatch. Checkpoint publicado mostra a
+contagem acumulada; [1] se repete quando o lote tem um ponto. paused_point_budget
+é esperado entre lotes e não significa ausência de nucleação.
 
-## 8. Acompanhar e conferir
+No CHE houve erro de acesso ao banco do sacct. Isso não é uma falha do cálculo.
+Se persistir, reporte ao suporte; não é necessário reinstalar Python. squeue,
+scontrol e logs continuam úteis. Para consumo atual, use sstat com os IDs
+NUMÉRICOS das tarefas e .batch (não a notação ARRAY_INDICE). Eles aparecem no
+nome do temporário no .out ou em scontrol show job ARRAY_INDICE. Exemplo:
 
-Use `squeue -u "$USER"` e os logs `scan-ARRAY_INDICE.out/.err` ou
-`smoke-ARRAY_INDICE.out/.err`. Consulte `sacct -j ID --format=JobID,State,Elapsed,ExitCode`
-quando o job terminar. O término de uma tarefa não significa que as demais
-terminaram; confira cada fatia e seu estado final `complete`.
+```bash
+sstat -j ID_NUMERICO.batch --format=JobID,AveCPU,AveRSS,MaxRSS
+```
 
-As matrizes usam `yes`, `no`, `unknown`, `not_evaluated`; `matrix_axes.json`
-identifica o m8 de cada pasta. `adaptive_state.json` guarda as sementes, o bootstrap de cada massa, os
-três últimos C ou colunas m6 vazias que fecharam a direção, o primeiro pulado e bounds.
-Não interprete pontos pulados como exclusão física. Confira a resolução das
-fronteiras e possíveis ilhas com scans direcionados antes do artigo.
-
-O acesso ao CHE e a submissão remota precisam ser feitos na sua conta.
-A validação local de checkpoint não constitui uma execução remota no Slurm.
+O banco ativo fica no disco local do nó. O helper seleciona SLURM_TMPDIR, TMPDIR
+ou /tmp e publica checkpoints fechados com journal DELETE no destino
+persistente. Uma escolha manual FOPT_SCRATCH_ROOT deve existir e ser gravável
+NO NÓ; nunca use NFS para o banco ativo. Os logs mostram o caminho selecionado.
+A home tem quotas: meça tamanho do piloto e espaço livre antes de ampliar.
+Para produtos maiores, confirme uma pasta autorizada de /share/storage1 com o
+grupo. Nunca armazene a única cópia importante em temporários do nó.

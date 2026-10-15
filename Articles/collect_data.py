@@ -27,7 +27,7 @@ import traceback
 import warnings
 from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from contextlib import closing, contextmanager, redirect_stderr, redirect_stdout
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -83,6 +83,9 @@ class Settings:
     g_star: float = 106.75
     wall_velocity: float = 1.0
     strong_threshold: float = 1.0  # Convenção operacional |delta phi|/Tn.
+    recovery_attempts: int = 1
+    phase_dtstart_frac: float = 1e-3
+    phase_tjump_frac: float = 1e-3
 
     def validate(self) -> None:
         positive = (
@@ -101,6 +104,8 @@ class Settings:
             "g_star",
             "wall_velocity",
             "strong_threshold",
+            "phase_dtstart_frac",
+            "phase_tjump_frac",
         )
         for name in positive:
             value = getattr(self, name)
@@ -112,6 +117,8 @@ class Settings:
             raise ValueError(
                 "Velocidade <=1 e tolerância menor que o alvo de nucleação."
             )
+        if self.recovery_attempts not in (0, 1):
+            raise ValueError("recovery_attempts deve ser 0 ou 1 (recuperação limitada).")
 
 
 def inclusive_axis(start: float, stop: float, step: float) -> tuple[float, ...]:
@@ -204,6 +211,8 @@ class NucleationCriterion:
             "S3_over_T": float(action / temperature),
             "residual": float(residual),
         }
+        if math.isfinite(action) and action < 0:
+            raise ValueError(f"negative_nucleation_action: S3={action} em T={temperature}.")
         return 0.0 if abs(residual) <= self.tolerance else residual
 
 
@@ -329,7 +338,7 @@ def transition_record(transition, phases, derivatives, settings):
     return row, details
 
 
-def evaluate_point(params: ModelParameters, settings: Settings):
+def _evaluate_point_once(params: ModelParameters, settings: Settings):
     """Executa um ponto isolado; exceções são dados, nunca ausência de FOPT."""
     started = time.perf_counter()
     row = {
@@ -406,6 +415,8 @@ def evaluate_point(params: ModelParameters, settings: Settings):
                 n_phi_scan=settings.n_phi,
                 n_T_seeds=settings.n_T_seeds,
                 deltaX_target=settings.deltaX_target,
+                dtstart_frac=settings.phase_dtstart_frac,
+                tjump_frac=settings.phase_tjump_frac,
                 forbidCrit=outside_domain,
                 nuclCriterion=criterion,
                 Tn_Ttol=settings.root_T_tolerance,
@@ -468,6 +479,44 @@ def evaluate_point(params: ModelParameters, settings: Settings):
     row["runtime_seconds"] = time.perf_counter() - started
     row["warning_count"] = len(details["warnings"])
     row["completed_utc"] = datetime.now(UTC).isoformat()
+    return row, records, details
+
+
+def evaluate_point(params: ModelParameters, settings: Settings):
+    """Uma tentativa padrão e, se inconclusiva, um refinamento determinístico.
+
+    Não muda potencial, ressoma, critério/residual nem passo de beta. Refaz
+    apenas a resolução de fases/minimização/raiz, preservando ambas as tentativas.
+    """
+    from Articles.adaptive_scan import nucleation_decision
+
+    first = _evaluate_point_once(params, settings)
+    if not settings.recovery_attempts or nucleation_decision(first[0], first[1]) != "unknown":
+        first[0]["evaluation_attempts"] = 1
+        return first
+    refined = replace(settings, n_phi=settings.n_phi * 2,
+                      n_T_seeds=2 * settings.n_T_seeds - 1,
+                      deltaX_target=settings.deltaX_target / 2,
+                      phase_dtstart_frac=settings.phase_dtstart_frac / 5,
+                      phase_tjump_frac=settings.phase_tjump_frac / 5,
+                      minima_phitol=settings.minima_phitol / 10,
+                      root_T_tolerance=settings.root_T_tolerance / 10)
+    recovery_started = time.perf_counter()
+    try:
+        recovered = _evaluate_point_once(params, refined)
+    except Exception as error:  # noqa: BLE001 - falha de preparação permanece auditável
+        recovered = (dict(first[0]), list(first[1]), dict(first[2]))
+        recovered[0]["runtime_seconds"] = time.perf_counter() - recovery_started
+        recovered[2]["recovery_setup_traceback"] = traceback.format_exc()
+        recovered[2]["recovery_setup_error"] = f"{type(error).__name__}: {error}"
+    row, records, details = recovered
+    row["runtime_seconds"] += first[0]["runtime_seconds"]
+    row["evaluation_attempts"] = 2
+    row["recovery_resolved"] = nucleation_decision(row, records) != "unknown"
+    details["numerical_recovery"] = {
+        "policy": "refined_phases_v1", "settings": asdict(refined),
+        "initial_point": first[0], "initial_diagnostics": first[2],
+    }
     return row, records, details
 
 
@@ -798,6 +847,8 @@ def main(argv=None):
     parser.add_argument("--seed-C", type=float, default=3.83)
     parser.add_argument("--seed-m6", type=float, default=math.inf)
     parser.add_argument("--patience", type=int, default=3)
+    parser.add_argument("--on-unresolved", choices=("continue", "stop"), default="continue",
+                        help="Inconclusivos ficam registrados e nunca contam como ausência.")
     parser.add_argument("--scenario-index", type=int, choices=range(3))
     parser.add_argument("--smoke", action="store_true", help="Piloto com duas massas m6, busca de semente e gráficos.")
     plots = parser.add_mutually_exclusive_group()
@@ -823,6 +874,7 @@ def main(argv=None):
     parser.add_argument("--phi-max", type=float, default=1000.0)
     parser.add_argument("--n-phi", type=int, default=1200)
     parser.add_argument("--n-T-seeds", type=int, default=5)
+    parser.add_argument("--recovery-attempts", type=int, choices=(0, 1), default=1)
     args = parser.parse_args(argv)
     if args.export_only:
         database = args.output / "scan.sqlite"
@@ -840,6 +892,7 @@ def main(argv=None):
         action_tolerance=args.action_tolerance,
         beta_step=args.beta_step,
         beta_check=args.beta_check,
+        recovery_attempts=args.recovery_attempts,
     )
     try:
         settings.validate()
@@ -863,6 +916,7 @@ def main(argv=None):
             plan = AdaptivePlan(
                 m6_range_GeV=tuple(args.m6), C_range=tuple(args.C), m8_GeV=scenarios,
                 seed_C=args.seed_C, seed_m6_GeV=args.seed_m6, patience=args.patience,
+                on_unresolved=args.on_unresolved,
             )
             if args.smoke:
                 from dataclasses import replace

@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=4G
 #SBATCH --time=02:00:00
-#SBATCH --partition=debug
+#SBATCH --partition=milliways-ext
 #SBATCH --array=0-2%3
 #SBATCH --output=Articles/results/logs/smoke-%A_%a.out
 #SBATCH --error=Articles/results/logs/smoke-%A_%a.err
@@ -32,4 +32,4 @@ prepare_local_work "fopt-smoke-$SLURM_ARRAY_JOB_ID-$SLURM_ARRAY_TASK_ID-$SLURM_J
     --smoke --beta-check --batch-size 1 \
     --workers 1 --scenario-index "$SLURM_ARRAY_TASK_ID" \
     --work-dir "$local_work/campaign" \
-    --output "$FOPT_RESULTS_ROOT/smoke_v2/m8-$SLURM_ARRAY_TASK_ID"
+    --output "$FOPT_RESULTS_ROOT/smoke_v3/m8-$SLURM_ARRAY_TASK_ID"

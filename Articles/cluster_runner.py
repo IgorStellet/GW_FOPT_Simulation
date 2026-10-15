@@ -8,6 +8,7 @@ nó. Uma interrupção pode exigir repetir somente o último lote não publicado
 from __future__ import annotations
 
 import argparse
+import json
 import shutil
 import signal
 import sqlite3
@@ -113,6 +114,7 @@ def main(argv=None):
     parser.add_argument("--seed-C", type=float, default=3.83)
     parser.add_argument("--seed-m6", type=float, default=float("inf"))
     parser.add_argument("--patience", type=int, default=3)
+    parser.add_argument("--on-unresolved", choices=("continue", "stop"), default="continue")
     parser.add_argument("--m6", nargs=3, type=float, default=(500, 2000, 5))
     parser.add_argument("--C", nargs=3, type=float, default=(0, 10, 0.02))
     arguments = sys.argv[1:] if argv is None else list(argv)
@@ -159,6 +161,7 @@ def main(argv=None):
         "--strategy", args.strategy, "--seed-C", str(args.seed_C),
         "--seed-m6", str(args.seed_m6), "--patience", str(args.patience),
         "--m6", *map(str, args.m6), "--C", *map(str, args.C),
+        "--on-unresolved", args.on_unresolved,
     ]
     if args.smoke:
         # O runner gera gráficos uma vez, no checkpoint final, em vez de
@@ -205,6 +208,12 @@ def main(argv=None):
     finally:
         if previous_handler is not None:
             signal.signal(signal.SIGUSR1, previous_handler)
+    state_path = output / "adaptive_state.json"
+    if state_path.exists():
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        if state["state"].endswith("_with_unresolved"):
+            print(f"Busca terminou com {len(state.get('unresolved_points', []))} pontos inconclusivos; consulte {state_path}.", flush=True)
+            return 3
     return 0
 
 

@@ -55,7 +55,7 @@ def test_unknown_point_is_committed_then_retry_repairs_it(tmp_path, monkeypatch)
     import Articles.collect_data as collector
 
     plan = AdaptivePlan(m6_range_GeV=(1000, 1000, 1), C_range=(1, 1, 0.1), seed_C=1,
-                        m8_GeV=(math.inf,))
+                        m8_GeV=(math.inf,), on_unresolved="stop")
     attempts = []
 
     def evaluate(p, _):
@@ -86,8 +86,9 @@ def test_local_launcher_preflights_then_starts_three_disjoint_slices(tmp_path, m
     monkeypatch.setattr(run_local.subprocess, "run", lambda command, **_: checked.append(command))
 
     class Child:
-        def __init__(self, command):
+        def __init__(self, command, **kwargs):
             started.append(command)
+            assert kwargs["cwd"] == run_local.ROOT
 
         def wait(self):
             return 0
@@ -143,3 +144,27 @@ def test_persistent_observable_warning_is_retried_once_across_runner_batches(tmp
                      retry_failed=True, retry_session="one-runner-invocation")
     assert len(calls) == len(set(calls)) == 2
     assert json.loads((tmp_path / "adaptive_state.json").read_text())["state"] == "complete"
+
+
+def test_unknown_checkpoint_resumes_other_masses_without_recalculating_the_failure(tmp_path, monkeypatch):
+    import Articles.collect_data as collector
+    plan = AdaptivePlan(m6_range_GeV=(550, 550, 1), C_range=(1, 1, 0.1), seed_C=1, m8_GeV=(math.inf,))
+    calls = []
+    def evaluate(p, _):
+        calls.append(point_id(p))
+        yes = not math.isinf(p.m6_GeV)
+        row = {**asdict(p), "point_id": point_id(p), "status": "nucleated" if yes else "numerical_failure",
+               "runtime_seconds": 0, "completed_utc": str(len(calls))}
+        return row, [{"transition_index": 0, "trantype": 1, "nucleation_accepted": True}] if yes else [], {}
+    monkeypatch.setattr(collector, "evaluate_point", evaluate)
+    manifest = {"fingerprint": "continue-unknown"}
+    source, checkpoint, restored = [tmp_path / n for n in ("source", "checkpoint", "restored")]
+    assert run_adaptive(source, plan, Settings(), manifest, max_points=1) == 1
+    copy_campaign(source, checkpoint)
+    restore_campaign(checkpoint, restored)
+    assert run_adaptive(restored, plan, Settings(), manifest, max_points=1) == 1
+    assert run_adaptive(restored, plan, Settings(), manifest, max_points=1) == 0
+    assert len(calls) == len(set(calls)) == 2
+    report = json.loads((restored / "adaptive_state.json").read_text())
+    assert report["state"] == "complete_with_unresolved"
+    assert report["slices"][0]["columns"][1]["verified_seed_C"] == 1

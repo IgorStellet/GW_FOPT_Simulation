@@ -4,10 +4,10 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
-#SBATCH --time=3-00:00:00
-#SBATCH --partition=generic
+#SBATCH --time=14:00:00
+#SBATCH --partition=milliways-ext
 #SBATCH --array=0-2%3
-#SBATCH --signal=B:USR1@300
+#SBATCH --signal=B:USR1@900
 #SBATCH --output=Articles/results/logs/scan-%A_%a.out
 #SBATCH --error=Articles/results/logs/scan-%A_%a.err
 
@@ -36,10 +36,10 @@ forward_stop() {
 }
 trap forward_stop USR1
 "$python_executable" -m Articles.cluster_runner \
-    --beta-check --batch-size "${FOPT_BATCH_SIZE:-5}" --workers 1 \
+    --beta-check --batch-size "${FOPT_BATCH_SIZE:-1}" --workers 1 \
     --scenario-index "$SLURM_ARRAY_TASK_ID" \
     --work-dir "$local_work" \
-    --output "$FOPT_RESULTS_ROOT/production_v2/m8-$SLURM_ARRAY_TASK_ID" &
+    --output "$FOPT_RESULTS_ROOT/production_v3/m8-$SLURM_ARRAY_TASK_ID" &
 runner_pid=$!
 # wait pode ser interrompido pelo sinal do Slurm; continue aguardando o job.
 while true; do

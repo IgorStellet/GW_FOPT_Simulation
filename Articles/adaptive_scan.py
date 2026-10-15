@@ -33,6 +33,8 @@ class AdaptivePlan:
     seed_C: float = 3.83
     seed_m6_GeV: float = math.inf
     patience: int = 3
+    on_unresolved: str = "continue"
+    C_anchors: tuple = (1.0, 3.2)
     # Limites somente do piloto, aplicados DEPOIS de verificar a semente.
     column_limit: int | None = None
     C_steps_limit: int | None = None
@@ -56,16 +58,21 @@ class AdaptivePlan:
         for name in ("column_limit", "C_steps_limit"):
             if getattr(self, name) is not None and getattr(self, name) < 1:
                 raise ValueError(f"{name} deve ser positivo.")
+        if self.on_unresolved not in ("continue", "stop"):
+            raise ValueError("on_unresolved deve ser continue ou stop.")
+        if any(not math.isfinite(c) or not 0 <= c <= 10 for c in self.C_anchors):
+            raise ValueError("Âncoras de C devem ser finitas e estar em [0,10].")
         a, b, h, seed = (Decimal(str(x)) for x in (lo, hi, step, self.seed_C))
         # O passo é ancorado na semente: 3.83, 3.81, ...; inclui 0 e 10,
         # mesmo quando o último intervalo é menor que h.
         below = [seed - i * h for i in range(1, int((seed - a) / h) + 1)]
         above = [seed + i * h for i in range(1, int((b - seed) / h) + 1)]
-        cs = tuple(sorted({float(x) for x in [a, b, seed, *below, *above]}))
+        cs = tuple(sorted({float(x) for x in [a, b, seed, *below, *above]}
+                          | {float(c) for c in self.C_anchors if lo <= c <= hi}))
         return masses, cs
 
     def identity(self):
-        return {"strategy": "adaptive_v2_verified_columns", **asdict(self), "Lambda_GeV": 1000.0}
+        return {"strategy": "adaptive_v3_audited_unknowns", **asdict(self), "Lambda_GeV": 1000.0}
 
 
 def nucleation_decision(row, transitions):
@@ -87,7 +94,8 @@ def trace_scan(plan, evaluate, report=None):
     """
     masses, cs = plan.axes()
     report = report if report is not None else {}
-    report.update(state="running", slices=[], assumption="connected_C_band_after_verified_seed")
+    report.update(state="running", slices=[], unresolved_points=[],
+                  assumption="connected_C_band_after_verified_seed")
     initial_i = masses.index(plan.seed_m6_GeV)
     initial_j = cs.index(plan.seed_C)
     decisions = {}
@@ -97,19 +105,23 @@ def trace_scan(plan, evaluate, report=None):
         if key not in decisions:
             params = ModelParameters(m6_GeV=masses[i], m8_GeV=m8, C=cs[j])
             decision = evaluate(params)
-            if decision not in ("yes", "no"):
+            if decision not in ("yes", "no", "unknown"):
+                raise ValueError(f"Decisão inválida do avaliador: {decision!r}")
+            if decision == "unknown" and plan.on_unresolved == "stop":
                 raise UnresolvedPoint(
                     f"Ponto inconclusivo C={cs[j]:g}, m6={masses[i]:g}, m8={m8:g}. "
                     "Nenhuma região foi podada a partir dele. Consulte details e "
                     "retome com --retry-failed; para mudar código/configuração, use outra pasta."
                 )
+            if decision == "unknown":
+                report["unresolved_points"].append({"C": cs[j], "m6_GeV": masses[i], "m8_GeV": m8})
             decisions[key] = decision
         return decisions[key]
 
     def scan_column(i, start_j, section):
         m8 = section["m8_GeV"]
         column = {"m6_GeV": masses[i], "initial_C": cs[start_j], "bootstrap": [],
-                  "hits_C": [], "C_stops": [], "state": "searching_seed"}
+                  "hits_C": [], "C_stops": [], "unknown_C": [], "state": "searching_seed"}
         section["columns"].append(column)
         seed_j = None
         searches = ((range(start_j, -1, -1), "decreasing_C"),
@@ -118,15 +130,19 @@ def trace_scan(plan, evaluate, report=None):
             for j in candidates:
                 d = ask(j, i, m8)
                 column["bootstrap"].append({"C": cs[j], "decision": d, "direction": name})
+                if d == "unknown":
+                    column["unknown_C"].append(cs[j])
                 if d == "yes":
                     seed_j = j
                     break
             if seed_j is not None:
                 break
         if seed_j is None:
-            column.update(state="no_nucleation_on_grid", C_search_complete=True)
+            column.update(state="unresolved_no_seed" if column["unknown_C"] else "no_nucleation_on_grid",
+                          C_search_complete=True)
             return None
         column["verified_seed_C"] = cs[seed_j]
+        column["state"] = "expanding_band"
         hits = {seed_j}
         column["hits_C"] = [cs[seed_j]]
         for direction, name in ((1, "increasing_C"), (-1, "decreasing_C")):
@@ -143,8 +159,12 @@ def trace_scan(plan, evaluate, report=None):
                     hits.add(j)
                     column["hits_C"] = [cs[k] for k in sorted(hits)]
                     trail = []
-                else:
+                elif d == "no":
                     trail.append(cs[j])
+                else:
+                    if cs[j] not in column["unknown_C"]:
+                        column["unknown_C"].append(cs[j])
+                    trail = []  # Uma falha quebra a sequência de ausências verificadas.
                 j += direction
                 if len(trail) >= plan.patience:
                     reason = "consecutive_no_nucleation"
@@ -162,6 +182,8 @@ def trace_scan(plan, evaluate, report=None):
         column["state"] = "pilot_window" if any(
             s["reason"] == "pilot_step_limit" for s in column["C_stops"]
         ) else "complete"
+        if column["unknown_C"]:
+            column["state"] += "_with_unresolved"
         # Reutilizamos o maior C observado, sem assumir que a próxima massa
         # nucleie ali. A nova coluna sempre executa seu próprio bootstrap.
         return max(hits)
@@ -185,8 +207,10 @@ def trace_scan(plan, evaluate, report=None):
                     if hit_j is not None:
                         start_j, has_verified_seed = hit_j, True
                         empty_columns = []
-                    elif has_verified_seed:
+                    elif has_verified_seed and section["columns"][-1]["state"] == "no_nucleation_on_grid":
                         empty_columns.append(masses[i])
+                    else:
+                        empty_columns = []
                     i += direction
                     if len(empty_columns) >= plan.patience:
                         reason = "consecutive_empty_columns"
@@ -197,6 +221,8 @@ def trace_scan(plan, evaluate, report=None):
                 })
             section["has_verified_seed"] = any("verified_seed_C" in c for c in section["columns"])
         report["state"] = "pilot_complete" if plan.column_limit or plan.C_steps_limit else "complete"
+        if report["unresolved_points"]:
+            report["state"] += "_with_unresolved"
     except PointBudgetReached:
         report["state"] = "paused_point_budget"
     except UnresolvedPoint as error:

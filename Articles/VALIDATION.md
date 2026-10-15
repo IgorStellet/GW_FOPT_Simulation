@@ -1,3 +1,91 @@
+# Validação v3: continuidade com inconclusivos e CHE — 15/10/2026
+
+## Diagnóstico da execução local do usuário
+
+Foram lidos, sem modificar, os resultados em
+C:/Users/igora/PycharmProjects/GW_FOPT_Simulation/Articles/Articles/results/local_adaptive.
+O log anexado estava cortado em [21]; os JSON/CSV/detalhes confirmaram a parada:
+
+| m8 | Pontos | Estado | Ponto da interrupção (m6=inf) |
+|---|---:|---|---|
+| inf | 36 | unresolved | C=3.19, IntegrationError no bounce |
+| 840.8964152537145 | 37 | unresolved | C=3.13, IntegrationError no bounce |
+| 668.740304976422 | 41 | unresolved | C=3.03, S3/T=117.558 fora da tolerância |
+
+Nenhuma dessas três fatias chegou a m6 finito. A execução era produção, sem
+--smoke, com beta_check=False; não foi uma campanha completa nem a aprovação
+do piloto. Os poucos pontos decorriam da interrupção estrita em unknown.
+
+A v3 continua nos C/m6 seguintes sem contar unknown como no, após uma tentativa
+numérica refinada limitada. O estado final é complete_with_unresolved se
+restarem pendências. Uma coluna com unknown não pode encerrar m6 como vazia.
+O padrão de três ausências verificadas após semente permanece. Ações negativas
+são rejeitadas e registradas, sem alimentar a raiz como uma amostra física.
+Não foram modificados arquivos do núcleo nem o potencial/ressoma.
+
+## Verificações automatizadas
+
+```bash
+python -m pytest -q Articles/tests tests/test_article_core.py tests/test_article_scan.py tests/test_article_cluster.py -k "not slurm_scratch_selection"
+python -m ruff check Articles --exclude Articles/results
+```
+
+72 testes Python passaram na seleção local. Os cinco casos que iniciam Git Bash
+ficaram fora da seleção Windows, conforme a limitação de sandbox já registrada
+abaixo. Isso não é uma execução Bash aprovada. A CI Linux deve validar os
+templates na revisão publicada.
+
+Casos novos: unknown entre duas negativas quebra a sequência; desconhecido no
+bootstrap não impede encontrar semente; três colunas com unknown não podem
+encerrar o eixo antes de uma massa menor nucleada; todos os unknowns respeitam
+os bounds; checkpoint restaura e segue outras massas sem repetir erro salvo;
+runner publica os dados antes de retornar código 3; diagnóstico distingue zero
+colunas finitas de conclusão; refinamento conserva alvo/tolerância S3/T e beta;
+falha persistente não é convertida em ausência; ação negativa é preservada e
+rejeitada. O modo estrito continua testado com --on-unresolved stop.
+
+O run_local.py foi conferido por execução direta com --dry-run a partir da
+pasta Articles, usando --output relativo: as três fatias foram validadas na
+raiz correta sem Articles/Articles. Nenhum bounce foi executado nesse check.
+
+## Testes físicos dirigidos
+
+C=1, m6=550 GeV, m8=inf, daisy ligado e beta-check produziu:
+
+- Tn=75.23051156 GeV;
+- S3/T=140.05327441, residual 0.05327441 (tolerância 0.5);
+- alpha_trace=0.0308918253;
+- beta/H=791.513954; com meio passo, 768.289557 (diferença relativa 2.93%).
+
+O ponto foi avaliado de novo, sem reaproveitar um banco. A faixa da dissertação
+em C=1 usa c6/f²=3.2..3.45 TeV^-2, equivalente a m6~538..559 GeV, dentro dos
+bounds. A figura da dissertação usa daisy desligado, portanto não se promete
+reproduzir seus valores numéricos com a prescrição atual. C=1 e C=3.2 agora
+pertencem exatamente à grade, além dos passos ancorados em 3.83.
+
+As falhas C=3.19 e 3.13 foram reproduzidas; refinar fases não garante repará-las.
+Não são ausências físicas. No teste dirigido com fases refinadas, C=3.03,
+m8=668.740304976422 recuperou nucleação aceita, S3/T=139.84143688, mas beta
+continuou não resolvido. Isso não autoriza inventar um espectro nesse ponto.
+Os testes dirigidos não substituem a campanha completa nem provam ausência de
+ilhas desconectadas. Os detalhes reais usados na investigação foram mantidos
+em Articles/results/validation_v3 (ignorados pelo Git).
+
+## Execução no CHE
+
+A configuração informada pelo usuário revelou milliways-ext com MaxTime=15 h,
+milliways01/03 em mix e milliways02 em down*. O ponto de benchmark levou cerca
+de 59 s no Milliways, contra 429.6 s no c003. Não é uma extrapolação de tempo da
+campanha. Templates v3: três jobs de uma CPU, piloto 2 h, produção 14 h, sinal
+USR1 com 15 minutos de aviso e lote padrão 1. Memória preservada em 4/8 GB.
+A partição/nó podem ser sobrescritos na submissão. Procedimento atualizado em
+CLUSTER_CHE.md; destino NOVO smoke_v3 e production_v3. Não reutilize manifestos
+v2 modificando hashes. A campanha v3 completa não foi executada aqui.
+
+---
+
+## Histórico v2 (não são os comandos nem os estados atuais)
+
 # Validação v2: semente por m6 e gráficos — 13/10/2026
 
 Esta revisão substitui a continuação por linhas de C por colunas de m6.
