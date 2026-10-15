@@ -1,5 +1,11 @@
 # Mapa do núcleo e relação com o artigo
 
+O fluxo de fronteiras em [BOUNDARIES.md](BOUNDARIES.md) reutiliza esse mesmo
+núcleo: `boundary_physics.boundary_record` lê os mínimos em Tn já refinados pelo
+tunneling; `boundary_search` delimita a região; `bounded_evaluation` impõe o
+orçamento por processo; `boundary_scan` coordena persistência/reuso. A etapa
+interior volta ao cálculo completo existente. Nenhum módulo de `src` mudou.
+
 Esta revisão mantém os sete módulos Python de `src/CosmoTransitions` intactos.
 O inventário ao final registra as funções e os métodos encontrados nessa branch;
 nomes iniciados por underscore são interfaces internas e exigem atenção quando

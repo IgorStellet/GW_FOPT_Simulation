@@ -1,5 +1,13 @@
 # CHE: ambiente, validação e produção em três fatias
 
+**Campanha nova de fronteiras:** o procedimento completo de parada/backup,
+reuso, testes e submissão está em [BOUNDARIES.md](BOUNDARIES.md).
+Use `cluster/boundaries_smoke.slurm` e depois `cluster/boundaries.slurm`.
+`cluster/interior_smoke.slurm`/`cluster/interior.slurm` pertencem à segunda etapa.
+Continuam em milliways-ext, três tarefas de uma CPU, 4/8 GB por tarefa e
+2/14 h. Os templates v3 abaixo foram preservados. Não atualize enquanto houver
+jobs antigos usando esse checkout e não misture os destinos das estratégias.
+
 Este roteiro usa o estado informado pelo usuário em 15/10/2026. Os templates
 v3 usam milliways-ext. A consulta real mostrou MaxTime=15:00:00 e os nós
 milliways01/03 parcialmente ocupados; milliways02 estava down*. O manual de

@@ -1,3 +1,44 @@
+# Validação da estratégia de fronteiras — 15/10/2026
+
+O procedimento atual está em [BOUNDARIES.md](BOUNDARIES.md). O registro v3 ao
+final é histórico e continua descrevendo o fluxo preservado.
+
+## Verificações desta revisão
+
+- **114 testes passaram**, 1 teste Linux foi pulado no Windows e 5 casos antigos
+  de Git Bash foram excluídos da seleção local. Comando: `python -m pytest -q
+  Articles/tests tests/test_article_core.py tests/test_article_scan.py
+  tests/test_article_cluster.py -k "not slurm_scratch_selection"`.
+- Ruff passou. Os cinco scripts novos passaram em `bash --noprofile --norc -n`;
+  o Git Bash precisou executar fora do sandbox Windows para inicializar.
+- A suíte cobre encerramento real por tempo, sementes após saltos abruptos,
+  fallback fino, brackets/confirmacões, massas conhecidas além de uma faixa
+  vazia, topologia não conectada, persistência/retomada sem reabrir colunas,
+  snapshots fechados, origem preservada no reuso, plots e seleção conservadora
+  do interior quando há pendências. Não converte unknown em ausência.
+- Ponto físico novo com orçamento de 300 s: `C=1`, `m6=550 GeV`, `m8=inf`.
+  Nucleação aceita em `Tn=75.23051156191671 GeV`, `S3/Tn=140.0532744141836`,
+  `v(Tn)/Tn=3.0723242148514887`, em aproximadamente 81.2 s neste ambiente.
+  Tn e S3/T coincidem com a validação completa anterior; alpha/beta/GW não foram
+  calculados no novo registro mínimo. Núcleo/modelo/ressoma foram preservados.
+- Integração física nas três fatias, com teto de **90 s para esta validação**
+  (o padrão de uso é 300 s): reutilizou resultados compatíveis do usuário por
+  leitura e alcançou `m6=inf` e `2000 GeV` nas três fatias. Uma fatia terminou
+  `pilot_complete_with_unresolved`; duas foram pausadas deliberadamente depois
+  de alcançar a segunda coluna para validar interrupção/checkpoints. Não se
+  afirma que as três fronteiras inferiores ficaram resolvidas em 0.02.
+- Foi observado `point_timeout` aos 90.0 s, com avanço da busca para outra
+  massa. Falhas de fase/bounce continuam pendentes. O teto limita o trabalho;
+  não resolve numericamente todos os pontos nem prova que sejam fracos.
+- A campanha completa de fronteiras/interior e a execução real no CHE não foram
+  realizadas aqui. Os templates incluem testes no nó antes da produção.
+
+Arquivos de diagnóstico locais ficam em `Articles/results/boundary_v4_dev/`,
+ignorados pelo Git. Os dados de origem e os processos de produção do usuário
+não foram modificados/interrompidos. Esta revisão altera somente Articles.
+
+## Registro anterior: v3
+
 # Validação v3: continuidade com inconclusivos e CHE — 15/10/2026
 
 ## Diagnóstico da execução local do usuário

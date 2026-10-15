@@ -1,5 +1,9 @@
 # Início rápido: scan adaptativo do artigo
 
+Para a campanha nova, siga [BOUNDARIES.md](BOUNDARIES.md): backup/parada do v3,
+dois testes, mapas de fronteiras e etapa interior separada, com teto de 300 s
+por ponto. Os comandos abaixo documentam o fluxo completo v3 preservado.
+
 Execute os comandos na raiz do repositório, com Python >=3.11.
 A física, as unidades, a notação `m6`/`m8` e os dados de GW foram preservados.
 O padrão agora é seguir a faixa com nucleação, sem percorrer toda a grade.

@@ -1,5 +1,10 @@
 # Dados para o artigo sobre mecanismos combinados de FOPT
 
+**Novo fluxo recomendado:** [fronteiras primeiro, interior depois](BOUNDARIES.md).
+Use `run_boundaries.py` para procurar fronteiras com orçamento por ponto e corte
+de força opcional. O fluxo completo v3 abaixo continua disponível. Preserve e
+pare campanhas em andamento antes de atualizar o checkout; use destinos novos.
+
 Primeira execução: [guia rápido](QUICKSTART.md). Primeiro acesso e submissão:
 [roteiro do CHE](CLUSTER_CHE.md), com templates em [cluster/](cluster/).
 

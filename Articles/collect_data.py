@@ -338,7 +338,7 @@ def transition_record(transition, phases, derivatives, settings):
     return row, details
 
 
-def _evaluate_point_once(params: ModelParameters, settings: Settings):
+def _evaluate_point_once(params: ModelParameters, settings: Settings, record_transition=None):
     """Executa um ponto isolado; exceções são dados, nunca ausência de FOPT."""
     started = time.perf_counter()
     row = {
@@ -445,7 +445,10 @@ def _evaluate_point_once(params: ModelParameters, settings: Settings):
             }
             details["critical_transitions"] = summary["critical_transitions"]
             for index, transition in enumerate(summary["full_transitions"]):
-                tr, extra = transition_record(transition, phases, derivatives, settings)
+                # O executor de fronteiras fornece um registro sem beta/GW.
+                # O caminho completo mantém exatamente a rotina anterior.
+                recorder = record_transition or transition_record
+                tr, extra = recorder(transition, phases, derivatives, settings)
                 tr.update(
                     point_id=row["point_id"],
                     transition_index=index,
