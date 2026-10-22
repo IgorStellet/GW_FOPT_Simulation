@@ -23,7 +23,7 @@ Repository = "https://github.com/IgorStellet/GW_FOPT_Simulation"
 [tool.setuptools]
 # Os dois pacotes ficam em diretórios diferentes do repositório. Ambos devem
 # ser instalados para os comandos do artigo funcionarem fora da pasta atual.
-packages = ["CosmoTransitions", "Articles", "Articles.figures"]
+packages = ["CosmoTransitions", "Articles", "Articles.figures", "Articles.figures.frontiers"]
 package-dir = {"CosmoTransitions" = "src/CosmoTransitions", "Articles" = "Articles"}
 
 [tool.setuptools.package-data]

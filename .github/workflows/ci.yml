@@ -30,6 +30,7 @@ jobs:
           python -m Articles.cluster_runner --help
           python -m Articles.collect_data --dry-run --output "$RUNNER_TEMP/entrypoint-check"
           python -m Articles.figures --help
+          python -m Articles.figures.frontiers --help
 
       - name: Check CHE setup with a Python that has no pip
         if: matrix.python-version == '3.11'
@@ -41,6 +42,10 @@ jobs:
           bash -n Articles/cluster/job_environment.sh
           bash -n Articles/cluster/figures.slurm
           bash -n Articles/cluster/figure_points.slurm
+          bash -n Articles/cluster/edge_observables.slurm
+          bash -n Articles/cluster/lisa_reach.slurm
+          bash -n Articles/cluster/frontier_job.sh
+          bash -n Articles/cluster/frontier_figures.slurm
 
       - name: Lint article code
         run: |

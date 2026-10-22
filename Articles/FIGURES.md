@@ -1,5 +1,9 @@
 # Figuras do artigo no CHE
 
+Para a revisão com figuras de bordas mais limpas, alpha/beta nas bordas e
+busca do alcance LISA, consulte [FRONTIERS.md](FRONTIERS.md). O fluxo desta
+página permanece disponível para reproduzir as figuras v1.
+
 Este fluxo lê os resultados que estão no cluster, grava figuras PDF/SVG/PNG e
 tabelas de auditoria em outra pasta. Nenhum resultado precisa ir para o GitHub.
 O comando `render` não executa fases, bounces ou derivadas. `plan` escolhe
