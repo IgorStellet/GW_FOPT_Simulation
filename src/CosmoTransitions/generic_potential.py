@@ -848,9 +848,10 @@ def _compute_gw_scales_from_calculator(
         "gw_R_star_times_H": float(R_star_H),
         "gw_nucleation_rate_GeV4": float(Gamma_val),
         "gw_dT_for_beta_GeV": float(dT),
-        "gw_f_sw_peak_Hz": float(f_sw_peak),
-        "gw_f_turb_peak_Hz": float(f_turb_peak),
-        "gw_f_coll_peak_Hz": float(f_coll_peak),
+        # Core peak helpers retain the historical mHz convention.
+        "gw_f_sw_peak_Hz": 1e-3 * float(f_sw_peak),
+        "gw_f_turb_peak_Hz": 1e-3 * float(f_turb_peak),
+        "gw_f_coll_peak_Hz": 1e-3 * float(f_coll_peak),
         "gw_g_star": float(g_star),
         "gw_v_w": float(v_w),
     }

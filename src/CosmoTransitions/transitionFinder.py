@@ -406,7 +406,9 @@ class Phase:
         # Build a spline in T → X space.
         # splprep expects (n_dim, n_T) input.
         k = 3 if self.T.size > 3 else 1
-        tck, _ = interpolate.splprep(self.X[order].T, u=self.T, s=0.0, k=k)
+        # X was already reordered above. Applying order twice mismatches
+        # fields and temperatures when the input trace runs backwards.
+        tck, _ = interpolate.splprep(self.X.T, u=self.T, s=0.0, k=k)
         self.tck = tck
 
         # Sets of neighbouring phases connected by (approx.) second–order

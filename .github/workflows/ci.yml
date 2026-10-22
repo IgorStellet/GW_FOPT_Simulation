@@ -21,13 +21,35 @@ jobs:
 
       - run: python -m pip install -U pip
 
-      - name: Install dev extras (if available)
+      - name: Install project and test dependencies
         run: python -m pip install -e ".[dev]"
-        continue-on-error: true
 
-      - name: Fallback base install
-        if: failure()
-        run: python -m pip install -e .
+      - name: Verify installed article entry points outside checkout
+        working-directory: ${{ runner.temp }}
+        run: |
+          python -m Articles.cluster_runner --help
+          python -m Articles.collect_data --dry-run --output "$RUNNER_TEMP/entrypoint-check"
+          python -m Articles.figures --help
+          python -m Articles.figures.frontiers --help
+
+      - name: Check CHE setup with a Python that has no pip
+        if: matrix.python-version == '3.11'
+        run: |
+          python -m venv --without-pip "$RUNNER_TEMP/python-no-pip"
+          bash Articles/cluster/setup_environment.sh "$RUNNER_TEMP/python-no-pip/bin/python" "$RUNNER_TEMP/che-venv"
+          bash -n Articles/cluster/smoke.slurm
+          bash -n Articles/cluster/production.slurm
+          bash -n Articles/cluster/job_environment.sh
+          bash -n Articles/cluster/figures.slurm
+          bash -n Articles/cluster/figure_points.slurm
+          bash -n Articles/cluster/edge_observables.slurm
+          bash -n Articles/cluster/lisa_reach.slurm
+          bash -n Articles/cluster/frontier_job.sh
+          bash -n Articles/cluster/frontier_figures.slurm
+
+      - name: Lint article code
+        run: |
+          python -m ruff check Articles tests/test_article_core.py tests/test_article_scan.py tests/test_article_cluster.py
 
       - name: Lint
         run: |
@@ -36,7 +58,7 @@ jobs:
         continue-on-error: true
 
       - name: Tests
-        run: pytest -q
+        run: python -m pytest -q tests Articles/tests
 
   examples:
     runs-on: ubuntu-latest

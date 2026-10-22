@@ -18,13 +18,19 @@ and is designed to be extended with bubble-collision and turbulence
 contributions.
 
 Here S3(T) is the O(3) Euclidean action of the finite-temperature bounce.
+
+Frequency convention: all spectrum arguments and peak-frequency functions use
+mHz, including the legacy ``gw_f_*_peak`` names. Only functions explicitly
+named ``*_h_star_Hz`` return Hz. Convert mHz to Hz by multiplying by 1e-3.
 """
 
 from typing import Any, Callable, Hashable, Mapping, Optional
 
 import numpy as np
 import numpy.typing as npt
+from scipy import optimize
 
+from .helper_functions import fd_weights_1d
 from .transitionFinder import Phase, _solve_bounce
 
 __all__ = ["GravitationalWaveCalculator", "gw_f_coll_peak", "gw_f_sw_peak", "gw_f_turb_peak", "gw_omega_coll_h2",
@@ -79,6 +85,9 @@ class GravitationalWaveCalculator:
         Optional dictionary forwarded to the underlying tunneling backend
         used inside :func:`transitionFinder._solve_bounce` (e.g. options
         for :mod:`pathDeformation`).
+    minima_phitol :
+        Field tolerance used to refine phase-spline minima before evaluating
+        the bounce or thermodynamic quantities. Match nucleation ``phitol``.
 
     Notes
     -----
@@ -98,6 +107,7 @@ class GravitationalWaveCalculator:
         low_phase_key: Hashable,
         *,
         fullTunneling_params: Optional[Mapping[str, Any]] = None,
+        minima_phitol: float = 1e-5,
     ) -> None:
         self.V = V
         self.dV = dV
@@ -118,6 +128,10 @@ class GravitationalWaveCalculator:
 
         # Options passed down to the tunneling backend (_solve_bounce).
         self.fullTunneling_params: dict[str, Any] = dict(fullTunneling_params or {})
+        self.minima_phitol = float(minima_phitol)
+        if not np.isfinite(self.minima_phitol) or self.minima_phitol <= 0.0:
+            raise ValueError("minima_phitol must be finite and positive.")
+        self._minima_cache: dict[float, tuple[np.ndarray, np.ndarray]] = {}
 
         # Simple cache for S3(T) evaluations to avoid recomputing identical points.
         self._S3_cache: dict[float, float] = {}
@@ -178,6 +192,27 @@ class GravitationalWaveCalculator:
             )
             raise ValueError(msg)
 
+    def _minima_at_T(self, T: float) -> tuple[np.ndarray, np.ndarray]:
+        """Refine the phase-spline guesses using the nucleation solver's rule.
+
+        Interpolation errors in phase minima must not become finite-difference
+        noise in S3/T. Use the same local minimization as transitionFinder,
+        with ``minima_phitol`` set equal to its ``phitol`` for consistency.
+        """
+        T = float(T)
+        self._check_temperature_inside_range(T)
+        if T not in self._minima_cache:
+            minima = []
+            for phase in (self.high_phase, self.low_phase):
+                guess = np.asarray(phase.valAt(T), dtype=float)
+                minimum = optimize.fmin(
+                    self.V, guess, args=(T,), xtol=self.minima_phitol,
+                    ftol=np.inf, disp=False,
+                )
+                minima.append(np.asarray(minimum, dtype=float))
+            self._minima_cache[T] = (minima[0], minima[1])
+        return self._minima_cache[T]
+
     def _S3_at_T(self, T: float) -> float:
         r"""
         Compute the O(3) Euclidean action :math:`S_3(T)` at fixed temperature.
@@ -215,9 +250,8 @@ class GravitationalWaveCalculator:
         if T_val in self._S3_cache:
             return self._S3_cache[T_val]
 
-        # Minima at this temperature from the phase splines
-        x_high = np.asarray(self.high_phase.valAt(T_val), dtype=float)
-        x_low = np.asarray(self.low_phase.valAt(T_val), dtype=float)
+        # Refine spline guesses exactly as in the nucleation calculation.
+        x_high, x_low = self._minima_at_T(T_val)
 
         # Fixed-T wrappers around V and dV
         def V_fixed(x: npt.NDArray[np.float64]) -> float:
@@ -250,9 +284,9 @@ class GravitationalWaveCalculator:
     # ------------------------------------------------------------------
     # Public API (first step): d/dT [ S3(T) / T ]
     # ------------------------------------------------------------------
-    def dS_dT(self, T: float, dT: float) -> float:
+    def dS_dT(self, T: float, dT: float, *, order: int = 4) -> float:
         r"""
-     Fourth-order central finite-difference estimate of
+        Central finite-difference estimate of
 
         .. math::
 
@@ -260,8 +294,14 @@ class GravitationalWaveCalculator:
 
         Here :math:`S_3(T)` is the O(3) Euclidean action of the thermal
         bounce between the configured high and low phases. The derivative
-        is approximated with the standard 5-point, fourth-order accurate
-        central stencil:
+        uses two bounce evaluations for ``order=2``:
+
+        .. math::
+
+            [S_3(T+\Delta T)/(T+\Delta T)
+             -S_3(T-\Delta T)/(T-\Delta T)]/(2\Delta T).
+
+        The legacy default ``order=4`` uses four bounce evaluations:
 
         .. math::
 
@@ -277,35 +317,20 @@ class GravitationalWaveCalculator:
         T = float(T)
         dT = float(dT)
 
-        if dT <= 0.0:
-            raise ValueError("dS_dT: dT must be positive.")
-
-        T_m2 = T - 2.0 * dT
-        T_m1 = T - dT
-        T_p1 = T + dT
-        T_p2 = T + 2.0 * dT
-
-        # All stencil points must remain inside the common phase range
-        if (
-            T_m2 < self._T_min
-            or T_m1 < self._T_min
-            or T_p1 > self._T_max
-            or T_p2 > self._T_max
-        ):
-            msg = (
-                "dS_dT: T ± dT and T ± 2 dT must remain inside the overlapping "
-                f"phase range [{self._T_min:.6g}, {self._T_max:.6g}], but "
-                f"T-2dT={T_m2:.6g}, T-dT={T_m1:.6g}, "
-                f"T+dT={T_p1:.6g}, T+2dT={T_p2:.6g}."
-            )
-            raise ValueError(msg)
-
-        S_m2 = self._S3_at_T(T_m2)/T_m2
-        S_m1 = self._S3_at_T(T_m1)/T_m1
-        S_p1 = self._S3_at_T(T_p1)/T_p1
-        S_p2 = self._S3_at_T(T_p2)/T_p2
-
-        return (S_m2 - 8.0 * S_m1 + 8.0 * S_p1 - S_p2) / (12.0 * dT)
+        if not np.isfinite(T) or not np.isfinite(dT) or dT <= 0.0:
+            raise ValueError("dS_dT: T must be finite and dT finite and positive.")
+        if order not in (2, 4):
+            raise ValueError("dS_dT: order must be 2 or 4.")
+        offsets = np.array([-1.0, 1.0] if order == 2 else [-2.0, -1.0, 1.0, 2.0])
+        temperatures = T + dT * offsets
+        if np.any(temperatures <= 0.0):
+            raise ValueError("dS_dT: every stencil temperature must be positive.")
+        for temperature in temperatures:
+            self._check_temperature_inside_range(float(temperature))
+        values = np.array([self._S3_at_T(float(t)) / t for t in temperatures])
+        # Reuse the numerical differentiation kernel instead of duplicating it.
+        weights = fd_weights_1d(offsets, 0.0, der=1) / dT
+        return float(np.dot(weights, values))
 
 
     def beta_over_H(
@@ -314,11 +339,12 @@ class GravitationalWaveCalculator:
         dT: float,
         *,
         H: Optional[float] = None,
+        order: int = 4,
     ) -> float | tuple[float, float]:
         r"""
         Estimate :math:`\beta/H_*` at (typically) the nucleation temperature.
 
-        This helper glues together the fourth-order finite-difference
+        This helper glues together the selectable central finite-difference
         derivative :meth:`dS_dT` with the standard approximation
 
         .. math::
@@ -350,8 +376,10 @@ class GravitationalWaveCalculator:
         dT : float
             Finite-difference stepsize :math:`\Delta T` used internally in
             :meth:`dS_dT`. Must be positive, and such that
-            :math:`T_n \pm \Delta T` and :math:`T_n \pm 2\Delta T` lie inside
-            the overlapping phase range.
+            every stencil temperature lies inside the overlapping phase range.
+        order : {2, 4}
+            Accuracy order of the central derivative. Order 2 evaluates only
+            ``Tn-dT`` and ``Tn+dT``; order 4 retains the legacy four evaluations.
         H : float, optional
             If provided, interpreted as the Hubble rate :math:`H_*` at the
             epoch of interest (typically the transition time). When given,
@@ -381,7 +409,7 @@ class GravitationalWaveCalculator:
         dT = float(dT)
 
         # Delegate all consistency checks on Tn and dT to dS_dT
-        dSdT = self.dS_dT(Tn, dT)
+        dSdT = self.dS_dT(Tn, dT, order=order)
 
         beta_over_H = Tn * dSdT
 
@@ -395,6 +423,47 @@ class GravitationalWaveCalculator:
         beta = beta_over_H * H
         return float(beta_over_H), float(beta)
 
+    def thermodynamics(self, T: float, g_star: float) -> dict[str, Any]:
+        """Return signed thermodynamic differences, always high minus low.
+
+        ``delta_rho = delta_V - T*delta_dVdT`` is the released energy density;
+        ``delta_theta = delta_V - T*delta_dVdT/4`` is the trace-anomaly measure.
+        They define ``alpha_energy`` and ``alpha_trace`` after division by
+        ``rho_rad = pi**2*g_star*T**4/30``. Keeping both avoids conflating the
+        two strength conventions or hiding an unphysical sign with ``abs``.
+        All derivatives are partial derivatives at fixed field values.
+        """
+        T, g_star = float(T), float(g_star)
+        if not np.isfinite(T) or T <= 0.0:
+            raise ValueError("thermodynamics: T must be finite and positive.")
+        if not np.isfinite(g_star) or g_star <= 0.0:
+            raise ValueError("thermodynamics: g_star must be finite and positive.")
+        x_high, x_low = self._minima_at_T(T)
+        V_high, V_low = float(self.V(x_high, T)), float(self.V(x_low, T))
+        dT_high = float(self.dVdT(x_high, T))
+        dT_low = float(self.dVdT(x_low, T))
+        delta_V, delta_dVdT = V_high - V_low, dT_high - dT_low
+        delta_rho = delta_V - T * delta_dVdT
+        delta_theta = delta_V - 0.25 * T * delta_dVdT
+        rho_rad = (np.pi**2 / 30.0) * g_star * T**4
+        return {
+            "T_GeV": T,
+            "g_star": g_star,
+            "phi_high": x_high.copy(),
+            "phi_low": x_low.copy(),
+            "V_high_GeV4": V_high,
+            "V_low_GeV4": V_low,
+            "dVdT_high_GeV3": dT_high,
+            "dVdT_low_GeV3": dT_low,
+            "delta_V_GeV4": delta_V,
+            "delta_dVdT_GeV3": delta_dVdT,
+            "delta_rho_GeV4": delta_rho,
+            "delta_theta_GeV4": delta_theta,
+            "rho_rad_GeV4": rho_rad,
+            "alpha_energy": delta_rho / rho_rad,
+            "alpha_trace": delta_theta / rho_rad,
+        }
+
     def alpha(
         self,
         T: float,
@@ -403,33 +472,32 @@ class GravitationalWaveCalculator:
         return_delta_rho: bool = False,
     ) -> float | tuple[float, float]:
         r"""
-        Compute the strength parameter :math:`\alpha` at temperature ``T``.
+        Return the legacy nonnegative trace-anomaly strength at ``T``.
 
-        We follow the thermodynamic definition where the finite-temperature
+        The finite-temperature
         effective potential :math:`V(\phi, T)` is the Helmholtz free-energy
         density of the plasma. For each phase,
 
         .. math::
 
-            \rho(\phi, T) = V(\phi, T) - T \, \frac{\partial V(\phi, T)}{\partial T},
+            \theta(\phi, T) = V(\phi, T) - \frac{T}{4} \, \frac{\partial V(\phi, T)}{\partial T},
 
-        so that the energy-density difference between the two phases is
+        defines the trace measure. The legacy implementation uses its magnitude:
 
         .. math::
 
-            \Delta\rho(T)
-            = \bigl[
-                V_{\text{low}}(T) - T\,\partial_T V_{\text{low}}(T)
-              \bigr]
-            - \bigl[
-                V_{\text{high}}(T) - T\,\partial_T V_{\text{high}}(T)
-              \bigr].
+            |\Delta\theta(T)|
+            = \left|\bigl[
+                V_{\text{high}}(T) - (T/4)\,\partial_T V_{\text{high}}(T)
+              \bigr] - \bigl[
+                V_{\text{low}}(T) - (T/4)\,\partial_T V_{\text{low}}(T)
+              \bigr]\right|.
 
         The strength parameter is then
 
         .. math::
 
-            \alpha(T) = \frac{\Delta\rho(T)}{\rho_{\text{rad}}(T)}, \qquad
+            \alpha(T) = \frac{|\Delta\theta(T)|}{\rho_{\text{rad}}(T)}, \qquad
             \rho_{\text{rad}}(T) = \frac{\pi^2}{30}\, g_*\, T^4.
 
         Parameters
@@ -442,7 +510,8 @@ class GravitationalWaveCalculator:
             Effective number of relativistic degrees of freedom :math:`g_*`
             at temperature ``T``.
         return_delta_rho : bool, optional
-            If ``True``, also return :math:`\Delta\rho(T)`.
+            Legacy parameter name: if True, also return ``abs(delta_theta)``.
+            For signed energy density and trace anomaly use :meth:`thermodynamics`.
 
         Returns
         -------
@@ -450,7 +519,7 @@ class GravitationalWaveCalculator:
             The strength parameter :math:`\alpha(T)`.
         (alpha, delta_rho) : tuple of float
             If ``return_delta_rho=True``, returns both :math:`\alpha(T)` and
-            :math:`\Delta\rho(T)`.
+            the magnitude of the trace-anomaly difference (not energy density).
 
         Raises
         ------
@@ -462,45 +531,10 @@ class GravitationalWaveCalculator:
             If ``T`` lies outside the overlapping temperature range, or if
             ``g_star <= 0``.
         """
-        T_val = float(T)
-        self._check_temperature_inside_range(T_val)
-
-        if g_star <= 0.0:
-            raise ValueError("alpha: g_star must be positive.")
-
-        if not hasattr(self, "dVdT"):
-            msg = (
-                "alpha: this instance has no 'dVdT' attribute.\n"
-                "You must provide a callable dVdT(phi, T) when constructing "
-                "GravitationalWaveCalculator if you want to use 'alpha'."
-            )
-            raise AttributeError(msg)
-
-        # Minima at this temperature
-        x_high = np.asarray(self.high_phase.valAt(T_val), dtype=float)
-        x_low = np.asarray(self.low_phase.valAt(T_val), dtype=float)
-
-        # Free-energy densities at the minima
-        V_high = float(self.V(x_high, T_val))
-        V_low = float(self.V(x_low, T_val))
-
-        # Temperature derivatives at fixed minima positions
-        dVdT_high = float(self.dVdT(x_high, T_val))
-        dVdT_low = float(self.dVdT(x_low, T_val))
-
-        # Energy densities in each phase
-        rho_high = V_high - 1/4 * T_val * dVdT_high
-        rho_low = V_low -  1/4 * T_val * dVdT_low
-
-        delta_rho = np.abs(rho_high - rho_low)
-
-        # Radiation energy density
-        rho_rad = (np.pi**2 / 30.0) * g_star * T_val**4
-
-        alpha_val = delta_rho / rho_rad
-
+        quantities = self.thermodynamics(T, g_star)
+        alpha_val = abs(quantities["alpha_trace"])
         if return_delta_rho:
-            return alpha_val, delta_rho
+            return alpha_val, abs(quantities["delta_theta_GeV4"])
         return alpha_val
 
 
@@ -515,7 +549,7 @@ class GravitationalWaveCalculator:
         v_w: float,
     ) -> float:
         r"""
-        Peak frequency of the sound-wave GW signal today, in Hz.
+        Peak frequency of the sound-wave GW signal today, in mHz.
 
         This implements the usual fit
 
@@ -545,7 +579,7 @@ class GravitationalWaveCalculator:
         Returns
         -------
         float
-            Peak frequency :math:`f_{\rm sw}` in Hz.
+            Peak frequency :math:`f_{\rm sw}` in mHz.
         """
         beta_over_H = float(beta_over_H)
         T_star = float(T_star)
@@ -619,7 +653,7 @@ class GravitationalWaveCalculator:
         Parameters
         ----------
         f : array_like
-            Frequencies in Hz (scalar or array) at which to evaluate
+            Frequencies in mHz (scalar or array) at which to evaluate
             :math:`h^2 \Omega_{\rm sw}(f)`.
         alpha : float
             Strength parameter :math:`\alpha` of the transition at :math:`T_*`,
@@ -767,7 +801,7 @@ class GravitationalWaveCalculator:
         v_w: float,
     ) -> float:
         r"""
-        Peak frequency of the turbulent GW signal today, in Hz.
+        Peak frequency of the turbulent GW signal today, in mHz.
 
         Implements
 
@@ -847,7 +881,7 @@ class GravitationalWaveCalculator:
         Parameters
         ----------
         f : array_like
-            Frequencies in Hz (scalar or array) at which to evaluate
+            Frequencies in mHz (scalar or array) at which to evaluate
             :math:`h^2 \Omega_{\rm turb}(f)`.
         alpha : float
             Strength parameter :math:`\alpha` at :math:`T_*`.
@@ -943,7 +977,8 @@ class GravitationalWaveCalculator:
             g_star=g_star,
             v_w=v_w,
         )
-        h_star = self._h_star_Hz(T_star=T_star, g_star=g_star)
+        # f and f_peak use mHz; the explicitly named Hubble helper uses Hz.
+        h_star = 1e3 * self._h_star_Hz(T_star=T_star, g_star=g_star)
 
         # Shape function S_turb(f)
         if shape is None:
@@ -974,7 +1009,7 @@ class GravitationalWaveCalculator:
     ) -> float:
         r"""
         Peak frequency of the scalar-field (bubble-collision) GW signal,
-        in Hz, within the envelope approximation.
+        in mHz, within the envelope approximation.
 
         We use the standard fit
 
@@ -1004,7 +1039,7 @@ class GravitationalWaveCalculator:
         Returns
         -------
         float
-            Peak frequency :math:`f_{\rm env}` in Hz.
+            Peak frequency :math:`f_{\rm env}` in mHz.
         """
         beta_over_H = float(beta_over_H)
         T_star = float(T_star)
@@ -1074,7 +1109,7 @@ class GravitationalWaveCalculator:
         Parameters
         ----------
         f : array_like
-            Frequencies in Hz (scalar or array) at which to evaluate
+            Frequencies in mHz (scalar or array) at which to evaluate
             :math:`h^2 \Omega_{\rm coll}(f)`.
         alpha : float
             Strength parameter :math:`\alpha` of the transition at :math:`T_*`.
@@ -1237,7 +1272,7 @@ class GravitationalWaveCalculator:
         Parameters
         ----------
         f : array_like
-            Frequencies in Hz (scalar or array) at which to evaluate
+            Frequencies in mHz (scalar or array) at which to evaluate
             the spectra.
         alpha : float
             Strength parameter :math:`\alpha` at the chosen reference
@@ -1532,7 +1567,7 @@ def gw_f_sw_peak(
     g_star: float,
     v_w: float,
 ) -> float:
-    """Peak frequency of the sound-wave component, in Hz."""
+    """Peak frequency of the sound-wave component, in mHz (legacy convention)."""
     beta_over_H = float(beta_over_H)
     T_star = float(T_star)
     g_star = float(g_star)
@@ -1574,7 +1609,7 @@ def gw_omega_sw_h2(
     y_sup: Optional[float] = None,
     kappa_sw: Optional[float] = None,
 ) -> npt.NDArray[np.float64]:
-    """Stateless version of the sound-wave spectrum h^2 Ω_sw(f)."""
+    """Stateless sound-wave spectrum h^2 Ω_sw(f), with f in mHz."""
     f_arr = np.asarray(f, dtype=float)
     alpha = float(alpha)
     beta_over_H = float(beta_over_H)
@@ -1656,7 +1691,7 @@ def gw_f_turb_peak(
     g_star: float,
     v_w: float,
 ) -> float:
-    """Peak frequency of the turbulent component, in Hz."""
+    """Peak frequency of the turbulent component, in mHz (legacy convention)."""
     beta_over_H = float(beta_over_H)
     T_star = float(T_star)
     g_star = float(g_star)
@@ -1697,7 +1732,7 @@ def gw_omega_turb_h2(
         Callable[[npt.NDArray[np.float64], float], npt.NDArray[np.float64]]
     ] = None,
 ) -> npt.NDArray[np.float64]:
-    """Stateless version of the turbulence spectrum h^2 Ω_turb(f)."""
+    """Stateless turbulence spectrum h^2 Ω_turb(f), with f in mHz."""
     f_arr = np.asarray(f, dtype=float)
     alpha = float(alpha)
     beta_over_H = float(beta_over_H)
@@ -1737,7 +1772,8 @@ def gw_omega_turb_h2(
         g_star=g_star,
         v_w=v_w,
     )
-    h_star = gw_h_star_Hz(T_star=T_star, g_star=g_star)
+    # Use one unit throughout the shape function: mHz.
+    h_star = 1e3 * gw_h_star_Hz(T_star=T_star, g_star=g_star)
 
     if shape is None:
         x = f_arr / f_peak
@@ -1764,7 +1800,7 @@ def gw_f_coll_peak(
     g_star: float,
     v_w: float,
 ) -> float:
-    """Peak frequency of the collision (envelope) component, in Hz."""
+    """Peak frequency of the collision component, in mHz (legacy convention)."""
     beta_over_H = float(beta_over_H)
     T_star = float(T_star)
     g_star = float(g_star)
@@ -1806,7 +1842,7 @@ def gw_omega_coll_h2(
     kappa_coll: Optional[float] = None,
     delta_factor: Optional[float] = None,
 ) -> npt.NDArray[np.float64]:
-    """Stateless version of the collision (envelope) spectrum h^2 Ω_coll(f)."""
+    """Stateless collision (envelope) spectrum h^2 Ω_coll(f), with f in mHz."""
     f_arr = np.asarray(f, dtype=float)
     alpha = float(alpha)
     beta_over_H = float(beta_over_H)
@@ -1889,7 +1925,7 @@ def gw_omega_total_h2(
     delta_factor_coll: Optional[float] = None,
 ) -> dict[str, npt.NDArray[np.float64]]:
     """
-    Stateless combined GW spectrum (sound + turbulence + collisions).
+    Stateless combined GW spectrum (sound + turbulence + collisions), f in mHz.
 
     Returns a dict with keys: "sw", "turb", "coll", "total".
     """
