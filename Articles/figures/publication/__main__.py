@@ -148,13 +148,16 @@ def render(args):
     plot_windows(dataset, windows, writer, args)
     print("Figura 1 concluída; construindo os mapas.", flush=True)
     meshes = plot_atlases(dataset, windows, writer, args)
+    print("Figuras 2–4 concluídas; construindo alcance dos detectores.", flush=True)
     meshes += plot_detector_contours(dataset, windows, writer, args)
+    print("Figura 5 concluída; construindo os espectros.", flush=True)
     benchmarks, spectra = match_spectra(
         dataset,
         threshold=args.snr_threshold,
         maximum_peak_distance=args.maximum_peak_distance,
     )
     plot_matched_spectra(benchmarks, spectra, dataset.cases, writer, args)
+    print("Figura 6 concluída; salvando tabelas e ZIP.", flush=True)
     cuts = detector_cuts(dataset, profiles, threshold=args.snr_threshold)
     cuts += detector_cuts(
         dataset, profiles, threshold=args.snr_threshold, half_step=True
@@ -234,7 +237,7 @@ def main(argv=None):
     try:
         return render(args)
     except (ValueError, OSError, KeyError, ArithmeticError) as error:
-        parser.exit(2, f"{error}\n")
+        parser.exit(2, f"{type(error).__name__}: {error}\n")
 
 
 if __name__ == "__main__":

@@ -1,8 +1,11 @@
 """Regressões científicas do conjunto final: dados, limites e interpolação."""
 
+import hashlib
 import json
 import math
+import sqlite3
 import zipfile
+from contextlib import closing
 
 import numpy as np
 import pytest
@@ -330,3 +333,79 @@ def test_supplement_changes_only_the_declared_beta_maximum_step(tmp_path):
             assert old[key] == value
     with pytest.raises(ValueError, match="não corresponde"):
         build_supplement(dataset, [root], [{**selected, "point_id": "wrong"}])
+
+
+def test_sqlite_mass_sentinels_render_all_six_figures_without_changing_inputs(tmp_path):
+    """O CHE lê 'inf' do JSON/SQLite; CSV restaura float(inf) automaticamente."""
+    from test_paper_figures import write_boundary_fixture
+
+    from Articles.figures.publication.inputs import load_original
+    from Articles.figures.publication.rendering import (
+        PublicationWriter,
+        plot_matched_spectra,
+    )
+
+    root = write_boundary_fixture(tmp_path / "campaign")
+    # Dá ao fixture o mesmo diagnóstico de meio passo salvo na campanha real.
+    for database in root.glob("m8-*/scan.sqlite"):
+        with closing(sqlite3.connect(database)) as connection, connection:
+            for point, index, payload in connection.execute(
+                "SELECT point_id, transition_index, record FROM transitions"
+            ).fetchall():
+                record = json.loads(payload)
+                record.update(
+                    alpha_trace=0.3,
+                    beta_over_H_half_step=record["beta_over_H"],
+                    beta_order=2,
+                    beta_relative_change=0,
+                )
+                connection.execute(
+                    "UPDATE transitions SET record=? WHERE point_id=? AND transition_index=?",
+                    (json.dumps(record), point, index),
+                )
+    hashes = {
+        p: hashlib.sha256(p.read_bytes()).hexdigest()
+        for p in root.rglob("*")
+        if p.is_file()
+    }
+    with closing(sqlite3.connect(root / "m8-0/scan.sqlite")) as connection:
+        assert any(
+            json.loads(payload)["m8_GeV"] == "inf"
+            for (payload,) in connection.execute("SELECT record FROM points")
+        )
+    dataset, _ = load_original(root)
+    add_half_step_comparison(dataset)
+    benchmarks, spectra = match_spectra(dataset)
+    assert benchmarks  # Exercita os espectros, não apenas o painel vazio.
+    args = type("Args", (), {"snr_threshold": 10, "observation_years": 4})()
+    writer = PublicationWriter(tmp_path / "spectra", formats=("png",), dpi=72)
+    plot_matched_spectra(benchmarks, spectra, dataset.cases, writer, args)
+    assert all(
+        isinstance(r["m8_GeV"], float) and isinstance(r["m6_GeV"], float)
+        for r in dataset.rows
+    )
+    output = tmp_path / "figures"
+    assert (
+        main(
+            [
+                "--boundaries",
+                str(root),
+                "--output",
+                str(output),
+                "--formats",
+                "png",
+                "--dpi",
+                "72",
+            ]
+        )
+        == 0
+    )
+    assert len(list(output.glob("Fig*.png"))) == 6
+    with zipfile.ZipFile(output / "article_figures_complete.zip") as archive:
+        assert archive.testzip() is None
+        assert len([name for name in archive.namelist() if name.endswith(".png")]) == 6
+    assert hashes == {
+        p: hashlib.sha256(p.read_bytes()).hexdigest()
+        for p in root.rglob("*")
+        if p.is_file()
+    }

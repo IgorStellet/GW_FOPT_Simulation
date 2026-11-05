@@ -120,6 +120,28 @@ ou preencher a falha por interpolação não estabelece sua convergência.
 
 ## Baixar os arquivos, no PowerShell do Windows
 
+### Se o ZIP não foi criado
+
+O ZIP é criado somente após as seis figuras e tabelas. Consulte o `.err` e
+o `.out` do job antes de repetir qualquer cálculo. A mensagem isolada `'inf'`
+em versões anteriores vinha de uma massa infinita armazenada como texto no
+JSON/SQLite. O leitor de publicação agora normaliza as duas massas somente
+em memória, como já ocorria nos CSVs; os dados físicos ficam intactos.
+
+Uma execução interrompida pode deixar imagens parciais. Depois de atualizar
+o código com `git pull --ff-only`, é possível regenerar explicitamente a mesma
+edição com o comando abaixo, mantendo os dados de entrada e sem refazer o scan:
+
+```bash
+FOPT_REPLACE_FIGURES=1 FOPT_PUBLICATION_ROOT="$FOPT_RESULTS_ROOT/article_publication_v1" sbatch --export=ALL --nodelist=milliways03 Articles/cluster/publication_figures.slurm
+```
+
+Espere o job terminar com sucesso. O `.out` deve terminar com a mensagem
+`Seis figuras, legendas e tabelas: ...`, seguida do número de verificações
+pontuais listadas. Só então baixe o ZIP.
+
+### Transferência
+
 ```powershell
 scp -P 13900 ftovar@152.84.248.250:/home/ftovar/fopt-articles-v4/article_publication_v1/article_figures_complete.zip "$env:USERPROFILE\Downloads\FOPT-article-publication-v1.zip"
 ```

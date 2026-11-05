@@ -302,6 +302,13 @@ def load_original(boundaries, observables=(), reach=(), *, years=4, threshold=10
     from Articles.figures.frontiers.render import reach_profiles
 
     dataset = load_sources(boundaries, [*observables, *reach], years=years)
+    # O JSON dos bancos representa uma massa desligada como a string "inf".
+    # CSVs restauram float(inf) em read_table; a leitura direta precisa oferecer
+    # a mesma representação às comparações, tabelas e chaves de cores. Apenas
+    # a visão em memória é normalizada: os bancos e manifestos ficam intactos.
+    for row in dataset.rows:
+        case, mass, _ = coordinate(row)
+        row.update(m8_GeV=case, m6_GeV=mass)
     saved_configuration = {}
     for root in reach:
         for path in sorted(Path(root).glob("m8-*/interior_state.json")):
