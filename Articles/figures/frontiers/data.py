@@ -39,7 +39,10 @@ def read_table(path):
         except ValueError:
             return text
 
-    with Path(path).open(encoding="utf-8-sig", newline="") as stream:
+    # zipfile.Path possui a mesma interface de leitura. Ler o membro direto
+    # evita extrações e problemas de permissão em temporários do Windows.
+    path = path if hasattr(path, "open") else Path(path)
+    with path.open(encoding="utf-8-sig", newline="") as stream:
         return [
             {key: value(key, text) for key, text in row.items()}
             for row in csv.DictReader(stream)
@@ -48,7 +51,11 @@ def read_table(path):
 
 def load_exports(folder, years=4.0):
     """Lê a exportação v1; calcula apenas métricas algébricas dos detectores."""
-    folder = Path(folder).resolve()
+    folder = (
+        folder
+        if hasattr(folder, "read_bytes") and not isinstance(folder, Path)
+        else Path(folder).resolve()
+    )
     report = json.loads((folder / "figure_report.json").read_text(encoding="utf-8"))
     rows = read_table(folder / "points_analysis.csv")
     if len({coordinate(row) for row in rows}) != len(rows):

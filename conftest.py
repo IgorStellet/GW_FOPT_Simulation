@@ -1,4 +1,4 @@
-"""Ambiente de testes sem janelas e com temporários acessíveis no Windows."""
+"""Configuração comum a tests/ e Articles/tests/, inclusive no Windows."""
 
 import os
 import tempfile
@@ -8,11 +8,10 @@ os.environ.setdefault("MPLBACKEND", "Agg")
 
 
 def pytest_configure(config):
-    """Evita o diretório global pytest-of-USER com ACL incompatível.
+    """Escolhe uma pasta exclusiva; respeita temporários explícitos do usuário.
 
-    Respeita --basetemp e PYTEST_DEBUG_TEMPROOT explícitos. Cada execução
-    recebe uma subpasta exclusiva; nunca usamos a pasta de resultados como
-    basetemp, pois o pytest apaga o conteúdo desse diretório.
+    Na raiz do projeto, este hook também vale quando somente Articles/tests
+    é executado. Dentro de tests/ ele não era carregado nessa situação.
     """
     if (
         os.name == "nt"

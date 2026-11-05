@@ -1,5 +1,8 @@
 # Dados para o artigo sobre mecanismos combinados de FOPT
 
+As seis figuras principais, com legendas e tabelas, estão no novo fluxo de
+[publicação](PUBLICATION.md), separado das campanhas e dos plots anteriores.
+
 **Novo fluxo recomendado:** [fronteiras primeiro, interior depois](BOUNDARIES.md).
 Use `run_boundaries.py` para procurar fronteiras com orçamento por ponto e corte
 de força opcional. O fluxo completo v3 abaixo continua disponível. Preserve e
