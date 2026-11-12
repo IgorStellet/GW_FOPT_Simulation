@@ -11,6 +11,7 @@ htmlcov/
 
 # Envs
 .venv/
+.venv-che*/
 .env
 
 # IDEs/OS
