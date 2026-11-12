@@ -329,7 +329,7 @@ def match_spectra(
     threshold=10,
     maximum_peak_distance=0.16,
     same_mass_candidates=(700.0, 750.0, 800.0, 850.0, 900.0, 1000.0),
-    varied_mass_limits=(600.0, 1000.0),
+    varied_mass_limits=(600.0, 800.0),
 ):
     """Busca dois trios de sinais próximos, sem otimizar uma conclusão física.
 

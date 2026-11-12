@@ -286,6 +286,20 @@ def test_spectrum_matching_does_not_claim_mass_variation_when_absent():
     assert {r["group"] for r in benchmarks} == {"A"}
 
 
+def test_default_matching_keeps_the_varied_group_in_the_lower_mass_window():
+    cases = (math.inf, 840.8964152537145, 668.740304976422)
+    rows = [
+        row(mass, 2.7, case)
+        for case, low in zip(cases, (635, 645, 680), strict=True)
+        for mass in (low, 1000)
+    ]
+    for record in rows:
+        add_peak_metrics(record, 0.003, 1e-12, 4)
+        record["LISA_rho_sw_half_step"] = record["LISA_rho_sw"]
+    benchmarks, _ = match_spectra(Dataset(rows, [], {}, [], {}))
+    assert {r["m6_GeV"] for r in benchmarks if r["group"] == "B"} == {635, 645, 680}
+
+
 @pytest.mark.parametrize("diagnostics", [False, True])
 def test_render_requires_full_table_and_produces_six_figures_with_audit(
     tmp_path, diagnostics

@@ -193,10 +193,12 @@ h/2, sem significado de intervalo de confiança experimental.
 
 Os benchmarks passam o limiar nos dois passos. O grupo A escolhe a menor massa
 admissível de 700, 750, 800, 850, 900 e 1000 GeV; B procura picos próximos entre
-600 e 1000 GeV. A tolerância de distância dos picos continua 0,16 dex. As opções
+600 e 800 GeV. A tolerância de distância dos picos continua 0,16 dex. As opções
 `--benchmark-masses` e `--benchmark-range` permitem mudar essas faixas de forma
 declarada. Com os dados v1, A usa m6=800 GeV e C=3,2401; 3,1681; 3,0453. A
-coleta nova pode encontrar trios admissíveis em massas menores.
+coleta nova pode encontrar trios admissíveis em massas menores. O grupo B já
+encontra m6=635, 645 e 680 GeV, com C=2,7290; 2,6715; 2,6769 e SNR próximo de
+15 nos três cenários. As distâncias dos picos ficam abaixo de 0,014 dex.
 
 Para fechar as figuras, confira `unresolved_selected_observables.csv`,
 `interpolation_audit.csv`, `transition_topology_flags.csv` e o relatório JSON.

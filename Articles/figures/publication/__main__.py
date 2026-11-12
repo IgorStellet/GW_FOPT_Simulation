@@ -226,7 +226,7 @@ def main(argv=None):
         "--benchmark-range",
         type=float,
         nargs=2,
-        default=(600.0, 1000.0),
+        default=(600.0, 800.0),
         help="Grupo B: intervalo de m6 para buscar picos próximos, em GeV.",
     )
     parser.add_argument(
