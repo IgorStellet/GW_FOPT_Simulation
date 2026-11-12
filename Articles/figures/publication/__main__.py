@@ -155,6 +155,8 @@ def render(args):
         dataset,
         threshold=args.snr_threshold,
         maximum_peak_distance=args.maximum_peak_distance,
+        same_mass_candidates=args.benchmark_masses,
+        varied_mass_limits=args.benchmark_range,
     )
     plot_matched_spectra(benchmarks, spectra, dataset.cases, writer, args)
     print("Figura 6 concluída; salvando tabelas e ZIP.", flush=True)
@@ -163,7 +165,7 @@ def render(args):
         dataset, profiles, threshold=args.snr_threshold, half_step=True
     )
     requests = refinement_requests(dataset, profiles, threshold=args.snr_threshold)
-    write_products(
+    report = write_products(
         dataset,
         profiles,
         windows,
@@ -178,7 +180,11 @@ def render(args):
     )
     print(f"Seis figuras, legendas e tabelas: {args.output.resolve()}", flush=True)
     print(
-        f"{len(requests)} avaliações pontuais prioritárias listadas; nenhum cálculo submetido.",
+        f"{report['selected_points_missing_complete_observables']} pontos selecionados ainda sem observáveis completos; veja unresolved_selected_observables.csv.",
+        flush=True,
+    )
+    print(
+        f"{len(requests)} pedidos adicionais junto a vizinhos LISA detectáveis; nenhum cálculo submetido pelo renderizador.",
         flush=True,
     )
     return 0
@@ -210,6 +216,25 @@ def main(argv=None):
     parser.add_argument("--maximum-C-gap", type=float, default=0.081)
     parser.add_argument("--maximum-peak-distance", type=float, default=0.16)
     parser.add_argument(
+        "--benchmark-masses",
+        type=float,
+        nargs="+",
+        default=(700.0, 750.0, 800.0, 850.0, 900.0, 1000.0),
+        help="Grupo A: menor massa desta lista com três sinais admissíveis.",
+    )
+    parser.add_argument(
+        "--benchmark-range",
+        type=float,
+        nargs=2,
+        default=(600.0, 1000.0),
+        help="Grupo B: intervalo de m6 para buscar picos próximos, em GeV.",
+    )
+    parser.add_argument(
+        "--diagnostics",
+        action="store_true",
+        help="Mostra curvas h/2 e bandas de sensibilidade numérica; os valores são sempre salvos nas tabelas.",
+    )
+    parser.add_argument(
         "--boundary-guide", choices=("bracketed", "raw"), default="bracketed"
     )
     parser.add_argument(
@@ -235,6 +260,16 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
     try:
+        if (
+            not all(
+                math.isfinite(x) and x > 0
+                for x in (*args.benchmark_masses, *args.benchmark_range)
+            )
+            or args.benchmark_range[0] >= args.benchmark_range[1]
+        ):
+            raise ValueError(
+                "Massas de benchmark positivas/finitas e intervalo crescente."
+            )
         return render(args)
     except (ValueError, OSError, KeyError, ArithmeticError) as error:
         parser.exit(2, f"{type(error).__name__}: {error}\n")

@@ -186,7 +186,9 @@ def field_mesh(rows, field, *, maximum_mass_gap=100.01, maximum_C_gap=0.081):
         if not math.isfinite(float(row["m6_GeV"])):
             continue
         folder = str(row.get("source_folder", ""))
-        additional = any(
+        additional = str(row.get("calculation_mode", "")).startswith(
+            "coverage_observables"
+        ) or any(
             name in folder
             for name in ("edge_observables", "lisa_reach", "publication_refinement")
         )
@@ -321,7 +323,14 @@ def detector_cuts(
     return cuts
 
 
-def match_spectra(dataset, *, threshold=10, maximum_peak_distance=0.16):
+def match_spectra(
+    dataset,
+    *,
+    threshold=10,
+    maximum_peak_distance=0.16,
+    same_mass_candidates=(700.0, 750.0, 800.0, 850.0, 900.0, 1000.0),
+    varied_mass_limits=(600.0, 1000.0),
+):
     """Busca dois trios de sinais próximos, sem otimizar uma conclusão física.
 
     Distância euclidiana em log10(f_peak), log10(Omega_peak). O segundo trio
@@ -355,13 +364,25 @@ def match_spectra(dataset, *, threshold=10, maximum_peak_distance=0.16):
     def features(records):
         return np.log10([[r["f_sw_peak_Hz"], r["omega_sw_peak_h2"]] for r in records])
 
-    trees = {case: cKDTree(features(pools[case])) for case in cases[1:]}
+    varied_pools = {
+        case: [
+            r
+            for r in pools[case]
+            if varied_mass_limits[0] <= r["m6_GeV"] <= varied_mass_limits[1]
+        ]
+        for case in cases
+    }
+    trees = {
+        case: cKDTree(features(varied_pools[case]))
+        for case in cases[1:]
+        if varied_pools[case]
+    }
     candidates = []
-    for reference in pools[cases[0]]:
+    for reference in varied_pools[cases[0]] if len(trees) == len(cases) - 1 else []:
         partners, distances = [], []
         for case in cases[1:]:
             distance, index = trees[case].query(features([reference])[0])
-            partners.append(pools[case][int(index)])
+            partners.append(varied_pools[case][int(index)])
             distances.append(float(distance))
         records = [reference, *partners]
         if max(distances) <= maximum_peak_distance:
@@ -370,7 +391,7 @@ def match_spectra(dataset, *, threshold=10, maximum_peak_distance=0.16):
     chosen = []
     # Primeiro busca uma comparação com a mesma massa nos três modelos.
     same_mass = []
-    for mass in (1000.0, 1500.0):
+    for mass in sorted(set(same_mass_candidates)):
         local = {
             case: [row for row in pools[case] if row["m6_GeV"] == mass]
             for case in cases
@@ -388,6 +409,8 @@ def match_spectra(dataset, *, threshold=10, maximum_peak_distance=0.16):
                 distance = max(distance, float(norms[index]))
             if distance <= maximum_peak_distance:
                 same_mass.append((distance, [reference, *partners]))
+        if same_mass:
+            break  # Menor massa declarada com um trio admissível.
     if same_mass:
         chosen.append(("A", min(same_mass, key=lambda item: item[0])[1]))
     varied = [
@@ -449,6 +472,11 @@ def match_spectra(dataset, *, threshold=10, maximum_peak_distance=0.16):
                     "delta_C_from_reference": row["C"] - reference["C"],
                     "delta_m6_GeV_from_reference": row["m6_GeV"] - reference["m6_GeV"],
                     "interpretation": "nearby_predicted_signals_not_statistical_indistinguishability",
+                    "selection_policy": "lowest_admissible_fixed_mass"
+                    if group == "A"
+                    else "nearest_peaks_in_declared_low_mass_range",
+                    "selection_mass_candidates_GeV": list(same_mass_candidates),
+                    "selection_varied_mass_limits_GeV": list(varied_mass_limits),
                 }
             )
             spectra_rows.extend(

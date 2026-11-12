@@ -1,5 +1,9 @@
 # As seis figuras principais do artigo
 
+**Revisão após a colaboração:** veja [REVISAO_FIGURAS_V2.md](REVISAO_FIGURAS_V2.md)
+para completar os observáveis interiores, testar o piloto e gerar a edição v2.
+Esse fluxo mantém os bancos e as figuras v1 em seus destinos originais.
+
 O comando novo é `python -m Articles.figures.publication`. Ele somente lê
 dados; não calcula fases, ações ou derivadas. Os comandos anteriores e as
 campanhas boundaries/edge_observables/lisa_reach continuam disponíveis.
@@ -71,9 +75,10 @@ ser usado para produzir a versão final.
   são excluídas antes de triangular. Campos nunca calculados não viram zero.
 - Alpha válido é mantido quando apenas beta falha. Beta com flags de
   qualidade não entra nos mapas, espectros ou SNR.
-- O contorno tracejado vinho repete o LISA com o beta(h/2) já salvo. Os
-  benchmarks passam o limiar com ambos os passos; as bandas claras dos
-  espectros mostram essa sensibilidade numérica, sem serem intervalos de
+- A opção `--diagnostics` mostra o contorno alternativo do LISA com beta(h/2)
+  e as bandas claras dos espectros. A edição principal conserva esses testes
+  somente nas tabelas. Os benchmarks passam o limiar com ambos os passos;
+  a variação representa sensibilidade numérica, sem ser um intervalo de
   confiança. `detector_step_sensitivity.csv` lista mudanças de classificação.
   A Tabela 2 conserva intervalos separados para h e h/2. O critério nominal
   da campanha não é sobrescrito.

@@ -11,12 +11,20 @@ import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
 
+import numpy as np
+
 from Articles.collect_data import json_safe
 from Articles.figures.__main__ import write_csv
 from Articles.figures.publication.analysis import (
     numerical_quality,
     summarized_detector_intervals,
 )
+from Articles.figures.publication.coverage import (
+    complete_observables,
+    coverage_audit,
+    diagnostic_reason,
+)
+from Articles.figures.publication.detectors import lisa_noise_h2, lisa_plis_h2
 
 
 def write_products(
@@ -34,7 +42,46 @@ def write_products(
 ):
     output = args.output
     quality, phase_flags = numerical_quality(dataset)
+    coverage_report = coverage_audit(dataset, threshold=args.snr_threshold)
+    reference_frequency = np.geomspace(3e-5, 0.3, 600)
+    reference_plis = lisa_plis_h2(
+        reference_frequency, years=args.observation_years, threshold=args.snr_threshold
+    )
+    reference_noise = lisa_noise_h2(reference_frequency)
     tables = {
+        "unresolved_selected_observables.csv": [
+            {
+                **{
+                    k: r.get(k)
+                    for k in (
+                        "point_id",
+                        "m6_GeV",
+                        "m8_GeV",
+                        "C",
+                        "status",
+                        "quality_flags",
+                        "calculation_mode",
+                        "Tn_GeV",
+                        "Tc_GeV",
+                        "alpha_trace",
+                        "beta_over_H",
+                        "vev_over_Tc",
+                    )
+                },
+                "diagnostic": diagnostic_reason(r),
+            }
+            for r in dataset.rows
+            if r.get("boundary_decision") == "yes" and not complete_observables(r)
+        ],
+        "recovered_search_non_detections.csv": dataset.audit.get(
+            "recovered_search_non_detections", []
+        ),
+        "LISA_full_spectrum_reference.csv": [
+            {"f_Hz": f, "LISA_PLIS_h2": p, "LISA_noise_h2": n}
+            for f, p, n in zip(
+                reference_frequency, reference_plis, reference_noise, strict=True
+            )
+        ],
         "parameter_windows.csv": windows,
         "observables_complete.csv": dataset.rows,
         "benchmark_records.csv": benchmarks,
@@ -92,6 +139,10 @@ def write_products(
         "source_audit": dataset.audit,
         "complete_table": dataset.audit.get("complete_point_table_received", False),
         "coverage": availability,
+        "coverage_diagnostics": coverage_report,
+        "selected_points_missing_complete_observables": len(
+            tables["unresolved_selected_observables.csv"]
+        ),
         "numerical_quality": quality,
         "interpolation": mesh_audit,
         "figure_files": [path.name for path in writer.files],
@@ -108,6 +159,14 @@ def write_products(
             "snr_threshold": args.snr_threshold,
             "channel": "sound_waves_only_PIS",
             "PIS_reference": "https://arxiv.org/abs/2002.04615",
+            "upper_spectrum_reference": "LISA_PLIS_Robson_Cornish_Liu_1803.01944",
+            "LISA_PLIS_Galactic_foreground_fit_years": 4,
+            "PLIS_is_used_to_reclassify_campaign": False,
+            "show_numerical_diagnostics": getattr(args, "diagnostics", False),
+            "benchmark_fixed_mass_candidates_GeV": getattr(
+                args, "benchmark_masses", []
+            ),
+            "benchmark_varied_mass_limits_GeV": getattr(args, "benchmark_range", []),
             "maximum_mass_gap_GeV": args.maximum_mass_gap,
             "maximum_C_gap": args.maximum_C_gap,
             "envelope_interpolation": "PCHIP_between_contiguous_5GeV_columns",
@@ -299,8 +358,14 @@ def _portuguese_captions(output, args):
         "",
         "## Figura 6 — Sinais próximos com parâmetros diferentes",
         "",
-        "Espectros totais dos grupos A e B, selecionados pela proximidade dos picos acústicos entre diferentes m8. O grupo A mantém m6 fixo e o B permite massas diferentes. Os painéis inferiores comparam os picos acústicos às curvas PIS na frequência de cada sinal. As coordenadas, observáveis e distâncias espectrais estão na Tabela 1. A proximidade de curvas não constitui demonstração de indistinguibilidade estatística.",
-        "Nos mapas, o tracejado vinho usa beta(h/2), já salvo na campanha; a linha contínua usa beta(h). As bandas claras dos espectros mostram essa variação numérica, não intervalos de confiança. Os benchmarks passam o limiar do LISA nos dois passos.",
+        "Espectros totais dos grupos A e B, selecionados pela proximidade dos picos acústicos entre diferentes m8 nos intervalos de massa declarados no relatório. O grupo A usa a menor massa comum admissível da lista; B permite massas diferentes. Os painéis superiores incluem a PLIS do LISA calculada com o ruído de referência de Robson, Cornish e Liu e seu ajuste de foreground galáctico de quatro anos. Os painéis inferiores comparam os picos acústicos às curvas PIS na frequência de cada sinal, usadas na classificação da campanha. As coordenadas, observáveis e distâncias espectrais estão na Tabela 1. A proximidade de curvas não constitui demonstração de indistinguibilidade estatística.",
+        "Os testes beta(h/2) permanecem nas tabelas; os benchmarks passam o limiar do LISA nos dois passos. "
+        + (
+            "Nesta edição diagnóstica, curvas tracejadas e bandas claras também mostram essa variação numérica."
+            if getattr(args, "diagnostics", False)
+            else "A versão principal omite esses traços de diagnóstico."
+        ),
+        "O contorno preto com halo branco nos mapas identifica xi_c=v(Tc)/Tc=1 onde os cálculos delimitam esse nível. Ele representa um corte numérico na temperatura crítica, separado da seleção em Tn.",
         "",
     ]
     captions = [
@@ -330,7 +395,7 @@ def _portuguese_guide(output, dataset, coverage, requests, benchmarks):
         "1. Compensação entre mecanismos: três envelopes no plano C versus (1 TeV/m6)^2, sem marcadores, rachuras ou linhas verticais. Menor m6 significa maior coeficiente do operador de dimensão seis.",
         "2–4. Para cada m8, mapas de Tn, alpha de traço, beta/Hn e v(Tc)/Tc. O contorno vinho representa SNR acústico do LISA igual a 10 para quatro anos. As escalas de cores são compartilhadas entre os três cenários.",
         "5. Faixas dos detectores e isolinhas de log10(alpha) e log10(beta/Hn), na organização inspirada na figura de referência. As cores dos detectores se sobrepõem e não definem classes exclusivas.",
-        "6. Dois trios de sinais próximos, um com m6 fixo e outro permitindo massas diferentes. Em cima estão os espectros totais; embaixo, os picos acústicos e o alcance PIS dos detectores. As coordenadas e a proximidade quantitativa estão nas tabelas.",
+        "6. Dois trios de sinais próximos nas faixas de massa declaradas, um com m6 fixo e outro permitindo massas diferentes. Em cima estão os espectros totais e a PLIS do LISA; embaixo, os picos acústicos e o alcance PIS dos detectores. As coordenadas e a proximidade quantitativa estão nas tabelas.",
         "",
         "## O que a interpolação significa",
         "",
@@ -350,7 +415,8 @@ def _portuguese_guide(output, dataset, coverage, requests, benchmarks):
         "## Semelhança dos espectros",
         "",
         "A seleção usa distância em log10 da frequência e amplitude do pico. A tabela também informa a diferença RMS dos espectros acústicos em dex na banda em que a referência supera 1% do pico. Isso quantifica proximidade de sinais previstos, não demonstra indistinguibilidade estatística.",
-        "A linha tracejada vinho nos mapas usa beta(h/2), que já estava salvo. As faixas claras nos espectros mostram a variação entre as duas avaliações. Esses diagnósticos não são intervalos de confiança. Os benchmarks passam o limiar do LISA nos dois passos; detector_step_sensitivity.csv lista os demais pontos cuja classificação muda, sem alterar o critério nominal da campanha.",
+        "Os testes beta(h/2) são sempre exportados. A opção --diagnostics acrescenta sua representação nas figuras; a versão principal conserva apenas as curvas físicas. Os benchmarks passam o limiar do LISA nos dois passos; detector_step_sensitivity.csv lista os demais pontos cuja classificação muda, sem alterar o critério nominal da campanha.",
+        "unresolved_selected_observables.csv discrimina as testemunhas selecionadas que ainda precisam de observáveis. coverage_diagnostics no relatório distingue ausência de coleta, falha de beta e falta de campos críticos. A coleta coverage_observables_v2 calcula pontos novos e verifica as falhas interiores em outro destino. As buscas antigas sem solução recuperadas por um bounce aceito ficam em recovered_search_non_detections.csv; divergências entre duas transições aceitas continuam sendo conflitos.",
         "",
     ]
     if benchmarks:

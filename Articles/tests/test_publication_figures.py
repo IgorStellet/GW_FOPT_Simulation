@@ -286,7 +286,10 @@ def test_spectrum_matching_does_not_claim_mass_variation_when_absent():
     assert {r["group"] for r in benchmarks} == {"A"}
 
 
-def test_render_requires_full_table_and_produces_six_figures_with_audit(tmp_path):
+@pytest.mark.parametrize("diagnostics", [False, True])
+def test_render_requires_full_table_and_produces_six_figures_with_audit(
+    tmp_path, diagnostics
+):
     old, new, full = snapshots(tmp_path)
     args = [
         "--exports",
@@ -296,6 +299,8 @@ def test_render_requires_full_table_and_produces_six_figures_with_audit(tmp_path
         "--output",
         str(tmp_path / "figures"),
     ]
+    if diagnostics:
+        args.append("--diagnostics")
     with pytest.raises(SystemExit) as error:
         main(args)
     assert error.value.code == 2
@@ -309,6 +314,8 @@ def test_render_requires_full_table_and_produces_six_figures_with_audit(tmp_path
     )
     assert report["complete_table"] and report["source_audit"]["synthetic_data"]
     assert not report["assumptions"]["statistical_degeneracy_established"]
+    assert report["assumptions"]["show_numerical_diagnostics"] is diagnostics
+    assert report["assumptions"]["upper_spectrum_reference"].startswith("LISA_PLIS")
     assert (output / "Table01_benchmarks.tex").exists()
     with pytest.raises(SystemExit):
         main([*args, "--full-table", str(full)])  # Não sobrescreve outra edição.

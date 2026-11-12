@@ -127,7 +127,7 @@ def campaign_folders(root):
     return result
 
 
-def load_dataset(boundaries, observables=(), *, years=4.0, read_details=True, allow_running=False, allow_unverified=False):
+def load_dataset(boundaries, observables=(), *, years=4.0, read_details=True, allow_running=False, allow_unverified=False, resolve_coverage_search_misses=False):
     campaigns, columns, state_log, candidates = [], {}, [], defaultdict(list)
     seen = set()
     current = provenance(Settings(), {})
@@ -174,14 +174,36 @@ def load_dataset(boundaries, observables=(), *, years=4.0, read_details=True, al
                 accepted = [tr for tr in trs if tr.get("nucleation_accepted") and tr.get("trantype") == 1]
                 primary = min(accepted, key=lambda tr: tr.get("transition_index", 0), default={})
                 rank = (int(gw_valid(primary)) if primary else 0, int(decision == "yes"), int(decision != "unknown"))
+                if resolve_coverage_search_misses:
+                    rank += (int(bool(primary) and finite(primary.get("Tc_GeV"))
+                                 and finite(primary.get("phi_low_Tc_GeV"))),
+                             int(point.get("calculation_mode") == "coverage_observables_v2"))
                 candidates[coordinate(point)].append((rank, point, primary, campaign, decision, reason, trs))
             campaigns.append(campaign)
-    rows, all_transitions, conflicts = [], [], []
+    rows, all_transitions, conflicts, recovered_searches = [], [], [], []
     for key, records in sorted(candidates.items(), key=lambda item: tuple(-x for x in item[0])):
         # Uma falha nova nunca apaga uma observação válida anterior.
         chosen = max(records, key=lambda record: record[0])
         _, point, primary, campaign, decision, reason, trs = chosen
         disagree = {record[4] for record in records} >= {"yes", "no"}
+        search_recovered = False
+        if disagree and resolve_coverage_search_misses:
+            # Uma solução de bounce aceita é uma testemunha positiva; a busca
+            # anterior que não encontrou fases/nucleação não prova ausência.
+            # Contradições entre DUAS transições aceitas continuam inconclusivas.
+            positive = [r for r in records if r[4] == "yes" and r[0][0]
+                        and r[1].get("calculation_mode") == "coverage_observables_v2"]
+            negatives = [r for r in records if r[4] == "no"]
+            if positive and all(not any(t.get("nucleation_accepted") for t in r[6])
+                                and r[1].get("status") in ("no_first_order_found", "no_nucleation_found")
+                                for r in negatives):
+                chosen = max(positive, key=lambda r: r[0])
+                _, point, primary, campaign, decision, reason, trs = chosen
+                disagree, search_recovered = False, True
+                recovered_searches.append({"m8_GeV": key[0], "m6_GeV": key[1], "C": key[2],
+                    "accepted_source": str(campaign["folder"]),
+                    "previous_search_sources": [str(r[3]["folder"]) for r in negatives],
+                    "reason": "accepted_bounce_recovered_after_previous_search_non_detection"})
         if disagree:
             conflicts.append({"m8_GeV": key[0], "m6_GeV": key[1], "C": key[2]})
         row = {**point, **primary, "point_status": point["status"], "source_folder": str(campaign["folder"]),
@@ -189,6 +211,7 @@ def load_dataset(boundaries, observables=(), *, years=4.0, read_details=True, al
                "boundary_decision": "unknown" if disagree else decision,
                "selection_reason": "conflicting_sources" if disagree else reason,
                "source_conflict": disagree, "primary_transition_policy": "first_accepted_in_thermal_history"}
+        row["coverage_recovered_search_miss"] = search_recovered
         row["gw_resolved"] = bool(primary and gw_valid(primary) and not disagree)
         if primary:
             Tn, low = primary.get("Tn_GeV"), primary.get("phi_low_GeV")
@@ -218,6 +241,7 @@ def load_dataset(boundaries, observables=(), *, years=4.0, read_details=True, al
         )
         row["pure_controls_available"] = polynomial is not None and measure is not None
     audit = {"sources": state_log, "unverified_sources": unverified, "conflicting_coordinates": conflicts,
+             "recovered_search_non_detections": recovered_searches,
              "synthetic_data": any(campaign["manifest"].get("synthetic_data", False) for campaign in campaigns),
              "points": len(rows), "resolved_GW_points": sum(row["gw_resolved"] for row in rows),
              "critical_ratios_available": sum(finite(row.get("vev_over_Tc")) for row in rows),

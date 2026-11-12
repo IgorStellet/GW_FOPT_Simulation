@@ -33,6 +33,7 @@ jobs:
           python -m Articles.figures.frontiers --help
           python -m Articles.figures.publication --help
           python -m Articles.figures.publication.supplement --help
+          python -m Articles.figures.publication.coverage --help
 
       - name: Check CHE setup with a Python that has no pip
         if: matrix.python-version == '3.11'
@@ -49,6 +50,9 @@ jobs:
           bash -n Articles/cluster/frontier_job.sh
           bash -n Articles/cluster/frontier_figures.slurm
           bash -n Articles/cluster/publication_figures.slurm
+          bash -n Articles/cluster/coverage_observables.slurm
+          bash -n Articles/cluster/coverage_v2.sh
+          bash -n Articles/cluster/publication_v2.slurm
 
       - name: Lint article code
         run: |

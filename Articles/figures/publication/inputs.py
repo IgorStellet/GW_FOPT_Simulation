@@ -15,11 +15,11 @@ from Articles.figures.data import (
     detector_metrics,
     finite,
     gw_valid,
+    load_dataset,
 )
 from Articles.figures.frontiers.data import (
     beta_valid,
     load_exports,
-    load_sources,
     read_table,
 )
 
@@ -301,7 +301,12 @@ def load_original(boundaries, observables=(), reach=(), *, years=4, threshold=10
 
     from Articles.figures.frontiers.render import reach_profiles
 
-    dataset = load_sources(boundaries, [*observables, *reach], years=years)
+    # A coleta v2 vem primeiro em empates. O modo explícito permite recuperar
+    # uma busca anterior sem solução, mantendo contradições físicas em aberto.
+    sources = [*reversed([*observables, *reach]), boundaries]
+    dataset = load_dataset(
+        sources[0], sources[1:], years=years, resolve_coverage_search_misses=True
+    )
     # O JSON dos bancos representa uma massa desligada como a string "inf".
     # CSVs restauram float(inf) em read_table; a leitura direta precisa oferecer
     # a mesma representação às comparações, tabelas e chaves de cores. Apenas

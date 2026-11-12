@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 
+import matplotlib.patheffects as path_effects
 import numpy as np
 from matplotlib.colors import LogNorm, Normalize
 from matplotlib.lines import Line2D
@@ -15,6 +16,7 @@ from Articles.figures.publication.analysis import (
     field_mesh,
     value_valid,
 )
+from Articles.figures.publication.detectors import lisa_plis_h2
 from Articles.figures.render import (
     CASE_COLORS,
     DETECTOR_COLORS,
@@ -191,9 +193,11 @@ def plot_atlases(dataset, window_rows, writer, args):
         rows = _case_rows(dataset, case, args)
         records = [row for row in window_rows if row["m8_GeV"] == case]
         lisa_tri, lisa_values = _mesh(rows, "LISA_rho_sw", args, reports, case)
-        half_tri, half_values = _mesh(
-            rows, "LISA_rho_sw_half_step", args, reports, case
-        )
+        half_tri, half_values = (None, None)
+        if getattr(args, "diagnostics", False):
+            half_tri, half_values = _mesh(
+                rows, "LISA_rho_sw_half_step", args, reports, case
+            )
         fig, axes = writer.plt.subplots(2, 2, figsize=(7.4, 6.3), layout="constrained")
         for panel, (ax, (field, label)) in enumerate(
             zip(axes.flat, LABELS.items(), strict=True)
@@ -217,14 +221,23 @@ def plot_atlases(dataset, window_rows, writer, args):
                 if field == "vev_over_Tc":
                     vertices = np.unique(tri.triangles[~tri.mask])
                     if np.min(values[vertices]) < 1 < np.max(values[vertices]):
-                        ax.tricontour(
+                        contour = ax.tricontour(
                             tri,
                             values,
                             levels=[1],
                             colors="black",
-                            linestyles=":",
-                            linewidths=0.8,
-                            zorder=5,
+                            linestyles="--",
+                            linewidths=1.15,
+                            zorder=7,
+                        )
+                        contour.set_path_effects(
+                            [
+                                path_effects.Stroke(linewidth=3, foreground="white"),
+                                path_effects.Normal(),
+                            ]
+                        )
+                        ax.clabel(
+                            contour, fmt={1: r"$\xi_c=1$"}, fontsize=8, inline=True
                         )
             else:
                 ax.text(
@@ -261,15 +274,25 @@ def plot_atlases(dataset, window_rows, writer, args):
             style_axis(ax, args)
             ax.set_title(f"({chr(97 + panel)}) " + label, loc="left", fontsize=11)
         fig.suptitle(rf"$m_8={mass_label(case)}\,\mathrm{{GeV}}$", fontsize=13)
-        fig.legend(
-            handles=[
-                Line2D(
-                    [],
-                    [],
-                    color="#9C2542",
-                    lw=1.35,
-                    label=rf"LISA: $\rho_{{\rm sw}}={args.snr_threshold:g}$, ${args.observation_years:g}$ yr",
-                ),
+        handles = [
+            Line2D(
+                [],
+                [],
+                color="#9C2542",
+                lw=1.35,
+                label=rf"LISA: $\rho_{{\rm sw}}={args.snr_threshold:g}$, ${args.observation_years:g}$ yr",
+            ),
+            Line2D(
+                [],
+                [],
+                color="black",
+                ls="--",
+                lw=1.15,
+                label=r"$\xi_c\equiv v(T_c)/T_c=1$",
+            ),
+        ]
+        if getattr(args, "diagnostics", False):
+            handles.append(
                 Line2D(
                     [],
                     [],
@@ -278,7 +301,9 @@ def plot_atlases(dataset, window_rows, writer, args):
                     ls="--",
                     label=r"LISA with $\beta(h/2)$",
                 ),
-            ],
+            )
+        fig.legend(
+            handles=handles,
             loc="outside lower center",
             ncol=2,
             frameon=False,
@@ -295,9 +320,14 @@ def plot_atlases(dataset, window_rows, writer, args):
             "interpolant and are not physical exclusions. The burgundy contour denotes the LISA acoustic-channel "
             f"SNR={args.snr_threshold:g} level for {args.observation_years:g} years, using the same PIS prescription "
             "as the scan. It is drawn only where resolved SNR values bracket the threshold. Grey curves are "
-            "boundary guides. The dashed burgundy contour repeats the LISA threshold using the saved beta(h/2), "
-            "a numerical-step diagnostic, not an experimental confidence interval. "
-            "The dotted black level v(Tc)/Tc=1 is numerical where bracketed; it is not substituted for the selection at Tn.",
+            "boundary guides. The black dashed contour with a white halo marks xi_c=v(Tc)/Tc=1, "
+            "evaluated from the critical phases only where the data bracket unity. "
+            "The selection continues to use the field ratio at Tn. "
+            + (
+                "A thin burgundy dashed contour shows the saved beta(h/2) diagnostic. "
+                if getattr(args, "diagnostics", False)
+                else "Numerical h/2 diagnostics are retained in the tables. "
+            ),
         )
     return reports
 
@@ -368,7 +398,11 @@ def plot_detector_contours(dataset, window_rows, writer, args):
             name: _mesh(rows, name + "_rho_sw", args, audits, case)
             for name in ("LISA", "DECIGO", "BBO")
         }
-        half_tri, half_values = _mesh(rows, "LISA_rho_sw_half_step", args, audits, case)
+        half_tri, half_values = (None, None)
+        if getattr(args, "diagnostics", False):
+            half_tri, half_values = _mesh(
+                rows, "LISA_rho_sw_half_step", args, audits, case
+            )
         for row_index, field in enumerate(("alpha_trace", "beta_over_H")):
             ax = axes[column, row_index]
             draw_envelope(ax, records, filled=True, color="0.7", linewidth=0.65)
@@ -450,9 +484,12 @@ def plot_detector_contours(dataset, window_rows, writer, args):
             ("BBO", "#F0D35B"),
         )
     ]
-    handles.append(
-        Line2D([], [], color="#9C2542", ls="--", lw=0.75, label=r"LISA: $\beta(h/2)$")
-    )
+    if getattr(args, "diagnostics", False):
+        handles.append(
+            Line2D(
+                [], [], color="#9C2542", ls="--", lw=0.75, label=r"LISA: $\beta(h/2)$"
+            )
+        )
     fig.legend(handles=handles, loc="outside lower center", ncol=4, frameon=False)
     writer.save(
         fig,
@@ -461,8 +498,12 @@ def plot_detector_contours(dataset, window_rows, writer, args):
         "to the three m8 scenarios. Dashed contours in the left/right columns show log10(alpha_trace) and "
         "log10(beta/Hn), respectively; labels are logarithms, not the untransformed observables. "
         "Left-panel insets magnify the high-mass reach bands. "
-        "Burgundy dashed lines repeat the LISA threshold with the saved beta(h/2), without changing the nominal shaded criterion. "
-        f"Instrumental shading denotes interpolated acoustic SNR>={args.snr_threshold:g} for "
+        + (
+            "Burgundy dashed lines show the saved beta(h/2) diagnostic. "
+            if getattr(args, "diagnostics", False)
+            else "The saved h/2 diagnostic is retained in the tables. "
+        )
+        + f"Instrumental shading denotes interpolated acoustic SNR>={args.snr_threshold:g} for "
         f"{args.observation_years:g} years using the historical Schmitz PIS fits, with BBO drawn first, "
         "then DECIGO, then LISA. These are overlapping reach regions, not mutually exclusive classes. "
         "Only supported local triangles are used and unknown evaluations remain holes. LISA crossings were "
@@ -519,27 +560,29 @@ def plot_matched_spectra(benchmarks, spectra_rows, cases, writer, args):
                 lw=1.65,
                 label=rf"{row['benchmark']}: $\rho_{{\rm sw}}={row['LISA_rho_sw']:.1f}$",
             )
-            top.fill_between(
-                frequency,
-                [
-                    min(r["omega_total_h2"], r["omega_total_h2_beta_half_step"])
-                    for r in samples
-                ],
-                [
-                    max(r["omega_total_h2"], r["omega_total_h2_beta_half_step"])
-                    for r in samples
-                ],
-                color=colors[row["m8_GeV"]],
-                alpha=0.12,
-                linewidth=0,
-            )
-            bottom.plot(
-                [row["f_sw_peak_Hz"], row["f_sw_peak_Hz_beta_half_step"]],
-                [row["omega_sw_peak_h2"], row["omega_sw_peak_h2_beta_half_step"]],
-                color=colors[row["m8_GeV"]],
-                lw=0.9,
-                alpha=0.7,
-            )
+            if getattr(args, "diagnostics", False):
+                top.fill_between(
+                    frequency,
+                    [
+                        min(r["omega_total_h2"], r["omega_total_h2_beta_half_step"])
+                        for r in samples
+                    ],
+                    [
+                        max(r["omega_total_h2"], r["omega_total_h2_beta_half_step"])
+                        for r in samples
+                    ],
+                    color=colors[row["m8_GeV"]],
+                    alpha=0.12,
+                    linewidth=0,
+                )
+            if getattr(args, "diagnostics", False):
+                bottom.plot(
+                    [row["f_sw_peak_Hz"], row["f_sw_peak_Hz_beta_half_step"]],
+                    [row["omega_sw_peak_h2"], row["omega_sw_peak_h2_beta_half_step"]],
+                    color=colors[row["m8_GeV"]],
+                    lw=0.9,
+                    alpha=0.7,
+                )
             bottom.scatter(
                 row["f_sw_peak_Hz"],
                 row["omega_sw_peak_h2"],
@@ -550,6 +593,20 @@ def plot_matched_spectra(benchmarks, spectra_rows, cases, writer, args):
                 lw=1.15,
                 zorder=5,
             )
+        lisa_frequency = np.geomspace(3e-5, 0.3, 600)
+        top.loglog(
+            lisa_frequency,
+            lisa_plis_h2(
+                lisa_frequency,
+                years=args.observation_years,
+                threshold=args.snr_threshold,
+            ),
+            color="0.2",
+            lw=1.25,
+            alpha=0.8,
+            label=rf"LISA PLIS, ${args.observation_years:g}$ yr",
+            zorder=2,
+        )
         top.set(xlabel=r"$f$ [Hz]", ylabel=r"$h^2\Omega_{\rm GW}(f)$", xlim=(3e-5, 0.3))
         peak_max = max(r["omega_sw_peak_h2"] for r in rows)
         top.set_ylim(peak_max * 1e-5, peak_max * 5)
@@ -602,12 +659,18 @@ def plot_matched_spectra(benchmarks, spectra_rows, cases, writer, args):
         "Fig06_matched_GW_signals",
         "Nearby predicted GW signals from different m8 scenarios. Group A compares the same m6; group B "
         "allows different m6. Benchmarks pass the LISA threshold with both saved beta(h) and beta(h/2). They are chosen by "
-        "minimizing distance in (log10 f_sw,peak, log10 h2Omega_sw,peak), without imposing a preferred "
-        "direction of parameter displacement. Upper panels show total reconstructed spectra using the "
-        "stored efficiencies. Lower panels place acoustic peaks against frequency-dependent acoustic "
+        "minimizing distance in (log10 f_sw,peak, log10 h2Omega_sw,peak) within the declared low-mass ranges. "
+        "No direction of parameter displacement is imposed. Upper panels show total reconstructed spectra using the "
+        "stored efficiencies and a LISA power-law-integrated sensitivity (PLIS) from the Robson-Cornish-Liu "
+        "reference noise, including its four-year Galactic foreground fit. This graphical reference does not "
+        "replace the campaign's acoustic PIS classification. Lower panels place acoustic peaks against frequency-dependent acoustic "
         f"PIS reach for SNR={args.snr_threshold:g} and {args.observation_years:g} years. "
         "PIS curves belong to this peak plane and are not pointwise noise curves for the upper spectra. "
-        "Faint bands and peak displacements span the two saved beta evaluations; they are step-sensitivity diagnostics, "
-        "not confidence intervals. Table 1 lists parameters, thermodynamics, both SNR values and spectral distances. Close curves demonstrate "
+        + (
+            "Faint bands and peak displacements show the saved numerical step comparison. "
+            if getattr(args, "diagnostics", False)
+            else "Numerical step comparisons remain available in the tables. "
+        )
+        + "Table 1 lists parameters, thermodynamics, both SNR values and spectral distances. Close curves demonstrate "
         "similar predicted signals, not statistical indistinguishability in an instrumental likelihood.",
     )
