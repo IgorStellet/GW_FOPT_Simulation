@@ -1,5 +1,5 @@
 #!/bin/bash -l
-#SBATCH --job-name=fopt-T2-edges
+#SBATCH --job-name=fopt-paper-edges
 #SBATCH --partition=milliways-ext
 #SBATCH --array=0-31%16
 #SBATCH --nodes=1

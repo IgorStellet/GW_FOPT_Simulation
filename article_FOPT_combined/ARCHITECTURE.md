@@ -35,7 +35,7 @@ boundaries   ──► observables  ──► figures + detectors
 | `figures.py` | Geometria local, auditoria, benchmarks e as seis figuras |
 | `__main__.py` | Comandos e opções públicas; ponto de entrada do usuário |
 | `__init__.py` | Identifica o pacote, sem executar uma campanha ao importar |
-| `tests/test_model.py` | Identidades do potencial e das autoenergias, modos e domínio |
+| `tests/test_model.py` | Matching em v, multiplicidades de W, Z e top, anéis e domínio |
 | `tests/test_physics.py` | Curvaturas/fases, stencil, aceitação e definições termodinâmicas |
 | `tests/test_thermal_history.py` | Suporte da fase simétrica, cruzamentos internos e falhas entre sondas |
 | `tests/test_pipeline.py` | Fronteiras, sharding, cache, retomada e timeout real |
@@ -235,21 +235,17 @@ Links e finalidades das funções desta edição, incluindo funções internas.
 | Função/método | Finalidade |
 |---|---|
 | [Parameters.__post_init__](model.py#L29) | Normaliza as coordenadas e valida o domínio físico dos parâmetros. |
-| [Potential.__init__](model.py#L54) | Inicializa os parâmetros, as dependências e os caches descritos pela classe. |
-| [Potential.domain_limit](model.py#L80) | Limite estrito /phi/<Lambda/sqrt(C); infinito em C=0. |
-| [Potential.tree](model.py#L84) | V0=-mu² phi²/2+lambda phi⁴/4+phi⁶/(8m6²)+phi⁸/(16m8⁴). |
-| [Potential.masses_squared](model.py#L89) | Curvaturas radiais/transversais e massas de W, Z, top, em GeV². |
-| [Potential.coleman_weinberg](model.py#L100) | Parte real MS-bar em Q=v; h(1), G(3), W(6), Z(3), top(-12). |
-| [Potential.counterterms](model.py#L116) | Contratermos finitos da prescrição de passo fixo documentada a T=0. |
-| [Potential.measure](model.py#L121) | Medida logarítmica com primeira/segunda derivadas subtraídas em v. |
-| [Potential.thermal](model.py#L133) | Jb/Jf do src por spline em m²/T²; conserva as massas não ressomadas. |
-| [Potential.scalar_self_energies](model.py#L153) | Pi_h e Pi_G: termos hard T², incluindo os vértices phi⁶ e phi⁸. |
-| [Potential.real_cubic](model.py#L163) | Re[(m²+i0)^(3/2)]; m²<0 tem parte real zero, sem usar /m²/. |
-| [Potential.scalar_rings](model.py#L167) | Anéis de Higgs e três Goldstones, com a subtração Arnold–Espinosa. |
-| [Potential.longitudinal_masses_squared](model.py#L182) | W_L e autovalores neutros Z_L/gamma_L da matriz térmica eletrofraca. |
-| [Potential.gauge_rings](model.py#L191) | Dois modos W_L, um Z_L e um gamma_L; modos transversais permanecem nus. |
-| [Potential.__call__](model.py#L202) | Soma física única; todas as derivadas do núcleo recebem esta mesma soma. |
-| [Potential.diagnostics](model.py#L214) | Registra normalização e condição necessária de vácuo eletrofraco a T=0. |
+| [Potential.__init__](model.py#L52) | Fixa o matching em v, os acoplamentos e o coeficiente de Coleman–Weinberg. |
+| [Potential.domain_limit](model.py#L66) | Limite estrito /phi/<Lambda/sqrt(C); infinito em C=0. |
+| [Potential.tree](model.py#L70) | V0=-mu² phi²/2+lambda phi⁴/4+phi⁶/(8m6²)+phi⁸/(16m8⁴). |
+| [Potential.masses_squared](model.py#L75) | Massas de W, Z e top, em GeV². |
+| [Potential.coleman_weinberg](model.py#L84) | Termo renormalizado de W, Z e top com contratermos analíticos em v. |
+| [Potential.measure](model.py#L93) | Medida logarítmica com primeira/segunda derivadas subtraídas em v. |
+| [Potential.thermal](model.py#L105) | Jb/Jf do src por spline em m²/T²; conserva as massas não ressomadas. |
+| [Potential.longitudinal_masses_squared](model.py#L125) | W_L e autovalores neutros Z_L/gamma_L da matriz térmica eletrofraca. |
+| [Potential.gauge_rings](model.py#L135) | Dois modos W_L, um Z_L e um gamma_L; modos transversais permanecem nus. |
+| [Potential.__call__](model.py#L145) | Soma física única; todas as derivadas do núcleo recebem esta mesma soma. |
+| [Potential.diagnostics](model.py#L155) | Registra normalização e condição necessária de vácuo eletrofraco a T=0. |
 
 ### observables.py
 
@@ -268,18 +264,17 @@ Links e finalidades das funções desta edição, incluindo funções internas.
 | [BoundedLog.write](physics.py#L54) | Função interna que mantém a operação local descrita no bloco de código. |
 | [derivatives_for](physics.py#L60) | Derivadas do potencial completo, incluindo a dependência térmica dos anéis. |
 | [build_history](physics.py#L85) | Rastreia fases e nucleação pelo pipeline do src, na janela declarada. |
-| [build_history.forbidden](physics.py#L77) | Exclui cópias negativas da fase radial e campos fora da janela de busca. |
 | [initial_phase_check](physics.py#L94) | Verifica a fase inicial antes de gastar tempo rastreando uma história inadequada. |
 | [pack_history](physics.py#L116) | Salva fases e transições leves para reutilizar as bordas na segunda etapa. |
 | [unpack_history](physics.py#L141) | Recupera a história exata de um ponto de borda, sem procurar Tn novamente. |
 | [nucleation_record](physics.py#L149) | Extrai ação, campos, Tc e força, sem calcular alpha ou derivadas de ações. |
 | [beta_record](physics.py#L193) | Escolhe um passo admissível e verifica estabilidade até convergir ou atingir o piso. |
 | [thermodynamic_record](physics.py#L263) | Enriquece uma transição aceita, preservando alpha mesmo se beta falhar. |
-| [classify](physics.py#L365) | Uma transição forte aceita seleciona o ponto; falha permanece unknown. |
-| [evaluate_once](physics.py#L377) | Uma tentativa física; todo erro é um registro explícito, nunca uma exclusão. |
-| [evaluate](physics.py#L475) | Até duas tentativas; refina fases mantendo potencial e prescrições numéricas. |
-| [evaluate.score](physics.py#L500) | Prioriza observáveis completos, decisão física resolvida e dados já disponíveis. |
-| [main](physics.py#L515) | Entrada privada do processo isolado; os comandos de usuário estão em __main__.py. |
+| [classify](physics.py#L350) | Uma transição forte aceita seleciona o ponto; falha permanece unknown. |
+| [evaluate_once](physics.py#L362) | Uma tentativa física; todo erro é um registro explícito, nunca uma exclusão. |
+| [evaluate](physics.py#L460) | Até duas tentativas; refina fases mantendo potencial e prescrições numéricas. |
+| [evaluate.score](physics.py#L485) | Prioriza observáveis completos, decisão física resolvida e dados já disponíveis. |
+| [main](physics.py#L500) | Entrada privada do processo isolado; os comandos de usuário estão em __main__.py. |
 
 ### storage.py
 
@@ -294,11 +289,11 @@ Links e finalidades das funções desta edição, incluindo funções internas.
 | [read_json](storage.py#L83) | Lê um produto JSON; erros de integridade permanecem visíveis ao usuário. |
 | [physics_identity](storage.py#L88) | Hash apenas do código físico, seus dados spline e versões numéricas. |
 | [initialize](storage.py#L111) | Cria uma campanha nova ou verifica compatibilidade integral de uma existente. |
-| [load_campaign](storage.py#L154) | Abre uma campanha; os leitores gráficos podem dispensar comparação com o código atual. |
-| [task_lock](storage.py#L166) | Lock de sistema operacional; é liberado em crash, sem apagar checkpoints. |
-| [point_path](storage.py#L196) | Caminho de um resultado; estágios não sobrescrevem os resultados uns dos outros. |
-| [save_point](storage.py#L201) | Preserva cada tentativa e publica o último resultado do estágio. |
-| [point_records](storage.py#L216) | Itera os resultados físicos mais recentes, sem executar cálculos. |
-| [write_csv](storage.py#L222) | Publica CSV UTF-8 com união de colunas; estruturas ficam como JSON em células. |
-| [export_tables](storage.py#L246) | Exporta pontos, todas as transições e fronteiras; dispensa refazer a física. |
-| [archive_campaign](storage.py#L272) | ZIP atômico dos dados publicados, sem locks de execução nem arquivos temporários. |
+| [load_campaign](storage.py#L157) | Abre uma campanha; os leitores gráficos podem dispensar comparação com o código atual. |
+| [task_lock](storage.py#L169) | Lock de sistema operacional; é liberado em crash, sem apagar checkpoints. |
+| [point_path](storage.py#L199) | Caminho de um resultado; estágios não sobrescrevem os resultados uns dos outros. |
+| [save_point](storage.py#L204) | Preserva cada tentativa e publica o último resultado do estágio. |
+| [point_records](storage.py#L219) | Itera os resultados físicos mais recentes, sem executar cálculos. |
+| [write_csv](storage.py#L225) | Publica CSV UTF-8 com união de colunas; estruturas ficam como JSON em células. |
+| [export_tables](storage.py#L249) | Exporta pontos, todas as transições e fronteiras; dispensa refazer a física. |
+| [archive_campaign](storage.py#L275) | ZIP atômico dos dados publicados, sem locks de execução nem arquivos temporários. |

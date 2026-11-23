@@ -131,7 +131,10 @@ def initialize(output, campaign):
         "fingerprint": fingerprint,
         "created_utc": timestamp(),
         "units": {"field": "GeV", "temperature": "GeV", "potential": "GeV^4", "frequency": "Hz"},
-        "approximation": "one-loop + AE rings; scalar hard self-energies T2; no T4/T6 flowers",
+        "approximation": (
+            "W, Z and top one-loop terms; analytic finite counterterms fixed at v; "
+            "Arnold-Espinosa longitudinal electroweak rings with SM Debye masses"
+        ),
         "alpha_for_GW": "signed_trace_anomaly",
         "GW_source": "sound_waves",
         "selection": "accepted first-order nucleation, |phi_low(Tn)|/Tn > threshold; V(v,0)<V(0,0)",

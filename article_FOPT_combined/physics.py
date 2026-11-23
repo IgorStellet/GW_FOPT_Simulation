@@ -260,7 +260,7 @@ def beta_record(calc, row, settings, lower, upper):
     return result
 
 
-def thermodynamic_record(row, phases, derivatives, model, settings):
+def thermodynamic_record(row, phases, derivatives, settings):
     """Enriquece uma transição aceita, preservando alpha mesmo se beta falhar.
 
     As diferenças são sempre falso menos verdadeiro. Alpha_trace usa
@@ -305,21 +305,6 @@ def thermodynamic_record(row, phases, derivatives, model, settings):
         )
     except Exception as error:
         issues.append(f"thermodynamics: {type(error).__name__}: {error}")
-    else:
-        scalar_self_energies = getattr(model, "scalar_self_energies", None)
-        masses_squared = getattr(model, "masses_squared", None)
-        if scalar_self_energies is not None and masses_squared is not None:
-            # Diagnóstico deste modelo. Alpha e beta dependem de Vtot e do
-            # bounce, mesmo para um potencial com outro setor escalar.
-            try:
-                ph, pg = scalar_self_energies(float(low[0]), Tn)
-                bare = masses_squared(float(low[0]))
-                result.update(
-                    screened_h_at_low_GeV2=float(bare["h"] + ph),
-                    screened_G_at_low_GeV2=float(bare["G"] + pg),
-                )
-            except (ArithmeticError, KeyError, TypeError, ValueError) as error:
-                result["scalar_diagnostic_error"] = f"{type(error).__name__}: {error}"
     try:
         lower = max(float(calc.high_phase.T[0]), float(calc.low_phase.T[0]))
         upper = min(
@@ -428,7 +413,7 @@ def evaluate_once(parameters, settings, mode="nucleation", cached=None):
                 ]
                 if mode == "observables":
                     rows = [
-                        thermodynamic_record(r, history["phases"], derivatives, model, settings)
+                        thermodynamic_record(r, history["phases"], derivatives, settings)
                         if r.get("nucleation_accepted")
                         else r
                         for r in rows

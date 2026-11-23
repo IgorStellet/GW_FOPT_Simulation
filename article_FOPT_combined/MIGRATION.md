@@ -59,22 +59,22 @@ correções gerais em src podem ser integradas futuramente em uma manutenção
 separada, com seus próprios testes. O fluxo novo já funciona com o núcleo da
 base indicada e registra o hash dos arquivos efetivamente utilizados.
 
-## Mudanças físicas em relação aos resultados anteriores
+## Potencial e coleta de produção
 
-1. Anéis de Higgs e três Goldstones com as contribuições hard T² dos operadores.
-2. Ressoma longitudinal de gauge com W, Z e photon térmico, incluindo mistura
-   neutra, no lugar de três modos efetivos.
-3. Seleção explícita do vácuo eletrofraco abaixo da origem a temperatura zero.
-4. Pontos internos com observáveis completos, separados da busca de bordas.
-5. Stencil unilateral de ordem dois quando o central cruza a coexistência.
-   Intervalos ainda mais estreitos permitem reduzir o passo com verificação
-   explícita de estabilidade; os valores usados acompanham cada ponto.
-6. A apresentação instrumental usa explicitamente o canal acústico e seu PIS;
-   espectros totais e suas hipóteses adicionais não são confundidos com esse SNR.
+| Edição | Termos diretos de um loop | Anéis |
+|---|---|---|
+| Primeira campanha em `Articles` | Higgs, três Goldstones, W, Z e top | Três modos efetivos de gauge |
+| Edição T² | Higgs, três Goldstones, W, Z e top | Escalares com autoenergias hard T² e gauge longitudinal com mistura neutra |
+| Produção do artigo | W, Z e top, com contratermos analíticos em v | Gauge longitudinal com mistura neutra |
 
-A regularização de Goldstone a T=0 permanece uma prescrição de passo fixo,
-com seus limites documentados em PHYSICS.md. Os resultados anteriores não
-são importados: pertencem a outra definição do potencial/ressoma.
+A produção conserva os operadores polinomiais e a medida renormalizada.
+O manifesto identifica a prescrição e permite retomar checkpoints da mesma
+campanha. A mudança nos termos de loop exige recalcular as fronteiras.
+
+A busca revista avalia a ação durante a coexistência das fases. Os
+observáveis são coletados entre as bordas e usam beta de ordem dois,
+com ajuste de passo em intervalos estreitos. A classificação instrumental
+usa o canal acústico e sua sensibilidade integrada de pico.
 
 ## Organização da entrega
 

@@ -86,8 +86,7 @@ def test_signed_thermodynamic_definitions_and_partial_beta_failure(monkeypatch):
         "nucleation_accepted": True,
         "selected_strong": True,
     }
-    model = Potential(Parameters())
-    result = physics.thermodynamic_record(row, {}, derivative, model, Numerics())
+    result = physics.thermodynamic_record(row, {}, derivative, Numerics())
     assert result["delta_rho_GeV4"] == pytest.approx(21)
     assert result["delta_theta_GeV4"] == pytest.approx(6)
     assert result["alpha_energy"] == pytest.approx(21 / result["rho_rad_GeV4"])
@@ -112,10 +111,10 @@ def test_unfavoured_zero_temperature_vacuum_skips_expensive_history(monkeypatch)
     assert result["summary"]["decision"] == "no"
 
 
-def test_initial_phase_check_exposes_large_field_high_T_minimum():
+def test_initial_phase_check_distinguishes_symmetric_and_broken_start():
     model = Potential(Parameters(math.inf, 400, 0))
     assert physics.initial_phase_check(model, Numerics(T_max=200))["symmetric_on_grid"]
-    assert not physics.initial_phase_check(model, Numerics(T_max=250))["symmetric_on_grid"]
+    assert not physics.initial_phase_check(model, Numerics(T_max=20))["symmetric_on_grid"]
 
 
 def test_bad_initial_phase_is_unknown_and_skips_history(monkeypatch):
@@ -124,7 +123,7 @@ def test_bad_initial_phase_is_unknown_and_skips_history(monkeypatch):
         "build_history",
         lambda *args: pytest.fail("A fase inicial deveria encerrar a avaliação."),
     )
-    result = physics.evaluate(Parameters(math.inf, 400, 0), Numerics(T_max=250))
+    result = physics.evaluate(Parameters(math.inf, 400, 0), Numerics(T_max=20))
     assert result["summary"]["decision"] == "unknown"
     assert result["summary"]["reason"] == "high_temperature_phase_not_symmetric"
 

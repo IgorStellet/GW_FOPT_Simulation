@@ -39,26 +39,21 @@ Em **cada novo login**, defina:
 cd "$HOME/projects/GW_FOPT_combined_T2"
 module load python/3.11.7-gcc-12.2.0
 export FOPT_PYTHON="$PWD/article_FOPT_combined/.venv/bin/python"
-export FOPT_RESULTS_ROOT="$HOME/fopt-combined-T2-v2"
+export FOPT_RESULTS_ROOT="$HOME/fopt-combined-paper-v1"
 "$FOPT_PYTHON" -c 'import sys,numpy,scipy; print(sys.executable); print("numpy",numpy.__version__,"scipy",scipy.__version__)'
 ```
 
 `FOPT_RESULTS_ROOT` precisa ser uma pasta persistente autorizada para sua
 conta. O exemplo usa seu home, onde a quota precisa comportar os dados.
-A revisão da busca térmica exige um manifesto novo para recalcular.
-Reserve `fopt-combined-T2-v2` para esse cálculo e use `fopt-combined-T2-v1`
-como fonte de dados para rascunhos gráficos, caso queira comparar:
-
-```bash
-"$FOPT_PYTHON" -m article_FOPT_combined figures --output "$HOME/fopt-combined-T2-v1/campaign" --destination "$HOME/fopt-combined-T2-v1/figures-replot" --draft
-```
+Reserve `fopt-combined-paper-v1` para o novo potencial com loops de W, Z e
+top. O manifesto vincula cada conjunto de pontos ao código físico da
+campanha. Use o mesmo `FOPT_RESULTS_ROOT` nas retomadas desta produção.
 
 ## 2. Confira partições e limites
 
 ```bash
 sinfo -s
 sinfo -o "%P %a %l %D %C"
-scontrol show partition debug
 scontrol show partition milliways-ext
 sacctmgr show assoc where user="$USER" format=Cluster,Account,User,Partition,QOS,DefaultQOS
 ```
@@ -67,9 +62,9 @@ sacctmgr show assoc where user="$USER" format=Cluster,Account,User,Partition,QOS
 limites de cada partição; a associação da conta pode impor limites adicionais.
 Uma fila visível não implica autorização para toda conta/QOS.
 
-Os templates usam `debug` para o piloto e figuras (2 h) e `milliways-ext`
-para coleta (14 h), nomes usados no trabalho anterior. Confirme a autorização
-e os limites atuais. Para trocar, acrescente, por exemplo,
+Todos os templates usam `milliways-ext`. Pilotos e figuras pedem 2 h.
+Os arrays de fronteiras e observáveis de produção pedem 14 h.
+Para trocar a partição em uma submissão, acrescente
 `--partition=NOME` ao comando `submit.sh`; isso sobrescreve a diretiva do template.
 
 Partição define quais recursos/fila atenderão o job. `--cpus-per-task`
@@ -87,7 +82,7 @@ um ponto que não terá tempo de publicar seu checkpoint.
 
 ```bash
 "$FOPT_PYTHON" -m article_FOPT_combined init --preset pilot --output "$FOPT_RESULTS_ROOT/pilot"
-bash article_FOPT_combined/cluster/submit.sh pilot
+FOPT_PILOT_STAGE=point bash article_FOPT_combined/cluster/submit.sh pilot
 ```
 
 O array calcula um ponto completo por m8, incluindo m8=400. São testes de
@@ -272,9 +267,9 @@ ls -lh "$FOPT_RESULTS_ROOT/figures.zip"
 No **PowerShell do seu computador**, usando os dados de acesso já empregados:
 
 ```powershell
-scp -P 13900 ftovar@152.84.248.250:/home/ftovar/fopt-combined-T2-v2/figures.zip "$env:USERPROFILE\Downloads\FOPT-T2-figures-v2.zip"
-Expand-Archive -LiteralPath "$env:USERPROFILE\Downloads\FOPT-T2-figures-v2.zip" -DestinationPath "$env:USERPROFILE\Downloads\FOPT-T2-figures-v2" -Force
-explorer "$env:USERPROFILE\Downloads\FOPT-T2-figures-v2"
+scp -P 13900 ftovar@152.84.248.250:/home/ftovar/fopt-combined-paper-v1/figures.zip "$env:USERPROFILE\Downloads\FOPT-paper-figures-v1.zip"
+Expand-Archive -LiteralPath "$env:USERPROFILE\Downloads\FOPT-paper-figures-v1.zip" -DestinationPath "$env:USERPROFILE\Downloads\FOPT-paper-figures-v1" -Force
+explorer "$env:USERPROFILE\Downloads\FOPT-paper-figures-v1"
 ```
 
 Para exportar também todos os dados, execute no CHE em um job alocado:
@@ -286,7 +281,7 @@ Para exportar também todos os dados, execute no CHE em um job alocado:
 Com o ZIP pronto, baixe no PowerShell:
 
 ```powershell
-scp -P 13900 ftovar@152.84.248.250:/home/ftovar/fopt-combined-T2-v2/campaign-complete.zip "$env:USERPROFILE\Downloads\FOPT-T2-data-v2.zip"
+scp -P 13900 ftovar@152.84.248.250:/home/ftovar/fopt-combined-paper-v1/campaign-complete.zip "$env:USERPROFILE\Downloads\FOPT-paper-data-v1.zip"
 ```
 
 Se escolher outro `FOPT_RESULTS_ROOT`, troque o caminho remoto de scp pelo

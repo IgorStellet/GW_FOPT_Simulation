@@ -1,5 +1,5 @@
 #!/bin/bash -l
-#SBATCH --job-name=fopt-T2-thermo
+#SBATCH --job-name=fopt-paper-thermo
 #SBATCH --partition=milliways-ext
 #SBATCH --array=0-15%8
 #SBATCH --nodes=1

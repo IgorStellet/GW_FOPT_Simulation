@@ -4,11 +4,12 @@ Este diretório contém a campanha atual do artigo. O fluxo é único:
 **potencial → fronteiras → observáveis no interior → seis figuras → exportação**.
 Execute os comandos a partir da raiz de `GW_FOPT_Simulation`.
 
-O potencial soma os operadores `phi^6/(8 m6^2)` e `phi^8/(16 m8^4)`, a medida
-logarítmica de parâmetro `C`, Coleman–Weinberg e correções térmicas. A ressoma
-Arnold–Espinosa inclui Higgs, três Goldstones e os modos longitudinais
-eletrofracos. As autoenergias escalares conservam os termos **T²**. `Jb` e `Jf`
-são calculadas por **spline em m²/T²** pelo núcleo do repositório.
+O potencial soma os operadores `phi^6/(8 m6^2)` e `phi^8/(16 m8^4)` e a medida
+logarítmica de parâmetro `C`. $W,Z,t$ entram no Coleman–Weinberg, com
+contratermos analíticos em $v$, e na correção térmica por spline em `m²/T²`.
+A ressoma Arnold–Espinosa inclui os modos longitudinais de gauge, com mistura
+neutra e massas de Debye do plasma do SM. O campo radial do Higgs continua
+sendo a coordenada do bounce.
 
 ## Leia conforme sua necessidade
 
@@ -17,7 +18,7 @@ são calculadas por **spline em m²/T²** pelo núcleo do repositório.
 | [PHYSICS.md](PHYSICS.md) | Equações, aproximações, critérios e limites físicos |
 | [CLUSTER.md](CLUSTER.md) | Instalação no CHE, piloto, submissões, retomada e download |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Responsabilidade de cada arquivo e de cada função |
-| [MIGRATION.md](MIGRATION.md) | Comparação das branches e o que mudou nesta campanha |
+| [MIGRATION.md](MIGRATION.md) | Histórico das branches e comparação dos potenciais |
 | [VALIDATION.md](VALIDATION.md) | Testes realmente executados e pilotos físicos |
 
 ## O que ajustar
@@ -141,12 +142,12 @@ tabela de benchmarks e relatórios de suporte acompanham as figuras.
 
 ## Cobertura e refinamento
 
-O potencial T², as massas e os anéis continuam definidos em [model.py](model.py).
+A prescrição física da produção está em [model.py](model.py).
 A busca de nucleação parte da origem enquanto ela é um mínimo local e sonda
 `S3/T` na coexistência das fases. Ela também procura o cruzamento no interior
-quando a ação nas duas pontas está acima do limiar. Essa correção altera os
-resultados da busca. Para recalcular, inicialize uma pasta de campanha nova.
-`figures --draft` consegue reler os checkpoints anteriores para diagnóstico.
+quando a ação nas duas pontas está acima do limiar. A produção usa um
+manifesto novo para o potencial com loops de $W,Z,t$. Campanhas anteriores
+podem ser lidas por `figures --draft` para comparação gráfica.
 
 Os pontos internos são `C_low+j*(C_high-C_low)/(N+1)`, `j=1..N`, entre
 testemunhas com transição forte aceita. Cada triângulo dos mapas precisa de

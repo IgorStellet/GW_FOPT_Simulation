@@ -1,9 +1,8 @@
-"""Potencial físico único desta campanha, em GeV e GeV⁴.
+"""Potencial do artigo em GeV e GeV⁴.
 
-Arnold–Espinosa: massas originais em CW e Jb; massas blindadas só nos anéis.
-As autoenergias escalares conservam os termos T² de um loop hard com vértices
-de dimensão seis/oito. Flores T⁴/T⁶ ficam fora da aproximação escolhida.
-As equações, a prescrição infravermelha a T=0 e as referências estão em PHYSICS.md.
+O potencial polinomial do Higgs e a medida funcional definem o setor escalar.
+As correções diretas de um loop usam W, Z e top. A ressoma Arnold–Espinosa
+usa os modos longitudinais de gauge com a blindagem do plasma eletrofraco.
 """
 
 from __future__ import annotations
@@ -12,10 +11,11 @@ import math
 from dataclasses import dataclass
 
 import numpy as np
+from scipy.special import xlogy
 
-from .core import finiteT, generic, helpers
+from .core import finiteT, generic
 
-MODEL_VERSION = "combined_AE_scalar_T2_full_gauge_v1"
+MODEL_VERSION = "combined_WZt_AE_gauge_v1"
 
 
 @dataclass(frozen=True)
@@ -41,15 +41,13 @@ class Parameters:
 class Potential:
     """V(phi,T), vetorizado, com todos os termos acessíveis separadamente.
 
-    Lambda, massas do SM, escala de CW e prescrição de contratermos são fixos.
-    Seu registro explícito impede misturar os novos resultados com campanhas
-    que utilizavam apenas a ressoma efetiva de gauge da tese.
+    Lambda e as entradas eletrofracas são fixas. O Coleman–Weinberg inclui
+    os contratermos finitos que preservam o mínimo e a curvatura em v.
     """
 
     v = 246.0
     mh, mw, mz, mt = 125.0, 80.36, 91.19, 173.1
     Lambda = 1000.0
-    counterterm_step = 0.246
 
     def __init__(self, parameters: Parameters):
         self.parameters = parameters
@@ -61,20 +59,8 @@ class Potential:
             self.mh**2 / (2 * self.v**2) - 1.5 * self.a6 * self.v**2 - 1.5 * self.a8 * self.v**4
         )
         self.mu2 = self.lam * self.v**2 + 0.75 * self.a6 * self.v**4 + 0.5 * self.a8 * self.v**6
+        self._cw_amplitude = (6 * self.mw**4 + 3 * self.mz**4 - 12 * self.mt**4) / (64 * np.pi**2)
         self.Vtot = generic.scalar_to_vector_potential_1d(self)
-        raw = generic.scalar_to_vector_potential_1d(lambda phi, T: self.coleman_weinberg(phi))
-        first = float(
-            np.asarray(
-                helpers.gradientFunction(raw, self.counterterm_step, 1, order=2)([self.v], 0)
-            ).ravel()[0]
-        )
-        second = float(
-            np.asarray(
-                helpers.hessianFunction(raw, self.counterterm_step, 1, order=2)([self.v], 0)
-            ).ravel()[0]
-        )
-        self.delta_lambda = (first / self.v - second) / (2 * self.v**2)
-        self.delta_mu2 = first / self.v + self.delta_lambda * self.v**2
 
     @property
     def domain_limit(self):
@@ -87,36 +73,22 @@ class Potential:
         return -self.mu2 * s / 2 + self.lam * s**2 / 4 + self.a6 * s**3 / 8 + self.a8 * s**4 / 16
 
     def masses_squared(self, phi):
-        """Curvaturas radiais/transversais e massas de W, Z, top, em GeV²."""
+        """Massas de W, Z e top em GeV², para o campo de fundo phi."""
         s = np.asarray(phi, dtype=float) ** 2
         return {
-            "h": -self.mu2 + 3 * self.lam * s + 15 * self.a6 * s**2 / 4 + 7 * self.a8 * s**3 / 2,
-            "G": -self.mu2 + self.lam * s + 3 * self.a6 * s**2 / 4 + self.a8 * s**3 / 2,
             "W": self.g**2 * s / 4,
             "Z": (self.g**2 + self.gp**2) * s / 4,
             "top": self.yt**2 * s / 2,
         }
 
     def coleman_weinberg(self, phi):
-        """Parte real MS-bar em Q=v; h(1), G(3), W(6), Z(3), top(-12)."""
-        masses = self.masses_squared(phi)
-        result = np.zeros_like(np.asarray(phi, dtype=float))
-        for name, dof, constant in (
-            ("h", 1, 1.5),
-            ("G", 3, 1.5),
-            ("W", 6, 5 / 6),
-            ("Z", 3, 5 / 6),
-            ("top", -12, 1.5),
-        ):
-            m2 = masses[name]
-            logarithm = np.log(np.maximum(np.abs(m2), 1e-300) / self.v**2)
-            result += dof * m2**2 * (logarithm - constant) / (64 * np.pi**2)
-        return result
+        """CW renormalizado de W(6), Z(3), top(-12), com V'(v)=V''(v)=0.
 
-    def counterterms(self, phi):
-        """Contratermos finitos da prescrição de passo fixo documentada a T=0."""
-        s = np.asarray(phi, dtype=float) ** 2
-        return -self.delta_mu2 * s / 2 + self.delta_lambda * s**2 / 4
+        Como as massas ao quadrado são proporcionais a phi², a subtração é
+        analítica. xlogy implementa o limite s² log(s) = 0 em s = 0.
+        """
+        s = (np.asarray(phi, dtype=float) / self.v) ** 2
+        return self._cw_amplitude * (xlogy(s**2, s) - 1.5 * s**2 + 2 * s)
 
     def measure(self, phi):
         """Medida logarítmica com primeira/segunda derivadas subtraídas em v."""
@@ -143,41 +115,12 @@ class Potential:
             tp = T[positive]
             masses = self.masses_squared(x[positive])
             total = sum(
-                n * finiteT.Jb(masses[k] / tp**2, approx="spline")
-                for k, n in (("h", 1), ("G", 3), ("W", 6), ("Z", 3))
+                n * finiteT.Jb(masses[k] / tp**2, approx="spline") for k, n in (("W", 6), ("Z", 3))
             )
+            # O Jf do núcleo já inclui o sinal fermiônico.
             total += 12 * finiteT.Jf(masses["top"] / tp**2, approx="spline")
             result[positive] = tp**4 * total / (2 * np.pi**2)
         return result
-
-    def scalar_self_energies(self, phi, temperature):
-        """Pi_h e Pi_G: termos hard T², incluindo os vértices phi⁶ e phi⁸."""
-        s, T2 = np.asarray(phi, dtype=float) ** 2, np.asarray(temperature, dtype=float) ** 2
-        common = (3 * self.g**2 + self.gp**2) / 16 + self.yt**2 / 4 + self.lam / 2
-        return (
-            T2 * (common + 3 * self.a6 * s + 25 * self.a8 * s**2 / 4),
-            T2 * (common + self.a6 * s + 5 * self.a8 * s**2 / 4),
-        )
-
-    @staticmethod
-    def real_cubic(mass_squared):
-        """Re[(m²+i0)^(3/2)]; m²<0 tem parte real zero, sem usar |m²|."""
-        return np.maximum(np.asarray(mass_squared, dtype=float), 0) ** 1.5
-
-    def scalar_rings(self, phi, temperature):
-        """Anéis de Higgs e três Goldstones, com a subtração Arnold–Espinosa."""
-        masses = self.masses_squared(phi)
-        ph, pg = self.scalar_self_energies(phi, temperature)
-        cubic = self.real_cubic
-        return (
-            -np.asarray(temperature)
-            / (12 * np.pi)
-            * (
-                cubic(masses["h"] + ph)
-                - cubic(masses["h"])
-                + 3 * (cubic(masses["G"] + pg) - cubic(masses["G"]))
-            )
-        )
 
     def longitudinal_masses_squared(self, phi, temperature):
         """W_L e autovalores neutros Z_L/gamma_L da matriz térmica eletrofraca."""
@@ -186,17 +129,17 @@ class Potential:
         d = self.gp**2 * s / 4 + 11 * self.gp**2 * T2 / 6
         off = -self.g * self.gp * s / 4
         gap = np.sqrt((a - d) ** 2 + 4 * off**2)
-        return a, (a + d + gap) / 2, (a + d - gap) / 2
+        # O menor autovalor pode ficar ligeiramente negativo por arredondamento.
+        return a, (a + d + gap) / 2, np.maximum((a + d - gap) / 2, 0)
 
     def gauge_rings(self, phi, temperature):
         """Dois modos W_L, um Z_L e um gamma_L; modos transversais permanecem nus."""
         masses = self.masses_squared(phi)
         w, z, photon = self.longitudinal_masses_squared(phi, temperature)
-        cubic = self.real_cubic
         return (
             -np.asarray(temperature)
             / (12 * np.pi)
-            * (2 * (cubic(w) - cubic(masses["W"])) + cubic(z) - cubic(masses["Z"]) + cubic(photon))
+            * (2 * (w**1.5 - masses["W"] ** 1.5) + z**1.5 - masses["Z"] ** 1.5 + photon**1.5)
         )
 
     def __call__(self, phi, temperature):
@@ -204,10 +147,8 @@ class Potential:
         return (
             self.tree(phi)
             + self.coleman_weinberg(phi)
-            + self.counterterms(phi)
             + self.measure(phi)
             + self.thermal(phi, temperature)
-            + self.scalar_rings(phi, temperature)
             + self.gauge_rings(phi, temperature)
         )
 
@@ -222,10 +163,7 @@ class Potential:
             "model_version": MODEL_VERSION,
             "lambda_tree": self.lam,
             "mu2_tree_GeV2": self.mu2,
-            "delta_lambda": self.delta_lambda,
-            "delta_mu2_GeV2": self.delta_mu2,
             "Vv_minus_V0_GeV4": delta,
             "ew_below_origin": delta < 0,
-            "counterterm_step_GeV": self.counterterm_step,
             "log_domain_limit_GeV": self.domain_limit,
         }

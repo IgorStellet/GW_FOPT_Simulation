@@ -1,6 +1,6 @@
 #!/bin/bash -l
-#SBATCH --job-name=fopt-T2-figures
-#SBATCH --partition=debug
+#SBATCH --job-name=fopt-paper-figures
+#SBATCH --partition=milliways-ext
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
