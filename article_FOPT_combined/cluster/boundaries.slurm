@@ -13,5 +13,5 @@
 set -euo pipefail
 source "${SLURM_SUBMIT_DIR:?}/article_FOPT_combined/cluster/environment.sh"
 "$python_executable" -m article_FOPT_combined boundaries --output "$FOPT_RESULTS_ROOT/campaign" \
-    --shard-index "${SLURM_ARRAY_TASK_ID:?}" --shard-count 32 --timeout 300 \
+    --shard-index "${SLURM_ARRAY_TASK_ID:?}" --shard-count 32 --timeout "${FOPT_BOUNDARY_TIMEOUT:-300}" \
     --wall-seconds "${FOPT_WALL_SECONDS:-48600}" --scratch "$local_work" "${retry_arguments[@]}"

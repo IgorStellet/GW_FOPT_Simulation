@@ -1,16 +1,15 @@
 """Seis figuras principais, atlas suplementar e auditoria da interpolação.
 
-Uma célula do mapa usa quatro pontos vizinhos calculados na grade (m6,u).
-Se um vértice está pendente ou falhou, a célula não é colorida. Não há uma
-triangulação global capaz de atravessar regiões não nucleadas ou preencher
-um resultado ausente. A figura final exige auditoria; --draft permite inspeção.
+Os mapas usam triângulos dentro das células vizinhas da grade (m6,u).
+Os vértices são dados calculados. Pontos adicionais refinam as arestas das
+células, e as amostras de validação ficam reservadas à auditoria.
 """
 
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from itertools import pairwise
+from itertools import combinations, pairwise, product
 from pathlib import Path
 
 import numpy as np
@@ -19,8 +18,9 @@ from scipy.spatial import cKDTree
 
 from . import core, detectors
 from .boundaries import column_path
+from .model import Parameters
 from .observables import plan
-from .storage import atomic_json, load_campaign, point_records, read_json, write_csv
+from .storage import atomic_json, load_campaign, point_id, point_records, read_json, write_csv
 
 COLORS = ("#0072B2", "#D55E00", "#009E73", "#CC79A7")
 DETECTOR_COLORS = {"LISA": "#D95459", "DECIGO": "#EDAB53", "BBO": "#F4DA69"}
@@ -67,7 +67,9 @@ def flatten_records(output, *, years):
         if (
             valid_value(row, "alpha_trace")
             and valid_value(row, "beta_over_H")
-            and number(row.get("f_sw_peak_Hz"))
+            and all(
+                (number(row.get(field)) or 0) > 0 for field in ("f_sw_peak_Hz", "omega_sw_peak_h2")
+            )
         ):
             for detector in detectors.PIS:
                 row[f"{detector}_rho_sw"] = detectors.acoustic_snr(row, detector, years=years)
@@ -78,7 +80,7 @@ def flatten_records(output, *, years):
 
 @dataclass
 class Surface:
-    """Triângulos locais de células completas e valores transformados (log ou linear)."""
+    """Triângulos com suporte local e valores transformados (log ou linear)."""
 
     x: np.ndarray
     y: np.ndarray
@@ -94,24 +96,75 @@ class Surface:
         return mtri.Triangulation(self.x, self.y, self.triangles) if len(self.triangles) else None
 
 
-def build_surface(planned, records, case, field):
-    """Interpola somente entre quatro vizinhos válidos do plano, sem pontos validation."""
-    logarithmic = field in ("alpha_trace", "beta_over_H") or field.endswith("_rho_sw")
-    grid = [
-        p
-        for p in planned["points"]
-        if p["kind"] == "grid" and p["m8_GeV"] == case and math.isfinite(p["m6_GeV"])
+def case_samples(planned, records, case, *, include_validation=False):
+    """Separa os nós da grade e os pontos extras dentro de colunas amostradas."""
+    grid = [p for p in planned["points"] if p["kind"] == "grid" and p["m8_GeV"] == case]
+    reserved = {
+        p["point_id"] for p in planned["points"] if p["kind"] == "grid" or not include_validation
+    }
+    limits = {}
+    for p in grid:
+        mass, C = p["m6_GeV"], p["C"]
+        low, high = limits.get(mass, (C, C))
+        limits[mass] = min(low, C), max(high, C)
+    extra = [
+        row
+        for identifier, row in records.items()
+        if identifier not in reserved
+        and row.get("m8_GeV") == case
+        and row.get("m6_GeV") in limits
+        and limits[row["m6_GeV"]][0] < row["C"] < limits[row["m6_GeV"]][1]
     ]
+    return grid, extra
+
+
+def supported_cell(corners, extra, x, y, valid):
+    """Escolhe a diagonal com mais área sustentada por amostras válidas."""
+    if len(corners) < 3:
+        return []
+    if len(corners) == 3:
+        options = ((tuple(corners),),)
+    else:
+        a, b, c, d = corners
+        options = (((a, b, c), (a, c, d)), ((a, b, d), (b, c, d)))
+
+    def supported(triangles):
+        out, area = [], 0.0
+        for triangle in triangles:
+            a, b, c = triangle
+            # Cada triângulo de duas colunas tem uma aresta vertical. Cortes
+            # adicionais subdividem essa aresta sem passar pela célula vizinha.
+            if x[a] != x[b]:
+                a, b, c = (b, c, a) if x[b] == x[c] else (c, a, b)
+            bottom, top = sorted((a, b), key=y.__getitem__)
+            chain = [
+                bottom,
+                *(i for i in extra.get(x[a], ()) if y[bottom] < y[i] < y[top]),
+                top,
+            ]
+            for p, q in pairwise(chain):
+                if not all(valid[i] for i in (p, q, c)) or y[p] == y[q]:
+                    continue
+                area += (y[q] - y[p]) * abs(x[c] - x[p])
+                out.append((p, c, q) if x[p] < x[c] else (p, q, c))
+        return area, out
+
+    return max(map(supported, options), key=lambda option: option[0])[1]
+
+
+def build_surface(planned, records, case, field, *, include_validation=False):
+    """Usa os triângulos válidos de cada célula, incluindo refinamentos locais."""
+    logarithmic = field in ("alpha_trace", "beta_over_H") or field.endswith("_rho_sw")
+    grid, additional = case_samples(planned, records, case, include_validation=include_validation)
+    grid = [p for p in grid if math.isfinite(p["m6_GeV"])]
     masses = sorted(
         m for m in planned.get("observable_masses", {p["m6_GeV"] for p in grid}) if math.isfinite(m)
     )
     fractions = sorted({p["fraction"] for p in grid})
     nodes, x, y, values, validity = {}, [], [], [], []
-    for point in grid:
-        key = point["m6_GeV"], point["fraction"]
-        if key in nodes:
-            continue
-        nodes[key] = len(x)
+
+    def add_node(point):
+        index = len(x)
         x.append(point["m6_GeV"])
         y.append(point["C"])
         row = records.get(point["point_id"], {})
@@ -119,19 +172,25 @@ def build_surface(planned, records, case, field):
         value = row[field] if valid else 1.0
         values.append(math.log10(value) if logarithmic else value)
         validity.append(valid)
+        return index
+
+    for point in grid:
+        key = point["m6_GeV"], point["fraction"]
+        if key not in nodes:
+            nodes[key] = add_node(point)
+    extra = {}
+    for point in sorted(additional, key=lambda r: r["C"]):
+        if math.isfinite(point["m6_GeV"]):
+            extra.setdefault(point["m6_GeV"], []).append(add_node(point))
     triangles, omitted = [], 0
     for left, right in pairwise(masses):
         for bottom, top in pairwise(fractions):
             keys = ((left, bottom), (right, bottom), (right, top), (left, top))
-            if not all(k in nodes for k in keys):
+            corners = [nodes[k] for k in keys if k in nodes]
+            supported = supported_cell(corners, extra, x, y, validity)
+            if not supported:
                 omitted += 1
-                continue
-            a, b, c, d = (nodes[k] for k in keys)
-            if not all(validity[i] for i in (a, b, c, d)) or y[a] == y[d] or y[b] == y[c]:
-                omitted += 1
-                continue
-            # Ordem anti-horária para o interpolador linear de Matplotlib.
-            triangles.extend(((a, b, c), (a, c, d)))
+            triangles.extend(supported)
     return Surface(
         np.asarray(x),
         np.asarray(y),
@@ -140,6 +199,40 @@ def build_surface(planned, records, case, field):
         logarithmic,
         omitted,
     )
+
+
+def lisa_refinement_requests(planned, records, cases, *, threshold, tolerance):
+    """Solicita o ponto médio de cada cruzamento LISA ainda largo em C."""
+    requests = []
+    for case in cases:
+        grid, extra = case_samples(planned, records, case, include_validation=True)
+        columns = {}
+        for point in (*grid, *extra):
+            columns.setdefault(point["m6_GeV"], {})[point["C"]] = records.get(point["point_id"], {})
+        for mass, samples in sorted(columns.items()):
+            for (low, a), (high, b) in pairwise(sorted(samples.items())):
+                if high - low <= tolerance or not all(
+                    valid_value(row, "LISA_rho_sw") for row in (a, b)
+                ):
+                    continue
+                if (a["LISA_rho_sw"] >= threshold) == (b["LISA_rho_sw"] >= threshold):
+                    continue
+                params = Parameters(mass, case, (low + high) / 2)
+                identifier = point_id(params)
+                if identifier not in records:
+                    requests.append(
+                        {
+                            "point_id": identifier,
+                            "m6_GeV": mass,
+                            "m8_GeV": case,
+                            "C": params.C,
+                            "C_left": low,
+                            "C_right": high,
+                            "LISA_rho_left": a["LISA_rho_sw"],
+                            "LISA_rho_right": b["LISA_rho_sw"],
+                        }
+                    )
+    return requests
 
 
 def coverage_report(output, campaign, planned, records):
@@ -265,90 +358,177 @@ def coverage_report(output, campaign, planned, records):
     }
 
 
-def boundary_segments(output, campaign, case_index):
-    """Separa sequências de colunas delimitadas; PCHIP não atravessa coluna pendente."""
-    groups, group = [], []
+def boundary_columns(output, campaign, case_index):
+    """Lê as colunas finitas preservando posições onde falta a fronteira."""
+    columns = []
     for mi, mass in reversed(list(enumerate(campaign.masses()))):
         if not math.isfinite(mass):
             continue
         path = column_path(output, case_index, mi)
-        row = read_json(path) if path.exists() else {}
-        if row.get("state") == "bounded":
+        columns.append(read_json(path) if path.exists() else {})
+    return columns
+
+
+def boundary_segments(columns, supported):
+    """Agrupa colunas vizinhas para que a interpolação respeite as lacunas."""
+    group = []
+    for row in columns:
+        if supported(row):
             group.append(row)
         elif group:
-            groups.append(group)
+            yield group
             group = []
     if group:
-        groups.append(group)
-    return groups
+        yield group
+
+
+def connected_witnesses(row):
+    """Aceita uma faixa entre testemunhas sem exclusão calculada no interior."""
+    lo, hi = (number(row.get(key)) for key in ("C_low_inside", "C_high_inside"))
+    return (
+        lo is not None
+        and hi is not None
+        and lo < hi
+        and row.get("state") != "reentry_detected"
+        and not any(s["decision"] == "no" and lo < s["C"] < hi for s in row.get("samples", ()))
+    )
+
+
+def edge_is_resolved(row, side):
+    """Consulta cada bracket separadamente, inclusive quando o outro é inconclusivo."""
+    edge = row.get(side)
+    if edge is None:
+        return row.get("state") == "bounded"
+    return edge["state"] == "bracketed" or (
+        side == "lower" and edge["state"] == "range_limit" and edge.get("inside_C") == 0
+    )
+
+
+def draw_boundary_guides(ax, columns, x_coordinate, color, *, fill_alpha=0.15, show_edges=True):
+    """Desenha a faixa entre testemunhas e distingue a qualidade de cada borda."""
+
+    def interpolated(columns, fields):
+        ordered = sorted(columns, key=x_coordinate)
+        x = np.array([x_coordinate(col) for col in ordered])
+        xx = np.linspace(x[0], x[-1], max(30, len(x) * 3))
+        yy = [PchipInterpolator(x, [col.get(field) for col in ordered])(xx) for field in fields]
+        return xx, yy
+
+    for group in boundary_segments(columns, connected_witnesses):
+        if len(group) > 1:
+            x, (lo, hi) = interpolated(group, ("C_low_inside", "C_high_inside"))
+            ax.fill_between(x, lo, hi, where=lo <= hi, color=color, alpha=fill_alpha, linewidth=0)
+    if not show_edges:
+        return
+    for side, key in (("lower", "C_low_inside"), ("upper", "C_high_inside")):
+        for group in boundary_segments(
+            columns,
+            lambda r, field=key, edge=side: (
+                number(r.get(field)) is not None and edge_is_resolved(r, edge)
+            ),
+        ):
+            if len(group) > 1:
+                x, (y,) = interpolated(group, (key,))
+                ax.plot(x, y, color=color, lw=1.4)
+        # Une testemunhas apenas quando pelo menos uma das duas bordas
+        # vizinhas ainda está aberta. Os brackets resolvidos ficam sólidos.
+        for group in boundary_segments(columns, connected_witnesses):
+            if len(group) < 2:
+                continue
+            ordered = sorted(group, key=x_coordinate)
+            x, (y,) = interpolated(ordered, (key,))
+            positions = np.array([x_coordinate(col) for col in ordered])
+            incomplete = np.array(
+                [
+                    not (edge_is_resolved(a, side) and edge_is_resolved(b, side))
+                    for a, b in pairwise(ordered)
+                ]
+            )
+            interval = (np.searchsorted(positions, x, side="right") - 1).clip(
+                0, len(incomplete) - 1
+            )
+            ax.plot(x, np.where(incomplete[interval], y, np.nan), color=color, lw=1.3, ls="--")
+
+
+def nearest_peak_match(pools, tolerance, *, prefer_different_masses=False):
+    """Compara pares de picos calculados dentro da tolerância declarada."""
+    if not all(pools):
+        return None
+    peaks = [np.log10([[r["f_sw_peak_Hz"], r["omega_sw_peak_h2"]] for r in pool]) for pool in pools]
+    trees = [cKDTree(coordinates) for coordinates in peaks[1:]]
+    best = None
+    for anchor, coordinate in enumerate(peaks[0]):
+        neighbours = [
+            tree.query_ball_point(coordinate, tolerance, return_sorted=True) for tree in trees
+        ]
+        for indices in product((anchor,), *neighbours):
+            selected = [pool[i] for pool, i in zip(pools, indices, strict=True)]
+            masses = {r["m6_GeV"] for r in selected if math.isfinite(r["m6_GeV"])}
+            couplings = [r["C"] for r in selected]
+            preference = (
+                prefer_different_masses and len(masses) == 1,
+                max(masses, default=math.inf),
+                min(couplings) - max(couplings) if prefer_different_masses else 0.0,
+            )
+            if best and preference > best[0][:-1]:
+                continue
+            coordinates = [points[i] for points, i in zip(peaks, indices, strict=True)]
+            distance = max(math.dist(a, b) for a, b in combinations(coordinates, 2))
+            if distance > tolerance:
+                continue
+            score = (*preference, distance)
+            if best is None or score < best[0]:
+                best = score, selected, distance
+    return (best[1], best[2]) if best else None
 
 
 def match_benchmarks(rows, cases, *, threshold, maximum_distance=0.2):
-    """Seleciona sinais próximos em log(f_peak,Omega_peak), priorizando massas menores.
-
-    Grupo A usa o controle C puro quando disponível; B usa m6<=1000 GeV.
-    Nenhuma proximidade é presumida: o raio máximo é salvo junto aos benchmarks.
-    """
+    """Prefere o controle puro em A; busca massas finitas e variadas em B."""
     valid = [
         r
         for r in rows
         if r.get("observables_complete")
         and valid_value(r, "alpha_trace")
         and valid_value(r, "beta_over_H")
-        and r.get("LISA_rho_sw", 0) >= threshold
+        and (number(r.get("LISA_rho_sw")) or 0) >= threshold
+        and (number(r.get("f_sw_peak_Hz")) or 0) > 0
+        and (number(r.get("omega_sw_peak_h2")) or 0) > 0
     ]
-    groups, used = [], set()
-    for name, pure in (("A", True), ("B", False)):
-        pools = []
-        for index, case in enumerate(cases):
-            pool = [
-                r
-                for r in valid
-                if r["m8_GeV"] == case
-                and (
-                    (index == 0 and pure and math.isinf(r["m6_GeV"]))
-                    or (
-                        not (index == 0 and pure)
-                        and math.isfinite(r["m6_GeV"])
-                        and r["m6_GeV"] <= (1300 if pure else 1000)
-                    )
-                )
-            ]
-            pools.append(pool)
-        if not all(pools):
-            continue
-        coordinates = [
-            np.log10([[r["f_sw_peak_Hz"], r["omega_sw_peak_h2"]] for r in pool]) for pool in pools
-        ]
-        trees = [cKDTree(x) for x in coordinates[1:]]
-        candidates = []
-        for index, anchor in enumerate(pools[0]):
-            selected, distances = [anchor], []
-            for pool, tree in zip(pools[1:], trees, strict=True):
-                distance, chosen = tree.query(coordinates[0][index])
-                selected.append(pool[int(chosen)])
-                distances.append(float(distance))
-            keys = tuple(r["point_id"] for r in selected)
-            if max(distances, default=0) <= maximum_distance and keys not in used:
-                finite_masses = [r["m6_GeV"] for r in selected if math.isfinite(r["m6_GeV"])]
-                candidates.append(
-                    (
-                        (
-                            max(finite_masses),
-                            sum(r["C"] for r in selected),
-                            max(distances, default=0),
-                        ),
-                        selected,
-                        keys,
-                        max(distances, default=0),
-                    )
-                )
-        if candidates:
-            _, selected, keys, distance = min(candidates, key=lambda candidate: candidate[0])
-            used.add(keys)
+    pools = [[r for r in valid if r["m8_GeV"] == case] for case in cases]
+    finite = [[r for r in pool if math.isfinite(r["m6_GeV"])] for pool in pools]
+    match_a = nearest_peak_match(
+        [[r for r in pools[0] if math.isinf(r["m6_GeV"])]]
+        + [[r for r in pool if r["m6_GeV"] <= 1300] for pool in finite[1:]],
+        maximum_distance,
+    )
+    selection_a = "Measure-only reference"
+    if match_a is None:
+        masses = set.intersection(*({r["m6_GeV"] for r in pool} for pool in finite))
+        for mass in sorted(masses):
+            match_a = nearest_peak_match(
+                [[r for r in pool if r["m6_GeV"] == mass] for pool in finite],
+                maximum_distance,
+            )
+            if match_a:
+                selection_a = f"Fixed m6 = {mass:g} GeV"
+                break
+    used = {r["point_id"] for r in match_a[0]} if match_a else set()
+    remaining = [[r for r in pool if r["point_id"] not in used] for pool in finite]
+    match_b = nearest_peak_match(
+        [[r for r in pool if r["m6_GeV"] <= 1000] for pool in remaining],
+        maximum_distance,
+        prefer_different_masses=True,
+    )
+    if match_b is None:
+        match_b = nearest_peak_match(remaining, maximum_distance, prefer_different_masses=True)
+    groups = []
+    for name, selection, match in (("A", selection_a, match_a), ("B", "Finite m6", match_b)):
+        if match:
+            selected, distance = match
             groups.append(
                 {
                     "group": name,
+                    "selection": selection,
                     "maximum_log_peak_distance": distance,
                     "tolerance_dex": maximum_distance,
                     "benchmarks": [
@@ -379,6 +559,8 @@ class Writer:
                 "legend.fontsize": 8,
                 "xtick.labelsize": 8,
                 "ytick.labelsize": 8,
+                "font.family": "serif",
+                "mathtext.fontset": "stix",
                 "axes.spines.top": False,
                 "axes.spines.right": False,
                 "pdf.fonttype": 42,
@@ -405,28 +587,22 @@ class Writer:
 
 
 def draw_windows(writer, output, campaign, cases, name="Fig01_mechanism_compensation"):
-    """Figura 1: compensação de mecanismos, com faixas contínuas e sem pontos."""
+    """Figura 1: compensação de mecanismos com guias de cada borda."""
     from matplotlib.lines import Line2D
 
     figure, ax = writer.plt.subplots(figsize=(7.2, 4.4), layout="constrained")
     for case, color in zip(cases, COLORS, strict=False):
         ci = campaign.m8_values.index(case)
-        for group in boundary_segments(output, campaign, ci):
-            if len(group) < 2:
-                continue
-            x = np.array([(1000 / float(r["m6_GeV"])) ** 2 for r in group])
-            order = np.argsort(x)
-            x = x[order]
-            xx = np.linspace(x[0], x[-1], max(30, len(x) * 3))
-            lower = PchipInterpolator(x, np.array([r["C_low_inside"] for r in group])[order])(xx)
-            upper = PchipInterpolator(x, np.array([r["C_high_inside"] for r in group])[order])(xx)
-            ax.fill_between(xx, lower, upper, color=color, alpha=0.13, linewidth=0)
-            ax.plot(xx, lower, color=color, lw=1.6)
-            ax.plot(xx, upper, color=color, lw=1.6)
+        draw_boundary_guides(
+            ax,
+            boundary_columns(output, campaign, ci),
+            lambda row: (1000 / float(row["m6_GeV"])) ** 2,
+            color,
+        )
         pure_path = column_path(output, ci, 0)
         if pure_path.exists():
             pure = read_json(pure_path)
-            if pure["C_low_inside"] is not None:
+            if connected_witnesses(pure):
                 ax.plot(
                     [0, 0],
                     [pure["C_low_inside"], pure["C_high_inside"]],
@@ -439,7 +615,8 @@ def draw_windows(writer, output, campaign, cases, name="Fig01_mechanism_compensa
         handles=[
             Line2D([], [], color=color, label=rf"$m_8={mass_label(case)}$ GeV")
             for case, color in zip(cases, COLORS, strict=False)
-        ],
+        ]
+        + [Line2D([], [], color="0.35", ls="--", label="Inside witnesses")],
         frameon=False,
     )
     ax.grid(alpha=0.12)
@@ -447,10 +624,12 @@ def draw_windows(writer, output, campaign, cases, name="Fig01_mechanism_compensa
         figure,
         name,
         "Selected first-order-transition windows at Lambda=1000 GeV. "
-        "Boundaries interpolate calculated inside witnesses using shape-preserving PCHIP; "
-        "their bracketing uncertainty is tabulated separately. Selection requires accepted "
+        "Solid curves use resolved boundaries and dashed curves connect inside witnesses "
+        "where a boundary is inconclusive. Brackets are tabulated separately. Selection requires "
         "S3(Tn)/Tn=140 within the declared tolerance, v(Tn)/Tn>1 and V(v,0)<V(0,0). "
-        "Shading assumes a connected interval between its two edges. Lines at zero inverse mass "
+        "Shading joins inside witnesses under a connected-interval assumption. "
+        "Columns with a detected re-entry or an excluded interior sample interrupt the shading. "
+        "Lines at zero inverse mass "
         "show the m6=infinity controls; the gap to the finite mass scan is left unfilled.",
     )
 
@@ -469,12 +648,17 @@ def contour(ax, surface, levels, **kwargs):
 def shared_limits(planned, records, cases):
     """Mesmas escalas de cor em todos os atlas; nenhuma seleção por percentis."""
     limits = {}
-    training_ids = {p["point_id"] for p in planned["points"] if p["kind"] == "grid"}
+    plotted_ids = {
+        r["point_id"]
+        for case in cases
+        for collection in case_samples(planned, records, case, include_validation=True)
+        for r in collection
+    }
     for field, _label in FIELDS:
         values = [
             r[field]
             for identifier, r in records.items()
-            if identifier in training_ids and r["m8_GeV"] in cases and valid_value(r, field)
+            if identifier in plotted_ids and valid_value(r, field)
         ]
         if field in ("alpha_trace", "beta_over_H"):
             values = list(np.log10(values))
@@ -492,14 +676,14 @@ def draw_atlas(writer, planned, records, campaign, case, name, limits, threshold
     figure, axes = writer.plt.subplots(
         2, 2, figsize=(7.2, 6.2), sharex=True, sharey=True, layout="constrained"
     )
-    lisa = build_surface(planned, records, case, "LISA_rho_sw")
+    lisa = build_surface(planned, records, case, "LISA_rho_sw", include_validation=True)
     for ax, (field, label) in zip(axes.flat, FIELDS, strict=True):
-        surface = build_surface(planned, records, case, field)
+        surface = build_surface(planned, records, case, field, include_validation=True)
         tri = surface.triangulation()
         if tri is not None:
             lo, hi = limits[field]
             image = ax.tricontourf(
-                tri, surface.values, levels=np.linspace(lo, hi, 30), cmap="viridis", extend="both"
+                tri, surface.values, levels=np.linspace(lo, hi, 40), cmap="viridis"
             )
             bar = figure.colorbar(image, ax=ax, fraction=0.05, pad=0.02)
             if surface.logarithmic:
@@ -517,9 +701,9 @@ def draw_atlas(writer, planned, records, campaign, case, name, limits, threshold
                     FuncFormatter(lambda value, pos: f"{10**value:.2g}")
                 )
             else:
-                bar.locator = MaxNLocator(nbins=4)
-                bar.formatter = FuncFormatter(lambda value, pos: f"{value:.1f}")
-                bar.update_ticks()
+                ticks = MaxNLocator(nbins=5).tick_values(lo, hi)
+                bar.set_ticks([value for value in ticks if lo <= value <= hi])
+                bar.ax.yaxis.set_major_formatter(FuncFormatter(lambda value, pos: f"{value:g}"))
         else:
             ax.text(
                 0.5,
@@ -534,7 +718,8 @@ def draw_atlas(writer, planned, records, campaign, case, name, limits, threshold
         contour(ax, lisa, [math.log10(threshold)], colors="white", linewidths=1.6)
         contour(ax, lisa, [math.log10(threshold)], colors="black", linewidths=0.8)
         if field == "vev_over_Tc":
-            critical = contour(ax, surface, [1], colors="#E8A530", linewidths=1.3, linestyles="--")
+            contour(ax, surface, [1], colors="white", linewidths=2.4, linestyles="--")
+            critical = contour(ax, surface, [1], colors="0.15", linewidths=1.2, linestyles="--")
             if critical is not None:
                 ax.clabel(critical, fmt={1: r"$v_c/T_c=1$"}, fontsize=7)
         ax.set(
@@ -557,15 +742,15 @@ def draw_atlas(writer, planned, records, campaign, case, name, limits, threshold
         figure,
         name,
         f"Thermodynamic atlas for m8={case:g} GeV. Panels show Tn, signed trace-anomaly alpha, beta/Hn "
-        "and v(Tc)/Tc. Colour scales are shared by all selected scenarios; alpha and beta are interpolated "
+        "and v(Tc)/Tc. The three main atlases share colour scales; alpha and beta are interpolated "
         "logarithmically. The outlined contour marks the LISA acoustic threshold. "
         "The critical-strength contour is drawn only where v(Tc)/Tc=1 is supported by the calculated field. "
-        "Every coloured cell has four calculated neighbouring vertices; validation data and missing-cell "
-        "requests accompany the figures. No analytic critical-strength boundary is assumed.",
+        "Each coloured triangle is supported by three calculated neighbours. Validation data and "
+        "requests for additional points accompany the figures.",
     )
 
 
-def draw_detectors(writer, planned, records, campaign, cases, threshold):
+def draw_detectors(writer, output, planned, records, campaign, cases, threshold):
     """Figura 5: regiões detectáveis mais isolinhas de alpha e beta/H."""
     from matplotlib.patches import Patch
 
@@ -579,15 +764,28 @@ def draw_detectors(writer, planned, records, campaign, cases, threshold):
         layout="constrained",
     )
     for i, case in enumerate(cases):
+        columns = boundary_columns(output, campaign, campaign.m8_values.index(case))
+        reach = {
+            detector: build_surface(
+                planned, records, case, f"{detector}_rho_sw", include_validation=True
+            )
+            for detector in ("BBO", "DECIGO", "LISA")
+        }
         for j, field in enumerate(("alpha_trace", "beta_over_H")):
             ax = axes[i, j]
-            has_data = False
-            for detector in ("BBO", "DECIGO", "LISA"):
-                surface = build_surface(planned, records, case, f"{detector}_rho_sw")
+            draw_boundary_guides(
+                ax,
+                columns,
+                lambda row: float(row["m6_GeV"]),
+                "0.55",
+                fill_alpha=0.08,
+                show_edges=False,
+            )
+            has_data = any(len(surface.triangles) for surface in reach.values())
+            for detector, surface in reach.items():
                 tri = surface.triangulation()
                 if tri is None:
                     continue
-                has_data = True
                 upper = float(max(surface.values[np.unique(surface.triangles)]))
                 if upper > math.log10(threshold):
                     ax.tricontourf(
@@ -597,7 +795,7 @@ def draw_detectors(writer, planned, records, campaign, cases, threshold):
                         colors=[DETECTOR_COLORS[detector]],
                         alpha=0.7,
                     )
-            physical = build_surface(planned, records, case, field)
+            physical = build_surface(planned, records, case, field, include_validation=True)
             tri = physical.triangulation()
             if tri is not None:
                 used = physical.values[np.unique(physical.triangles)]
@@ -642,6 +840,7 @@ def draw_detectors(writer, planned, records, campaign, cases, threshold):
         f"Acoustic-channel detector reach at SNR>={threshold:g}. Left and right columns overlay "
         "alpha_trace and beta/Hn contours, labelled by their values. The reach follows the calculated "
         "peak amplitude and frequency with published peak-integrated sensitivity fits. "
+        "Grey shading connects the inside witnesses of the transition window. "
         "Each detector is tested throughout the sampled band, including its lower and upper sides; "
         "detectability is not assumed monotonic in C. White space outside calculated support carries "
         "no exclusion claim. Observation time and the missing-support audit are recorded in figure_report.json.",
@@ -657,6 +856,17 @@ def draw_spectra(writer, groups, cases, years, threshold):
     )
     samples = []
     frequency = np.geomspace(1e-6, 1, 1000)
+    styles = ("-", "--", "-.", ":")
+    benchmarks = [row for group in groups for row in group["benchmarks"]]
+    if benchmarks:
+        frequencies = [row["f_sw_peak_Hz"] for row in benchmarks]
+        amplitudes = [row["omega_sw_peak_h2"] for row in benchmarks]
+        display_frequency = (
+            max(frequency[0], min(frequencies) / 25),
+            min(frequency[-1], max(frequencies) * 25),
+        )
+        lisa = detectors.lisa_plis_h2(frequency, years=years, threshold=threshold)
+        display_amplitude = (min(amplitudes) / 3e4, max(amplitudes) * 300)
     if not groups:
         for ax in axes.flat:
             ax.text(
@@ -672,7 +882,7 @@ def draw_spectra(writer, groups, cases, years, threshold):
         top, bottom = axes[:, index]
         top.loglog(
             frequency,
-            detectors.lisa_plis_h2(frequency, years=years, threshold=threshold),
+            lisa,
             color="0.3",
             lw=1.2,
             label="LISA PLIS",
@@ -687,7 +897,7 @@ def draw_spectra(writer, groups, cases, years, threshold):
         for row in group["benchmarks"]:
             ci = cases.index(row["m8_GeV"])
             spectrum = core.sound_spectrum(frequency, row)
-            top.loglog(frequency, spectrum, color=COLORS[ci], ls=("-", "--", "-.", ":")[ci], lw=1.6)
+            top.loglog(frequency, spectrum, color=COLORS[ci], ls=styles[ci], lw=1.6)
             bottom.scatter(
                 row["f_sw_peak_Hz"], row["omega_sw_peak_h2"], s=30, color=COLORS[ci], zorder=4
             )
@@ -696,11 +906,11 @@ def draw_spectra(writer, groups, cases, years, threshold):
                 for f, omega in zip(frequency, spectrum, strict=True)
             )
         top.set(
-            title=f"Matched group {group['group']}",
+            title=f"{group['group']}  {group['selection']}",
             xlabel=r"$f$ [Hz]",
             ylabel=r"$h^2\Omega_{\rm sw}(f)$",
-            ylim=(1e-23, 1e-7),
-            xlim=(1e-5, 1),
+            ylim=display_amplitude,
+            xlim=display_frequency,
         )
         top.legend(loc="upper left", frameon=False, fontsize=7)
         bottom.legend(
@@ -721,7 +931,7 @@ def draw_spectra(writer, groups, cases, years, threshold):
             ax.grid(alpha=0.12, which="major")
     figure.legend(
         handles=[
-            Line2D([], [], color=COLORS[i], label=rf"$m_8={mass_label(case)}$ GeV")
+            Line2D([], [], color=COLORS[i], ls=styles[i], label=rf"$m_8={mass_label(case)}$ GeV")
             for i, case in enumerate(cases)
         ],
         loc="outside lower center",
@@ -732,8 +942,10 @@ def draw_spectra(writer, groups, cases, years, threshold):
         figure,
         "Fig06_matched_GW_signals",
         "Nearby acoustic GW predictions from distinct m8 scenarios. Group A compares a C-only control "
-        "with combined mechanisms, when available; group B prioritises m6<=1000 GeV. "
-        "Sets are selected within a Euclidean distance of 0.2 dex in (log10 f_peak,log10 peak amplitude). "
+        "with combined mechanisms when a match exists, with a common finite m6 as the fallback. "
+        "Group B prioritises distinct finite masses at or below 1000 GeV and a wider spread in C. "
+        "Every pair within a set satisfies a Euclidean distance of at most 0.2 dex in "
+        "(log10 f_peak, log10 peak amplitude). "
         "All benchmarks individually pass the acoustic LISA threshold. Upper panels include the LISA "
         "power-law-integrated sensitivity as a visual reference; lower panels compare peaks to the "
         "peak-integrated LISA, DECIGO and BBO sensitivities. Exact coordinates, SNRs and matching distances "
@@ -769,6 +981,11 @@ def render(args):
     planned = plan(output, campaign, allow_partial=args.draft, refine=refined_path.exists())
     records, rows = flatten_records(output, years=args.years)
     report = coverage_report(output, campaign, planned, records)
+    lisa_requests = lisa_refinement_requests(
+        planned, records, cases, threshold=args.snr, tolerance=campaign.C_tolerance / 2
+    )
+    report["lisa_refinement_points"] = len(lisa_requests)
+    report["lisa_bracket_target_C"] = campaign.C_tolerance / 2
     destination.mkdir(parents=True, exist_ok=True)
     old_products_path = destination / "figure_products.json"
     old_products = read_json(old_products_path) if old_products_path.exists() else []
@@ -776,6 +993,7 @@ def render(args):
     write_csv(
         destination / "point_requests.csv", report["missing_points"] + report["failed_points"]
     )
+    write_csv(destination / "lisa_point_requests.csv", lisa_requests)
     write_csv(destination / "interpolation_validation.csv", report["interpolation_checks"])
     groups = match_benchmarks(rows, cases, threshold=args.snr)
     report.update(
@@ -801,7 +1019,12 @@ def render(args):
     write_csv(
         destination / "benchmarks.csv",
         [
-            dict(row, group=g["group"], matching_distance_dex=g["maximum_log_peak_distance"])
+            dict(
+                row,
+                group=g["group"],
+                selection=g["selection"],
+                matching_distance_dex=g["maximum_log_peak_distance"],
+            )
             for g in groups
             for row in g["benchmarks"]
         ],
@@ -813,7 +1036,7 @@ def render(args):
         )
     writer = Writer(destination, args.dpi, args.draft)
     draw_windows(writer, output, campaign, cases)
-    limits = shared_limits(planned, records, campaign.m8_values)
+    limits = shared_limits(planned, records, cases)
     for index, case in enumerate(cases):
         draw_atlas(
             writer,
@@ -825,7 +1048,7 @@ def render(args):
             limits,
             args.snr,
         )
-    draw_detectors(writer, planned, records, campaign, cases, args.snr)
+    draw_detectors(writer, output, planned, records, campaign, cases, args.snr)
     samples = draw_spectra(writer, groups, cases, args.years, args.snr)
     for index, case in enumerate(campaign.m8_values):
         if case not in cases:
@@ -836,7 +1059,7 @@ def render(args):
                 campaign,
                 case,
                 f"Supplement_m8_{index}_observables",
-                limits,
+                shared_limits(planned, records, (case,)),
                 args.snr,
             )
     if len(campaign.m8_values) > len(cases):

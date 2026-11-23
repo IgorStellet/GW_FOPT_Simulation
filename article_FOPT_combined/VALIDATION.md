@@ -1,5 +1,36 @@
 # Validação da edição T²
 
+## Revisão da busca e das figuras
+
+Em 23 de novembro de 2026, a busca foi revista com o mesmo `model.py` e
+o mesmo núcleo. Três pontos registrados como `no_nucleation_found`
+no primeiro export T² passaram a ter nucleação forte e observáveis completos:
+
+| m6 [GeV] | m8 [GeV] | C | Tn [GeV] | S3/Tn | alpha_trace | beta/Hn |
+|---:|---:|---:|---:|---:|---:|---:|
+| 850 | inf | 3.0035813493 | 86.6732 | 140.0751 | 0.01843 | 2037.91 |
+| 1725 | inf | 3.5005087623 | 81.4376 | 139.9799 | 0.02375 | 1883.75 |
+| 1525 | 400 | 0.5029582352 | 63.8744 | 139.7756 | 0.05441 | 490.49 |
+
+O ponto de 850 GeV também foi verificado pelo comando `point`, incluindo
+subprocesso isolado e checkpoint. Os testes exercitam a recuperação de
+cruzamentos internos, uma ação inconclusiva durante a busca e a preservação
+de transições resolvidas quando uma etapa posterior falha.
+
+O controle puro com C=2.895 forneceu Tn=124.9709 GeV e v(Tn)/Tn=1.0651.
+A busca numa etapa posterior do resfriamento ficou inconclusiva e está
+registrada junto da transição já resolvida. Esse ponto levou cerca de 348 s
+no ambiente local, o que motiva conferir o orçamento no piloto do CHE.
+
+Os 2.323 registros exportados da v1 foram usados para regenerar as seis
+figuras e os suplementos em modo rascunho. Com esses mesmos dados, a área
+triangulada com suporte de beta nas Figuras 2 a 4 cresceu cerca de 16%.
+Os 203 observáveis incompletos e as 781 colunas com pendências continuam
+identificados pela auditoria. A reconstrução gráfica desses dados testa
+a apresentação. Os mapas da campanha corrigida dependem da nova coleta.
+
+## Validação da primeira edição
+
 Data: 14 de novembro de 2026.
 
 ## Verificações executadas

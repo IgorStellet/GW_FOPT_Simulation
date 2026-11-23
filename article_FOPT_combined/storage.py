@@ -91,7 +91,10 @@ def physics_identity():
     Editar legendas, Slurm ou figuras não invalida um scan. Alterar potencial,
     núcleo, parâmetros numéricos ou versões exige uma nova pasta de campanha.
     """
-    files = [PACKAGE / name for name in ("model.py", "core.py", "physics.py", "config.py")]
+    files = [
+        PACKAGE / name
+        for name in ("model.py", "core.py", "physics.py", "thermal_history.py", "config.py")
+    ]
     core = ROOT / "src" / "CosmoTransitions"
     files += sorted(core.glob("*.py")) + sorted(core.glob("*.npz"))
     return {
@@ -211,8 +214,9 @@ def save_point(output, mode, parameters, result):
 
 
 def point_records(output, mode):
-    """Itera os resultados físicos mais recentes, sem executar cálculos."""
-    return [read_json(path) for path in sorted((Path(output) / "points" / mode).glob("*.json"))]
+    """Lê um resultado de cada vez, liberando fases e bounces ao avançar."""
+    for path in sorted((Path(output) / "points" / mode).glob("*.json")):
+        yield read_json(path)
 
 
 def write_csv(path, rows):

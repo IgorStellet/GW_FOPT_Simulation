@@ -7,6 +7,7 @@ from dataclasses import asdict
 import numpy as np
 import pytest
 from article_FOPT_combined import boundaries, detectors, figures, storage
+from article_FOPT_combined.__main__ import main, status
 from article_FOPT_combined.config import Campaign
 from article_FOPT_combined.model import Parameters
 from article_FOPT_combined.observables import plan
@@ -43,11 +44,77 @@ def test_mesh_uses_four_calculated_neighbours():
     np.testing.assert_allclose(surface.values, -1)
 
 
-@pytest.mark.parametrize("missing,gap", [(True, False), (False, True)])
-def test_mesh_does_not_fill_failed_point_or_absent_mass_column(missing, gap):
-    planned, records = four_nodes(missing, gap)
+def test_mesh_preserves_valid_triangle_next_to_failed_point():
+    planned, records = four_nodes(missing=True)
+    surface = figures.build_surface(planned, records, math.inf, "alpha_trace")
+    assert len(surface.triangles) == 1
+    assert 3 not in surface.triangles
+
+
+def test_mesh_does_not_bridge_absent_mass_column():
+    planned, records = four_nodes(gap=True)
     surface = figures.build_surface(planned, records, math.inf, "alpha_trace")
     assert len(surface.triangles) == 0
+
+
+def test_mesh_uses_extra_validated_vertex_on_sampled_column():
+    planned, records = four_nodes()
+    planned["points"].append(
+        dict(planned["points"][0], kind="validation", C=1.5, fraction=0.5, point_id="check")
+    )
+    records["check"] = {
+        **records["700-0"],
+        "point_id": "check",
+        "m8_GeV": math.inf,
+        "m6_GeV": 700,
+        "C": 1.5,
+    }
+    assert len(figures.build_surface(planned, records, math.inf, "alpha_trace").x) == 4
+    drawn = figures.build_surface(
+        planned, records, math.inf, "alpha_trace", include_validation=True
+    )
+    assert len(drawn.triangles) == 3
+    assert 4 in drawn.triangles
+
+
+def test_window_draws_upper_bracket_independently_of_lower_edge():
+    from matplotlib.figure import Figure
+
+    ax = Figure().subplots()
+    columns = [
+        {
+            "m6_GeV": mass,
+            "C_low_inside": 1.0,
+            "C_high_inside": 3.0,
+            "state": "unresolved",
+            "lower": {"state": "unresolved"},
+            "upper": {"state": "bracketed"},
+        }
+        for mass in (700, 800)
+    ]
+    figures.draw_boundary_guides(ax, columns, lambda row: row["m6_GeV"], "k")
+    assert len(ax.collections) == 1
+    assert any(line.get_linestyle() == "-" and np.all(line.get_ydata() == 3) for line in ax.lines)
+    assert any(line.get_linestyle() == "--" and np.all(line.get_ydata() == 1) for line in ax.lines)
+    columns[0]["samples"] = [{"decision": "no", "C": 2.0}]
+    assert not figures.connected_witnesses(columns[0])
+
+
+def test_lisa_requests_refine_both_sides_without_crossing_a_missing_point():
+    planned, records = four_nodes()
+    for identifier, row in records.items():
+        row["LISA_rho_sw"] = 5 if identifier.endswith("-0") else 20
+    records["800-0"]["LISA_rho_sw"] = 20
+    records["800-1"]["LISA_rho_sw"] = 5
+    requests = figures.lisa_refinement_requests(
+        planned, records, (math.inf,), threshold=10, tolerance=0.1
+    )
+    assert [(p["m6_GeV"], p["C"]) for p in requests] == [(700, 1.5), (800, 1.5)]
+    del records["700-0"]
+    requests = figures.lisa_refinement_requests(
+        planned, records, (math.inf,), threshold=10, tolerance=0.1
+    )
+    assert [(p["m6_GeV"], p["C"]) for p in requests] == [(800, 1.5)]
 
 
 def test_pis_units_and_observation_time_scaling():
@@ -130,3 +197,9 @@ def test_six_figure_smoke_with_explicitly_synthetic_draft(tmp_path):
     report = storage.read_json(destination / "figure_report.json")
     assert report["primary_figures"] == 6
     assert report["benchmark_groups"] == 2
+    assert report["generation_complete"]
+    assert main(["check-pilot", "--output", str(output)]) == 0
+    assert all(
+        case["observables_complete"] and case["observables_missing"] == 0
+        for case in status(output)["cases"]
+    )

@@ -196,8 +196,11 @@ def status(output):
     """Resumo por m8; complete_with_unresolved nunca é anunciado como validação científica."""
     campaign, manifest = load_campaign(output, verify=False)
     report = {"fingerprint": manifest["fingerprint"], "cases": []}
-    observables = point_records(output, "observables")
-    nucleation = point_records(output, "nucleation")
+    observables = [
+        (r["parameters"]["m8_GeV"], r["point_id"], r["summary"].get("observables_complete", False))
+        for r in point_records(output, "observables")
+    ]
+    nucleation = Counter(r["parameters"]["m8_GeV"] for r in point_records(output, "nucleation"))
     from .observables import plan
 
     planned = plan(
@@ -211,23 +214,20 @@ def status(output):
             read_json(p)
             for p in sorted((Path(output) / "boundaries" / f"m8-{ci}").glob("column-*.json"))
         ]
-        obs = [r for r in observables if r["parameters"]["m8_GeV"] == safe(case)]
+        obs = {
+            identifier: complete for mass, identifier, complete in observables if mass == safe(case)
+        }
         targets = [p for p in planned["points"] if p["m8_GeV"] == case]
-        saved_ids = {r["point_id"] for r in obs}
         entry = {
             "m8_GeV": case,
             "columns_done": len(columns),
             "columns_expected": len(campaign.masses()),
             "states": dict(Counter(r["state"] for r in columns)),
             "observables_saved": len(obs),
-            "observables_complete": sum(
-                r["summary"].get("observables_complete", False) for r in obs
-            ),
-            "nucleation_points_saved": sum(
-                r["parameters"]["m8_GeV"] == safe(case) for r in nucleation
-            ),
+            "observables_complete": sum(obs.values()),
+            "nucleation_points_saved": nucleation[safe(case)],
             "observables_planned": len(targets),
-            "observables_missing": sum(p["point_id"] not in saved_ids for p in targets),
+            "observables_missing": sum(p["point_id"] not in obs for p in targets),
         }
         report["cases"].append(entry)
         print(safe(entry))
@@ -336,18 +336,13 @@ def main(argv=None):
         elif args.command == "status":
             status(args.output)
         elif args.command == "check-pilot":
-            campaign, manifest = load_campaign(args.output)
-            records = point_records(args.output, "observables")
-            missing = [
-                case
-                for case in campaign.m8_values
-                if not any(
-                    r["parameters"]["m8_GeV"] == safe(case)
-                    and r["summary"].get("observables_complete")
-                    and r["summary"]["decision"] == "yes"
-                    for r in records
-                )
-            ]
+            campaign, _ = load_campaign(args.output)
+            solved = {
+                r["parameters"]["m8_GeV"]
+                for r in point_records(args.output, "observables")
+                if r["summary"].get("observables_complete") and r["summary"]["decision"] == "yes"
+            }
+            missing = [case for case in campaign.m8_values if safe(case) not in solved]
             if missing:
                 raise ValueError(
                     f"Piloto ainda sem observáveis completos nos cenários {safe(missing)}. Veja os JSONs dos pontos."

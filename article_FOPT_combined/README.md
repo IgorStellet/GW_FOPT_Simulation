@@ -141,24 +141,37 @@ tabela de benchmarks e relatórios de suporte acompanham as figuras.
 
 ## Cobertura e refinamento
 
-Os pontos internos são `C_low+j*(C_high-C_low)/(N+1)`, `j=1..N`, entre
-testemunhas com transição forte aceita. Pontos adicionais, fora da grade
-gráfica, verificam a interpolação em C e em massas intermediárias.
+O potencial T², as massas e os anéis continuam definidos em [model.py](model.py).
+A busca de nucleação parte da origem enquanto ela é um mínimo local e sonda
+`S3/T` na coexistência das fases. Ela também procura o cruzamento no interior
+quando a ação nas duas pontas está acima do limiar. Essa correção altera os
+resultados da busca. Para recalcular, inicialize uma pasta de campanha nova.
+`figures --draft` consegue reler os checkpoints anteriores para diagnóstico.
 
-`figures` primeiro escreve `coverage_audit.json`, `point_requests.csv` e
-`interpolation_validation.csv`. A versão final exige cobertura e validação;
-`--draft` gera imagens de diagnóstico com marca de rascunho.
+Os pontos internos são `C_low+j*(C_high-C_low)/(N+1)`, `j=1..N`, entre
+testemunhas com transição forte aceita. Cada triângulo dos mapas precisa de
+três vértices calculados. Assim um vértice com beta pendente afeta apenas a
+parte correspondente do mapa de beta. Amostras adicionais detectam erros de
+interpolação e refinam as colunas onde foram calculadas.
+
+`figures` primeiro escreve `coverage_audit.json`, `point_requests.csv`,
+`lisa_point_requests.csv` e `interpolation_validation.csv`. A auditoria
+controla a geração final. Use `--draft` para ver um rascunho durante a coleta.
 
 Para completar pontos pendentes, use `point --points-file CAMINHO/point_requests.csv
---retry-failed`, com o mesmo `--output`. Se a interpolação variar demais,
+--retry-failed`, com o mesmo `--output`. Para estreitar um cruzamento do limiar
+acústico, use o mesmo comando com `lisa_point_requests.csv`. Essa lista pede
+o ponto médio entre sondas adjacentes com SNR em lados opostos do limiar.
+Se a interpolação variar demais em muitas colunas,
 `observables --refine` intercala colunas de massa e dobra a divisão em C,
 reutilizando as coordenadas anteriores. As referências de erro são 0.15 dex
 para alpha/beta/SNR e 10% para Tn e v(Tc)/Tc; são critérios gráficos de validação,
 distintos da incerteza física do modelo.
 
-O código conserva lacunas que ainda pedem cálculo. Um limite analítico
-presumido ou um preenchimento gráfico não substitui esses dados.
+Na Figura 1, bordas resolvidas aparecem em linha contínua. Tracejados unem
+testemunhas internas onde ainda falta fechar um bracket. A faixa entre
+testemunhas usa a hipótese de conectividade, interrompida onde os dados
+apontam uma exclusão interna ou reentrada.
 Se um ponto interno calculado fica fora da seleção, a auditoria registra
-`selection_contradictions`: é preciso verificar a classificação e a hipótese
-de faixa conectada. Repetir o cálculo pode confirmar uma exclusão física;
-ela não deve ser apagada pela interpolação.
+`selection_contradictions` para verificar a classificação e a hipótese
+de faixa conectada.

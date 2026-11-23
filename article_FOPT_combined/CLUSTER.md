@@ -24,20 +24,34 @@ Se a instalação precisar de acesso externo indisponível no login do CHE,
 guarde o erro completo; as dependências também podem ser preparadas pelo
 administrador em um wheelhouse compatível com Python/arquitetura do cluster.
 
+Se já usou esse checkout no CHE, atualize a branch depois que os jobs
+anteriores terminarem. Com o ambiente Python já instalado, a instalação
+pode ser reaproveitada.
+
+```bash
+cd "$HOME/projects/GW_FOPT_combined_T2"
+git pull --ff-only origin codex/article-fopt-combined
+```
+
 Em **cada novo login**, defina:
 
 ```bash
 cd "$HOME/projects/GW_FOPT_combined_T2"
 module load python/3.11.7-gcc-12.2.0
 export FOPT_PYTHON="$PWD/article_FOPT_combined/.venv/bin/python"
-export FOPT_RESULTS_ROOT="$HOME/fopt-combined-T2-v1"
+export FOPT_RESULTS_ROOT="$HOME/fopt-combined-T2-v2"
 "$FOPT_PYTHON" -c 'import sys,numpy,scipy; print(sys.executable); print("numpy",numpy.__version__,"scipy",scipy.__version__)'
 ```
 
 `FOPT_RESULTS_ROOT` precisa ser uma pasta persistente autorizada para sua
-conta. O exemplo usa seu home; confirme a quota antes da campanha. Escolha
-uma pasta nova para este potencial. As pastas antigas `fopt-articles-v4`
-permanecem separadas.
+conta. O exemplo usa seu home, onde a quota precisa comportar os dados.
+A revisão da busca térmica exige um manifesto novo para recalcular.
+Reserve `fopt-combined-T2-v2` para esse cálculo e use `fopt-combined-T2-v1`
+como fonte de dados para rascunhos gráficos, caso queira comparar:
+
+```bash
+"$FOPT_PYTHON" -m article_FOPT_combined figures --output "$HOME/fopt-combined-T2-v1/campaign" --destination "$HOME/fopt-combined-T2-v1/figures-replot" --draft
+```
 
 ## 2. Confira partições e limites
 
@@ -54,7 +68,7 @@ limites de cada partição; a associação da conta pode impor limites adicionai
 Uma fila visível não implica autorização para toda conta/QOS.
 
 Os templates usam `debug` para o piloto e figuras (2 h) e `milliways-ext`
-para coleta (24 h), nomes usados no trabalho anterior. Confirme a autorização
+para coleta (14 h), nomes usados no trabalho anterior. Confirme a autorização
 e os limites atuais. Para trocar, acrescente, por exemplo,
 `--partition=NOME` ao comando `submit.sh`; isso sobrescreve a diretiva do template.
 
@@ -121,7 +135,10 @@ unset FOPT_PILOT_STAGE
 ```
 
 Quando os jobs terminarem, consulte `status --output "$FOPT_RESULTS_ROOT/pilot"`.
-Cada cenário deve ter duas colunas examinadas. Se o orçamento de duas horas
+Cada cenário deve ter duas colunas examinadas no preset padrão. Para um piloto
+com área suficiente para conferir os mapas, inclua algumas massas finitas
+na criação do piloto, por exemplo `--m6 675 725 25`. Com essa escolha, cada
+cenário terá quatro colunas, contando `m6=inf`. Se o orçamento de duas horas
 foi atingido, repita a mesma submissão para concluir. Depois rode o piloto dos
 pontos internos, ainda no mesmo manifesto:
 
@@ -170,6 +187,10 @@ bash article_FOPT_combined/cluster/submit.sh boundaries
 unset FOPT_RETRY_FAILED
 ```
 
+Se as pendências forem timeouts de pontos, a retentativa pode usar
+`export FOPT_BOUNDARY_TIMEOUT=600` junto de `FOPT_RETRY_FAILED=1`.
+O tempo por ponto é independente da configuração física da campanha.
+
 ## 5. Observáveis entre as bordas
 
 Somente depois de todas as colunas terem sido examinadas:
@@ -202,6 +223,8 @@ unset FOPT_DRAFT
 As imagens ficam em `$FOPT_RESULTS_ROOT/figures`. `coverage_audit.json` informa
 as lacunas, `point_requests.csv` lista os pontos que precisam de dados e
 `interpolation_validation.csv` compara valores interpolados e calculados.
+O job de figuras lê apenas os produtos necessários à renderização. A exportação
+integral da campanha é uma etapa separada.
 
 Para calcular apenas coordenadas solicitadas, use em um job alocado:
 
@@ -209,7 +232,15 @@ Para calcular apenas coordenadas solicitadas, use em um job alocado:
 "$FOPT_PYTHON" -m article_FOPT_combined point --output "$FOPT_RESULTS_ROOT/campaign" --points-file "$FOPT_RESULTS_ROOT/figures/point_requests.csv" --retry-failed --timeout 900
 ```
 
-Para refinar a interpolação, mantenha a configuração física e submeta:
+Para estreitar só os cruzamentos do limiar LISA, use também, em um job alocado:
+
+```bash
+"$FOPT_PYTHON" -m article_FOPT_combined point --output "$FOPT_RESULTS_ROOT/campaign" --points-file "$FOPT_RESULTS_ROOT/figures/lisa_point_requests.csv" --timeout 900
+```
+
+A lista é atualizada ao gerar as figuras novamente. Se a auditoria mostrar
+que a resolução da grade é insuficiente em muitas colunas, mantenha a
+configuração física e submeta:
 
 ```bash
 export FOPT_REFINE=1
@@ -234,23 +265,28 @@ produtos gráficos; os pontos físicos permanecem na pasta de campanha.
 Depois de conferir que os PDFs/PNGs foram produzidos:
 
 ```bash
-"$FOPT_PYTHON" -m article_FOPT_combined export --output "$FOPT_RESULTS_ROOT/campaign" --zip "$FOPT_RESULTS_ROOT/campaign-complete.zip"
 "$FOPT_PYTHON" -m zipfile -c "$FOPT_RESULTS_ROOT/figures.zip" "$FOPT_RESULTS_ROOT/figures"
-ls -lh "$FOPT_RESULTS_ROOT/figures.zip" "$FOPT_RESULTS_ROOT/campaign-complete.zip"
+ls -lh "$FOPT_RESULTS_ROOT/figures.zip"
 ```
 
 No **PowerShell do seu computador**, usando os dados de acesso já empregados:
 
 ```powershell
-scp -P 13900 ftovar@152.84.248.250:/home/ftovar/fopt-combined-T2-v1/figures.zip "$env:USERPROFILE\Downloads\FOPT-T2-figures.zip"
-Expand-Archive -LiteralPath "$env:USERPROFILE\Downloads\FOPT-T2-figures.zip" -DestinationPath "$env:USERPROFILE\Downloads\FOPT-T2-figures" -Force
-explorer "$env:USERPROFILE\Downloads\FOPT-T2-figures"
+scp -P 13900 ftovar@152.84.248.250:/home/ftovar/fopt-combined-T2-v2/figures.zip "$env:USERPROFILE\Downloads\FOPT-T2-figures-v2.zip"
+Expand-Archive -LiteralPath "$env:USERPROFILE\Downloads\FOPT-T2-figures-v2.zip" -DestinationPath "$env:USERPROFILE\Downloads\FOPT-T2-figures-v2" -Force
+explorer "$env:USERPROFILE\Downloads\FOPT-T2-figures-v2"
 ```
 
-Para baixar também todos os dados:
+Para exportar também todos os dados, execute no CHE em um job alocado:
+
+```bash
+"$FOPT_PYTHON" -m article_FOPT_combined export --output "$FOPT_RESULTS_ROOT/campaign" --zip "$FOPT_RESULTS_ROOT/campaign-complete.zip"
+```
+
+Com o ZIP pronto, baixe no PowerShell:
 
 ```powershell
-scp -P 13900 ftovar@152.84.248.250:/home/ftovar/fopt-combined-T2-v1/campaign-complete.zip "$env:USERPROFILE\Downloads\FOPT-T2-data.zip"
+scp -P 13900 ftovar@152.84.248.250:/home/ftovar/fopt-combined-T2-v2/campaign-complete.zip "$env:USERPROFILE\Downloads\FOPT-T2-data-v2.zip"
 ```
 
 Se escolher outro `FOPT_RESULTS_ROOT`, troque o caminho remoto de scp pelo

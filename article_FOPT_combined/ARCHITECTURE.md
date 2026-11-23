@@ -2,21 +2,20 @@
 
 O fluxo começa em `__main__.py`. `init` salva a configuração e o manifesto.
 `boundaries` pede apenas nucleação a `execution`, que inicia um processo de
-`physics`. Esse processo constrói `model.Potential` e usa a ponte `core` para
-chamar o núcleo em `src`. `storage` publica o resultado antes da próxima
+`physics`. Esse processo constrói `model.Potential` e entrega suas derivadas
+a `thermal_history`, que usa a ponte `core` para o núcleo em `src`.
+`storage` publica o resultado antes da próxima
 coordenada. `observables` monta a grade entre as bordas, usando o mesmo
-avaliador. Por fim, `figures` lê os checkpoints; essa etapa não calcula bounces.
+avaliador. `figures` lê os checkpoints e renderiza os produtos gráficos.
 
 ```text
-config -> manifesto (storage)
-model -> core/src -> physics <- execution <- boundaries
-                                      ^          |
-                                      |      checkpoints de bordas
-                                      |          v
-                                      +----- observables
-                                                  |
-                                                  v
-                               storage -> figures + detectors
+boundaries   ──► observables  ──► figures + detectors
+     │                │                ▲
+     └─► execution ◄─┘                │
+              │                      storage
+              └─► physics ─────────────┘
+                    ├─► model
+                    └─► thermal_history ──► core/src
 ```
 
 ## Responsabilidade de cada arquivo
@@ -27,6 +26,7 @@ model -> core/src -> physics <- execution <- boundaries
 | `core.py` | Ponte para src e adaptações locais de fases, beta e unidades |
 | `config.py` | Parâmetros da campanha e validação das opções |
 | `physics.py` | Avaliação física de uma coordenada e extração dos observáveis |
+| `thermal_history.py` | Fases, coexistência e cruzamentos da ação no resfriamento |
 | `execution.py` | Timeout, subprocessos, orçamento, cache e retomada |
 | `storage.py` | Manifesto, locks, JSONs atômicos e CSVs |
 | `boundaries.py` | Sementes, continuação em massa, caminhadas e brackets |
@@ -37,6 +37,7 @@ model -> core/src -> physics <- execution <- boundaries
 | `__init__.py` | Identifica o pacote, sem executar uma campanha ao importar |
 | `tests/test_model.py` | Identidades do potencial e das autoenergias, modos e domínio |
 | `tests/test_physics.py` | Curvaturas/fases, stencil, aceitação e definições termodinâmicas |
+| `tests/test_thermal_history.py` | Suporte da fase simétrica, cruzamentos internos e falhas entre sondas |
 | `tests/test_pipeline.py` | Fronteiras, sharding, cache, retomada e timeout real |
 | `tests/test_figures.py` | Máscaras locais, sensibilidades e geração integral das figuras com fixture sintética |
 | `tests/conftest.py` | Temporários exclusivos dos testes no Windows/CHE |
@@ -46,7 +47,7 @@ model -> core/src -> physics <- execution <- boundaries
 | `cluster/pilot.slurm` | Piloto de pontos, fronteiras ou interior, escolhido por FOPT_PILOT_STAGE |
 | `cluster/boundaries.slurm` | Array de produção das bordas |
 | `cluster/observables.slurm` | Array de produção dos observáveis |
-| `cluster/figures.slurm` | Exportação de tabelas, auditoria e figuras no cluster |
+| `cluster/figures.slurm` | Auditoria, tabelas gráficas e figuras no cluster |
 | `requirements.txt` | Dependências do fluxo; instalação sem modificar a raiz |
 | `pytest.ini` | Descoberta e cache dos testes somente desta pasta |
 | `ruff.toml` | Estilo/lint local, sem mudar as regras da main |
@@ -66,7 +67,11 @@ arquivo acompanha a leitura das funções.
    a história salva da borda.
 4. `Potential` prepara as constantes e os contratermos. A checagem de vácuo
    a T=0 e da fase inicial pode encerrar o ponto com um diagnóstico explícito.
-5. O núcleo rastreia mínimos, fases críticas e bounces de nucleação.
+5. `thermal_history` encontra o suporte da origem por sua curvatura e usa o
+   núcleo para traçar os mínimos quebrados. As splines representam os ramos
+   dentro dos intervalos traçados. A busca consulta a ação durante a
+   coexistência e escolhe o cruzamento no resfriamento. O campo do bounce
+   continua avaliado com o potencial completo.
 6. A etapa de bordas termina aqui. Na etapa de observáveis, os mínimos são
    refinados, alpha é calculado e são pedidas duas ações por estimativa de beta, com controle de estabilidade.
 7. As falhas de beta deixam a nucleação e alpha disponíveis no registro.
@@ -90,9 +95,27 @@ resolução podem ser perdidas.
 
 O interior usa u entre zero e um e N pontos igualmente espaçados em u. Como
 a largura em C muda com m6, a grade acompanha a janela física. Pontos de
-validação em C e em massas intermediárias ficam fora da grade gráfica.
+validação em C e em massas intermediárias ficam fora do interpolador usado
+na auditoria. Dados adicionais na mesma coluna podem enriquecer os mapas
+depois da verificação. Cada triângulo requer três vértices válidos e colunas
+adjacentes da subgrade.
 `--refine` intercala massas e frações de C, preservando os pontos anteriores.
-Uma célula só é colorida se seus quatro vértices têm o observável requerido.
+
+## Troca de potencial
+
+`thermal_history.build_history` recebe `V`, `gradV`, `hessV` e
+`dgradV_dT` pela interface de derivadas, além da janela de campo, da configuração
+numérica e do critério de nucleação. Serve para potenciais radiais pares de
+um campo cujo resfriamento começa na origem. `physics.derivatives_for` monta
+essa interface a partir de `Vtot(X,T)`. A definição de massas, o domínio e
+os diagnósticos específicos continuam no modelo. Um potencial com outras
+coordenadas exige ajustar a parametrização e os diagnósticos antes da coleta.
+
+O módulo térmico procura intervalos estáveis da origem por amostragem da
+curvatura. Para cada par de ramos coexistentes, consulta a ação de cima para
+baixo e investiga mínimos locais se as sondas ficarem acima do alvo. Um
+bounce que falha durante o fechamento do bracket leva a sondas vizinhas.
+Uma falha após uma transição resolvida fica registrada na história parcial.
 
 ## Função por função
 
@@ -147,6 +170,16 @@ Links e finalidades das funções desta edição, incluindo funções internas.
 | [sound_spectrum](core.py#L106) | h²Omega_sw: interface em Hz, convertendo para os mHz usados no src. |
 | [beta_at_transition](core.py#L118) | Ordem dois com dois bounces novos; stencil central ou unilateral admissível. |
 
+### thermal_history.py
+
+| Função | Finalidade |
+|---|---|
+| [symmetric_phases](thermal_history.py#L22) | Constrói as fases da origem nos intervalos de curvatura positiva. |
+| [trace_phases](thermal_history.py#L56) | Combina fases quebradas traçadas pelo núcleo com a origem exata. |
+| [highest_crossing](thermal_history.py#L142) | Procura o cruzamento de S3/T no resfriamento e recupera brackets com sondas vizinhas. |
+| [find_transition](thermal_history.py#L244) | Restringe o bounce à coexistência de duas fases críticas. |
+| [build_history](thermal_history.py#L282) | Organiza a sequência térmica e preserva transições anteriores se houver uma falha posterior. |
+
 ### detectors.py
 
 | Função/método | Finalidade |
@@ -178,20 +211,24 @@ Links e finalidades das funções desta edição, incluindo funções internas.
 | [number](figures.py#L40) | Retorna número finito ou None; valores ausentes continuam ausentes nos mapas. |
 | [valid_value](figures.py#L45) | Uma transição selecionada pode ter Tn válido e beta pendente, separadamente. |
 | [flatten_records](figures.py#L60) | Lê os resultados mais recentes de observáveis e calcula SNRs sem novos bounces. |
-| [Surface.triangulation](figures.py#L90) | Materializa a geometria Matplotlib apenas quando há área calculada suficiente. |
-| [build_surface](figures.py#L97) | Interpola somente entre quatro vizinhos válidos do plano, sem pontos validation. |
-| [coverage_report](figures.py#L145) | Audita bordas, dados ausentes e validação independente da interpolação em C. |
-| [boundary_segments](figures.py#L268) | Separa sequências de colunas delimitadas; PCHIP não atravessa coluna pendente. |
-| [match_benchmarks](figures.py#L286) | Seleciona sinais próximos em log(f_peak,Omega_peak), priorizando massas menores. |
-| [Writer.__init__](figures.py#L365) | Inicializa os parâmetros, as dependências e os caches descritos pela classe. |
-| [Writer.save](figures.py#L390) | Marca rascunhos e salva duas representações da mesma figura. |
-| [draw_windows](figures.py#L407) | Figura 1: compensação de mecanismos, com faixas contínuas e sem pontos. |
-| [contour](figures.py#L458) | Desenha somente níveis presentes na área interpolada e calculada. |
-| [shared_limits](figures.py#L469) | Mesmas escalas de cor em todos os atlas; nenhuma seleção por percentis. |
-| [draw_atlas](figures.py#L488) | Mapas Tn, alpha, beta/H e v(Tc)/Tc, com o contorno acústico LISA. |
-| [draw_detectors](figures.py#L568) | Figura 5: regiões detectáveis mais isolinhas de alpha e beta/H. |
-| [draw_spectra](figures.py#L651) | Figura 6: espectros com PLIS LISA acima e picos/PIS dos detectores abaixo. |
-| [render](figures.py#L745) | Audita primeiro; publicação requer suporte completo, rascunho permite diagnosticar. |
+| [Surface.triangulation](figures.py#L92) | Materializa a geometria Matplotlib apenas quando há área calculada suficiente. |
+| [case_samples](figures.py#L99) | Identifica a grade e as amostras extras no interior de cada coluna. |
+| [supported_cell](figures.py#L121) | Seleciona a diagonal e os triângulos sustentados por vértices válidos. |
+| [build_surface](figures.py#L155) | Constrói o mapa local por campo, preservando regiões sem suporte calculado. |
+| [lisa_refinement_requests](figures.py#L204) | Pede novos pontos no meio de cruzamentos LISA ainda largos. |
+| [coverage_report](figures.py#L238) | Audita bordas, dados ausentes e validação independente da interpolação em C. |
+| [boundary_segments](figures.py#L372) | Separa sequências adjacentes com suporte para a borda ou faixa. |
+| [draw_boundary_guides](figures.py#L407) | Interpola bordas válidas e indica a faixa entre testemunhas. |
+| [match_benchmarks](figures.py#L485) | Seleciona sinais próximos em log(f_peak,Omega_peak), priorizando massas menores. |
+| [Writer.__init__](figures.py#L545) | Inicializa os parâmetros, as dependências e os caches descritos pela classe. |
+| [Writer.save](figures.py#L572) | Marca rascunhos e salva duas representações da mesma figura. |
+| [draw_windows](figures.py#L589) | Figura 1: compensação de mecanismos, com faixas contínuas e sem pontos. |
+| [contour](figures.py#L637) | Desenha somente níveis presentes na área interpolada e calculada. |
+| [shared_limits](figures.py#L648) | Mesmas escalas de cor em todos os atlas; nenhuma seleção por percentis. |
+| [draw_atlas](figures.py#L672) | Mapas Tn, alpha, beta/H e v(Tc)/Tc, com o contorno acústico LISA. |
+| [draw_detectors](figures.py#L753) | Figura 5: regiões detectáveis mais isolinhas de alpha e beta/H. |
+| [draw_spectra](figures.py#L850) | Figura 6: espectros com PLIS LISA acima e picos/PIS dos detectores abaixo. |
+| [render](figures.py#L957) | Audita primeiro; publicação requer suporte completo, rascunho permite diagnosticar. |
 
 ### model.py
 
@@ -226,23 +263,23 @@ Links e finalidades das funções desta edição, incluindo funções internas.
 
 | Função/método | Finalidade |
 |---|---|
-| [NucleationCriterion.__init__](physics.py#L34) | Inicializa os parâmetros, as dependências e os caches descritos pela classe. |
-| [NucleationCriterion.__call__](physics.py#L37) | Executa a operação principal do objeto com seus parâmetros preparados. |
-| [BoundedLog.write](physics.py#L53) | Função interna que mantém a operação local descrita no bloco de código. |
-| [derivatives_for](physics.py#L59) | Derivadas do potencial completo, incluindo a dependência térmica dos anéis. |
-| [build_history](physics.py#L71) | Rastreia fases e nucleação pelo pipeline do src, na janela declarada. |
+| [NucleationCriterion.__init__](physics.py#L35) | Inicializa os parâmetros, as dependências e os caches descritos pela classe. |
+| [NucleationCriterion.__call__](physics.py#L38) | Executa a operação principal do objeto com seus parâmetros preparados. |
+| [BoundedLog.write](physics.py#L54) | Função interna que mantém a operação local descrita no bloco de código. |
+| [derivatives_for](physics.py#L60) | Derivadas do potencial completo, incluindo a dependência térmica dos anéis. |
+| [build_history](physics.py#L85) | Rastreia fases e nucleação pelo pipeline do src, na janela declarada. |
 | [build_history.forbidden](physics.py#L77) | Exclui cópias negativas da fase radial e campos fora da janela de busca. |
-| [initial_phase_check](physics.py#L110) | Verifica a fase inicial antes de gastar tempo rastreando uma história inadequada. |
-| [pack_history](physics.py#L132) | Salva fases e transições leves para reutilizar as bordas na segunda etapa. |
-| [unpack_history](physics.py#L156) | Recupera a história exata de um ponto de borda, sem procurar Tn novamente. |
-| [nucleation_record](physics.py#L164) | Extrai ação, campos, Tc e força, sem calcular alpha ou derivadas de ações. |
-| [beta_record](physics.py#L208) | Escolhe um passo admissível e verifica estabilidade até convergir ou atingir o piso. |
-| [thermodynamic_record](physics.py#L278) | Enriquece uma transição aceita, preservando alpha mesmo se beta falhar. |
-| [classify](physics.py#L371) | Uma transição forte aceita seleciona o ponto; falha permanece unknown. |
-| [evaluate_once](physics.py#L383) | Uma tentativa física; todo erro é um registro explícito, nunca uma exclusão. |
-| [evaluate](physics.py#L476) | Até duas tentativas; refina fases mantendo potencial e prescrições numéricas. |
-| [evaluate.score](physics.py#L501) | Prioriza observáveis completos, decisão física resolvida e dados já disponíveis. |
-| [main](physics.py#L516) | Entrada privada do processo isolado; os comandos de usuário estão em __main__.py. |
+| [initial_phase_check](physics.py#L94) | Verifica a fase inicial antes de gastar tempo rastreando uma história inadequada. |
+| [pack_history](physics.py#L116) | Salva fases e transições leves para reutilizar as bordas na segunda etapa. |
+| [unpack_history](physics.py#L141) | Recupera a história exata de um ponto de borda, sem procurar Tn novamente. |
+| [nucleation_record](physics.py#L149) | Extrai ação, campos, Tc e força, sem calcular alpha ou derivadas de ações. |
+| [beta_record](physics.py#L193) | Escolhe um passo admissível e verifica estabilidade até convergir ou atingir o piso. |
+| [thermodynamic_record](physics.py#L263) | Enriquece uma transição aceita, preservando alpha mesmo se beta falhar. |
+| [classify](physics.py#L365) | Uma transição forte aceita seleciona o ponto; falha permanece unknown. |
+| [evaluate_once](physics.py#L377) | Uma tentativa física; todo erro é um registro explícito, nunca uma exclusão. |
+| [evaluate](physics.py#L475) | Até duas tentativas; refina fases mantendo potencial e prescrições numéricas. |
+| [evaluate.score](physics.py#L500) | Prioriza observáveis completos, decisão física resolvida e dados já disponíveis. |
+| [main](physics.py#L515) | Entrada privada do processo isolado; os comandos de usuário estão em __main__.py. |
 
 ### storage.py
 
@@ -256,12 +293,12 @@ Links e finalidades das funções desta edição, incluindo funções internas.
 | [atomic_json](storage.py#L67) | Escreve, sincroniza e publica no mesmo filesystem, preservando o arquivo anterior em falhas. |
 | [read_json](storage.py#L83) | Lê um produto JSON; erros de integridade permanecem visíveis ao usuário. |
 | [physics_identity](storage.py#L88) | Hash apenas do código físico, seus dados spline e versões numéricas. |
-| [initialize](storage.py#L108) | Cria uma campanha nova ou verifica compatibilidade integral de uma existente. |
-| [load_campaign](storage.py#L151) | Abre uma campanha; os leitores gráficos podem dispensar comparação com o código atual. |
-| [task_lock](storage.py#L163) | Lock de sistema operacional; é liberado em crash, sem apagar checkpoints. |
-| [point_path](storage.py#L193) | Caminho de um resultado; estágios não sobrescrevem os resultados uns dos outros. |
-| [save_point](storage.py#L198) | Preserva cada tentativa e publica o último resultado do estágio. |
-| [point_records](storage.py#L213) | Itera os resultados físicos mais recentes, sem executar cálculos. |
-| [write_csv](storage.py#L218) | Publica CSV UTF-8 com união de colunas; estruturas ficam como JSON em células. |
-| [export_tables](storage.py#L242) | Exporta pontos, todas as transições e fronteiras; dispensa refazer a física. |
-| [archive_campaign](storage.py#L268) | ZIP atômico dos dados publicados, sem locks de execução nem arquivos temporários. |
+| [initialize](storage.py#L111) | Cria uma campanha nova ou verifica compatibilidade integral de uma existente. |
+| [load_campaign](storage.py#L154) | Abre uma campanha; os leitores gráficos podem dispensar comparação com o código atual. |
+| [task_lock](storage.py#L166) | Lock de sistema operacional; é liberado em crash, sem apagar checkpoints. |
+| [point_path](storage.py#L196) | Caminho de um resultado; estágios não sobrescrevem os resultados uns dos outros. |
+| [save_point](storage.py#L201) | Preserva cada tentativa e publica o último resultado do estágio. |
+| [point_records](storage.py#L216) | Itera os resultados físicos mais recentes, sem executar cálculos. |
+| [write_csv](storage.py#L222) | Publica CSV UTF-8 com união de colunas; estruturas ficam como JSON em células. |
+| [export_tables](storage.py#L246) | Exporta pontos, todas as transições e fronteiras; dispensa refazer a física. |
+| [archive_campaign](storage.py#L272) | ZIP atômico dos dados publicados, sem locks de execução nem arquivos temporários. |

@@ -13,6 +13,5 @@ source "${SLURM_SUBMIT_DIR:?}/article_FOPT_combined/cluster/environment.sh"
 figure_arguments=()
 if [[ "${FOPT_DRAFT:-0}" == 1 ]]; then figure_arguments+=(--draft); fi
 if [[ "${FOPT_REPLACE_FIGURES:-0}" == 1 ]]; then figure_arguments+=(--replace); fi
-"$python_executable" -m article_FOPT_combined export --output "$FOPT_RESULTS_ROOT/campaign"
 "$python_executable" -m article_FOPT_combined figures --output "$FOPT_RESULTS_ROOT/campaign" \
     --destination "$FOPT_RESULTS_ROOT/figures" "${figure_arguments[@]}"

@@ -1,7 +1,7 @@
 """Avaliação de um ponto: primeiro nucleação; depois termodinâmica e GW.
 
-Não contém integrais térmicas, integradores de bounce ou um rastreador de fases
-próprios. Esses cálculos pertencem ao src. Este arquivo transforma suas saídas
+O integrador e o rastreador de fases quebradas pertencem ao src.
+thermal_history organiza a busca, e este arquivo transforma suas saídas
 em registros físicos, com critérios explícitos e dados para auditar beta.
 """
 
@@ -15,10 +15,11 @@ import traceback
 import warnings
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import asdict, replace
+from functools import lru_cache
 
 import numpy as np
 
-from . import core
+from . import core, thermal_history
 from .config import Numerics
 from .model import Potential
 from .storage import atomic_json, parameters_from_dict, read_json, safe
@@ -58,8 +59,21 @@ class BoundedLog(io.StringIO):
 
 def derivatives_for(model, settings):
     """Derivadas do potencial completo, incluindo a dependência térmica dos anéis."""
+    origin = np.zeros((1, 1))
+
+    @lru_cache(maxsize=256)
+    def origin_value(temperature):
+        return model.Vtot(origin, temperature)
+
+    def potential(field, temperature):
+        # O núcleo subtrai V(0,T) em cada avaliação. Durante um bounce T é
+        # fixo e esse valor pode ser reaproveitado sem interpolação adicional.
+        if np.shape(field) == (1, 1) and field[0, 0] == 0 and np.ndim(temperature) == 0:
+            return origin_value(float(temperature))
+        return model.Vtot(field, temperature)
+
     return core.generic.build_finite_T_derivatives(
-        model.Vtot,
+        potential,
         Ndim=1,
         x_eps=settings.x_eps,
         T_eps=settings.T_eps,
@@ -69,42 +83,12 @@ def derivatives_for(model, settings):
 
 
 def build_history(model, derivatives, settings, criterion):
-    """Rastreia fases e nucleação pelo pipeline do src, na janela declarada."""
+    """Escolhe a janela de campo do modelo e chama a busca térmica comum."""
     phi_max = min(settings.phi_max, 0.98 * model.domain_limit)
     if phi_max <= model.v:
         raise ValueError("A janela de campos deve incluir o vácuo eletrofraco.")
 
-    def forbidden(X):
-        phi = float(np.asarray(X).ravel()[0])
-        return phi < -10 * settings.x_eps or phi >= phi_max
-
-    with core.ordered_phase_inputs():
-        summary = core.generic._build_phases_and_transitions(
-            derivatives.V,
-            derivatives.gradV,
-            derivatives.hessV,
-            derivatives.dV_dT,
-            derivatives.dgradV_dT,
-            T_min=settings.T_min,
-            T_max=settings.T_max,
-            phi_range=(-0.15 * phi_max, phi_max),
-            n_phi_scan=settings.n_phi,
-            n_T_seeds=settings.n_T_seeds,
-            deltaX_target=settings.phase_delta,
-            dtstart_frac=settings.phase_step,
-            tjump_frac=settings.phase_step,
-            forbidCrit=forbidden,
-            nuclCriterion=criterion,
-            Tn_Ttol=settings.root_T_tolerance,
-            Tn_maxiter=100,
-            tunnelFromPhase_args={
-                "phitol": settings.minima_tolerance,
-                "overlapAngle": 0.0,
-                "verbose": False,
-            },
-            verbose=False,
-        )
-    return summary
+    return thermal_history.build_history(derivatives, settings, criterion, phi_max)
 
 
 def initial_phase_check(model, settings):
@@ -149,6 +133,7 @@ def pack_history(history):
             "full_transitions": packed,
             "critical_transitions": history["critical_transitions"],
             "start_phase_key": str(history["start_phase_key"]),
+            "history_error": history.get("history_error"),
         }
     )
 
@@ -318,14 +303,23 @@ def thermodynamic_record(row, phases, derivatives, model, settings):
             alpha_energy=(delta - Tn * derivative) / radiation,
             alpha_trace=(delta - Tn * derivative / 4) / radiation,
         )
-        ph, pg = model.scalar_self_energies(float(low[0]), Tn)
-        bare = model.masses_squared(float(low[0]))
-        result.update(
-            screened_h_at_low_GeV2=float(bare["h"] + ph),
-            screened_G_at_low_GeV2=float(bare["G"] + pg),
-        )
     except Exception as error:
         issues.append(f"thermodynamics: {type(error).__name__}: {error}")
+    else:
+        scalar_self_energies = getattr(model, "scalar_self_energies", None)
+        masses_squared = getattr(model, "masses_squared", None)
+        if scalar_self_energies is not None and masses_squared is not None:
+            # Diagnóstico deste modelo. Alpha e beta dependem de Vtot e do
+            # bounce, mesmo para um potencial com outro setor escalar.
+            try:
+                ph, pg = scalar_self_energies(float(low[0]), Tn)
+                bare = masses_squared(float(low[0]))
+                result.update(
+                    screened_h_at_low_GeV2=float(bare["h"] + ph),
+                    screened_G_at_low_GeV2=float(bare["G"] + pg),
+                )
+            except (ArithmeticError, KeyError, TypeError, ValueError) as error:
+                result["scalar_diagnostic_error"] = f"{type(error).__name__}: {error}"
     try:
         lower = max(float(calc.high_phase.T[0]), float(calc.low_phase.T[0]))
         upper = min(
@@ -421,6 +415,12 @@ def evaluate_once(parameters, settings, mode="nucleation", cached=None):
                 else:
                     history = build_history(model, derivatives, settings, criterion)
                     history = unpack_history(pack_history(history))
+                start = history["phases"][str(history["start_phase_key"])]
+                if not start.T[0] <= settings.T_max <= start.T[-1]:
+                    raise thermal_history.ThermalSearchError(
+                        "A fase inicial não cobre a temperatura máxima da busca."
+                    )
+                start_phi = float(np.asarray(start.valAt(settings.T_max)).item())
                 output["context"] = pack_history(history)
                 rows = [
                     nucleation_record(t, i, settings)
@@ -436,11 +436,9 @@ def evaluate_once(parameters, settings, mode="nucleation", cached=None):
                 output["transitions"] = rows
                 ncrit = sum(t["trantype"] == 1 for t in history["critical_transitions"])
                 decision, reason = classify(rows, ncrit)
-                # A história cosmológica começa na fase simétrica dentro da janela.
-                start = history["phases"][str(history["start_phase_key"])]
-                start_phi = float(np.asarray(start.valAt(settings.T_max)).ravel()[0])
-                if abs(start_phi) / settings.T_max > 0.1:
-                    decision, reason = "unknown", "high_temperature_phase_not_symmetric"
+                history_error = history.get("history_error")
+                if history_error and decision != "yes":
+                    decision, reason = "unknown", "incomplete_thermal_history"
                 selected = next((r for r in rows if r.get("selected_strong")), None)
                 accepted = selected or next((r for r in rows if r.get("nucleation_accepted")), None)
                 status = "nucleated" if accepted else reason
@@ -454,6 +452,7 @@ def evaluate_once(parameters, settings, mode="nucleation", cached=None):
                     "n_phases": len(history["phases"]),
                     "n_critical_first_order": ncrit,
                     "start_phi_GeV": start_phi,
+                    "history_error": history_error,
                 }
         except Exception as error:
             output.update(
@@ -483,7 +482,7 @@ def evaluate(parameters, settings, mode="nucleation", cached=None):
         first["summary"]["decision"] == "unknown"
         or first["summary"]["status"] == "observables_unresolved"
     )
-    if first["summary"].get("reason") == "high_temperature_phase_not_symmetric":
+    if first["summary"].get("status") == "initial_phase_unresolved":
         return first
     if not unresolved or not settings.retry_resolution:
         return first
